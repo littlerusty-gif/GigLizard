@@ -344,3 +344,138 @@ export function downloadBandsPDF(
 
   doc.save(filename);
 }
+
+export interface MasterContactRow {
+  name: string;
+  category: "Band" | "Venue";
+  email: string;
+  location: string;
+  primaryLink: string;
+}
+
+/**
+ * Validates whether an email string is a genuine, usable contact email address.
+ */
+export function isValidMasterContactEmail(email?: string): boolean {
+  if (!email || typeof email !== "string") return false;
+  const trimmed = email.trim();
+  if (trimmed.length < 5) return false;
+  const lower = trimmed.toLowerCase();
+  if (
+    trimmed.startsWith("--") ||
+    lower === "not listed" ||
+    lower === "n/a" ||
+    lower === "none" ||
+    lower === "unknown" ||
+    lower.startsWith("inquire")
+  ) {
+    return false;
+  }
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(trimmed);
+}
+
+/**
+ * Normalizes city/state into a clean "City, State" representation.
+ */
+export function formatMasterLocation(city?: string, address?: string): string {
+  const cleanCity = (city || "").trim();
+  if (cleanCity.includes(",")) return cleanCity;
+  if (address) {
+    const match = address.match(/,\s*([A-Z]{2})\b/);
+    if (match) {
+      return cleanCity ? `${cleanCity}, ${match[1]}` : match[1];
+    }
+  }
+  return cleanCity || "United States";
+}
+
+/**
+ * Extracts and filters all valid email contacts from bands and venues.
+ */
+export function getMasterContacts(bands: AvailableBand[], venues: Venue[]): MasterContactRow[] {
+  const list: MasterContactRow[] = [];
+
+  // Extract from bands
+  for (const b of bands) {
+    if (b && isValidMasterContactEmail(b.contactEmail)) {
+      list.push({
+        name: b.name?.trim() || "Unnamed Band",
+        category: "Band",
+        email: b.contactEmail.trim(),
+        location: formatMasterLocation(b.city),
+        primaryLink: (b.website || b.musicUrl || b.epkUrl || "").trim()
+      });
+    }
+  }
+
+  // Extract from venues
+  for (const v of venues) {
+    if (v && isValidMasterContactEmail(v.contactEmail)) {
+      list.push({
+        name: v.name?.trim() || "Unnamed Venue",
+        category: "Venue",
+        email: v.contactEmail.trim(),
+        location: formatMasterLocation(v.city, v.address),
+        primaryLink: (v.website || "").trim()
+      });
+    }
+  }
+
+  return list;
+}
+
+/**
+ * Generates the full CSV text string for giglizard_all_bands_and_venues_contacts.csv
+ * Columns: Name, Category (Band or Venue), Email, Location (City, State), Primary Link / Website
+ */
+export function generateMasterContactsCSV(bands: AvailableBand[], venues: Venue[]): string {
+  const contacts = getMasterContacts(bands, venues);
+
+  const headers = [
+    "Name",
+    "Category (Band or Venue)",
+    "Email",
+    "Location (City, State)",
+    "Primary Link / Website"
+  ];
+
+  const escapeCsvValue = (val: string | number | null | undefined): string => {
+    if (val === undefined || val === null) return '""';
+    const s = String(val).trim();
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  const csvRows = [
+    headers.map(escapeCsvValue).join(","),
+    ...contacts.map(c => [
+      escapeCsvValue(c.name),
+      escapeCsvValue(c.category),
+      escapeCsvValue(c.email),
+      escapeCsvValue(c.location),
+      escapeCsvValue(c.primaryLink)
+    ].join(","))
+  ];
+
+  return csvRows.join("\r\n");
+}
+
+/**
+ * Generates and triggers browser download of the master contacts CSV file.
+ */
+export function downloadMasterContactsCSV(
+  bands: AvailableBand[],
+  venues: Venue[],
+  filename = "giglizard_all_bands_and_venues_contacts.csv"
+) {
+  const csvContent = generateMasterContactsCSV(bands, venues);
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

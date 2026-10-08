@@ -17,7 +17,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { AvailableBand, Venue } from "../types";
-import { downloadDirectoryExcel, downloadVenuesPDF, downloadBandsPDF } from "../utils/exportSpreadsheet";
+import { downloadDirectoryExcel, downloadVenuesPDF, downloadBandsPDF, downloadMasterContactsCSV } from "../utils/exportSpreadsheet";
 
 const AUTHORIZED_OWNER_EMAIL = "littlerusty@gmail.com";
 
@@ -115,6 +115,22 @@ export default function ExportDirectoryModal({
         downloadBandsPDF(bands, "GigLizard_Bands_Directory.pdf", userEmail);
         setDownloading(null);
         setDownloadSuccess("Bands Directory PDF downloaded successfully!");
+      }, 150);
+    } catch (err) {
+      console.error(err);
+      setDownloading(null);
+    }
+  };
+
+  const handleDownloadMasterCSV = async () => {
+    if (!isAuthorized) return;
+    try {
+      setDownloading("master-csv");
+      setDownloadSuccess(null);
+      setTimeout(() => {
+        downloadMasterContactsCSV(bands, venues, "giglizard_all_bands_and_venues_contacts.csv");
+        setDownloading(null);
+        setDownloadSuccess("Master Contacts CSV (giglizard_all_bands_and_venues_contacts.csv) downloaded successfully!");
       }, 150);
     } catch (err) {
       console.error(err);
@@ -231,6 +247,50 @@ export default function ExportDirectoryModal({
                   <>
                     <Download className="w-4 h-4 text-white" />
                     <span>Download Excel</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Option: Master Contacts CSV (All 2,557 Bands & Venues) */}
+          <div className="border-2 border-indigo-500/40 bg-gradient-to-br from-indigo-50/40 via-white to-slate-50 p-5 rounded-2xl relative overflow-hidden shadow-xs hover:border-indigo-500 transition-all">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200">
+                  <Sparkles className="w-3 h-3 text-indigo-600" />
+                  <span>Master Contacts Roster</span>
+                </div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-indigo-600" />
+                  <span>Export All 2,557 Master Contacts (CSV)</span>
+                </h3>
+                <p className="text-xs text-slate-600 max-w-md">
+                  Clean CSV file containing verified contact emails for all bands and venues, formatted with Name, Category, Email, Location (City, State), and Primary Link.
+                </p>
+                <div className="flex items-center gap-3 text-[11px] text-slate-500 pt-1">
+                  <span className="flex items-center gap-1 font-medium">
+                    <Download className="w-3 h-3 text-indigo-600" />
+                    <span>giglizard_all_bands_and_venues_contacts.csv</span>
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleDownloadMasterCSV}
+                disabled={downloading === "master-csv"}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-black text-white bg-indigo-600 hover:bg-indigo-500 active:scale-98 shadow-sm transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                id="download-master-contacts-csv-modal-btn"
+              >
+                {downloading === "master-csv" ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 text-white" />
+                    <span>Download CSV</span>
                   </>
                 )}
               </button>

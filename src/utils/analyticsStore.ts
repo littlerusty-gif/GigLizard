@@ -1,5 +1,6 @@
 // Analytics & Telemetry Storage Engine for GigLizard
 // Manages daily visits, account signups, subscriber contact directory, and platform metrics
+import { getCachedProfiles, profileToSubscriber } from "../lib/supabase";
 
 export interface DailyMetric {
   date: string; // "YYYY-MM-DD" e.g. "2026-08-29"
@@ -398,11 +399,21 @@ export function recordLiveSignup(account: any) {
   } catch (_) {}
 }
 
-// Retrieve combined subscriber list (Seeds + dynamically registered users with strict payment verification)
+// Retrieve combined subscriber list (Seeds + Supabase profiles + dynamically registered users with strict payment verification)
 export function getAllSubscribers(): SubscriberMember[] {
   let list = [...INITIAL_SUBSCRIBERS];
 
   try {
+    // 0. Check Supabase profiles cache
+    const supabaseProfiles = getCachedProfiles();
+    if (supabaseProfiles.length > 0) {
+      const supaSubs = supabaseProfiles.map(profileToSubscriber);
+      list = [
+        ...supaSubs,
+        ...list.filter(s => !supaSubs.some(c => c.contactEmail.toLowerCase() === s.contactEmail.toLowerCase()))
+      ];
+    }
+
     // 1. Check custom registered accounts
     const customSubStr = localStorage.getItem("giglizard_custom_subscribers_v1");
     if (customSubStr) {
@@ -530,4 +541,27 @@ export function buildSubscribersMailto(
   const encodedBody = encodeURIComponent(body);
 
   return `mailto:littlerusty@gmail.com?bcc=${bccList}&subject=${encodedSubject}&body=${encodedBody}`;
+}
+
+export function buildSubscribersGmailUrl(
+  subscribers: SubscriberMember[],
+  filter: "all" | "paid" | "bands" | "venues" = "all",
+  subject: string = "GigLizard Community Announcement",
+  body: string = "Hello GigLizard artists and venue partners,\n\n"
+): string {
+  let targets = subscribers;
+  if (filter === "paid") {
+    targets = subscribers.filter(s => s.isPaid);
+  } else if (filter === "bands") {
+    targets = subscribers.filter(s => s.type === "Band");
+  } else if (filter === "venues") {
+    targets = subscribers.filter(s => s.type === "Venue");
+  }
+
+  const validEmails = targets
+    .map(s => s.contactEmail.trim())
+    .filter(e => e && e.includes("@") && !e.startsWith("--"));
+
+  const bccList = validEmails.join(",");
+  return `https://mail.google.com/mail/?view=cm&fs=1&authuser=giglizard.us@gmail.com&bcc=${encodeURIComponent(bccList)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

@@ -3,6 +3,7 @@ import { INITIAL_AVAILABLE_BANDS } from "../data/availableBands";
 import { MUSIC_VENUES } from "../data/venues";
 import { isBandBanned } from "./accessControl";
 import { isValidWebUrl } from "./musicLinks";
+import { getCachedProfiles, profileToAvailableBand, profileToVenue } from "../lib/supabase";
 
 export const AUTHORIZED_OWNER_EMAIL = "littlerusty@gmail.com";
 
@@ -103,14 +104,19 @@ export function getCustomVenues(): Venue[] {
 }
 
 /**
- * Combines all available bands (initial + custom), applies owner overrides, and excludes deleted entries.
+ * Combines all available bands (initial + custom + supabase profiles), applies owner overrides, and excludes deleted entries.
  */
 export function getMergedBandsList(additionalBands?: AvailableBand[]): AvailableBand[] {
   const custom = getCustomBands();
   const overrides = getOwnerBandEdits();
   const deleted = new Set(getOwnerDeletedBandIds().map(id => id.toLowerCase()));
 
-  const allRaw = [...(additionalBands || []), ...custom, ...INITIAL_AVAILABLE_BANDS];
+  // Pull any registered bands from Supabase profiles cache
+  const supabaseBands = getCachedProfiles()
+    .filter(p => (p.type || p.role) === "Band")
+    .map(profileToAvailableBand);
+
+  const allRaw = [...(additionalBands || []), ...supabaseBands, ...custom, ...INITIAL_AVAILABLE_BANDS];
   const seen = new Set<string>();
   const result: AvailableBand[] = [];
 
@@ -152,14 +158,19 @@ export function getMergedBandsList(additionalBands?: AvailableBand[]): Available
 }
 
 /**
- * Combines all music venues (initial + custom), applies owner overrides, and excludes deleted entries.
+ * Combines all music venues (initial + custom + supabase profiles), applies owner overrides, and excludes deleted entries.
  */
 export function getMergedVenuesList(additionalVenues?: Venue[]): Venue[] {
   const custom = getCustomVenues();
   const overrides = getOwnerVenueEdits();
   const deleted = new Set(getOwnerDeletedVenueIds().map(id => id.toLowerCase()));
 
-  const allRaw = [...(additionalVenues || []), ...custom, ...MUSIC_VENUES];
+  // Pull any registered venues from Supabase profiles cache
+  const supabaseVenues = getCachedProfiles()
+    .filter(p => (p.type || p.role) === "Venue")
+    .map(profileToVenue);
+
+  const allRaw = [...(additionalVenues || []), ...supabaseVenues, ...custom, ...MUSIC_VENUES];
   const seen = new Set<string>();
   const result: Venue[] = [];
 
@@ -241,6 +252,12 @@ export function isEmailAlreadyRegistered(rawEmail?: string): boolean {
     }
   } catch (e) {
     console.error("Error checking user_custom_passwords_v1:", e);
+  }
+
+  // 3b. Check Supabase profiles cache
+  const supabaseProfiles = getCachedProfiles();
+  if (supabaseProfiles.some(p => normalizeEmail(p.contact_email || p.email) === normalized)) {
+    return true;
   }
 
   // 4. Check custom registered bands in localStorage

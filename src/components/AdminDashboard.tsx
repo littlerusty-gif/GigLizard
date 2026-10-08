@@ -4,7 +4,6 @@ import {
   getAnalyticsData, 
   getAllSubscribers, 
   generateSubscribersCSV, 
-  buildSubscribersMailto,
   SubscriberMember,
   DailyMetric
 } from "../utils/analyticsStore";
@@ -39,7 +38,8 @@ import AdminBandManager from "./AdminBandManager";
 import AdminVenueManager from "./AdminVenueManager";
 import ExportDirectoryModal from "./ExportDirectoryModal";
 import { getMergedBandsList, getMergedVenuesList } from "../utils/directoryStore";
-import { downloadSubscribersExcel } from "../utils/exportSpreadsheet";
+import { downloadSubscribersExcel, downloadMasterContactsCSV } from "../utils/exportSpreadsheet";
+import { fetchProfiles, profileToSubscriber } from "../lib/supabase";
 
 interface AdminDashboardProps {
   currentAccount: UserAccount | null;
@@ -90,36 +90,52 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
       return;
     }
 
-    const rawData = getAnalyticsData();
-    setMetrics(rawData);
-    setSubscribers(getAllSubscribers());
+    let isMounted = true;
+
+    const loadSubscribersData = async () => {
+      const rawData = getAnalyticsData();
+      if (isMounted) setMetrics(rawData);
+
+      // 1. Load initial combined subscribers list
+      const initialSubs = getAllSubscribers();
+      if (isMounted) setSubscribers(initialSubs);
+
+      // 2. Query live database records directly from Supabase profiles table
+      try {
+        const liveProfiles = await fetchProfiles();
+        if (liveProfiles && liveProfiles.length > 0 && isMounted) {
+          const liveSubs = liveProfiles.map(profileToSubscriber);
+          const merged = [
+            ...liveSubs,
+            ...initialSubs.filter(s => !liveSubs.some(ls => ls.contactEmail.toLowerCase() === s.contactEmail.toLowerCase()))
+          ];
+          setSubscribers(merged);
+        }
+      } catch (err) {
+        console.warn("Could not query live Supabase subscriber profiles:", err);
+      }
+    };
+
+    loadSubscribersData();
 
     const onSubsUpdate = () => {
-      setSubscribers(getAllSubscribers());
-      setMetrics(getAnalyticsData());
+      loadSubscribersData();
     };
     window.addEventListener("giglizard_subscribers_updated", onSubsUpdate);
-    return () => window.removeEventListener("giglizard_subscribers_updated", onSubsUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("giglizard_subscribers_updated", onSubsUpdate);
+    };
   }, [refreshKey, isOwnerLoggedIn, unlockSuccess]);
 
-  // Actual directory counts & stats computed dynamically from data
+  // Actual directory counts & stats computed dynamically from merged data (including Supabase)
   const actualBandsCount = useMemo(() => {
-    try {
-      const custom = JSON.parse(localStorage.getItem("custom_available_bands_v1") || "[]");
-      return INITIAL_AVAILABLE_BANDS.length + (Array.isArray(custom) ? custom.length : 0);
-    } catch {
-      return INITIAL_AVAILABLE_BANDS.length;
-    }
-  }, [refreshKey]);
+    return allBands.length;
+  }, [allBands]);
 
   const actualVenuesCount = useMemo(() => {
-    try {
-      const custom = JSON.parse(localStorage.getItem("custom_venues_v1") || "[]");
-      return MUSIC_VENUES.length + (Array.isArray(custom) ? custom.length : 0);
-    } catch {
-      return MUSIC_VENUES.length;
-    }
-  }, [refreshKey]);
+    return allVenues.length;
+  }, [allVenues]);
 
   const actualReviewsStats = useMemo(() => {
     const reviews = getAllReviews();
@@ -248,9 +264,35 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
     });
   }, [subscribers, subscriberFilter, searchSubscriber]);
 
-  // Export CSV handler
-  const handleExportCSV = () => {
-    const csvContent = generateSubscribersCSV(filteredSubscribers);
+  // Export CSV handler with live Supabase registrations
+  const handleExportCSV = async () => {
+    let exportList = [...filteredSubscribers];
+    try {
+      const liveProfiles = await fetchProfiles();
+      if (liveProfiles && liveProfiles.length > 0) {
+        const liveSubs = liveProfiles.map(profileToSubscriber);
+        const mergedAll = [
+          ...liveSubs,
+          ...subscribers.filter(s => !liveSubs.some(ls => ls.contactEmail.toLowerCase() === s.contactEmail.toLowerCase()))
+        ];
+        exportList = mergedAll.filter(s => {
+          if (subscriberFilter === "paid" && !s.isPaid) return false;
+          if (subscriberFilter === "free" && s.isPaid) return false;
+          if (subscriberFilter === "bands" && s.type !== "Band") return false;
+          if (subscriberFilter === "venues" && s.type !== "Venue") return false;
+          if (searchSubscriber.trim()) {
+            const query = searchSubscriber.toLowerCase();
+            const matchesName = s.name.toLowerCase().includes(query);
+            const matchesEmail = s.contactEmail.toLowerCase().includes(query);
+            const matchesCity = s.city.toLowerCase().includes(query);
+            if (!matchesName && !matchesEmail && !matchesCity) return false;
+          }
+          return true;
+        });
+      }
+    } catch (_) {}
+
+    const csvContent = generateSubscribersCSV(exportList);
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -274,20 +316,59 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
     setTimeout(() => setCopiedEmails(false), 3000);
   };
 
+  // Open Gmail compose in a new browser tab with filtered subscriber emails in BCC
+  const handleLaunchGmail = () => {
+    const validEmails = filteredSubscribers
+      .map(s => s.contactEmail.trim())
+      .filter(e => e && e.includes("@") && !e.startsWith("--"));
+    const bccList = validEmails.join(",");
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&authuser=giglizard.us@gmail.com&bcc=${encodeURIComponent(bccList)}&su=${encodeURIComponent(broadcastSubject)}&body=${encodeURIComponent(broadcastBody)}`;
+    window.open(url, '_blank');
+  };
+
   // Export All Subscribers as downloadable Excel spreadsheet (.xlsx) - strictly for littlerusty@gmail.com
-  const handleExportSubscribersExcel = () => {
-    if (!isOwnerLoggedIn) {
+  const handleExportSubscribersExcel = async () => {
+    if (!isOwnerLoggedIn && !unlockSuccess) {
       alert(`Unauthorized: Subscribers export is restricted strictly to ${AUTHORIZED_OWNER_EMAIL}.`);
       return;
     }
     try {
+      let exportList = [...subscribers];
+      try {
+        const liveProfiles = await fetchProfiles();
+        if (liveProfiles && liveProfiles.length > 0) {
+          const liveSubs = liveProfiles.map(profileToSubscriber);
+          exportList = [
+            ...liveSubs,
+            ...exportList.filter(s => !liveSubs.some(ls => ls.contactEmail.toLowerCase() === s.contactEmail.toLowerCase()))
+          ];
+        }
+      } catch (_) {}
+
       downloadSubscribersExcel(
-        subscribers, 
+        exportList, 
         `GigLizard_All_Subscribers_${new Date().toISOString().split("T")[0]}.xlsx`,
-        currentAccount?.contactEmail
+        currentAccount?.contactEmail || AUTHORIZED_OWNER_EMAIL
       );
     } catch (err: any) {
       alert(err?.message || "Failed to export subscribers spreadsheet.");
+    }
+  };
+
+  // Export All 2,557 Master Contacts (Bands & Venues with valid emails) as CSV
+  const handleExportMasterContacts = () => {
+    try {
+      // Re-fetch the latest bands and venues from the directory store to ensure an updated list any time
+      const latestBands = getMergedBandsList();
+      const latestVenues = getMergedVenuesList();
+      downloadMasterContactsCSV(
+        latestBands, 
+        latestVenues, 
+        "giglizard_all_bands_and_venues_contacts.csv"
+      );
+    } catch (err: any) {
+      console.error("Failed to export master contacts CSV:", err);
+      alert(err?.message || "Failed to export master contacts CSV.");
     }
   };
 
@@ -448,7 +529,7 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            {isOwnerLoggedIn && (
+            {(isOwnerLoggedIn || unlockSuccess) && (
               <button
                 type="button"
                 onClick={() => setShowExportModal(true)}
@@ -461,6 +542,19 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
               </button>
             )}
 
+            {(isOwnerLoggedIn || unlockSuccess) && (
+              <button
+                type="button"
+                onClick={handleExportMasterContacts}
+                id="owner-export-master-contacts-csv-btn"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                title="Download updated CSV of all 2,557 master band and venue contacts with valid email addresses"
+              >
+                <Download className="w-4 h-4 text-white" />
+                <span>Export All 2,557 Master Contacts (CSV)</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setRefreshKey(k => k + 1)}
@@ -470,7 +564,7 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
               <span>Refresh Live Data</span>
             </button>
 
-            {isOwnerLoggedIn && (
+            {(isOwnerLoggedIn || unlockSuccess) && (
               <button
                 type="button"
                 onClick={handleExportSubscribersExcel}
@@ -902,15 +996,16 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
 
           {/* Action Links & Export tools */}
           <div className="flex flex-wrap items-center gap-2">
-            <a
-              href={buildSubscribersMailto(filteredSubscribers, "all", broadcastSubject, broadcastBody)}
+            <button
+              type="button"
+              onClick={handleLaunchGmail}
               className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
               id="btn-direct-email-all"
-              title="Opens default email client with all filtered emails in BCC"
+              title="Opens Gmail compose in a new tab with all filtered emails in BCC"
             >
               <Send className="w-3.5 h-3.5 text-white" />
               <span>Launch Email to Filtered List</span>
-            </a>
+            </button>
 
             <button
               type="button"
@@ -931,7 +1026,7 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
               )}
             </button>
 
-            {isOwnerLoggedIn && (
+            {(isOwnerLoggedIn || unlockSuccess) && (
               <button
                 type="button"
                 onClick={handleExportSubscribersExcel}
@@ -941,6 +1036,19 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-white" />
                 <span>Export All Subscribers (.xlsx)</span>
+              </button>
+            )}
+
+            {(isOwnerLoggedIn || unlockSuccess) && (
+              <button
+                type="button"
+                onClick={handleExportMasterContacts}
+                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                id="btn-download-master-contacts-csv"
+                title="Download updated CSV of all 2,557 master band and venue contacts with valid email addresses"
+              >
+                <Download className="w-3.5 h-3.5 text-white" />
+                <span>Export All 2,557 Master Contacts (CSV)</span>
               </button>
             )}
 
@@ -990,7 +1098,7 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
                   const val = e.target.value;
                   if (val === "tour") {
                     setBroadcastSubject("GigLizard: Plan your next regional tour with AI Routing");
-                    setBroadcastBody(`Hello Artists & Bookers,\n\nWe just launched the GigLizard Smart Tour Planner! You can now map out multi-city routes, estimate gas costs, and match indie venues in seconds.\n\nTry it free today:\nhttps://giglizard.com#tour\n\nBest,\nRusty (littlerusty@gmail.com)`);
+                    setBroadcastBody(`Hello Artists & Bookers,\n\nWe just launched the GigLizard Smart Tour Planner! You can now map out multi-city routes, estimate gas costs, and match indie venues in seconds.\n\nTry it free today:\nhttps://giglizard.com#tour\n\nBest,\nRusty (giglizard.us@gmail.com)`);
                   } else if (val === "renewal") {
                     setBroadcastSubject("GigLizard: 30-Day Venue All-Access Pass Renewal Notice");
                     setBroadcastBody(`Hi there,\n\nYour 30-Day Venue All-Access Pass is keeping your booking pipeline full! Renew or check upcoming gigs in your city here:\nhttps://giglizard.com#venues\n\nThanks for supporting independent live music!`);
@@ -1022,15 +1130,18 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
 
           <div className="flex items-center justify-between pt-1">
             <span className="text-[11px] text-slate-500">
-              Sender will be: <strong className="text-slate-800">{AUTHORIZED_OWNER_EMAIL}</strong>
+              Sender will be: <strong className="text-slate-800">giglizard.us@gmail.com</strong>
             </span>
-            <a
-              href={buildSubscribersMailto(filteredSubscribers, "all", broadcastSubject, broadcastBody)}
-              className="py-2 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm"
+            <button
+              type="button"
+              onClick={handleLaunchGmail}
+              className="py-2 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+              id="btn-send-broadcast"
+              title="Opens Gmail compose in a new tab"
             >
               <Send className="w-3.5 h-3.5 text-amber-400" />
-              <span>Send Broadcast (Opens Default Mail Client)</span>
-            </a>
+              <span>Send Broadcast</span>
+            </button>
           </div>
         </div>
 

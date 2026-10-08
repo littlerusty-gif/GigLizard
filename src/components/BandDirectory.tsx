@@ -24,6 +24,7 @@ import {
   isBandBanned
 } from "../utils/accessControl";
 import { getOwnerBandEdits, getOwnerDeletedBandIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
+import { fetchProfiles, profileToAvailableBand } from "../lib/supabase";
 
 interface BandDirectoryProps {
   onUpdateAvailableBands?: (bands: AvailableBand[]) => void;
@@ -182,8 +183,19 @@ export default function BandDirectory({
           userBandList = [userBandObj];
         }
 
-        // Deduplicate prioritizing newly registered/user bands at the top and filtering out banned bands
-        const rawMerged = [...userBandList, ...customList, ...rawApiBands].filter(b => !isBandBanned(b?.contactEmail, b?.name));
+        // Query live registered profiles from Supabase profiles table
+        let supabaseBands: AvailableBand[] = [];
+        try {
+          const profiles = await fetchProfiles();
+          supabaseBands = profiles
+            .filter(p => (p.type || p.role) === "Band" && !isBandBanned(p.contact_email || p.email, p.name))
+            .map(profileToAvailableBand);
+        } catch (err) {
+          console.warn("Could not load Supabase band profiles:", err);
+        }
+
+        // Deduplicate prioritizing newly registered/user bands and Supabase records at the top and filtering out banned bands
+        const rawMerged = [...userBandList, ...supabaseBands, ...customList, ...rawApiBands].filter(b => !isBandBanned(b?.contactEmail, b?.name));
         const deletedIds = new Set(getOwnerDeletedBandIds());
         const ownerEdits = getOwnerBandEdits();
 

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { PosterConfig, SloganProposal } from "../types";
+import { INITIAL_AVAILABLE_BANDS } from "../data/availableBands";
 import { 
   Sparkles, Image, RefreshCw, Layers, CheckSquare, Wine, UtensilsCrossed, 
   Calendar, DollarSign, MapPin, Eye, Wand2, Check, Download, Truck, Printer, 
-  CreditCard, ShoppingBag, ArrowLeft 
+  CreditCard, ShoppingBag, ArrowLeft, Users
 } from "lucide-react";
 import html2canvas from "html2canvas";
 
@@ -695,9 +696,59 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
               />
             </div>
 
+            {/* Supporting Acts (Appears under the headlining act) */}
+            <div id="field-wrap-supporting-acts" className="bg-indigo-50/40 p-3 rounded-lg border border-indigo-100/60 space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-indigo-600" />
+                  Supporting Acts / Openers
+                </label>
+                {config.supportingActs && (
+                  <button
+                    type="button"
+                    onClick={() => handleFieldChange("supportingActs", "")}
+                    className="text-[9.5px] text-gray-400 hover:text-rose-600 transition-colors cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                id="field-poster-supportingActs"
+                value={config.supportingActs || ""}
+                onChange={(e) => handleFieldChange("supportingActs", e.target.value)}
+                placeholder="E.g., WITH SPECIAL GUESTS: THE STATIC VEIL • COPPERHEAD"
+                className="w-full text-xs p-2.5 bg-white border border-indigo-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-800"
+              />
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[9px] text-indigo-600 font-bold">Quick suggestions:</span>
+                {["with Special Guests", "plus Support from", "w/ The Static Veil", "w/ Dr Hadit", "w/ Dead City Sound"].map((hint, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      const current = (config.supportingActs || "").trim();
+                      if (!current) {
+                        handleFieldChange("supportingActs", hint);
+                      } else if (!current.toLowerCase().includes(hint.toLowerCase())) {
+                        handleFieldChange("supportingActs", `${current} • ${hint}`);
+                      }
+                    }}
+                    className="text-[9.5px] px-2 py-0.5 bg-white hover:bg-indigo-100/70 border border-indigo-200/60 rounded-full text-indigo-700 transition-colors cursor-pointer"
+                  >
+                    + {hint}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[9px] text-gray-400 italic">
+                *Appears directly beneath the headliner on the printed concert poster.
+              </p>
+            </div>
+
             <div id="field-wrap-tagline">
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Slogan / Supporting Acts Tagline
+                Header Slogan / Tour Subtitle
               </label>
               <div className="flex gap-2" id="tagline-with-ai-btn">
                 <input
@@ -705,7 +756,7 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                   id="field-poster-secondaryText"
                   value={config.secondaryText}
                   onChange={(e) => handleFieldChange("secondaryText", e.target.value)}
-                  placeholder="E.g., ON TOUR NOW / PLUS SPECIAL GUESTS"
+                  placeholder="E.g., ON TOUR NOW / PACIFIC NORTHWEST TOUR"
                   className="flex-grow text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
                 <button
@@ -985,13 +1036,20 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                   id="concert-poster-frame-mini"
                   className={`w-[320px] min-h-[490px] border border-gray-950 rounded-2xl shadow-xl p-6 flex flex-col justify-between text-center relative ${c.frame}`}
                 >
-                  <div className="space-y-4 pt-4 z-10">
+                  <div className="space-y-2 pt-4 z-10">
                     <h5 className={`text-[10px] uppercase font-black tracking-widest ${c.tagline}`}>
                       {config.secondaryText || "ON TOUR NOW / SPECIAL GUESTS"}
                     </h5>
                     <h1 className={`leading-none font-bold select-all tracking-tighter ${c.bandName}`}>
                       {config.bandName || "GENERIC HEADLINER BAND"}
                     </h1>
+                    {config.supportingActs && (
+                      <div className="pt-0.5">
+                        <span className={`text-[9.5px] uppercase font-bold tracking-wider opacity-90 inline-block px-2 py-0.5 rounded-sm ${c.tagline}`}>
+                          {config.supportingActs}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-3 py-4 z-10">
@@ -1682,7 +1740,7 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
             )}
 
             {/* Top details card info */}
-            <div className="space-y-4 pt-4 z-10" id="poster-layout-top">
+            <div className="space-y-3 pt-4 z-10" id="poster-layout-top">
               {/* Supporting Tagline / Tour subtitle */}
               <h5 className={`text-[10px] uppercase font-black tracking-widest ${c.tagline}`} id="poster-tagline-preview">
                 {config.secondaryText || "ON TOUR NOW / SPECIAL GUESTS"}
@@ -1692,6 +1750,25 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
               <h1 className={`leading-none font-bold select-all tracking-tighter ${c.bandName}`} id="poster-band-preview">
                 {config.bandName || "GENERIC HEADLINER BAND"}
               </h1>
+
+              {/* Supporting Acts / Openers appearing under the headlining act */}
+              {config.supportingActs && (
+                <div className="pt-1" id="poster-supporting-acts-preview">
+                  <div className={`inline-block px-3 py-1 text-xs md:text-sm font-black uppercase tracking-wider ${
+                    config.themeId === "punk-diy"
+                      ? "bg-black text-yellow-300 font-mono transform -rotate-1 border border-black"
+                      : config.themeId === "metal-hellfire"
+                      ? "text-red-400 font-sans tracking-widest border-t border-b border-red-950/80 py-1"
+                      : config.themeId === "retro-neon"
+                      ? "text-cyan-300 font-mono border-b border-pink-500/50"
+                      : config.themeId === "indie-minimal"
+                      ? "text-slate-600 font-mono tracking-widest text-[11px]"
+                      : `${c.tagline} opacity-95`
+                  }`}>
+                    {config.supportingActs}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Mid details (Main Venue details and graphic representations) */}

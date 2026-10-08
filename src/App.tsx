@@ -15,6 +15,7 @@ import PayPalAccessModal from "./components/PayPalAccessModal";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
 import { isBandBanned, isPerpetualPassEmail } from "./utils/accessControl";
+import { insertProfile } from "./lib/supabase";
 import { 
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
@@ -289,6 +290,29 @@ export default function App() {
         console.warn("Could not sync venue registration to directory:", err);
       }
     }
+
+    // Always ensure profile record is written into Supabase profiles table
+    insertProfile({
+      name: account.name,
+      contact_email: account.contactEmail,
+      email: account.contactEmail,
+      type: account.type,
+      role: account.type,
+      city: account.city,
+      genre: account.genre,
+      bio: account.bio,
+      capacity: account.capacity,
+      address: account.address,
+      contact_phone: account.contactPhone,
+      website: account.website,
+      epk_url: account.epkUrl,
+      music_url: account.musicUrl,
+      experience_level: account.experienceLevel,
+      has_pa: account.hasPA,
+      has_lighting: account.hasLighting,
+      is_premium: account.isPremium,
+      password: account.password
+    }).catch(err => console.warn("Supabase profile sync error in App.tsx:", err));
   };
 
   const handleUpdatePricing = (isPremium: boolean) => {
@@ -340,6 +364,7 @@ export default function App() {
   // Concert poster config
   const [posterConfig, setPosterConfig] = useState<PosterConfig>({
     bandName: INITIAL_BAND_PROFILE.name.toUpperCase(),
+    supportingActs: "WITH SPECIAL GUESTS: THE STATIC VEIL • COPPERHEAD",
     secondaryText: "LIVE ON STAGE",
     venueName: "The Subterranean Cellar",
     venueAddress: "412 Pike St, Seattle, WA 98101",

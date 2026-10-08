@@ -15,6 +15,7 @@ import { isAccessActive, getAccessStatusDetails, isBandBanned, isPerpetualPassEm
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { resolveBandMusicLinks, categorizeUserMusicLink } from "../utils/musicLinks";
 import { isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
+import { insertProfile } from "../lib/supabase";
 
 interface HomeProps {
   currentAccount: UserAccount | null;
@@ -35,7 +36,7 @@ export default function Home({
   onLogOut,
   onTriggerEditAccount 
 }: HomeProps) {
-  const [accountType, setAccountType] = useState<"Band" | "Venue">("Band");
+  const [accountType, setAccountType] = useState<"Band" | "Venue" | "Sound Engineer">("Band");
   const [successMessage, setSuccessMessage] = useState("");
   const [registerError, setRegisterError] = useState("");
   const [registeredSuccessAccount, setRegisteredSuccessAccount] = useState<UserAccount | null>(null);
@@ -419,6 +420,13 @@ export default function Home({
         alert(msg);
         return;
       }
+    } else if (accountType === "Sound Engineer") {
+      if (!formData.name.trim() || !formData.city.trim() || !normalizedEmail || !formData.password) {
+        const msg = "Please fill in the required fields: Audio Tech Name, Base City, Contact Email, and Account Password.";
+        setRegisterError(msg);
+        alert(msg);
+        return;
+      }
     } else {
       if (!formData.name.trim() || !formData.city.trim() || !normalizedEmail || !formData.password) {
         const msg = "Please fill in the required fields: Band Name, Hometown, Booking Email, and Account Password.";
@@ -468,21 +476,21 @@ export default function Home({
       city: formData.city.trim(),
       isPremium: false,
       contactEmail: normalizedEmail,
-      genre: formData.genre || (accountType === "Band" ? "Alternative Rock" : "Live Music"),
-      bio: formData.bio || (accountType === "Band" ? "Performing live music with enthusiasm." : "A gorgeous live music environment."),
+      genre: formData.genre || (accountType === "Band" ? "Alternative Rock" : (accountType === "Venue" ? "Live Music" : "Front of House (FOH) / Audio Tech")),
+      bio: formData.bio || (accountType === "Band" ? "Performing live music with enthusiasm." : (accountType === "Venue" ? "A gorgeous live music environment." : "Live sound engineer ready for tour & club dates.")),
       capacity: accountType === "Venue" ? Number(formData.capacity) || 150 : undefined,
       address: accountType === "Venue" ? formData.address.trim() : undefined,
       contactPhone: formData.contactPhone || undefined,
       website: formData.website || undefined,
       epkUrl: epkUrl || undefined,
       musicUrl: musicUrl || undefined,
-      experienceLevel: accountType === "Band" ? formData.experienceLevel : undefined,
+      experienceLevel: (accountType === "Band" || accountType === "Sound Engineer") ? formData.experienceLevel : undefined,
       hasPA: accountType === "Venue" ? formData.hasPA : undefined,
       hasLighting: accountType === "Venue" ? formData.hasLighting : undefined,
       password: formData.password
     };
 
-    // Auto-inject into venues or available bands in localStorage to preserve seamless functional mechanics
+    // Auto-inject into venues, available bands, or sound engineers in localStorage & Supabase
     if (accountType === "Venue") {
       const saved = localStorage.getItem("custom_venues_v1");
       let list: Venue[] = [];
@@ -511,6 +519,46 @@ export default function Home({
       };
       const updatedVenues = [newVenue, ...list.filter(v => v.name.toLowerCase() !== newVenue.name.toLowerCase() && normalizeEmail(v.contactEmail) !== normalizedEmail)];
       localStorage.setItem("custom_venues_v1", JSON.stringify(updatedVenues));
+
+      // Write record into Supabase profiles table
+      insertProfile({
+        id: newVenue.id,
+        name: newVenue.name,
+        email: normalizedEmail,
+        contact_email: normalizedEmail,
+        type: "Venue",
+        role: "Venue",
+        city: newVenue.city,
+        address: newVenue.address,
+        capacity: newVenue.capacity,
+        genre: formData.genre || "Live Music",
+        genres: processedGenres,
+        bio: newVenue.description,
+        website: newVenue.website,
+        contact_phone: newVenue.contactPhone,
+        has_pa: newVenue.hasPA,
+        has_lighting: newVenue.hasLighting,
+        password: formData.password,
+        is_premium: false
+      }).catch(err => console.warn("Supabase profile insert error:", err));
+    } else if (accountType === "Sound Engineer") {
+      // Write Sound Engineer record into Supabase profiles table
+      insertProfile({
+        id: `engineer-reg-${Date.now()}`,
+        name: payload.name,
+        email: normalizedEmail,
+        contact_email: normalizedEmail,
+        type: "Sound Engineer",
+        role: "Sound Engineer",
+        city: payload.city,
+        genre: payload.genre,
+        bio: payload.bio,
+        contact_phone: payload.contactPhone,
+        website: payload.website,
+        experience_level: payload.experienceLevel,
+        password: formData.password,
+        is_premium: false
+      }).catch(err => console.warn("Supabase profile insert error:", err));
     } else {
       const saved = localStorage.getItem("custom_available_bands_v1");
       let list: AvailableBand[] = [];
@@ -548,6 +596,27 @@ export default function Home({
 
       const updatedBands = [newBand, ...list.filter(b => b.name.toLowerCase() !== newBand.name.toLowerCase() && normalizeEmail(b.contactEmail) !== normalizedEmail)];
       localStorage.setItem("custom_available_bands_v1", JSON.stringify(updatedBands));
+
+      // Write record into Supabase profiles table
+      insertProfile({
+        id: newBand.id,
+        name: newBand.name,
+        email: normalizedEmail,
+        contact_email: normalizedEmail,
+        type: "Band",
+        role: "Band",
+        city: newBand.city,
+        genre: formData.genre || "Rock",
+        genres: processedGenres,
+        bio: newBand.bio,
+        website: newBand.website,
+        epk_url: newBand.epkUrl,
+        music_url: newBand.musicUrl,
+        contact_phone: newBand.contactPhone,
+        experience_level: newBand.experienceLevel,
+        password: formData.password,
+        is_premium: false
+      }).catch(err => console.warn("Supabase profile insert error:", err));
     }
 
     onRegisterAccount(payload);
@@ -1000,7 +1069,11 @@ export default function Home({
                 <CheckCircle className="w-9 h-9 text-emerald-600" />
               </div>
               <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                {registeredSuccessAccount.type === "Band" ? "Band Successfully Registered! 🎉" : "Venue Successfully Registered! 🎉"}
+                {registeredSuccessAccount.type === "Band"
+                  ? "Band Successfully Registered! 🎉"
+                  : registeredSuccessAccount.type === "Venue"
+                  ? "Venue Successfully Registered! 🎉"
+                  : "Sound Engineer Successfully Registered! 🎉"}
               </h3>
               <p className="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto">
                 Welcome, <strong className="text-slate-800">{registeredSuccessAccount.name}</strong>. Your profile is now saved and active in the directory.
@@ -1319,7 +1392,7 @@ export default function Home({
             </p>
           </div>
 
-          <div className="flex items-center justify-center p-1 bg-slate-100 rounded-xl max-w-sm mx-auto" id="form-role-selectors">
+          <div className="flex items-center justify-center p-1 bg-slate-100 rounded-xl max-w-md mx-auto gap-1" id="form-role-selectors">
             <button
               type="button"
               className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
@@ -1331,7 +1404,7 @@ export default function Home({
               }}
             >
               <Users className="w-3.5 h-3.5" />
-              Band Representative
+              Band
             </button>
             <button
               type="button"
@@ -1344,7 +1417,20 @@ export default function Home({
               }}
             >
               <Building className="w-3.5 h-3.5" />
-              Venue Owner / Booker
+              Venue
+            </button>
+            <button
+              type="button"
+              className={`flex-1 py-2 text-xs font-black rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                accountType === "Sound Engineer" ? "bg-white text-amber-700 shadow-xs" : "text-gray-500 hover:text-gray-800"
+              }`}
+              onClick={() => {
+                setAccountType("Sound Engineer");
+                setRegisterError("");
+              }}
+            >
+              <Headphones className="w-3.5 h-3.5" />
+              Sound Engineer
             </button>
           </div>
 
@@ -1520,6 +1606,124 @@ export default function Home({
                   </div>
                 </div>
               </div>
+            ) : accountType === "Sound Engineer" ? (
+              /* Sound Engineer / Audio Tech Profile Questions */
+              <div className="space-y-4" id="engineer-form-fields-container">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-700 font-bold mb-1">Audio Engineer / Tech Name <span className="text-rose-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="E.g., Alex Vance Audio"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-bold mb-1">Base City & State <span className="text-rose-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="E.g., Seattle, WA"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-700 font-bold mb-1">Disciplines / Specialties</label>
+                    <input
+                      type="text"
+                      placeholder="E.g., Front of House (FOH), Monitors, Studio, Live Recording"
+                      value={formData.genre}
+                      onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-bold mb-1">Touring / Experience Scope</label>
+                    <select
+                      value={formData.experienceLevel}
+                      onChange={(e) => setFormData({ ...formData, experienceLevel: e.target.value as any })}
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    >
+                      <option value="Local">Local Clubs & Venues</option>
+                      <option value="Regional Tour">Regional Touring Tech</option>
+                      <option value="National Act">National / Arena Tour Tech</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-bold mb-1">Bio / Consoles & Gear Experience</label>
+                  <textarea
+                    placeholder="Describe your mixing experience, favorite digital/analog boards (Midas, Behringer X32/Wing, Yamaha, Allen & Heath), mic packages..."
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[70px] bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-gray-700 font-bold mb-1">Contact Email <span className="text-rose-500">*</span></label>
+                    <input
+                      type="email"
+                      required
+                      autoComplete="off"
+                      placeholder="E.g., audio@alexvancesound.com"
+                      value={formData.contactEmail}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactEmail: e.target.value });
+                        if (registerError) setRegisterError("");
+                      }}
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-bold mb-1">Account Password <span className="text-rose-500">*</span></label>
+                    <input
+                      type="password"
+                      required
+                      autoComplete="new-password"
+                      placeholder="Min 4 characters"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-bold mb-1">Contact Phone</label>
+                    <input
+                      type="text"
+                      placeholder="E.g., (206) 555-4321"
+                      value={formData.contactPhone}
+                      onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-bold mb-1">Portfolio / Credits Link</label>
+                    <input
+                      type="text"
+                      placeholder="E.g., www.alexsoundportfolio.com"
+                      value={formData.website}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
             ) : (
               /* Band Representative Profile Questions - Matching BandDirectory.tsx */
               <div className="space-y-4" id="band-form-fields-container">
@@ -1662,7 +1866,7 @@ export default function Home({
                 className="w-full sm:w-auto py-3.5 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-md cursor-pointer transition-all border-0 text-sm inline-flex items-center justify-center gap-2"
                 id="btn-confirm-registration"
               >
-                <span>Register Free {accountType === "Band" ? "Band" : "Venue"} Account</span>
+                <span>Register Free {accountType} Account</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

@@ -10,6 +10,7 @@ import ReviewsModal from "./ReviewsModal";
 import { getRatingStats } from "../utils/reviewsManager";
 import { sanitizeInputText, escapeRegexSpecial, detectAutomatedBot, checkRapidHarvestingAttempt } from "../utils/antiScrape";
 import { getOwnerVenueEdits, getOwnerDeletedVenueIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
+import { fetchProfiles, profileToVenue, getCachedProfiles } from "../lib/supabase";
 
 interface VenueDirectoryProps {
   onSelectVenueForPoster: (venue: Venue) => void;
@@ -74,91 +75,93 @@ export default function VenueDirectory({
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("custom_venues_v1");
+    let isMounted = true;
 
-    let customList: Venue[] = [];
-    if (saved) {
+    const loadVenues = async () => {
+      const saved = localStorage.getItem("custom_venues_v1");
+
+      let customList: Venue[] = [];
+      if (saved) {
+        try {
+          customList = JSON.parse(saved);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // Query live registered venue profiles from Supabase
+      let supabaseVenues: Venue[] = [];
       try {
-        customList = JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
-      }
-    }
+        const cached = getCachedProfiles()
+          .filter(p => (p.type || p.role) === "Venue")
+          .map(profileToVenue);
+        supabaseVenues = cached;
 
-    let userVenueList: Venue[] = [];
-    if (currentAccount && currentAccount.type === "Venue" && currentAccount.name) {
-      const userVenueObj: Venue = {
-        id: `venue-user-${currentAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
-        name: currentAccount.name,
-        capacity: currentAccount.capacity || 150,
-        address: currentAccount.address || "123 Music Ave",
-        city: currentAccount.city || "Seattle, WA",
-        genres: currentAccount.genre ? currentAccount.genre.split(",").map(g => g.trim()).filter(Boolean) : ["Live Music"],
-        contactEmail: currentAccount.contactEmail || "",
-        contactPhone: currentAccount.contactPhone || "Inquire",
-        description: currentAccount.bio || "Live music performance space.",
-        website: currentAccount.website || "www.inquire-booking.com",
-        hasPA: currentAccount.hasPA ?? true,
-        hasLighting: currentAccount.hasLighting ?? true
-      };
-      userVenueList = [userVenueObj];
-    }
-
-    const rawMerged = [...userVenueList, ...customList, ...MUSIC_VENUES];
-    const deletedIds = new Set(getOwnerDeletedVenueIds());
-    const ownerEdits = getOwnerVenueEdits();
-
-    const seenNames = new Set<string>();
-    const deduplicatedVenues: Venue[] = [];
-    for (let v of rawMerged) {
-      const key = v.name?.trim().toLowerCase();
-      if (deletedIds.has(v.id) || (key && deletedIds.has(key))) {
-        continue;
+        const liveProfiles = await fetchProfiles();
+        if (isMounted) {
+          supabaseVenues = liveProfiles
+            .filter(p => (p.type || p.role) === "Venue")
+            .map(profileToVenue);
+        }
+      } catch (err) {
+        console.warn("Could not load Supabase venue profiles:", err);
       }
-      if (ownerEdits[v.id]) {
-        v = { ...v, ...ownerEdits[v.id] };
-      } else if (key && ownerEdits[key]) {
-        v = { ...v, ...ownerEdits[key] };
-      }
-      if (key && !seenNames.has(key)) {
-        seenNames.add(key);
-        deduplicatedVenues.push(v);
-      }
-    }
 
-    setVenues(deduplicatedVenues);
-
-    const onVenuesUpdated = () => {
-      const updatedSaved = localStorage.getItem("custom_venues_v1");
-      let updatedCustom: Venue[] = [];
-      if (updatedSaved) {
-        try { updatedCustom = JSON.parse(updatedSaved); } catch (_) {}
+      let userVenueList: Venue[] = [];
+      if (currentAccount && currentAccount.type === "Venue" && currentAccount.name) {
+        const userVenueObj: Venue = {
+          id: `venue-user-${currentAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
+          name: currentAccount.name,
+          capacity: currentAccount.capacity || 150,
+          address: currentAccount.address || "123 Music Ave",
+          city: currentAccount.city || "Seattle, WA",
+          genres: currentAccount.genre ? currentAccount.genre.split(",").map(g => g.trim()).filter(Boolean) : ["Live Music"],
+          contactEmail: currentAccount.contactEmail || "",
+          contactPhone: currentAccount.contactPhone || "Inquire",
+          description: currentAccount.bio || "Live music performance space.",
+          website: currentAccount.website || "www.inquire-booking.com",
+          hasPA: currentAccount.hasPA ?? true,
+          hasLighting: currentAccount.hasLighting ?? true
+        };
+        userVenueList = [userVenueObj];
       }
-      const updatedMerged = [...userVenueList, ...updatedCustom, ...MUSIC_VENUES];
-      const updatedDelIds = new Set(getOwnerDeletedVenueIds());
-      const updatedEdits = getOwnerVenueEdits();
-      const updatedSeen = new Set<string>();
-      const updatedList: Venue[] = [];
-      for (let uv of updatedMerged) {
-        const ukey = uv.name?.trim().toLowerCase();
-        if (updatedDelIds.has(uv.id) || (ukey && updatedDelIds.has(ukey))) {
+
+      const rawMerged = [...userVenueList, ...supabaseVenues, ...customList, ...MUSIC_VENUES];
+      const deletedIds = new Set(getOwnerDeletedVenueIds());
+      const ownerEdits = getOwnerVenueEdits();
+
+      const seenNames = new Set<string>();
+      const deduplicatedVenues: Venue[] = [];
+      for (let v of rawMerged) {
+        const key = v.name?.trim().toLowerCase();
+        if (deletedIds.has(v.id) || (key && deletedIds.has(key))) {
           continue;
         }
-        if (updatedEdits[uv.id]) {
-          uv = { ...uv, ...updatedEdits[uv.id] };
-        } else if (ukey && updatedEdits[ukey]) {
-          uv = { ...uv, ...updatedEdits[ukey] };
+        if (ownerEdits[v.id]) {
+          v = { ...v, ...ownerEdits[v.id] };
+        } else if (key && ownerEdits[key]) {
+          v = { ...v, ...ownerEdits[key] };
         }
-        if (ukey && !updatedSeen.has(ukey)) {
-          updatedSeen.add(ukey);
-          updatedList.push(uv);
+        if (key && !seenNames.has(key)) {
+          seenNames.add(key);
+          deduplicatedVenues.push(v);
         }
       }
-      setVenues(updatedList);
+
+      if (isMounted) {
+        setVenues(deduplicatedVenues);
+      }
+    };
+
+    loadVenues();
+
+    const onVenuesUpdated = () => {
+      loadVenues();
     };
 
     window.addEventListener("giglizard_venues_updated", onVenuesUpdated);
     return () => {
+      isMounted = false;
       window.removeEventListener("giglizard_venues_updated", onVenuesUpdated);
     };
   }, [currentAccount?.name, currentAccount?.type, currentAccount?.contactEmail]);

@@ -58,6 +58,7 @@ export interface TechRider {
 
 export interface PosterConfig {
   bandName: string;
+  supportingActs?: string; // Supporting acts / opening bands appearing under headliner
   secondaryText: string; // e.g. "ON TOUR NOW" or "PLUS SPECIAL GUESTS"
   venueName: string;
   venueAddress: string;
@@ -104,7 +105,7 @@ export interface BandProfile {
   musicUrl?: string | null;
 }
 
-export type AccountType = "Band" | "Venue";
+export type AccountType = "Band" | "Venue" | "Sound Engineer";
 
 export interface TourVenueStop {
   id?: string;

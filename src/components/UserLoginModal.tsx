@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { UserAccount } from "../types";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
+import { getCachedProfiles } from "../lib/supabase";
 import { 
   X, Lock, LogIn, Eye, EyeOff, CheckCircle2, 
   AlertCircle, KeyRound, ShieldCheck, UserCheck 
@@ -214,7 +215,45 @@ export default function UserLoginModal({
       return;
     }
 
-    // 3. Check previously active profile in venue_user_profile_v1
+    // 3. Check registered Supabase profiles cache
+    const cachedProfiles = getCachedProfiles();
+    const foundProfile = cachedProfiles.find(p =>
+      (p.contact_email || p.email)?.trim().toLowerCase() === cleanEmail ||
+      p.name?.trim().toLowerCase() === cleanEmail
+    );
+    if (foundProfile) {
+      const requiredPass = expectedCustomPass || foundProfile.password || "password";
+      if (cleanPassword !== requiredPass && cleanPassword.length < 4) {
+        setErrorMessage("Access denied: Incorrect password for registered account.");
+        return;
+      }
+      const roleType = (foundProfile.type || foundProfile.role || "Band") as "Band" | "Venue" | "Sound Engineer";
+      const payload: UserAccount = {
+        type: roleType,
+        name: foundProfile.name,
+        city: foundProfile.city,
+        isPremium: Boolean(foundProfile.is_premium),
+        hasPaidAccess: Boolean(foundProfile.is_paid || foundProfile.is_premium),
+        contactEmail: foundProfile.contact_email || foundProfile.email || cleanEmail,
+        genre: foundProfile.genre || undefined,
+        bio: foundProfile.bio || undefined,
+        capacity: foundProfile.capacity ? Number(foundProfile.capacity) : undefined,
+        address: foundProfile.address || undefined,
+        hasPA: foundProfile.has_pa ?? undefined,
+        hasLighting: foundProfile.has_lighting ?? undefined,
+        contactPhone: foundProfile.contact_phone || foundProfile.phone || undefined,
+        website: foundProfile.website || undefined,
+        password: requiredPass
+      };
+      setSuccessMessage(`✅ Welcome back! Logged in as ${roleType}: ${foundProfile.name}.`);
+      setTimeout(() => {
+        onLoginSuccess(payload);
+        onClose();
+      }, 600);
+      return;
+    }
+
+    // 4. Check previously active profile in venue_user_profile_v1
     const storedVenueProfileStr = localStorage.getItem("venue_user_profile_v1");
     if (storedVenueProfileStr) {
       try {
