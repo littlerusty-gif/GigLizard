@@ -99,16 +99,26 @@ export default function UserLoginModal({
     }
 
     setIsSendingReset(true);
-    try {
-      // Determine redirect URL dynamically (do not pass sandbox iframe origins or hash fragments like '/#reset-password')
-      const redirectUrl = window.location.hostname === "giglizard.us"
-        ? "https://giglizard.us"
-        : "https://giglizard.us";
 
-      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo: redirectUrl
+    try {
+      const res = await fetch("/api/request-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail }),
       });
 
+      if (!res.ok) {
+        throw new Error("Reset request failed.");
+      }
+
+      setResetEmailSent(true);
+      setSuccessMessage("If an account exists for that address, a reset link has been dispatched to your inbox.");
+    } catch (err) {
+      setErrorMessage("Unable to process reset request. Please check your connection and try again.");
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
       if (error) {
         setErrorMessage(error.message || "Failed to dispatch recovery link. Please try again.");
       } else {
