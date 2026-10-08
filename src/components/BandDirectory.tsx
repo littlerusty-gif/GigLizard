@@ -24,7 +24,7 @@ import {
   isBandBanned
 } from "../utils/accessControl";
 import { getOwnerBandEdits, getOwnerDeletedBandIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
-import { fetchProfiles, profileToAvailableBand } from "../lib/supabase";
+import { fetchProfiles, profileToAvailableBand, insertProfile } from "../lib/supabase";
 
 interface BandDirectoryProps {
   onUpdateAvailableBands?: (bands: AvailableBand[]) => void;
@@ -337,6 +337,23 @@ export default function BandDirectory({
         body: JSON.stringify({ band: newBand })
       }).catch(err => console.warn("Backend band registration notice:", err));
     } catch (_) {}
+
+    // Persist directly into Supabase profiles table
+    insertProfile({
+      id: newBand.id,
+      name: cleanName,
+      email: cleanEmail,
+      contact_email: cleanEmail,
+      type: "Band",
+      role: "Band",
+      city: cleanCity,
+      genres: processedGenres,
+      bio: cleanBio,
+      website: cleanWeb || undefined,
+      primary_link: epkUrl || musicUrl || cleanWeb || undefined,
+      phone: cleanPhone || undefined,
+      experience_level: formData.experienceLevel
+    }).catch(err => console.warn("Supabase profile insert error:", err));
 
     const saved = localStorage.getItem("custom_available_bands_v1");
     let customList: AvailableBand[] = [];

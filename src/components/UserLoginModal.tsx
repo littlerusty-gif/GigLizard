@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { UserAccount } from "../types";
+import { UserAccount, AvailableBand, Venue } from "../types";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
-import { getCachedProfiles } from "../lib/supabase";
+import { getCachedProfiles, fetchProfiles, insertProfile } from "../lib/supabase";
+import { recordLiveSignup } from "../utils/analyticsStore";
 import { 
   X, Lock, LogIn, Eye, EyeOff, CheckCircle2, 
-  AlertCircle, KeyRound, ShieldCheck, UserCheck 
+  AlertCircle, KeyRound, ShieldCheck, UserCheck,
+  UserPlus, Headphones, Users, Building
 } from "lucide-react";
 
 interface UserLoginModalProps {
@@ -24,7 +26,10 @@ export default function UserLoginModal({
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loginRole, setLoginRole] = useState<"Band" | "Venue">("Venue");
+  const [loginRole, setLoginRole] = useState<"Band" | "Venue" | "Sound Engineer">("Venue");
+  const [modalMode, setModalMode] = useState<"login" | "signup">("login");
+  const [signupName, setSignupName] = useState("");
+  const [signupCity, setSignupCity] = useState("Seattle, WA");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -58,7 +63,7 @@ export default function UserLoginModal({
 
   if (!isOpen) return null;
 
-  const handleSubmitLogin = (e: React.FormEvent) => {
+  const handleSubmitLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
@@ -81,6 +86,11 @@ export default function UserLoginModal({
 
     if (!cleanPassword) {
       setErrorMessage("Please enter your password.");
+      return;
+    }
+
+    if (modalMode === "signup" && !signupName.trim()) {
+      setErrorMessage("Please enter your name (Band Name, Venue Name, or Audio Tech Name).");
       return;
     }
 
@@ -215,12 +225,23 @@ export default function UserLoginModal({
       return;
     }
 
-    // 3. Check registered Supabase profiles cache
-    const cachedProfiles = getCachedProfiles();
-    const foundProfile = cachedProfiles.find(p =>
+    // 3. Check registered Supabase profiles cache (with live query fallback)
+    let cachedProfiles = getCachedProfiles();
+    let foundProfile = cachedProfiles.find(p =>
       (p.contact_email || p.email)?.trim().toLowerCase() === cleanEmail ||
       p.name?.trim().toLowerCase() === cleanEmail
     );
+    if (!foundProfile) {
+      try {
+        const liveProfiles = await fetchProfiles();
+        cachedProfiles = liveProfiles;
+        foundProfile = liveProfiles.find(p =>
+          (p.contact_email || p.email)?.trim().toLowerCase() === cleanEmail ||
+          p.name?.trim().toLowerCase() === cleanEmail
+        );
+      } catch (_) {}
+    }
+
     if (foundProfile) {
       const requiredPass = expectedCustomPass || foundProfile.password || "password";
       if (cleanPassword !== requiredPass && cleanPassword.length < 4) {
@@ -259,10 +280,6 @@ export default function UserLoginModal({
       try {
         const storedProfile: UserAccount = JSON.parse(storedVenueProfileStr);
         if (storedProfile.contactEmail?.trim().toLowerCase() === cleanEmail) {
-          const requiredPass = expectedCustomPass || "password";
-          if (cleanPassword !== requiredPass && cleanPassword.length >= 4) {
-            // Accept as valid user session
-          }
           setSuccessMessage(`✅ Logged in successfully as: ${storedProfile.name || cleanEmail}`);
           setTimeout(() => {
             onLoginSuccess(storedProfile);
@@ -273,23 +290,117 @@ export default function UserLoginModal({
       } catch (_) {}
     }
 
-    // 4. Default user login for custom user account
+    // If modal is in 'login' mode and no account was matched, inform the user to switch to sign-up
+    if (modalMode === "login") {
+      setErrorMessage("No existing account found with this email. Please check your credentials or click 'Sign Up Free' above to register.");
+      return;
+    }
+
+    // 5. User registration / sign up for new account
     let displayName = cleanEmail.split("@")[0];
     displayName = displayName.split(/[\s._-]+/).map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join(" ");
 
+    const finalName = modalMode === "signup" && signupName.trim()
+      ? signupName.trim()
+      : (loginRole === "Venue" ? `${displayName} Room` : (loginRole === "Sound Engineer" ? `${displayName} Audio Tech` : displayName));
+
+    const finalCity = modalMode === "signup" && signupCity.trim()
+      ? signupCity.trim()
+      : "Seattle, WA";
+
+    // Await insertProfile() to persist directly into Supabase 'profiles' table
+    try {
+      await insertProfile({
+        name: finalName,
+        email: cleanEmail,
+        role: loginRole,
+        type: loginRole,
+        city: finalCity,
+        genres: loginRole === "Venue" ? "Live Music" : (loginRole === "Sound Engineer" ? "FOH, Monitors, Studio" : "Alternative Rock"),
+        bio: `${loginRole} profile registered on GigLizard.`
+      });
+    } catch (err) {
+      console.warn("[Supabase] Failed to insert profile during sign up:", err);
+    }
+
+    // Immediately push new record into global directory state
+    if (loginRole === "Band") {
+      try {
+        const saved = localStorage.getItem("custom_available_bands_v1");
+        const list: AvailableBand[] = saved ? JSON.parse(saved) : [];
+        const newBand: AvailableBand = {
+          id: `band-reg-${Date.now()}`,
+          name: finalName,
+          genres: ["Alternative Rock"],
+          city: finalCity,
+          bio: "Live music artist registered on GigLizard.",
+          contactEmail: cleanEmail,
+          experienceLevel: "Local"
+        };
+        localStorage.setItem("custom_available_bands_v1", JSON.stringify([newBand, ...list.filter(b => b.contactEmail !== cleanEmail)]));
+        window.dispatchEvent(new CustomEvent("giglizard_bands_updated"));
+      } catch (err) {
+        console.warn("Failed pushing band to global directory state:", err);
+      }
+    } else if (loginRole === "Venue") {
+      try {
+        const saved = localStorage.getItem("custom_venues_v1");
+        const list: Venue[] = saved ? JSON.parse(saved) : [];
+        const newVenue: Venue = {
+          id: `venue-reg-${Date.now()}`,
+          name: finalName,
+          capacity: 150,
+          address: finalCity,
+          city: finalCity,
+          genres: ["Live Music"],
+          contactEmail: cleanEmail,
+          contactPhone: "Inquire",
+          description: "Live music performance space.",
+          website: "www.inquire-booking.com",
+          hasPA: true,
+          hasLighting: true
+        };
+        localStorage.setItem("custom_venues_v1", JSON.stringify([newVenue, ...list.filter(v => v.contactEmail !== cleanEmail)]));
+        window.dispatchEvent(new CustomEvent("giglizard_venues_updated"));
+      } catch (err) {
+        console.warn("Failed pushing venue to global directory state:", err);
+      }
+    }
+
+    // Record signup in analytics subscriber directory
+    recordLiveSignup({
+      name: finalName,
+      contactEmail: cleanEmail,
+      type: loginRole,
+      city: finalCity,
+      isPaid: false,
+      plan: "Free Community Member",
+      notes: `${loginRole} account registered on GigLizard.`
+    });
+
+    // Immediately broadcast subscriber update to sync admin counters
+    window.dispatchEvent(new CustomEvent("giglizard_subscribers_updated"));
+
+    // Save custom password in local credentials store
+    try {
+      const passwordsMap = JSON.parse(localStorage.getItem("user_custom_passwords_v1") || "{}");
+      passwordsMap[cleanEmail] = cleanPassword;
+      localStorage.setItem("user_custom_passwords_v1", JSON.stringify(passwordsMap));
+    } catch (_) {}
+
     const defaultAccount: UserAccount = {
       type: loginRole,
-      name: loginRole === "Venue" ? `${displayName} Room` : displayName,
-      city: "Seattle, WA",
+      name: finalName,
+      city: finalCity,
       isPremium: false,
       hasPaidAccess: false,
       contactEmail: cleanEmail,
-      genre: loginRole === "Venue" ? "Live Music" : "Alternative Rock",
+      genre: loginRole === "Venue" ? "Live Music" : (loginRole === "Sound Engineer" ? "Front of House / Audio" : "Alternative Rock"),
       bio: `${loginRole} account registered on GigLizard.`,
       password: cleanPassword
     };
 
-    setSuccessMessage(`✅ Logged in as: ${defaultAccount.name}`);
+    setSuccessMessage(`✅ Registered & signed in as: ${defaultAccount.name}`);
     setTimeout(() => {
       onLoginSuccess(defaultAccount);
       onClose();
@@ -317,17 +428,53 @@ export default function UserLoginModal({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header */}
+        {/* Header with Mode Toggle */}
         <div className="text-center space-y-2 pt-1">
           <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto shadow-inner">
-            <Lock className="w-6 h-6" />
+            {modalMode === "signup" ? <UserPlus className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
           </div>
           <h3 className="text-xl font-black text-white tracking-tight">
-            Account Sign In Required
+            {modalMode === "signup" ? "Create Free Account Profile" : "Account Sign In Required"}
           </h3>
           <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
-            Band contact information is reserved for logged-in users with an active, up-to-date paid subscription.
+            {modalMode === "signup"
+              ? "Register your band, venue room, or sound engineering tech profile into the shared directory."
+              : "Band contact information is reserved for logged-in users with an active, up-to-date paid subscription."}
           </p>
+
+          {/* Mode Switcher Tabs */}
+          <div className="flex items-center justify-center p-1 bg-slate-950 border border-slate-800 rounded-xl max-w-xs mx-auto mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setModalMode("login");
+                setErrorMessage("");
+              }}
+              className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                modalMode === "login"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setModalMode("signup");
+                setErrorMessage("");
+              }}
+              className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                modalMode === "signup"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Sign Up Free</span>
+            </button>
+          </div>
         </div>
 
         {/* Alerts */}
@@ -347,10 +494,30 @@ export default function UserLoginModal({
 
         {/* Form */}
         <form onSubmit={handleSubmitLogin} className="space-y-3.5">
+          {/* Sign Up Name Field */}
+          {modalMode === "signup" && (
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {loginRole === "Band" ? "Band / Artist Name" : (loginRole === "Venue" ? "Venue Name" : "Sound Engineer Name")} *
+              </label>
+              <input
+                type="text"
+                value={signupName}
+                onChange={(e) => {
+                  setSignupName(e.target.value);
+                  setErrorMessage("");
+                }}
+                placeholder={loginRole === "Band" ? "e.g. Pacific Echoes" : (loginRole === "Venue" ? "e.g. Starry Lounge" : "e.g. Dave Sound Tech")}
+                required={modalMode === "signup"}
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-all"
+              />
+            </div>
+          )}
+
           {/* Email */}
           <div className="space-y-1">
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Email Address
+              Email Address *
             </label>
             <input
               type="email"
@@ -359,7 +526,7 @@ export default function UserLoginModal({
                 setLoginEmail(e.target.value);
                 setErrorMessage("");
               }}
-              placeholder="e.g. littlerusty@gmail.com"
+              placeholder="e.g. booking@myband.com"
               required
               className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-all font-mono"
             />
@@ -369,7 +536,7 @@ export default function UserLoginModal({
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Password
+                Password *
               </label>
               <span className="text-[10px] text-slate-500">Min 4 characters</span>
             </div>
@@ -396,33 +563,63 @@ export default function UserLoginModal({
             </div>
           </div>
 
+          {/* Sign Up City Field */}
+          {modalMode === "signup" && (
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                City & State
+              </label>
+              <input
+                type="text"
+                value={signupCity}
+                onChange={(e) => setSignupCity(e.target.value)}
+                placeholder="e.g. Seattle, WA"
+                className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-all"
+              />
+            </div>
+          )}
+
           {/* Role selector */}
           <div className="flex justify-between items-center pt-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Account Role:
             </span>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <button
                 type="button"
                 onClick={() => setLoginRole("Band")}
-                className={`text-[11px] font-black px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`text-[11px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                   loginRole === "Band" 
                     ? "bg-indigo-600 text-white shadow-xs" 
                     : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
                 }`}
               >
-                Band Rep
+                <Users className="w-3 h-3" />
+                <span>Band</span>
               </button>
               <button
                 type="button"
                 onClick={() => setLoginRole("Venue")}
-                className={`text-[11px] font-black px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`text-[11px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                   loginRole === "Venue" 
                     ? "bg-emerald-600 text-white shadow-xs" 
                     : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
                 }`}
               >
-                Venue Booker
+                <Building className="w-3 h-3" />
+                <span>Venue</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginRole("Sound Engineer")}
+                className={`text-[11px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                  loginRole === "Sound Engineer" 
+                    ? "bg-amber-600 text-white shadow-xs" 
+                    : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
+                }`}
+              >
+                <Headphones className="w-3 h-3" />
+                <span>Engineer</span>
               </button>
             </div>
           </div>
@@ -465,8 +662,17 @@ export default function UserLoginModal({
             type="submit"
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2 mt-2"
           >
-            <LogIn className="w-4 h-4" />
-            <span>Sign In to Your Account</span>
+            {modalMode === "signup" ? (
+              <>
+                <UserPlus className="w-4 h-4" />
+                <span>Create Free {loginRole} Account</span>
+              </>
+            ) : (
+              <>
+                <LogIn className="w-4 h-4" />
+                <span>Sign In to Your Account</span>
+              </>
+            )}
           </button>
         </form>
 

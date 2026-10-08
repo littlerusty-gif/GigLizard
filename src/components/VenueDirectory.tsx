@@ -10,7 +10,7 @@ import ReviewsModal from "./ReviewsModal";
 import { getRatingStats } from "../utils/reviewsManager";
 import { sanitizeInputText, escapeRegexSpecial, detectAutomatedBot, checkRapidHarvestingAttempt } from "../utils/antiScrape";
 import { getOwnerVenueEdits, getOwnerDeletedVenueIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
-import { fetchProfiles, profileToVenue, getCachedProfiles } from "../lib/supabase";
+import { fetchProfiles, profileToVenue, getCachedProfiles, insertProfile } from "../lib/supabase";
 
 interface VenueDirectoryProps {
   onSelectVenueForPoster: (venue: Venue) => void;
@@ -231,6 +231,25 @@ export default function VenueDirectory({
     }
     const updatedCustomList = [newVenue, ...customList.filter(v => v.name.toLowerCase() !== cleanName.toLowerCase() && v.contactEmail.toLowerCase() !== cleanEmail.toLowerCase())];
     localStorage.setItem("custom_venues_v1", JSON.stringify(updatedCustomList));
+
+    // Persist directly into Supabase profiles table
+    insertProfile({
+      id: newVenue.id,
+      name: cleanName,
+      email: cleanEmail,
+      contact_email: cleanEmail,
+      type: "Venue",
+      role: "Venue",
+      city: cleanCity,
+      address: cleanAddress,
+      capacity: Number(form.capacity) || 100,
+      website: cleanWeb || undefined,
+      phone: cleanPhone || undefined,
+      genres: processedGenres,
+      bio: `[Capacity: ${form.capacity} guests] ${cleanDesc || "A gorgeous live music environment ready for exciting performances."}`,
+      has_pa: form.hasPA,
+      has_lighting: form.hasLighting
+    }).catch(err => console.warn("Supabase venue insert error:", err));
 
     const combined = [newVenue, ...venues.filter(v => v.name.toLowerCase() !== cleanName.toLowerCase())];
     setVenues(combined);
