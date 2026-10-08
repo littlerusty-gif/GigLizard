@@ -150,6 +150,11 @@ export default function App() {
     }
   }, [currentAccount, activeTab]);
 
+  // Set document title on mount
+  useEffect(() => {
+    document.title = "GigLizard";
+  }, []);
+
   // Track page visit on mount and tab switch
   useEffect(() => {
     recordLiveVisit();
