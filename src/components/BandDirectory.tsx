@@ -67,6 +67,17 @@ export default function BandDirectory({
   const activeAccess = isLoggedIn && isSubscriptionActive;
   const accessDetails = getAccessStatusDetails(currentAccount);
 
+  // Check if currently logged-in user already has a band profile registered
+  const userContactEmail = currentAccount?.contactEmail?.trim().toLowerCase();
+  const userAccountName = currentAccount?.name?.trim().toLowerCase();
+  const hasRegisteredBandProfile = Boolean(
+    isLoggedIn && currentAccount && (
+      (currentAccount.type === "Band" && Boolean(currentAccount.name?.trim())) ||
+      (userContactEmail && bands.some(b => b.contactEmail && b.contactEmail.trim().toLowerCase() === userContactEmail)) ||
+      (userAccountName && currentAccount.type === "Band" && bands.some(b => b.name && b.name.trim().toLowerCase() === userAccountName))
+    )
+  );
+
   const [drmWarning, setDrmWarning] = useState("");
 
   // Keyboard shortcut listener to prevent scraping, printing, source inspection, and copying
@@ -546,15 +557,6 @@ export default function BandDirectory({
                 <span>Edit Account</span>
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setShowPayPalModal(true)}
-              className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black py-2.5 px-4 rounded-xl cursor-pointer transition-all shadow-xs flex items-center gap-1.5"
-              id="btn-extend-band-pass"
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>All Access Contacts ($9.99 / 30 Days)</span>
-            </button>
           </div>
         </div>
       ) : (
@@ -621,25 +623,28 @@ export default function BandDirectory({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {isLoggedIn && onTriggerEditAccount && (
+          {hasRegisteredBandProfile ? (
+            onTriggerEditAccount && (
+              <button
+                type="button"
+                onClick={onTriggerEditAccount}
+                className="flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs py-3 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                id="btn-trigger-edit-my-page"
+              >
+                <span>Edit My Account / Page</span>
+              </button>
+            )
+          ) : (
             <button
               type="button"
-              onClick={onTriggerEditAccount}
-              className="flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs py-3 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-              id="btn-trigger-edit-my-page"
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3 px-5 rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg"
+              id="btn-trigger-add-band"
             >
-              <span>Edit My Account / Page</span>
+              <PlusCircle className="w-4 h-4" />
+              {showAddForm ? "Cancel Registration" : "+ Join Available Bands"}
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs py-3 px-5 rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg"
-            id="btn-trigger-add-band"
-          >
-            <PlusCircle className="w-4 h-4" />
-            {showAddForm ? "Cancel Registration" : "Join Available Bands"}
-          </button>
         </div>
       </div>
 
@@ -651,7 +656,7 @@ export default function BandDirectory({
       )}
 
       {/* Slide down form for registration */}
-      {showAddForm && (
+      {showAddForm && !hasRegisteredBandProfile && (
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-md space-y-4 animate-slide-down" id="add-band-form-block">
           <div className="border-b border-gray-100 pb-3">
             <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">

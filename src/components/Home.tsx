@@ -14,7 +14,7 @@ import { isAccessActive, getAccessStatusDetails, isBandBanned, isPerpetualPassEm
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { resolveBandMusicLinks, categorizeUserMusicLink } from "../utils/musicLinks";
 import { isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
-import { insertProfile, fetchProfiles } from "../lib/supabase";
+import { insertProfile } from "../lib/supabase";
 
 interface HomeProps {
   currentAccount: UserAccount | null;
@@ -61,26 +61,6 @@ export default function Home({
   // Modal flow state for PayPal 30-day pass
   const [showPayPalModal, setShowPayPalModal] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [liveBandCount, setLiveBandCount] = useState<number>(0);
-
-  useEffect(() => {
-    let isMounted = true;
-    const updateCount = async () => {
-      try {
-        const profiles = await fetchProfiles();
-        const supaBands = profiles.filter(p => (p.type || p.role) === "Band" && !isBandBanned(p.contact_email || p.email, p.name));
-        if (isMounted) {
-          setLiveBandCount(supaBands.length);
-        }
-      } catch (_) {}
-    };
-    updateCount();
-    window.addEventListener("giglizard_bands_updated", updateCount);
-    return () => {
-      isMounted = false;
-      window.removeEventListener("giglizard_bands_updated", updateCount);
-    };
-  }, []);
 
   const activeAccess = isAccessActive(currentAccount);
   const accessDetails = getAccessStatusDetails(currentAccount);
@@ -767,7 +747,7 @@ export default function Home({
                 <p className="text-[10px] text-gray-400 leading-normal">
                   {activeAccess 
                     ? `✓ Full Band Contacts, EPKs & Listen links unlocked. ${currentAccount?.autoRenew ? "Auto-renewal enabled." : "Pass expires in " + accessDetails.remainingDays + " days."}`
-                    : "✓ 30-Day Pass ($9.99) to unlock unmasked booking emails, EPK, and Listen links across all registered live bands (+$0.84 fee at checkout)."
+                    : "✓ 30-Day Pass ($9.99) to unlock unmasked booking emails, EPK, and Listen links across all 1600+ live bands (+$0.84 fee at checkout)."
                   }
                 </p>
               </div>
@@ -808,16 +788,9 @@ export default function Home({
                     <span>{accessDetails.isExpired ? "Renew 30-Day Pass ($9.99)" : "Unlock 30-Day Pass ($9.99)"}</span>
                   </button>
                 ) : (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowPayPalModal(true)}
-                      className="w-full bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 font-bold py-2 rounded-lg text-center cursor-pointer text-[11px] transition-all flex items-center justify-center gap-1"
-                      id="btn-extend-pass"
-                    >
-                      <Clock className="w-3 h-3 text-emerald-400" />
-                      <span>All Access Contacts ($9.99 / 30 Days)</span>
-                    </button>
+                  <div className="flex items-center justify-center py-2 px-3 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-[11px] font-bold">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mr-1.5" />
+                    <span>{accessDetails.isPerpetual ? "Lifetime VIP Pass Active" : "30-Day Access Active"}</span>
                   </div>
                 )}
                 
@@ -1336,7 +1309,7 @@ export default function Home({
               <ul className="space-y-2 text-xs text-gray-650">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span>Unlock all booking emails and official contacts for West Coast bands</span>
+                  <span>Unlock all booking emails and official contacts for 1,300+ West Coast bands</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
