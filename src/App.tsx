@@ -12,7 +12,7 @@ import AdminDashboard from "./components/AdminDashboard";
 import SecurityShieldModal from "./components/SecurityShieldModal";
 import EditAccountModal from "./components/EditAccountModal";
 import PayPalAccessModal from "./components/PayPalAccessModal";
-import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
+import gigLizardLogo from "http://craftwinefest.com/wp-content/uploads/2026/10/freya-image-1787540008739.jpg";
 import { recordLiveVisit } from "./utils/analyticsStore";
 import { isBandBanned, isPerpetualPassEmail } from "./utils/accessControl";
 import { 
