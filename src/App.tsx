@@ -12,14 +12,16 @@ import AdminDashboard from "./components/AdminDashboard";
 import SecurityShieldModal from "./components/SecurityShieldModal";
 import EditAccountModal from "./components/EditAccountModal";
 import PayPalAccessModal from "./components/PayPalAccessModal";
+import ResetPasswordModal from "./components/ResetPasswordModal";
+import UserLoginModal from "./components/UserLoginModal";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
 import { isBandBanned, isPerpetualPassEmail } from "./utils/accessControl";
-import { insertProfile } from "./lib/supabase";
+import { insertProfile, supabase } from "./lib/supabase";
 import { 
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
-  Compass, Navigation, ShieldCheck, BarChart3, Crown
+  Compass, Navigation, ShieldCheck, BarChart3, Crown, LogIn
 } from "lucide-react";
 
 // Default preset values for first-load
@@ -80,6 +82,10 @@ export default function App() {
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showEditAccountModal, setShowEditAccountModal] = useState(false);
   const [showPayPalModal, setShowPayPalModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [showUserLoginModal, setShowUserLoginModal] = useState(false);
+  const [loginModalMode, setLoginModalMode] = useState<"login" | "signup" | "forgot">("login");
+  const [loginModalEmail, setLoginModalEmail] = useState("");
 
   // User Accounts State
   const [currentAccount, setCurrentAccount] = useState<UserAccount | null>(() => {
@@ -189,6 +195,49 @@ export default function App() {
       window.removeEventListener("popstate", handleHashChange);
     };
   }, [currentAccount]);
+
+  // Listen for Supabase Auth PASSWORD_RECOVERY event or recovery hash URLs
+  useEffect(() => {
+    const checkRecoveryHash = () => {
+      const hash = window.location.hash;
+      if (
+        hash.includes("reset-password") || 
+        hash.includes("type=recovery") || 
+        (hash.includes("access_token") && hash.includes("recovery"))
+      ) {
+        setShowResetPasswordModal(true);
+      }
+    };
+
+    checkRecoveryHash();
+    window.addEventListener("hashchange", checkRecoveryHash);
+    window.addEventListener("popstate", checkRecoveryHash);
+
+    // Official Supabase Auth state listener for recovery events from default redirect
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setShowUserLoginModal(false);
+        setShowResetPasswordModal(true);
+      }
+    });
+
+    // Global listener for opening user login / forgot password modal from any component
+    const handleGlobalOpenLogin = (e: any) => {
+      const mode = e?.detail?.mode || "login";
+      const email = e?.detail?.email || "";
+      setLoginModalMode(mode);
+      if (email) setLoginModalEmail(email);
+      setShowUserLoginModal(true);
+    };
+    window.addEventListener("giglizard_open_login", handleGlobalOpenLogin);
+
+    return () => {
+      window.removeEventListener("hashchange", checkRecoveryHash);
+      window.removeEventListener("popstate", checkRecoveryHash);
+      window.removeEventListener("giglizard_open_login", handleGlobalOpenLogin);
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
 
   const handleRegisterAccount = (account: UserAccount) => {
     if (isBandBanned(account?.contactEmail, account?.name)) {
@@ -577,6 +626,23 @@ export default function App() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </button>
             )}
+
+            {/* Quick Sign In button for guest users */}
+            {!currentAccount && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginModalMode("login");
+                  setShowUserLoginModal(true);
+                }}
+                id="tab-btn-sign-in"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-600 hover:bg-indigo-500 text-white"
+                title="Sign in or register your GigLizard profile"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            )}
           </nav>
 
         </div>
@@ -660,11 +726,8 @@ export default function App() {
                 setShowPayPalModal(true);
               }}
               onTriggerLogin={() => {
-                setActiveTab("home");
-                setTimeout(() => {
-                  document.getElementById("btn-user-login-trigger")?.click();
-                  document.getElementById("guest-helper-widget")?.scrollIntoView({ behavior: "smooth" });
-                }, 100);
+                setLoginModalMode("login");
+                setShowUserLoginModal(true);
               }}
             />
           </div>
@@ -799,6 +862,42 @@ export default function App() {
             handleUpdatePricing(true);
           }
         }}
+      />
+
+      {/* Dedicated Reset Password Recovery Modal */}
+      <ResetPasswordModal
+        isOpen={showResetPasswordModal}
+        onClose={() => {
+          setShowResetPasswordModal(false);
+          if (
+            window.location.hash.includes("reset-password") || 
+            window.location.hash.includes("type=recovery") || 
+            window.location.hash.includes("access_token")
+          ) {
+            window.location.hash = "";
+            try {
+              window.history.replaceState(null, "", window.location.pathname + window.location.search);
+            } catch (_) {}
+          }
+        }}
+        onSuccessLoginRedirect={() => {
+          setShowResetPasswordModal(false);
+          setLoginModalMode("login");
+          setShowUserLoginModal(true);
+        }}
+      />
+
+      {/* Global User Login, Registration, and Forgot Password Modal */}
+      <UserLoginModal
+        isOpen={showUserLoginModal}
+        onClose={() => setShowUserLoginModal(false)}
+        initialMode={loginModalMode}
+        initialEmail={loginModalEmail}
+        onLoginSuccess={(account) => {
+          handleUpdateAccount(account);
+          setShowUserLoginModal(false);
+        }}
+        onOpenCheckout={() => setShowPayPalModal(true)}
       />
     </div>
   );

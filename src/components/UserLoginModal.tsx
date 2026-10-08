@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { UserAccount, AvailableBand, Venue } from "../types";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
-import { getCachedProfiles, fetchProfiles, insertProfile } from "../lib/supabase";
+import { getCachedProfiles, fetchProfiles, insertProfile, supabase } from "../lib/supabase";
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { 
   X, Lock, LogIn, Eye, EyeOff, CheckCircle2, 
   AlertCircle, KeyRound, ShieldCheck, UserCheck,
-  UserPlus, Headphones, Users, Building
+  UserPlus, Headphones, Users, Building, Send, RefreshCw, ArrowLeft
 } from "lucide-react";
 
 interface UserLoginModalProps {
@@ -15,23 +15,32 @@ interface UserLoginModalProps {
   onClose: () => void;
   onLoginSuccess: (account: UserAccount) => void;
   onOpenCheckout?: () => void;
+  initialMode?: "login" | "signup" | "forgot";
+  initialEmail?: string;
 }
 
 export default function UserLoginModal({
   isOpen,
   onClose,
   onLoginSuccess,
-  onOpenCheckout
+  onOpenCheckout,
+  initialMode = "login",
+  initialEmail = ""
 }: UserLoginModalProps) {
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginEmail, setLoginEmail] = useState(initialEmail);
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loginRole, setLoginRole] = useState<"Band" | "Venue" | "Sound Engineer">("Venue");
-  const [modalMode, setModalMode] = useState<"login" | "signup">("login");
+  const [modalMode, setModalMode] = useState<"login" | "signup" | "forgot">(initialMode);
   const [signupName, setSignupName] = useState("");
   const [signupCity, setSignupCity] = useState("Seattle, WA");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Forgot password request state
+  const [forgotEmail, setForgotEmail] = useState(initialEmail);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Anti-bot captcha challenge
   const [captchaNumA, setCaptchaNumA] = useState(3);
@@ -43,6 +52,14 @@ export default function UserLoginModal({
     if (isOpen) {
       setErrorMessage("");
       setSuccessMessage("");
+      setResetEmailSent(false);
+      if (initialMode) {
+        setModalMode(initialMode);
+      }
+      if (initialEmail) {
+        setLoginEmail(initialEmail);
+        setForgotEmail(initialEmail);
+      }
       const a = Math.floor(Math.random() * 8) + 2;
       const b = Math.floor(Math.random() * 8) + 2;
       setCaptchaNumA(a);
@@ -50,7 +67,7 @@ export default function UserLoginModal({
       setCaptchaInput("");
       setCaptchaVerified(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialMode, initialEmail]);
 
   const handleVerifyCaptcha = () => {
     if (parseInt(captchaInput.trim(), 10) === captchaNumA + captchaNumB) {
@@ -58,6 +75,50 @@ export default function UserLoginModal({
       setErrorMessage("");
     } else {
       setErrorMessage("Anti-bot verification failed. Please check the math answer.");
+    }
+  };
+
+  const handleRequestPasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (!captchaVerified) {
+      if (parseInt(captchaInput.trim(), 10) === captchaNumA + captchaNumB) {
+        setCaptchaVerified(true);
+      } else {
+        setErrorMessage("Anti-bot check required: Please solve the quick math verification below.");
+        return;
+      }
+    }
+
+    const cleanEmail = sanitizeInputText(forgotEmail || loginEmail, 100).trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setErrorMessage("Please enter a valid email address.");
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      // Determine redirect URL dynamically (do not pass sandbox iframe origins or hash fragments like '/#reset-password')
+      const redirectUrl = window.location.hostname === "giglizard.us"
+        ? "https://giglizard.us"
+        : "https://giglizard.us";
+
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: redirectUrl
+      });
+
+      if (error) {
+        setErrorMessage(error.message || "Failed to dispatch recovery link. Please try again.");
+      } else {
+        setResetEmailSent(true);
+        setSuccessMessage("A secure reset link has been sent to your email. Please check your inbox and click the link to proceed.");
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Failed to contact Supabase Auth service.");
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -431,50 +492,80 @@ export default function UserLoginModal({
         {/* Header with Mode Toggle */}
         <div className="text-center space-y-2 pt-1">
           <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto shadow-inner">
-            {modalMode === "signup" ? <UserPlus className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+            {modalMode === "signup" ? (
+              <UserPlus className="w-6 h-6" />
+            ) : modalMode === "forgot" ? (
+              <KeyRound className="w-6 h-6 text-amber-400" />
+            ) : (
+              <Lock className="w-6 h-6" />
+            )}
           </div>
           <h3 className="text-xl font-black text-white tracking-tight">
-            {modalMode === "signup" ? "Create Free Account Profile" : "Account Sign In Required"}
+            {modalMode === "signup"
+              ? "Create Free Account Profile"
+              : modalMode === "forgot"
+              ? "Reset Account Password"
+              : "Account Sign In Required"}
           </h3>
           <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
             {modalMode === "signup"
               ? "Register your band, venue room, or sound engineering tech profile into the shared directory."
+              : modalMode === "forgot"
+              ? "Enter your account email to receive a secure recovery link dispatched directly from Supabase Auth."
               : "Band contact information is reserved for logged-in users with an active, up-to-date paid subscription."}
           </p>
 
           {/* Mode Switcher Tabs */}
-          <div className="flex items-center justify-center p-1 bg-slate-950 border border-slate-800 rounded-xl max-w-xs mx-auto mt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setModalMode("login");
-                setErrorMessage("");
-              }}
-              className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                modalMode === "login"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setModalMode("signup");
-                setErrorMessage("");
-              }}
-              className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                modalMode === "signup"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Sign Up Free</span>
-            </button>
-          </div>
+          {modalMode !== "forgot" ? (
+            <div className="flex items-center justify-center p-1 bg-slate-950 border border-slate-800 rounded-xl max-w-xs mx-auto mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setModalMode("login");
+                  setErrorMessage("");
+                }}
+                className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  modalMode === "login"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalMode("signup");
+                  setErrorMessage("");
+                }}
+                className={`flex-1 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  modalMode === "signup"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Sign Up Free</span>
+              </button>
+            </div>
+          ) : (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setModalMode("login");
+                  setErrorMessage("");
+                  setSuccessMessage("");
+                  setResetEmailSent(false);
+                }}
+                className="text-xs text-indigo-400 hover:text-indigo-300 font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Return to Account Sign In</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Alerts */}
@@ -492,8 +583,126 @@ export default function UserLoginModal({
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmitLogin} className="space-y-3.5">
+        {/* FORGOT PASSWORD REQUEST VIEW: Official Supabase Auth Email Recovery */}
+        {modalMode === "forgot" ? (
+          resetEmailSent ? (
+            <div className="p-5 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-4 text-center animate-fade-in" id="forgot-password-sent-view">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-inner">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Recovery Email Dispatched</h4>
+                <p className="text-xs text-emerald-200 leading-relaxed">
+                  A secure reset link has been sent to your email. Please check your inbox and click the link to proceed.
+                </p>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Clicking the link in your email will securely prompt you to enter a new password.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalMode("login");
+                  setErrorMessage("");
+                  setSuccessMessage("");
+                  setResetEmailSent(false);
+                }}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Back to Sign In</span>
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleRequestPasswordReset} className="space-y-3.5" id="forgot-password-request-form">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Account Email Address *
+                </label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => {
+                    setForgotEmail(e.target.value);
+                    setErrorMessage("");
+                  }}
+                  placeholder="e.g. booking@myband.com"
+                  required
+                  className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-all font-mono"
+                />
+              </div>
+
+              {/* Anti-bot Math Challenge */}
+              <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-slate-300 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                    Security Verification:
+                  </span>
+                  <span className="font-mono text-amber-400 font-black">
+                    {captchaNumA} + {captchaNumB} = ?
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={captchaInput}
+                    onChange={(e) => setCaptchaInput(e.target.value)}
+                    placeholder="Enter answer"
+                    className="w-full p-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyCaptcha}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                      captchaVerified 
+                        ? "bg-emerald-600 text-white" 
+                        : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                    }`}
+                  >
+                    {captchaVerified ? "✓ Verified" : "Verify"}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSendingReset}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2 mt-2"
+                id="btn-send-reset-link"
+              >
+                {isSendingReset ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Sending Recovery Link...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Send Reset Link</span>
+                  </>
+                )}
+              </button>
+
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalMode("login");
+                    setErrorMessage("");
+                    setSuccessMessage("");
+                  }}
+                  className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  <span>Cancel & Back to Sign In</span>
+                </button>
+              </div>
+            </form>
+          )
+        ) : (
+          /* REGULAR LOGIN / SIGNUP FORM */
+          <form onSubmit={handleSubmitLogin} className="space-y-3.5">
           {/* Sign Up Name Field */}
           {modalMode === "signup" && (
             <div className="space-y-1">
@@ -538,7 +747,24 @@ export default function UserLoginModal({
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Password *
               </label>
-              <span className="text-[10px] text-slate-500">Min 4 characters</span>
+              {modalMode === "login" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotEmail(loginEmail);
+                    setModalMode("forgot");
+                    setErrorMessage("");
+                    setSuccessMessage("");
+                    setResetEmailSent(false);
+                  }}
+                  className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer transition-colors"
+                  id="btn-forgot-password-link"
+                >
+                  Forgot Password?
+                </button>
+              ) : (
+                <span className="text-[10px] text-slate-500">Min 4 characters</span>
+              )}
             </div>
             <div className="relative">
               <input
@@ -675,6 +901,7 @@ export default function UserLoginModal({
             )}
           </button>
         </form>
+        )}
 
         {/* Upgrade / Subscribe Option */}
         <div className="pt-3 border-t border-slate-800/80 text-center space-y-2">

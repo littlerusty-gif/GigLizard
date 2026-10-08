@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import CaptchaChallenge from "./CaptchaChallenge";
 import PayPalAccessModal from "./PayPalAccessModal";
-import ForgotPasswordModal from "./ForgotPasswordModal";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { isAccessActive, getAccessStatusDetails, isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
 import { recordLiveSignup } from "../utils/analyticsStore";
@@ -75,37 +74,7 @@ export default function Home({
   const [loginError, setLoginError] = useState("");
   const [isLoginCaptchaVerified, setIsLoginCaptchaVerified] = useState(false);
 
-  // Forgot password modal states
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
-  const [forgotPasswordToken, setForgotPasswordToken] = useState("");
-
-  // Listen for reset-password link clicks from email or direct hash navigation
-  useEffect(() => {
-    const handleCheckResetUrl = () => {
-      const hash = window.location.hash;
-      if (hash.includes("reset-password") || hash.includes("token=")) {
-        const matchToken = hash.match(/token=([^&]+)/);
-        const matchEmail = hash.match(/email=([^&]+)/);
-        if (matchToken && matchToken[1]) {
-          setForgotPasswordToken(decodeURIComponent(matchToken[1]));
-          if (matchEmail && matchEmail[1]) {
-            setForgotPasswordEmail(decodeURIComponent(matchEmail[1]));
-          }
-          setShowForgotPassword(true);
-          setShowUserLoginForm(false);
-        }
-      }
-    };
-
-    handleCheckResetUrl();
-    window.addEventListener("hashchange", handleCheckResetUrl);
-    window.addEventListener("popstate", handleCheckResetUrl);
-    return () => {
-      window.removeEventListener("hashchange", handleCheckResetUrl);
-      window.removeEventListener("popstate", handleCheckResetUrl);
-    };
-  }, []);
+  // User login states
 
   const handleUserLogin = () => {
     setLoginError("");
@@ -911,9 +880,7 @@ export default function Home({
                         <button
                           type="button"
                           onClick={() => {
-                            setForgotPasswordEmail(loginEmail);
-                            setShowForgotPassword(true);
-                            setShowUserLoginForm(false);
+                            window.dispatchEvent(new CustomEvent("giglizard_open_login", { detail: { mode: "forgot", email: loginEmail } }));
                           }}
                           className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer flex items-center gap-0.5 transition-colors"
                           id="btn-trigger-forgot-password"
@@ -1892,35 +1859,6 @@ export default function Home({
           setShowCheckoutModal(false);
           setSuccessMessage("✅ Payment Successful! Full contact information is unlocked for 30 days.");
           setTimeout(() => setSuccessMessage(""), 5000);
-        }}
-      />
-
-      {/* Integrated Forgot / Reset Password Flow Modal */}
-      <ForgotPasswordModal
-        isOpen={showForgotPassword}
-        onClose={() => {
-          setShowForgotPassword(false);
-          setForgotPasswordToken("");
-          // Clear any hash if we were on reset-password
-          if (window.location.hash.includes("reset-password")) {
-            window.location.hash = "";
-          }
-        }}
-        onBackToLogin={() => {
-          setShowForgotPassword(false);
-          setForgotPasswordToken("");
-          setShowUserLoginForm(true);
-          if (window.location.hash.includes("reset-password")) {
-            window.location.hash = "";
-          }
-        }}
-        initialEmail={forgotPasswordEmail}
-        initialToken={forgotPasswordToken}
-        onPasswordResetSuccess={(updatedEmail) => {
-          setLoginEmail(updatedEmail);
-          setLoginPassword("");
-          setSuccessMessage(`Password updated successfully for ${updatedEmail}! Please log in with your new password.`);
-          setTimeout(() => setSuccessMessage(""), 6000);
         }}
       />
     </div>
