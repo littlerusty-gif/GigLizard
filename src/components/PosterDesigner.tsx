@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { PosterConfig, SloganProposal } from "../types";
-import { INITIAL_AVAILABLE_BANDS } from "../data/availableBands";
 import { 
   Sparkles, Image, RefreshCw, Layers, CheckSquare, Wine, UtensilsCrossed, 
   Calendar, DollarSign, MapPin, Eye, Wand2, Check, Download, Truck, Printer, 

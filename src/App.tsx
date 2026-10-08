@@ -14,6 +14,8 @@ import EditAccountModal from "./components/EditAccountModal";
 import PayPalAccessModal from "./components/PayPalAccessModal";
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import UserLoginModal from "./components/UserLoginModal";
+import TermsOfServiceModal from "./components/TermsOfServiceModal";
+import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
 import { isBandBanned, isPerpetualPassEmail } from "./utils/accessControl";
@@ -84,6 +86,7 @@ export default function App() {
   const [showPayPalModal, setShowPayPalModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showUserLoginModal, setShowUserLoginModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState<"login" | "signup" | "forgot">("login");
   const [loginModalEmail, setLoginModalEmail] = useState("");
 
@@ -809,10 +812,11 @@ export default function App() {
         </div>
       </section>
 
-      {/* High-quality footer */}
-      <footer className="py-6 border-t border-gray-200 text-center text-xs text-gray-400 bg-slate-50" id="main-footer">
-        <p id="footer-text-cop">Band Gig Planning Workspace • Designed to help rising indie artists and unsigned performers book with absolute, pristine professional style.</p>
-      </footer>
+      {/* High-quality legal and copyright footer */}
+      <Footer 
+        onOpenTerms={() => setShowTermsModal(true)} 
+        onOpenSecurity={() => setShowSecurityModal(true)} 
+      />
 
       {/* Security & Anti-Scraping Diagnostics Modal */}
       <SecurityShieldModal 
@@ -898,6 +902,12 @@ export default function App() {
           setShowUserLoginModal(false);
         }}
         onOpenCheckout={() => setShowPayPalModal(true)}
+      />
+
+      {/* Formal Terms of Service Modal */}
+      <TermsOfServiceModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
       />
     </div>
   );

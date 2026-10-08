@@ -5,7 +5,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import * as XLSX from "xlsx";
-import { INITIAL_AVAILABLE_BANDS } from "./src/data/availableBands";
+import { INITIAL_AVAILABLE_BANDS, sanitizeBandPhoneNumber } from "./src/data/availableBands";
 import { MUSIC_VENUES } from "./src/data/venues";
 
 dotenv.config();
@@ -432,15 +432,15 @@ app.get("/api/bands", (req, res) => {
 
   if (isAccessActive) {
     // Return unmasked contacts for owner or active 30-day paid subscribers
-    // Phone numbers removed from band listings
-    const bandsWithoutPhone = allCurrentBands.map((b) => {
-      const { contactPhone, ...rest } = b as any;
-      return rest;
-    });
+    // Retain sanitized authentic phone numbers; dummy 555 numbers are cleared
+    const bandsWithSanitizedContacts = allCurrentBands.map((b) => ({
+      ...b,
+      contactPhone: sanitizeBandPhoneNumber(b.contactPhone)
+    }));
     res.json({
       accessStatus: isOwner ? "lifetime_owner" : "unlocked",
       expiresAt: isOwner ? "perpetual_lifetime" : expiresAt,
-      bands: bandsWithoutPhone
+      bands: bandsWithSanitizedContacts
     });
   } else {
     // Redact contact fields and EPK/Listen links for non-logged-in users, free tier non-subscribers, or expired accounts

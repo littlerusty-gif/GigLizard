@@ -7,7 +7,6 @@ import {
   SubscriberMember,
   DailyMetric
 } from "../utils/analyticsStore";
-import { INITIAL_AVAILABLE_BANDS } from "../data/availableBands";
 import { MUSIC_VENUES } from "../data/venues";
 import { getAllReviews } from "../utils/reviewsManager";
 import { getAccessStatusDetails } from "../utils/accessControl";
@@ -173,7 +172,7 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
     const cityCounts: Record<string, number> = {};
     let totalEntities = 0;
 
-    INITIAL_AVAILABLE_BANDS.forEach(b => {
+    allBands.forEach(b => {
       if (b.city) {
         const cityClean = b.city.trim();
         cityCounts[cityClean] = (cityCounts[cityClean] || 0) + 1;

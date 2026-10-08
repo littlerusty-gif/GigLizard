@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AvailableBand, UserAccount } from "../types";
-import { INITIAL_AVAILABLE_BANDS } from "../data/availableBands";
+import { INITIAL_AVAILABLE_BANDS, sanitizeBandPhoneNumber } from "../data/availableBands";
 import { 
   Search, MapPin, Mail, Globe, Shield, Users, PlusCircle, 
   Check, HelpCircle, BadgeCheck, Star, Lock, ChevronLeft, 
@@ -219,18 +219,21 @@ export default function BandDirectory({
 
         const isUserAuthorized = canViewBandContacts(currentAccount);
         const processedBands = deduplicatedBands.map((b) => {
-          // Remove any phone numbers strictly from all band listings
-          const { contactPhone, ...rest } = b as any;
+          const sanitizedPhone = sanitizeBandPhoneNumber(b.contactPhone);
           if (!isUserAuthorized) {
             return {
-              ...rest,
+              ...b,
+              contactPhone: "",
               contactEmail: "--****",
               website: b.website ? "[Protected — Active Subscription Required]" : undefined,
               epkUrl: undefined,
               musicUrl: undefined
             } as AvailableBand;
           }
-          return rest as AvailableBand;
+          return {
+            ...b,
+            contactPhone: sanitizedPhone
+          } as AvailableBand;
         });
 
         setBands(processedBands);
@@ -441,6 +444,14 @@ export default function BandDirectory({
     currentPage * itemsPerPage
   );
 
+  // Dynamic regional counts based on authentic + live registered bands
+  const orCount = bands.filter(b => b.city.includes(", OR") || b.id.startsWith("or-")).length;
+  const waCount = bands.filter(b => b.city.includes(", WA") || b.id.startsWith("wa-")).length;
+  const coCount = bands.filter(b => b.city.includes(", CO") || b.id.startsWith("co-")).length;
+  const azCount = bands.filter(b => b.city.includes(", AZ") || b.id.startsWith("az-")).length;
+  const caCount = bands.filter(b => b.city.includes(", CA") || b.id.startsWith("ca-")).length;
+  const otherCount = Math.max(0, bands.length - (orCount + waCount + coCount + azCount + caCount));
+
   return (
     <div className="space-y-6 select-none" id="bands-directory-viewport">
       
@@ -518,7 +529,7 @@ export default function BandDirectory({
                 </h3>
               </div>
               <p className="text-xs text-emerald-800 font-medium mt-0.5">
-                Logged in as <span className="font-mono font-bold text-emerald-900">{currentAccount?.contactEmail}</span>. Full unmasked booking emails, EPKs, and streaming Listen links are unlocked across all 1600+ live bands.
+                Logged in as <span className="font-mono font-bold text-emerald-900">{currentAccount?.contactEmail}</span>. Full unmasked booking emails, EPKs, and streaming Listen links are unlocked across all {bands.length} authentic live bands.
                 {currentAccount?.autoRenew && " Automatic 30-day renewal is enabled."}
               </p>
             </div>
@@ -771,7 +782,20 @@ export default function BandDirectory({
 
       {/* Directory Searching and Filters Heading Bar */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-5 space-y-4" id="bands-filter-box">
-        <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Filter Available Bands</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Filter Available Bands</h3>
+            <span 
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
+              id="total-bands-dynamic-counter"
+            >
+              {bands.length} Authentic Bands
+            </span>
+          </div>
+          <span className="text-xs text-slate-500 font-medium">
+            Showing <strong className="text-slate-900 font-black">{filteredBands.length}</strong> of <strong className="text-slate-900 font-black">{bands.length}</strong> authentic bands
+          </span>
+        </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Keyword Search */}
@@ -793,13 +817,13 @@ export default function BandDirectory({
               onChange={(e) => setSelectedState(e.target.value)}
               className="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-800"
             >
-              <option value="All">All States / Regions</option>
-              <option value="OR">🌲 Oregon (140+ Bands)</option>
-              <option value="WA">🌲 Washington (140+ Bands)</option>
-              <option value="CO">🏔️ Colorado (140+ Bands)</option>
-              <option value="AZ">🌵 Arizona (140+ Bands)</option>
-              <option value="CA">☀️ California (140+ Bands)</option>
-              <option value="OTHER">🇺🇸 Other / National</option>
+              <option value="All">All States / Regions ({bands.length} Total)</option>
+              <option value="OR">🌲 Oregon ({orCount} Bands)</option>
+              <option value="WA">🌲 Washington ({waCount} Bands)</option>
+              <option value="CO">🏔️ Colorado ({coCount} Bands)</option>
+              <option value="AZ">🌵 Arizona ({azCount} Bands)</option>
+              <option value="CA">☀️ California ({caCount} Bands)</option>
+              <option value="OTHER">🇺🇸 Other / National ({otherCount} Bands)</option>
             </select>
           </div>
 
@@ -1098,7 +1122,7 @@ export default function BandDirectory({
 
         {filteredBands.length === 0 && (
           <div className="col-span-full bg-white border border-gray-100 rounded-xl p-8 text-center text-gray-400 text-xs font-semibold">
-            No dynamic live bands match your filtering details. Modify search tags.
+            No authentic live bands match your current search and filters. (Showing 0 of {bands.length} total authentic bands)
           </div>
         )}
       </div>
@@ -1111,7 +1135,8 @@ export default function BandDirectory({
             <span className="font-extrabold text-slate-900">
               {Math.min(currentPage * itemsPerPage, filteredBands.length)}
             </span>{" "}
-            of <span className="font-extrabold text-slate-900">{filteredBands.length}</span> dynamic bands
+            of <span className="font-extrabold text-slate-900">{filteredBands.length}</span> authentic bands{" "}
+            <span className="text-slate-400 font-normal">({bands.length} total authentic & registered bands)</span>
           </p>
 
           <div className="flex items-center gap-1.5" id="pagination-buttons">

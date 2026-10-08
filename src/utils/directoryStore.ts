@@ -1,5 +1,4 @@
 import { AvailableBand, Venue } from "../types";
-import { INITIAL_AVAILABLE_BANDS } from "../data/availableBands";
 import { MUSIC_VENUES } from "../data/venues";
 import { isBandBanned } from "./accessControl";
 import { isValidWebUrl } from "./musicLinks";
@@ -116,7 +115,7 @@ export function getMergedBandsList(additionalBands?: AvailableBand[]): Available
     .filter(p => (p.type || p.role) === "Band")
     .map(profileToAvailableBand);
 
-  const allRaw = [...(additionalBands || []), ...supabaseBands, ...custom, ...INITIAL_AVAILABLE_BANDS];
+  const allRaw = [...(additionalBands || []), ...supabaseBands, ...custom];
   const seen = new Set<string>();
   const result: AvailableBand[] = [];
 

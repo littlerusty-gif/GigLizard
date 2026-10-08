@@ -253,7 +253,7 @@ export default function PayPalAccessModal({
               30-Day All-Access Band Directory Pass
             </h3>
             <p className="text-xs text-slate-300 max-w-md mx-auto mt-0.5 leading-relaxed">
-              Unmask direct band booking emails, official websites, and stage riders across all 1600+ live bands.
+              Unmask direct band booking emails, official websites, and stage riders across all registered live bands.
             </p>
           </div>
         </div>
@@ -327,7 +327,7 @@ export default function PayPalAccessModal({
 
             <div className="flex justify-between items-center text-slate-400 text-[11px]">
               <span className="flex items-center gap-1">
-                <Check className="w-3 h-3 text-emerald-400" /> 1600+ Unmasked Band Booking Emails
+                <Check className="w-3 h-3 text-emerald-400" /> Unmasked Band Booking Emails
               </span>
               <span className="text-slate-300 font-semibold">Included</span>
             </div>

@@ -754,8 +754,8 @@ export default function EditAccountModal({
                   {isOwner 
                     ? "Perpetual lifetime owner access active with unmasked band contacts, unlimited booking access, EPKs, and private admin analytics."
                     : activeAccess 
-                    ? `Full booking emails and verified contacts across all 1600+ live bands are currently unmasked. ${currentAccount.autoRenew ? "Automatic 30-day renewal is enabled." : "Pass expires in " + accessDetails.remainingDays + " days."}`
-                    : "Band contact emails, EPKs, and streaming Listen links are currently masked. Upgrade to an active 30-day pass to unlock full unmasked contact data across all 1600+ live bands."}
+                    ? `Full booking emails and verified contacts across all registered live bands are currently unmasked. ${currentAccount.autoRenew ? "Automatic 30-day renewal is enabled." : "Pass expires in " + accessDetails.remainingDays + " days."}`
+                    : "Band contact emails, EPKs, and streaming Listen links are currently masked. Upgrade to an active 30-day pass to unlock full unmasked contact data across all registered live bands."}
                 </p>
               </div>
 

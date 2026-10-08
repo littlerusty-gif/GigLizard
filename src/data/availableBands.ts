@@ -2854,145 +2854,126 @@ const STATIC_BANDS: AvailableBand[] = [
   }
 ];
 
-const generateAdditionalBands = (): AvailableBand[] => {
-  const prefixes = [
-    "Electric", "Midnight", "Crimson", "Golden", "Pacific", "Cascadia", "Alpine", "Sunset", "Coastal", "Velvet",
-    "Bitter", "Broken", "Whispering", "Phantom", "Silver", "Rogue", "Neon", "Astro", "Lunar", "Solar",
-    "Cosmic", "Shimmering", "Ethereal", "Moody", "Silent", "Savage", "Restless", "Vintage", "Modern", "Deep",
-    "Vibrant", "Static", "Magnetic", "Hollow", "Emerald", "Redwood", "Granite", "Cobalt", "Amber", "Mystic",
-    "Rust", "Salt", "Mist", "Driftwood", "Timber", "Glacier", "Canyon", "Harbor", "Summit", "Cascade",
-    "Solaris", "Nebula", "Shadow", "Starlight", "Tidal", "Echo", "Subtle", "Primal", "Arctic", "Urban",
-    "Desert", "Oasis", "Wild", "Brave", "Lost", "Found", "Fallen", "Rising", "Hidden", "Ghost",
-    "Haunted", "Blessed", "Cursed", "Heavy", "Sonic", "Loud", "Quiet", "Fuzzy", "Analog", "Retro"
-  ];
+// Test/dummy domain blacklist for filtering out mock entries
+const DUMMY_EMAIL_DOMAINS = ["@example.com", "@test.com", "@mock.com", "@sample.com", "@placeholder.com", "@dummy.com"];
 
-  const suffixes = [
-    "Tide", "Echoes", "Pulse", "Rebellion", "Mystics", "Waves", "Cruisers", "Strutters", "Revival", "Fuzz",
-    "Winds", "Sound", "Shakers", "Bridge", "Lights", "Delta", "Quake", "Groove", "Pickers", "Coalition",
-    "Noise", "Blues", "Syndicate", "Clay", "Currents", "Keys", "Whisper", "Solder", "Mud", "Strings",
-    "Tremor", "Project", "Outlaws", "Cult", "Sparks", "Underground", "Rhythm", "Tremolo", "Brass", "Symphony",
-    "Alchemists", "Springs", "Creek", "Wolves", "Spirits", "Runners", "Shadows", "Signals", "Vibers", "Club",
-    "Ghosts", "Prophets", "Rebels", "Giants", "Phantoms", "Knights", "Nomads", "Astronauts", "Pioneers", "Wanderers",
-    "Thieves", "Dreamers", "Drifters", "Outcasts", "Pilots", "Sailors", "Riders", "Kings", "Queens", "Lords",
-    "Keepers", "Seekers", "Watchers", "Chasers", "Weavers", "Shapers", "Makers", "Builders", "Masters", "Legends"
-  ];
+/**
+ * Checks whether a phone number contains dummy prefix or 555 placeholder
+ * and sanitizes it according to requirements.
+ */
+export function sanitizeBandPhoneNumber(phone?: string | null): string {
+  if (!phone) return "";
+  const trimmed = phone.trim();
+  if (
+    trimmed === "" ||
+    trimmed.toLowerCase() === "inquire" ||
+    trimmed.toLowerCase() === "n/a" ||
+    trimmed.includes("555") ||
+    /555[0-9-]/.test(trimmed) ||
+    /\b555\b/.test(trimmed)
+  ) {
+    return "";
+  }
+  return trimmed;
+}
 
-  const cities = [
-    "Seattle, WA", "Portland, OR", "San Francisco, CA", "Los Angeles, CA", "San Diego, CA",
-    "Oakland, CA", "Sacramento, CA", "Eugene, OR", "Bellingham, WA", "Tacoma, WA",
-    "Olympia, WA", "Medford, OR", "Ashland, OR", "Santa Cruz, CA", "San Jose, CA",
-    "Berkeley, CA", "Long Beach, CA", "Bend, OR", "Astoria, OR", "Vancouver, WA",
-    "Spokane, WA", "Everett, WA", "Salem, OR"
-  ];
+/**
+ * Validates that an entry represents a genuine musical act with at least ONE
+ * valid, authentic contact or presence method and not a generic template.
+ */
+export function isAuthenticBand(band: AvailableBand): boolean {
+  if (!band || !band.name) return false;
+  const id = (band.id || "").trim();
+  const name = band.name.trim().toLowerCase();
 
-  const genreSets = [
-    ["Indie Rock", "Alternative Rock"],
-    ["Post-Punk", "Darkwave", "Goth Rock"],
-    ["Dream Pop", "Shoegaze", "Indie Pop"],
-    ["Ska Punk", "Reggae Rock"],
-    ["Bluegrass", "Traditional Folk"],
-    ["Heavy Metal", "Thrash Metal"],
-    ["Funk", "Soul", "R&B"],
-    ["Classic Rock", "Blues Rock"],
-    ["Acoustic", "Singer-Songwriter"],
-    ["Emo", "Math Rock"],
-    ["Stoner Rock", "Doom Metal"],
-    ["Psychedelic Rock", "Space Rock"],
-    ["Synthpop", "Electronic"]
-  ];
-
-  const vibes = [
-    "reverb-drenched, atmospheric",
-    "high-energy, fuzzy",
-    "delicate, intricate",
-    "funky, driving",
-    "dark, brooding",
-    "warm, acoustic",
-    "heavy, aggressive",
-    "shimmering, nostalgic",
-    "gritty, bluesy",
-    "rhythmic, infectious"
-  ];
-
-  const performances = [
-    "mind-bending live performances",
-    "highly emotional storytelling",
-    "infectious dance floor grooves",
-    "relentless stage energy",
-    "captivating vocal harmonies",
-    "virtuoso acoustic picking",
-    "sweeping cinematic soundscapes",
-    "uncompromising, raw underground delivery",
-    "tight rhythm sections and dual guitar leads",
-    "beautifully layered instrumentation"
-  ];
-
-  const highlights = [
-    "a highly active local fanbase",
-    "an immersive live show with retro lights",
-    "stellar reviews from regional indie blogs",
-    "regular appearances at West Coast festivals",
-    "a sound that pays homage to legendary PNW roots",
-    "capturing the true essence of coastal alternative music",
-    "unforgettable weekend club showcases",
-    "deeply resonant lyrics that explore nature and mythology",
-    "building a massive following on the DIY tour circuit",
-    "perfectly blending modern production with vintage warmth"
-  ];
-
-  const experienceLevels: Array<"Local" | "Regional Tour" | "National Act"> = [
-    "Local", "Local", "Local", "Regional Tour", "Regional Tour", "National Act"
-  ];
-
-  const generated: AvailableBand[] = [];
-
-  for (let i = 0; i < 1250; i++) {
-    // Unique pairing to avoid any collisions or repeated names
-    const prefIndex = i % prefixes.length;
-    const suffIndex = Math.floor(i / prefixes.length) % suffixes.length;
-    
-    const pref = prefixes[prefIndex];
-    const suff = suffixes[suffIndex];
-    const name = `${pref} ${suff}`;
-    
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const id = `generated-${slug}-${i}`;
-    
-    const city = cities[(i * 3) % cities.length];
-    const genres = genreSets[(i * 7) % genreSets.length];
-    
-    const vibe = vibes[i % vibes.length];
-    const performance = performances[(i * 2) % performances.length];
-    const highlight = highlights[(i * 4) % highlights.length];
-    
-    const bio = `An exciting ${genres.join(" / ")} outfit from ${city}, known for their ${vibe} sound, ${performance}, and ${highlight}.`;
-    
-    const experienceLevel = experienceLevels[i % experienceLevels.length];
-    
-    generated.push({
-      id,
-      name,
-      genres,
-      city,
-      bio,
-      contactEmail: `booking@${slug}.com`,
-      musicUrl: `https://${slug.replace(/[^a-z0-9]/g, "")}.bandcamp.com`,
-      contactPhone: `(${201 + (i % 790)}) 555-${String(1000 + i).padStart(4, "0")}`,
-      experienceLevel
-    });
+  // Exclude generated template entries like 'Lunar Reverberator' or procedural IDs
+  if (id.startsWith("generated-") || name === "lunar reverberator") return false;
+  if (band.bio && band.bio.includes("outfit from") && band.bio.includes("known for their") && band.bio.includes("sound,")) {
+    return false;
   }
 
-  return generated;
-};
+  // Check contact fields
+  const email = (band.contactEmail || "").trim().toLowerCase();
+  const hasValidEmail = Boolean(email && email.includes("@") && !DUMMY_EMAIL_DOMAINS.some(d => email.endsWith(d)));
+  
+  const hasValidWebsite = Boolean(
+    band.website && 
+    band.website.trim().length > 3 && 
+    !band.website.includes("example.com") && 
+    !band.website.includes("test.com")
+  );
 
-export const INITIAL_AVAILABLE_BANDS: AvailableBand[] = [
+  const hasValidEpk = Boolean(
+    band.epkUrl && 
+    band.epkUrl.trim().length > 3 && 
+    !band.epkUrl.includes("example.com")
+  );
+
+  const hasValidMusic = Boolean(
+    band.musicUrl && 
+    band.musicUrl.trim().length > 3 && 
+    !band.musicUrl.includes("example.com")
+  );
+
+  const hasValidSpotify = Boolean((band as any).spotifyUrl && (band as any).spotifyUrl.trim().length > 3);
+  const hasValidBandcamp = Boolean((band as any).bandcampUrl && (band as any).bandcampUrl.trim().length > 3);
+  const hasValidInstagram = Boolean((band as any).instagramUrl && (band as any).instagramUrl.trim().length > 3);
+
+  // Must have at least ONE valid, authentic contact or presence method
+  return hasValidEmail || hasValidWebsite || hasValidEpk || hasValidMusic || hasValidSpotify || hasValidBandcamp || hasValidInstagram;
+}
+
+/**
+ * Sanitizes retained genuine bands: sets dummy/555 phone numbers to empty string,
+ * keeping the rest of the profile, bio, genres, hometown, and valid booking email intact.
+ */
+export function sanitizeBand(band: AvailableBand): AvailableBand {
+  return {
+    ...band,
+    contactPhone: sanitizeBandPhoneNumber(band.contactPhone)
+  };
+}
+
+const RAW_CANDIDATES: AvailableBand[] = [
   ...STATIC_BANDS,
   ...ALL_OREGON_BANDS,
   ...ALL_WASHINGTON_BANDS,
   ...ALL_COLORADO_BANDS,
   ...ALL_ARIZONA_BANDS,
   ...ALL_CALIFORNIA_BANDS,
-  ...ROCKIES_AND_WEST_BANDS,
-  ...generateAdditionalBands()
+  ...ROCKIES_AND_WEST_BANDS
 ];
+
+/**
+ * Curated, deduplicated list of authentic bands with sanitized phone numbers.
+ */
+const buildCleanedAuthenticBands = (): AvailableBand[] => {
+  const seen = new Map<string, AvailableBand>();
+  for (const b of RAW_CANDIDATES) {
+    if (!isAuthenticBand(b)) continue;
+    const sanitized = sanitizeBand(b);
+    const key = sanitized.name.trim().toLowerCase();
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, sanitized);
+    } else {
+      // Merge to preserve the most complete profile details
+      seen.set(key, {
+        ...sanitized,
+        ...existing,
+        website: existing.website || sanitized.website,
+        epkUrl: existing.epkUrl || sanitized.epkUrl,
+        musicUrl: existing.musicUrl || sanitized.musicUrl,
+        contactEmail: existing.contactEmail || sanitized.contactEmail,
+        contactPhone: existing.contactPhone || sanitized.contactPhone,
+        bio: existing.bio?.length > (sanitized.bio?.length || 0) ? existing.bio : sanitized.bio
+      });
+    }
+  }
+  return Array.from(seen.values());
+};
+
+export const AUTHENTIC_AVAILABLE_BANDS: AvailableBand[] = buildCleanedAuthenticBands();
+export const INITIAL_AVAILABLE_BANDS: AvailableBand[] = AUTHENTIC_AVAILABLE_BANDS;
+
 
