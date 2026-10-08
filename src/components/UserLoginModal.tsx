@@ -119,18 +119,7 @@ export default function UserLoginModal({
       setIsSendingReset(false);
     }
   };
-      if (error) {
-        setErrorMessage(error.message || "Failed to dispatch recovery link. Please try again.");
-      } else {
-        setResetEmailSent(true);
-        setSuccessMessage("A secure reset link has been sent to your email. Please check your inbox and click the link to proceed.");
-      }
-    } catch (err: any) {
-      setErrorMessage(err?.message || "Failed to contact Supabase Auth service.");
-    } finally {
-      setIsSendingReset(false);
-    }
-  };
+      
 
   if (!isOpen) return null;
 
