@@ -39,6 +39,11 @@ import ExportDirectoryModal from "./ExportDirectoryModal";
 import { getMergedBandsList, getMergedVenuesList } from "../utils/directoryStore";
 import { downloadSubscribersExcel, downloadMasterContactsCSV } from "../utils/exportSpreadsheet";
 import { fetchProfiles, profileToSubscriber } from "../lib/supabase";
+import { 
+  syncLocalBandsAndVenuesToSupabase, 
+  downloadEmbeddedBandsAndVenuesCSV,
+  MigrationSyncResult 
+} from "../utils/adminMigration";
 
 interface AdminDashboardProps {
   currentAccount: UserAccount | null;
@@ -77,6 +82,11 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
   const [metrics, setMetrics] = useState<DailyMetric[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showExportModal, setShowExportModal] = useState(false);
+
+  // Migration & Sync Tool state
+  const [isSyncingSupabase, setIsSyncingSupabase] = useState(false);
+  const [syncStatusProgress, setSyncStatusProgress] = useState<string | null>(null);
+  const [syncToastMessage, setSyncToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
 
   const allBands = useMemo(() => getMergedBandsList(), [refreshKey]);
   const allVenues = useMemo(() => getMergedVenuesList(), [refreshKey]);
@@ -371,6 +381,52 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
     }
   };
 
+  // Sync Local Bands & Venues to Supabase with real-time feedback
+  const handleSyncToSupabase = async () => {
+    if (isSyncingSupabase) return;
+    setIsSyncingSupabase(true);
+    setSyncStatusProgress("Initializing migration batches...");
+    setSyncToastMessage({ text: "Beginning data sync of local bands & venues to Supabase...", type: "info" });
+
+    try {
+      const result: MigrationSyncResult = await syncLocalBandsAndVenuesToSupabase((progress) => {
+        setSyncStatusProgress(progress);
+      });
+
+      const successToast = `${result.bandsCount} bands, ${result.venuesCount} venues, and ${result.profilesCount} relative profiles successfully pushed to Supabase!`;
+      setSyncToastMessage({ text: successToast, type: "success" });
+      setRefreshKey(k => k + 1);
+    } catch (err: any) {
+      console.error("Data sync to Supabase encountered error:", err);
+      const errMsg = `Sync completed with warning: ${err?.message || "Please check Supabase connection."}`;
+      setSyncToastMessage({ text: errMsg, type: "error" });
+    } finally {
+      setIsSyncingSupabase(false);
+      setSyncStatusProgress(null);
+      // Auto-dismiss toast after 6 seconds
+      setTimeout(() => {
+        setSyncToastMessage(null);
+      }, 6000);
+    }
+  };
+
+  // Export Embedded Bands & Venues as CSV for offline backups
+  const handleExportOfflineCSVs = () => {
+    try {
+      downloadEmbeddedBandsAndVenuesCSV();
+      setSyncToastMessage({ 
+        text: "Downloaded offline backups: 'giglizard_bands.csv' & 'giglizard_venues.csv'!", 
+        type: "success" 
+      });
+      setTimeout(() => {
+        setSyncToastMessage(null);
+      }, 5000);
+    } catch (err: any) {
+      console.error("Failed to download offline CSVs:", err);
+      alert(err?.message || "Failed to export CSVs.");
+    }
+  };
+
   // Owner Password Verification
   const handleUnlockOwner = (e: React.FormEvent) => {
     e.preventDefault();
@@ -531,6 +587,35 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
             {(isOwnerLoggedIn || unlockSuccess) && (
               <button
                 type="button"
+                onClick={handleSyncToSupabase}
+                disabled={isSyncingSupabase}
+                id="owner-sync-supabase-btn"
+                className={`px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 cursor-pointer ${
+                  isSyncingSupabase ? "opacity-75 cursor-not-allowed animate-pulse" : ""
+                }`}
+                title="Batch upsert all embedded static venues and bands into Supabase tables"
+              >
+                <RefreshCw className={`w-4 h-4 text-emerald-200 ${isSyncingSupabase ? "animate-spin" : ""}`} />
+                <span>{isSyncingSupabase ? "Syncing to Supabase..." : "Sync Local Bands & Venues to Supabase"}</span>
+              </button>
+            )}
+
+            {(isOwnerLoggedIn || unlockSuccess) && (
+              <button
+                type="button"
+                onClick={handleExportOfflineCSVs}
+                id="owner-export-offline-csvs-btn"
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                title="Download offline CSV backups: giglizard_bands.csv & giglizard_venues.csv"
+              >
+                <Download className="w-4 h-4 text-slate-950" />
+                <span>Export Embedded Bands & Venues as CSV</span>
+              </button>
+            )}
+
+            {(isOwnerLoggedIn || unlockSuccess) && (
+              <button
+                type="button"
                 onClick={() => setShowExportModal(true)}
                 id="owner-export-hub-btn"
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 cursor-pointer"
@@ -595,6 +680,92 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
           <div className="flex items-center gap-2 text-slate-300">
             <Shield className="w-4 h-4 text-emerald-400" />
             <span>Pass Status: <strong className="text-emerald-300 font-bold">Auto-Renewing 30D VIP</strong></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Real-Time Migration Toast Banner */}
+      {syncToastMessage && (
+        <div 
+          id="admin-migration-toast-banner"
+          className={`p-4 rounded-2xl flex items-center justify-between gap-3 shadow-lg border transition-all animate-in fade-in slide-in-from-top-4 ${
+            syncToastMessage.type === "success"
+              ? "bg-emerald-950 text-emerald-100 border-emerald-500/50 shadow-emerald-950/20"
+              : syncToastMessage.type === "error"
+              ? "bg-rose-950 text-rose-100 border-rose-500/50 shadow-rose-950/20"
+              : "bg-indigo-950 text-indigo-100 border-indigo-500/50 shadow-indigo-950/20"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            {syncToastMessage.type === "success" ? (
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+            ) : syncToastMessage.type === "error" ? (
+              <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              </div>
+            )}
+            <div>
+              <p className="text-xs sm:text-sm font-black">{syncToastMessage.text}</p>
+              {syncStatusProgress && (
+                <p className="text-[11px] text-slate-300 font-mono mt-0.5">{syncStatusProgress}</p>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSyncToastMessage(null)}
+            className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded-lg hover:bg-white/10"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Admin Data Migration & Seed Tool Banner Card */}
+      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-indigo-800/40 rounded-3xl p-6 sm:p-7 shadow-xl text-white relative overflow-hidden" id="admin-migration-seed-tool-card">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-xs font-black rounded-full">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Admin Data Migration & Seed Engine</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              <span>Sync Embedded Mock Datasets to Supabase</span>
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Read the hardcoded embedded bands (1,016+ acts) and venues (220+ rooms) from <code className="text-amber-300 font-mono">src/data/</code> and batch upsert them directly into Supabase <code className="text-emerald-300 font-mono">public.venues</code> and <code className="text-emerald-300 font-mono">public.bands</code> with deduplication. You can also export offline CSV backups for immediate download.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handleSyncToSupabase}
+              disabled={isSyncingSupabase}
+              id="btn-sync-local-bands-venues-supabase"
+              className={`px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition-all shadow-lg flex items-center gap-2.5 cursor-pointer ${
+                isSyncingSupabase ? "opacity-75 cursor-not-allowed animate-pulse" : ""
+              }`}
+            >
+              <RefreshCw className={`w-4 h-4 text-slate-950 ${isSyncingSupabase ? "animate-spin" : ""}`} />
+              <span>{isSyncingSupabase ? "Syncing..." : "Sync Local Bands & Venues to Supabase"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportOfflineCSVs}
+              id="btn-export-embedded-csv"
+              className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-black text-xs sm:text-sm rounded-2xl transition-all shadow-md flex items-center gap-2.5 cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-amber-400" />
+              <span>Export Embedded Bands & Venues as CSV</span>
+            </button>
           </div>
         </div>
       </div>
