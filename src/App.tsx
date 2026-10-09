@@ -23,7 +23,7 @@ import { insertProfile, supabase } from "./lib/supabase";
 import { 
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
-  Compass, Navigation, ShieldCheck, BarChart3, Crown, LogIn
+  Compass, Navigation, ShieldCheck, BarChart3, Crown, LogIn, HelpCircle
 } from "lucide-react";
 
 // Default preset values for first-load
@@ -598,6 +598,8 @@ export default function App() {
     setActiveTab("poster");
   };
 
+  const isAuthenticated = Boolean(currentAccount?.contactEmail || currentUser?.email);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans" id="applet-viewport">
       {/* Visual Workspace Bar Header */}
@@ -627,125 +629,46 @@ export default function App() {
             </button>
           </div>
 
-          {/* Quick tab controllers - Optimized for all viewports & screen sizes */}
-          <nav className="flex flex-wrap items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl w-full xl:w-auto border border-slate-200/60 shadow-2xs" id="main-nav">
-            <button
-              onClick={() => setActiveTab("home")}
-              id="tab-btn-home"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "home"
-                  ? "bg-indigo-650 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Home</span>
-            </button>
-
+          {/* Streamlined navigation bar */}
+          <nav className="flex flex-wrap items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl w-full sm:w-auto border border-slate-200/60 shadow-2xs" id="main-nav">
             <button
               onClick={() => setActiveTab("venues")}
               id="tab-btn-venues"
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
                 activeTab === "venues"
                   ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
                   : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
               }`}
             >
               <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-              <span>1. Venues</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("plot")}
-              id="tab-btn-plot"
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "plot"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5 text-orange-500" />
-              <span>2. Stage Plot</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("rider")}
-              id="tab-btn-rider"
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "rider"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5 text-blue-500" />
-              <span>3. Tech Rider</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("poster")}
-              id="tab-btn-poster"
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "poster"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <Image className="w-3.5 h-3.5 text-emerald-500" />
-              <span>4. Posters</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("advisor")}
-              id="tab-btn-advisor"
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "advisor"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-purple-500" />
-              <span>5. AI Advisor</span>
+              <span>For Venues</span>
             </button>
 
             <button
               onClick={() => setActiveTab("bands")}
               id="tab-btn-bands"
-              className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
                 activeTab === "bands"
                   ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
                   : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
               }`}
             >
               <Users className="w-3.5 h-3.5 text-amber-500" />
-              <span>6. Bands</span>
+              <span>For Bands</span>
             </button>
 
             <button
-              onClick={() => setActiveTab("tour")}
-              id="tab-btn-tour"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs ${
-                activeTab === "tour"
-                  ? "bg-rose-600 text-white shadow-sm ring-2 ring-rose-300"
-                  : "bg-rose-50/80 text-rose-700 hover:bg-rose-100/90 border border-rose-200/80"
+              onClick={() => setActiveTab("advisor")}
+              id="tab-btn-advisor"
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+                activeTab === "advisor"
+                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
+                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
               }`}
             >
-              <Compass className={`w-3.5 h-3.5 ${activeTab === "tour" ? "text-white" : "text-rose-600"} animate-spin-slow`} />
-              <span>7. Smart Tour Planner</span>
+              <HelpCircle className="w-3.5 h-3.5 text-purple-500" />
+              <span>Help</span>
             </button>
-
-            {/* Edit Account & Page Button for logged-in users */}
-            {currentAccount && (
-              <button
-                type="button"
-                onClick={() => setShowEditAccountModal(true)}
-                id="tab-btn-edit-account"
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
-                title="Edit your account password, view status, or update your band or venue page"
-              >
-                <Settings className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Edit Account</span>
-              </button>
-            )}
 
             {/* Owner & Private Analytics Dashboard Button - strictly visible to littlerusty@gmail.com only */}
             {currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" && (
@@ -765,8 +688,19 @@ export default function App() {
               </button>
             )}
 
-            {/* Quick Sign In button for guest users */}
-            {!currentAccount && (
+            {/* Dynamic Account Action Button: Edit Account if authenticated, Sign In if guest */}
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => setShowEditAccountModal(true)}
+                id="tab-btn-edit-account"
+                className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+                title="Edit your account password, view status, or update your band or venue page"
+              >
+                <Settings className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Edit Account</span>
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={() => {
@@ -774,7 +708,7 @@ export default function App() {
                   setShowUserLoginModal(true);
                 }}
                 id="tab-btn-sign-in"
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-600 hover:bg-indigo-500 text-white"
+                className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-600 hover:bg-indigo-500 text-white"
                 title="Sign in or register your GigLizard profile"
               >
                 <LogIn className="w-3.5 h-3.5" />
