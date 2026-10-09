@@ -119,6 +119,9 @@ export default function App() {
         if (isPerpetualPassEmail(parsed?.contactEmail)) {
           const ownerAccount: UserAccount = {
             ...parsed,
+            id: parsed.id || "41c6fde8-9462-4402-a0f1-79155786fb03",
+            email: parsed.email || parsed.contactEmail || "littlerusty@gmail.com",
+            role: parsed.role || "Band",
             name: (!parsed.name || parsed.name === "The Midnight Echoes") ? "Dr Hadit" : parsed.name,
             hasPaidAccess: true,
             isPremium: true,

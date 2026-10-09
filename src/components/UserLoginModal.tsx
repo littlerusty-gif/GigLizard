@@ -246,6 +246,9 @@ export default function UserLoginModal({
       const validAdminPass = expectedCustomPass || "L,eilani1228";
       if (cleanPassword === validAdminPass) {
         const ownerAccount: UserAccount = {
+          id: "41c6fde8-9462-4402-a0f1-79155786fb03",
+          email: "littlerusty@gmail.com",
+          role: "Band",
           type: "Band",
           name: "Dr Hadit",
           city: "Seattle, WA",

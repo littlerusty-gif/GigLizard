@@ -10,9 +10,20 @@ export const FALLBACK_SUPABASE_ANON_KEY = "sb_publishable_VVfSEHC_sej3qB_Qtxl5yA
 const envUrl = (import.meta.env.VITE_SUPABASE_URL || "").trim();
 const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || "").trim();
 
-const supabaseUrl = envUrl && envUrl.startsWith("http") && envUrl !== "YOUR_SUPABASE_URL"
-  ? envUrl
-  : FALLBACK_SUPABASE_URL;
+function normalizeSupabaseUrl(rawUrl: string): string {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed || !trimmed.startsWith("http") || trimmed === "YOUR_SUPABASE_URL") {
+    return FALLBACK_SUPABASE_URL;
+  }
+  try {
+    const urlObj = new URL(trimmed);
+    return urlObj.origin;
+  } catch {
+    return trimmed.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
+  }
+}
+
+const supabaseUrl = normalizeSupabaseUrl(envUrl);
 
 const supabaseAnonKey = envKey && envKey.length > 10 && envKey !== "YOUR_SUPABASE_ANON_KEY"
   ? envKey
