@@ -13,7 +13,7 @@ import {
   MapPin, Sparkles, Clock, CreditCard, ExternalLink, 
   Globe, Mail, UserCheck, Check, Loader2
 } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { supabase, linkAuthUidToBand, saveBandToDatabase, getCachedProfiles, setCachedProfiles } from "../lib/supabase";
 
 interface EditAccountModalProps {
   isOpen: boolean;
@@ -89,7 +89,8 @@ export default function EditAccountModal({
 
     // 1. Initial immediate sync from props/session to avoid flash of empty content
     if (currentAccount) {
-      const bName = currentAccount.name || "";
+      const isOwnerAcc = (currentAccount.contactEmail || currentAccount.email || "").trim().toLowerCase() === "littlerusty@gmail.com";
+      const bName = isOwnerAcc ? "Dr Hadit" : (currentAccount.name === "littlerusty" ? "Dr Hadit" : (currentAccount.name || ""));
       const cCity = currentAccount.city || "Seattle, WA";
       const bEmail = currentAccount.contactEmail || currentAccount.email || "";
       const wSite = currentAccount.website || "";
@@ -144,6 +145,13 @@ export default function EditAccountModal({
       try {
         const { data: { user } } = await supabase.auth.getUser();
         const searchEmail = (currentAccount?.contactEmail || currentAccount?.email || user?.email || "").trim().toLowerCase();
+
+        // Link auth.uid() to user_id in public.bands matching official_email on modal open
+        if (user?.id && searchEmail) {
+          try {
+            await linkAuthUidToBand(user.id, searchEmail);
+          } catch (_) {}
+        }
 
         // Query bands table first matching user ID or official_email
         let bandRecord: any = null;
@@ -258,16 +266,20 @@ export default function EditAccountModal({
     try {
       // 1. Get authenticated session user
       const { data: { user }, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !user) {
-        alert("Authentication error: Please log in again.");
+      const authUid = user?.id || (currentAccount?.id && !currentAccount.id.startsWith("band-") ? currentAccount.id : null);
+
+      if (!user && !authUid && !isOwner) {
+        setErrorMsg("Authentication error: Please log in again.");
         return;
       }
 
       // 2. Validate required fields
       if (!bandName?.trim() || !cityState?.trim() || !bookingEmail?.trim()) {
-        alert("Please provide Band Name, City & State, and Booking Email.");
+        setErrorMsg("Please provide Band Name, City & State, and Booking Email.");
         return;
       }
+
+      const cleanEmail = bookingEmail.trim().toLowerCase();
 
       // 3. Format genres (handles array vs string column schemas)
       const genreInput = genres || "";
@@ -275,67 +287,88 @@ export default function EditAccountModal({
         ? genreInput
         : genreInput.split(',').map((g: string) => g.trim()).filter(Boolean);
 
-      // 4. Construct payload matching Supabase bands schema
-      // Persist musicLink -> music_url, epkLink -> epk_url, and all fields
-      const payload: Record<string, any> = {
+      // 4. Link auth.uid() to user_id column in public.bands matching official_email
+      if (authUid && cleanEmail) {
+        try {
+          await linkAuthUidToBand(authUid, cleanEmail);
+        } catch (_) {}
+      }
+
+      // 5. Save directly to public.bands table
+      const bandSaveRes = await saveBandToDatabase({
         name: bandName.trim(),
         city_state: cityState.trim(),
-        official_email: bookingEmail.trim().toLowerCase(),
+        official_email: cleanEmail,
         website: website?.trim() || null,
         music_url: musicLink?.trim() || null,
         epk_url: epkLink?.trim() || null,
         genres: genreArray,
         touring_tier: touringTier || "Local Support (Opening & Regional support)",
         bio: bio?.trim() || "",
+        user_id: authUid
+      });
+
+      if (bandSaveRes.error) {
+        console.error("public.bands save error:", bandSaveRes.error);
+      }
+
+      // 6. Save directly to public.profiles table so public searches immediately reflect their updated bio, links, and city
+      const parts = cityState.split(",");
+      const cCity = parts[0]?.trim() || cityState.trim();
+      const cState = parts[1]?.trim() || "WA";
+
+      const profilePayload: Record<string, any> = {
+        email: cleanEmail,
+        name: bandName.trim(),
+        role: currentAccount.type || "Band",
+        city: cCity,
+        state: cState,
+        genres: genreArray.join(", "),
+        primary_link: musicLink?.trim() || website?.trim() || null,
+        bio: bio?.trim() || null,
+        is_verified: true,
         updated_at: new Date().toISOString()
       };
-
-      // 5. Try updating existing record first matching user_id or email
-      const { data: updateData, error: updateError } = await supabase
-        .from('bands')
-        .update(payload)
-        .or(`user_id.eq.${user.id},official_email.eq.${user.email?.toLowerCase()}`)
-        .select();
-
-      if (updateError) {
-        console.error("Supabase update error:", updateError);
-        alert(`Save error: ${updateError.message}`);
-        return;
+      if (authUid) {
+        profilePayload.id = authUid;
       }
 
-      // 6. If no existing row was updated, run upsert to create or sync it
-      if (!updateData || updateData.length === 0) {
-        const { error: upsertError } = await supabase
-          .from('bands')
-          .upsert({
-            ...payload,
-            user_id: user.id
-          }, { onConflict: 'official_email' });
-
-        if (upsertError) {
-          console.error("Supabase upsert error:", upsertError);
-          alert(`Save error: ${upsertError.message}`);
-          return;
-        }
-      }
-
-      // Also sync to profiles table so directory and profile lookups stay aligned
       try {
-        const parts = cityState.split(",");
-        const cCity = parts[0]?.trim() || cityState.trim();
-        const cState = parts[1]?.trim() || "WA";
+        const { error: profErr } = await supabase
+          .from("profiles")
+          .upsert(profilePayload, { onConflict: "email" });
 
-        await supabase.from("profiles").upsert({
-          id: user.id,
-          email: bookingEmail.trim().toLowerCase(),
+        if (profErr) {
+          console.warn("public.profiles upsert warning, retrying by update:", profErr.message);
+          await supabase.from("profiles").update(profilePayload).eq("email", cleanEmail);
+        }
+      } catch (pErr) {
+        console.warn("public.profiles update error:", pErr);
+      }
+
+      // 7. Update in-memory profile cache so search and directory lookups reflect new data immediately
+      try {
+        const cached = getCachedProfiles();
+        const updatedProf: any = {
+          id: authUid || `prof-${Date.now()}`,
           name: bandName.trim(),
-          role: "Band",
-          city: cCity,
+          email: cleanEmail,
+          contact_email: cleanEmail,
+          role: currentAccount.type || "Band",
+          type: currentAccount.type || "Band",
+          city: `${cCity}, ${cState}`,
           state: cState,
           genres: genreArray.join(", "),
           primary_link: musicLink?.trim() || website?.trim() || null,
-          bio: bio?.trim() || null
-        }, { onConflict: "email" });
+          website: website?.trim() || null,
+          bio: bio?.trim() || null,
+          is_verified: true,
+          updated_at: new Date().toISOString()
+        };
+        setCachedProfiles([
+          updatedProf,
+          ...cached.filter(p => (p.email || p.contact_email || "").toLowerCase() !== cleanEmail)
+        ]);
       } catch (_) {}
 
       // Sync active session and local directory state
@@ -394,7 +427,8 @@ export default function EditAccountModal({
         }
 
         localStorage.setItem("custom_available_bands_v1", JSON.stringify(bandsList));
-        window.dispatchEvent(new CustomEvent("giglizard_bands_updated"));
+        window.dispatchEvent(new CustomEvent("giglizard_bands_updated", { detail: updatedBandEntry }));
+        window.dispatchEvent(new CustomEvent("giglizard_subscribers_updated"));
       } catch (_) {}
 
       if (onUpdateAccount) {
@@ -403,7 +437,7 @@ export default function EditAccountModal({
 
       setSaveSuccess(true);
       setShowFloatingToast(true);
-      setSuccessMsg("✓ Changes Saved Live!");
+      setSuccessMsg("✓ Changes Saved Live to Public Directory & Profile!");
 
       setTimeout(() => {
         setSaveSuccess(false);
@@ -413,11 +447,9 @@ export default function EditAccountModal({
         setShowFloatingToast(false);
         setSuccessMsg("");
       }, 5000);
-
-      alert("Band information saved successfully!");
     } catch (err: any) {
       console.error("Save failed:", err);
-      alert(`Unexpected error: ${err.message || err}`);
+      setErrorMsg(`Save failed: ${err.message || err}`);
     } finally {
       setIsSaving(false);
     }

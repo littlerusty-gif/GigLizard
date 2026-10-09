@@ -25,7 +25,7 @@ import {
   isPerpetualPassEmail
 } from "../utils/accessControl";
 import { getOwnerBandEdits, getOwnerDeletedBandIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
-import { fetchProfiles, profileToAvailableBand, insertProfile } from "../lib/supabase";
+import { fetchProfiles, profileToAvailableBand, insertProfile, fetchBandsFromDatabase, saveBandToDatabase } from "../lib/supabase";
 import { updateAndAlphabetizeGenreDropdown, MASTER_GENRES, matchesMasterGenre } from "../utils/genreDropdown";
 
 interface BandDirectoryProps {
@@ -216,6 +216,15 @@ export default function BandDirectory({
           userBandList = [userBandObj];
         }
 
+        // Query live registered bands directly from public.bands table
+        let dbBands: AvailableBand[] = [];
+        try {
+          const directBands = await fetchBandsFromDatabase();
+          dbBands = directBands.filter(b => !isBandBanned(b.contactEmail, b.name));
+        } catch (err) {
+          console.warn("Could not load direct public.bands:", err);
+        }
+
         // Query live registered profiles from Supabase profiles table
         let supabaseBands: AvailableBand[] = [];
         try {
@@ -227,15 +236,17 @@ export default function BandDirectory({
           console.warn("Could not load Supabase band profiles:", err);
         }
 
-        // Deduplicate prioritizing newly registered/user bands and Supabase records at the top and filtering out banned bands
-        const rawMerged = [...userBandList, ...supabaseBands, ...customList, ...rawApiBands].filter(b => !isBandBanned(b?.contactEmail, b?.name));
+        // Deduplicate prioritizing newly registered/user bands, public.bands, and Supabase records at the top and filtering out banned bands
+        const rawMerged = [...userBandList, ...dbBands, ...supabaseBands, ...customList, ...rawApiBands].filter(b => !isBandBanned(b?.contactEmail, b?.name));
         const deletedIds = new Set(getOwnerDeletedBandIds());
         const ownerEdits = getOwnerBandEdits();
 
         const seenNames = new Set<string>();
+        const seenEmails = new Set<string>();
         const deduplicatedBands: AvailableBand[] = [];
         for (let b of rawMerged) {
           const key = b.name?.trim().toLowerCase();
+          const emailKey = b.contactEmail?.trim().toLowerCase();
           if (deletedIds.has(b.id) || (key && deletedIds.has(key))) {
             continue;
           }
@@ -244,10 +255,12 @@ export default function BandDirectory({
           } else if (key && ownerEdits[key]) {
             b = { ...b, ...ownerEdits[key] };
           }
-          if (key && !seenNames.has(key)) {
-            seenNames.add(key);
-            deduplicatedBands.push(b);
+          if ((key && seenNames.has(key)) || (emailKey && emailKey.includes("@") && seenEmails.has(emailKey))) {
+            continue;
           }
+          if (key) seenNames.add(key);
+          if (emailKey && emailKey.includes("@")) seenEmails.add(emailKey);
+          deduplicatedBands.push(b);
         }
 
         const isUserAuthorized = canViewBandContacts(currentAccount);
@@ -278,7 +291,20 @@ export default function BandDirectory({
 
     fetchBands();
 
-    const onBandsUpdated = () => {
+    const onBandsUpdated = (e?: any) => {
+      if (e?.detail) {
+        const updatedEntry = e.detail as AvailableBand;
+        setBands((prev) => {
+          const key = updatedEntry.name?.trim().toLowerCase();
+          const emailKey = updatedEntry.contactEmail?.trim().toLowerCase();
+          const filtered = prev.filter((b) => 
+            b.name?.trim().toLowerCase() !== key && 
+            (!emailKey || !b.contactEmail || b.contactEmail.trim().toLowerCase() !== emailKey) &&
+            b.id !== updatedEntry.id
+          );
+          return [updatedEntry, ...filtered];
+        });
+      }
       fetchBands();
     };
     window.addEventListener("giglizard_bands_updated", onBandsUpdated);
@@ -390,6 +416,20 @@ export default function BandDirectory({
       phone: cleanPhone || undefined,
       experience_level: formData.experienceLevel
     }).catch(err => console.warn("Supabase profile insert error:", err));
+
+    // Also persist directly into public.bands table
+    saveBandToDatabase({
+      name: cleanName,
+      city_state: cleanCity,
+      official_email: cleanEmail,
+      website: cleanWeb || null,
+      music_url: musicUrl || null,
+      epk_url: epkUrl || null,
+      genres: processedGenres,
+      touring_tier: formData.experienceLevel || "Local Support (Opening & Regional support)",
+      bio: cleanBio,
+      user_id: currentAccount?.id && !currentAccount.id.startsWith("band-") ? currentAccount.id : null
+    }).catch(err => console.warn("Supabase bands table save error:", err));
 
     const saved = localStorage.getItem("custom_available_bands_v1");
     let customList: AvailableBand[] = [];

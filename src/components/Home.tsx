@@ -156,6 +156,10 @@ export default function Home({
           bio: "Platform Owner & Artist (Dr Hadit) • Lifetime VIP Owner with full unmasked access for life.",
           experienceLevel: "National Act"
         };
+        try {
+          localStorage.setItem("current_user_account_v1", JSON.stringify(masterPayload));
+          localStorage.removeItem("giglizard_active_user");
+        } catch (_) {}
         onRegisterAccount(masterPayload);
         setSuccessMessage(`Logged in successfully as Platform Owner (littlerusty@gmail.com)! Lifetime Full Access Enabled.`);
         setTimeout(() => setSuccessMessage(""), 4000);
@@ -349,7 +353,11 @@ export default function Home({
       setSuccessMessage(`Registered and logged in as venue: ${newVenue.name}! Available in directory.`);
     } else {
       let displayName = emailSearch.includes("@") ? emailSearch.split("@")[0] : emailSearch;
-      if (displayName.toLowerCase().replace(/[\s\-_.]/g, "") === "drhadit") {
+      if (
+        displayName.toLowerCase().replace(/[\s\-_.]/g, "") === "drhadit" || 
+        displayName.toLowerCase() === "littlerusty" || 
+        emailSearch === "littlerusty@gmail.com"
+      ) {
         displayName = "Dr Hadit";
       } else {
         displayName = displayName.split(/[\s._-]+/).map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join(" ");
@@ -801,7 +809,7 @@ export default function Home({
               <div>
                 <p className="font-extrabold text-sm text-white flex items-center gap-1.5">
                   {currentAccount.type === "Band" ? <Users className="w-4 h-4 text-indigo-400" /> : <Building className="w-4 h-4 text-emerald-400" />}
-                  {currentAccount.name}
+                  {(currentAccount.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" || currentAccount.name === "littlerusty") ? "Dr Hadit" : currentAccount.name}
                 </p>
                 <p className="text-gray-400 text-[11px] mt-0.5 flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-rose-500" />

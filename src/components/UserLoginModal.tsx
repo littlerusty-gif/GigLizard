@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { UserAccount, AvailableBand, Venue } from "../types";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
-import { getCachedProfiles, fetchProfiles, insertProfile, supabase } from "../lib/supabase";
+import { getCachedProfiles, fetchProfiles, insertProfile, supabase, resolveAccountFromDatabase, linkAuthUidToBand, saveBandToDatabase } from "../lib/supabase";
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { 
   X, Lock, LogIn, Eye, EyeOff, CheckCircle2, 
@@ -209,28 +209,45 @@ export default function UserLoginModal({
         });
 
         if (!signInError && signInData?.user) {
-          // Fetch user profile from Supabase profiles table
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', signInData.user.id)
-            .single();
+          // Explicitly link auth.uid() to user_id in public.bands matching official_email
+          await linkAuthUidToBand(signInData.user.id, signInData.user.email || cleanEmail);
 
-          const roleType = (profile?.role || profile?.type || "Band") as "Band" | "Venue" | "Sound Engineer";
-          const isVip = cleanEmail === 'giglizard.us@gmail.com' || isPerpetualPassEmail(cleanEmail);
+          // Prioritize database name from public.bands then public.profiles
+          const resolved = await resolveAccountFromDatabase(signInData.user.id, signInData.user.email || cleanEmail);
+          const isVip = cleanEmail === 'giglizard.us@gmail.com' || isPerpetualPassEmail(cleanEmail) || resolved.isOwner;
+          const roleType = (resolved.role || "Band") as "Band" | "Venue" | "Sound Engineer";
+          const finalName = resolved.isOwner || cleanEmail === "littlerusty@gmail.com" ? "Dr Hadit" : resolved.name;
+
           const payload: UserAccount = {
+            id: resolved.bandRecord?.id || resolved.profileRecord?.id || signInData.user.id,
+            email: cleanEmail,
+            role: roleType,
             type: roleType,
-            name: profile?.name || cleanEmail.split("@")[0],
-            city: profile?.city || "Seattle, WA",
-            isPremium: Boolean(profile?.is_premium || isVip),
-            hasPaidAccess: Boolean(profile?.is_paid || profile?.is_premium || isVip),
+            name: finalName,
+            city: resolved.city,
+            isPremium: Boolean(resolved.profileRecord?.is_premium || resolved.profileRecord?.is_paid || isVip),
+            hasPaidAccess: Boolean(resolved.profileRecord?.is_paid || resolved.profileRecord?.is_premium || isVip),
+            autoRenew: Boolean(resolved.profileRecord?.auto_renew ?? true),
+            accessExpiresAt: resolved.profileRecord?.access_expires_at || (isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined),
             contactEmail: cleanEmail,
-            genre: profile?.genres || profile?.genre || undefined,
-            bio: profile?.bio || undefined,
-            website: profile?.primary_link || profile?.website || undefined,
-            contactPhone: profile?.phone || undefined,
-            experienceLevel: profile?.experience_level as any
+            genre: Array.isArray(resolved.bandRecord?.genres) 
+              ? resolved.bandRecord.genres.join(", ") 
+              : (resolved.bandRecord?.genres || resolved.profileRecord?.genres || resolved.profileRecord?.genre || undefined),
+            bio: resolved.bandRecord?.bio || resolved.profileRecord?.bio || undefined,
+            website: resolved.bandRecord?.website || resolved.profileRecord?.website || resolved.profileRecord?.primary_link || undefined,
+            musicUrl: resolved.bandRecord?.music_url || resolved.profileRecord?.music_url || undefined,
+            epkUrl: resolved.bandRecord?.epk_url || resolved.profileRecord?.epk_url || undefined,
+            contactPhone: resolved.profileRecord?.phone || undefined,
+            experienceLevel: resolved.bandRecord?.touring_tier
+              ? (resolved.bandRecord.touring_tier.includes("National") ? "National Act" : resolved.bandRecord.touring_tier.includes("Regional") ? "Regional Tour" : "Local")
+              : ((resolved.profileRecord?.experience_level as any) || "Local")
           };
+
+          try {
+            localStorage.setItem("current_user_account_v1", JSON.stringify(payload));
+            localStorage.removeItem("giglizard_active_user");
+          } catch (_) {}
+
           setSuccessMessage(`✅ Welcome back! Logged in as ${roleType}: ${payload.name}.`);
           setTimeout(() => {
             onLoginSuccess(payload);
@@ -250,7 +267,7 @@ export default function UserLoginModal({
           email: "littlerusty@gmail.com",
           role: "Band",
           type: "Band",
-          name: "Dr Hadit",
+          name: "Dr Hadit", // Explicitly ensure Dr Hadit, never email prefix or stale cache
           city: "Seattle, WA",
           isPremium: true,
           hasPaidAccess: true,
@@ -261,6 +278,11 @@ export default function UserLoginModal({
           bio: "Platform Owner & Artist (Dr Hadit) • Lifetime VIP Owner with full unmasked access for life.",
           experienceLevel: "National Act"
         };
+        linkAuthUidToBand(ownerAccount.id, "littlerusty@gmail.com").catch(() => {});
+        try {
+          localStorage.setItem("current_user_account_v1", JSON.stringify(ownerAccount));
+          localStorage.removeItem("giglizard_active_user");
+        } catch (_) {}
         setSuccessMessage("✅ Logged in successfully as Platform Owner! Lifetime Full Access Enabled.");
         setTimeout(() => {
           onLoginSuccess(ownerAccount);
@@ -480,8 +502,26 @@ export default function UserLoginModal({
           return;
         }
 
-        // Link profile with auth UID
+        // Link profile and bands with auth UID
         if (authData?.user) {
+          // Explicitly link auth.uid() to user_id in public.bands
+          await linkAuthUidToBand(authData.user.id, cleanEmail);
+
+          // If registering as a Band, save directly to public.bands
+          if (loginRole === "Band") {
+            try {
+              await saveBandToDatabase({
+                name: finalName,
+                city_state: finalCity,
+                official_email: cleanEmail,
+                user_id: authData.user.id,
+                genres: ["Alternative Rock"],
+                bio: `${finalName} is a live music artist registered on GigLizard.`,
+                touring_tier: "Local Support (Opening & Regional support)"
+              });
+            } catch (_) {}
+          }
+
           const profilePayload: any = {
             id: authData.user.id,
             email: cleanEmail,

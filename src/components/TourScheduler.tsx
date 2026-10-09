@@ -23,6 +23,7 @@ import { ItineraryValidationModal, ItineraryIssue } from "./ItineraryValidationM
 import { VenuePickerModal } from "./VenuePickerModal";
 import { LodgingPickerModal } from "./LodgingPickerModal";
 import { EditStopModal } from "./EditStopModal";
+import { TourMap } from "./TourMap";
 import { 
   MapPin, 
   Navigation, 
@@ -899,6 +900,19 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                   <span>{copiedLink ? "Copied!" : "Copy Text"}</span>
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("tour-route-map-section");
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-colors cursor-pointer"
+                  title="View interactive Google Tour Map"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Tour Map</span>
+                </button>
+
                 <a
                   href={currentGoogleMapsUrl}
                   target="_blank"
@@ -1493,38 +1507,22 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
             })}
           </div>
 
-          {/* Google Maps Embed Section */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Navigation className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">
-                  Personalized Multi-Stop Driving Map
-                </h3>
-              </div>
-              <a
-                href={currentGoogleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1"
-              >
-                <span>Full Turn-by-Turn GPS</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-
-            <p className="text-xs text-slate-500">
-              Synchronized GPS route connecting all your selected venue addresses, cities, and lodging stops.
-            </p>
-
-            <div className="w-full h-80 rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-              <iframe
-                title="Tour Route Navigation Map"
-                className="w-full h-full border-0"
-                loading="lazy"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(tourPlan.stops.map(s => s.selectedVenue?.address || `${s.city}, ${s.state}`).join(" to "))}&output=embed`}
-              />
-            </div>
+          {/* Interactive Tour Map Component: Multi-Stop Routing & Venue Markers */}
+          <div id="tour-route-map-section">
+            <TourMap
+              stops={tourPlan.stops}
+              tourTitle={tourPlan.tourTitle || "Tour Route"}
+              totalDistanceMiles={tourPlan.totalDistanceMiles}
+              totalDriveTime={tourPlan.totalDriveTime}
+              activeStopIndex={activeStopIndex}
+              onSelectStop={(index) => {
+                setActiveStopIndex(index);
+                const cardEl = document.getElementById(`tour-stop-card-${index}`);
+                if (cardEl) {
+                  cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+              }}
+            />
           </div>
 
           {/* Tour Road Tips */}

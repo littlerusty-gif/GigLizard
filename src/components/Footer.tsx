@@ -1,13 +1,32 @@
 import React, { useState } from "react";
-import { Shield, Scale, Lock, Heart, CheckCircle2, X } from "lucide-react";
+import { Shield, Scale, Lock, Heart, CheckCircle2, X, Mail } from "lucide-react";
+import ContactModal from "./ContactModal";
 
 interface FooterProps {
   onOpenTerms: () => void;
   onOpenSecurity?: () => void;
+  onOpenContact?: () => void;
+  userEmail?: string;
+  userName?: string;
 }
 
-export default function Footer({ onOpenTerms, onOpenSecurity }: FooterProps) {
+export default function Footer({ 
+  onOpenTerms, 
+  onOpenSecurity,
+  onOpenContact,
+  userEmail,
+  userName
+}: FooterProps) {
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+
+  const handleOpenContact = () => {
+    if (onOpenContact) {
+      onOpenContact();
+    } else {
+      setShowContactModal(true);
+    }
+  };
 
   return (
     <>
@@ -66,9 +85,30 @@ export default function Footer({ onOpenTerms, onOpenSecurity }: FooterProps) {
                 </button>
               </>
             )}
+
+            <span className="text-slate-700 hidden sm:inline">•</span>
+
+            <button
+              type="button"
+              onClick={handleOpenContact}
+              className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+              id="footer-btn-contact-us"
+              title="Send messages to giglizard.us@gmail.com"
+            >
+              <Mail className="w-3.5 h-3.5 text-indigo-400" />
+              <span>[Contact Us]</span>
+            </button>
           </div>
         </div>
       </footer>
+
+      {/* Contact Us Support Modal */}
+      <ContactModal
+        isOpen={showContactModal}
+        onClose={() => setShowContactModal(false)}
+        defaultEmail={userEmail}
+        defaultName={userName}
+      />
 
       {/* Lightweight Privacy Policy Modal Placeholder */}
       {showPrivacyNotice && (

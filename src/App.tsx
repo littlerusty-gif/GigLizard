@@ -19,7 +19,7 @@ import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
 import { isBandBanned, isPerpetualPassEmail } from "./utils/accessControl";
-import { insertProfile, supabase } from "./lib/supabase";
+import { insertProfile, supabase, resolveAccountFromDatabase, linkAuthUidToBand } from "./lib/supabase";
 import { 
   syncLocalBandsAndVenuesToSupabase, 
   downloadEmbeddedBandsAndVenuesCSV, 
@@ -107,6 +107,11 @@ export default function App() {
 
   // User Accounts State
   const [currentAccount, setCurrentAccount] = useState<UserAccount | null>(() => {
+    // Clear any stale legacy localStorage keys
+    try {
+      localStorage.removeItem("giglizard_active_user");
+    } catch (_) {}
+
     // Purge any banned bands from custom storage on initialization
     try {
       const savedBands = localStorage.getItem("custom_available_bands_v1");
@@ -127,13 +132,20 @@ export default function App() {
           localStorage.removeItem("current_user_account_v1");
           return null;
         }
-        if (isPerpetualPassEmail(parsed?.contactEmail)) {
+
+        const isOwner = parsed.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" || 
+                        isPerpetualPassEmail(parsed?.contactEmail) || 
+                        parsed.name?.trim().toLowerCase() === "littlerusty";
+
+        if (isOwner) {
           const ownerAccount: UserAccount = {
             ...parsed,
             id: parsed.id || "41c6fde8-9462-4402-a0f1-79155786fb03",
-            email: parsed.email || parsed.contactEmail || "littlerusty@gmail.com",
+            email: "littlerusty@gmail.com",
+            contactEmail: "littlerusty@gmail.com",
             role: parsed.role || "Band",
-            name: (!parsed.name || parsed.name === "The Midnight Echoes") ? "Dr Hadit" : parsed.name,
+            type: "Band",
+            name: "Dr Hadit", // Explicitly ensure Dr Hadit, never email prefix or stale cache
             hasPaidAccess: true,
             isPremium: true,
             autoRenew: true,
@@ -142,75 +154,80 @@ export default function App() {
           localStorage.setItem("current_user_account_v1", JSON.stringify(ownerAccount));
           return ownerAccount;
         }
+
+        // If stale name was email prefix 'littlerusty', fix it
+        if (parsed.name === "littlerusty") {
+          parsed.name = "Dr Hadit";
+          localStorage.setItem("current_user_account_v1", JSON.stringify(parsed));
+        }
+
         return parsed; 
       } catch (e) { console.error(e); }
     }
     return null;
   });
 
-  // 2. Resolve the real session on load
+  // 2. Resolve the real session on load with database priority
   useEffect(() => {
+    // Clear any stale legacy keys immediately
+    try {
+      localStorage.removeItem("giglizard_active_user");
+    } catch (_) {}
+
     const initAuth = async () => {
       try {
         // Get current active session from Supabase
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Fetch the user's profile from your Supabase profiles/bands table
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          // Explicitly link auth.uid() to user_id in public.bands matching official_email
+          await linkAuthUidToBand(session.user.id, session.user.email || "");
 
-          if (profile) {
-            setCurrentUser(profile);
-            const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email);
-            const mappedAccount: UserAccount = {
-              id: profile.id || session.user.id,
-              email: profile.email || session.user.email || "",
-              role: profile.role || profile.type || "Band",
-              type: (profile.type || profile.role || "Band") as any,
-              name: profile.name || session.user.email?.split("@")[0] || "User",
-              city: profile.city || "Seattle, WA",
-              isPremium: Boolean(profile.is_premium || profile.is_paid || isVip),
-              hasPaidAccess: Boolean(profile.is_paid || profile.is_premium || isVip),
-              autoRenew: Boolean(profile.auto_renew ?? true),
-              accessExpiresAt: profile.access_expires_at || (isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined),
-              contactEmail: profile.contact_email || profile.email || session.user.email || "",
-              genre: profile.genre,
-              bio: profile.bio,
-              website: profile.website,
-              epkUrl: profile.epk_url,
-              musicUrl: profile.music_url,
-              experienceLevel: profile.experience_level as any
-            };
-            setCurrentAccount(mappedAccount);
-            localStorage.setItem("current_user_account_v1", JSON.stringify(mappedAccount));
-          } else {
-            // Fallback to basic session info if profile row is pending
-            const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email);
-            const fallbackUser = {
-              id: session.user.id,
-              email: session.user.email,
-              isVip,
-            };
-            setCurrentUser(fallbackUser);
-            const fallbackAccount: UserAccount = {
-              id: session.user.id,
-              email: session.user.email || "",
-              role: "Band",
-              type: "Band",
-              name: session.user.email?.split("@")[0] || "User",
-              city: "Seattle, WA",
-              isPremium: isVip,
-              hasPaidAccess: isVip,
-              accessExpiresAt: isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined,
-              contactEmail: session.user.email || ""
-            };
-            setCurrentAccount(fallbackAccount);
-            localStorage.setItem("current_user_account_v1", JSON.stringify(fallbackAccount));
-          }
+          // Check database prioritizing public.bands then public.profiles
+          const resolved = await resolveAccountFromDatabase(session.user.id, session.user.email);
+          const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email) || resolved.isOwner;
+
+          const roleType = (resolved.role || "Band") as any;
+          const finalName = resolved.isOwner || session.user.email?.trim().toLowerCase() === "littlerusty@gmail.com"
+            ? "Dr Hadit"
+            : resolved.name;
+
+          const mappedAccount: UserAccount = {
+            id: resolved.bandRecord?.id || resolved.profileRecord?.id || session.user.id,
+            email: session.user.email || "",
+            role: roleType,
+            type: roleType,
+            name: finalName,
+            city: resolved.city,
+            isPremium: Boolean(resolved.profileRecord?.is_premium || resolved.profileRecord?.is_paid || isVip),
+            hasPaidAccess: Boolean(resolved.profileRecord?.is_paid || resolved.profileRecord?.is_premium || isVip),
+            autoRenew: Boolean(resolved.profileRecord?.auto_renew ?? true),
+            accessExpiresAt: resolved.profileRecord?.access_expires_at || (isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined),
+            contactEmail: resolved.bandRecord?.official_email || resolved.profileRecord?.contact_email || resolved.profileRecord?.email || session.user.email || "",
+            genre: Array.isArray(resolved.bandRecord?.genres) 
+              ? resolved.bandRecord.genres.join(", ") 
+              : (resolved.bandRecord?.genres || resolved.profileRecord?.genres || resolved.profileRecord?.genre || undefined),
+            bio: resolved.bandRecord?.bio || resolved.profileRecord?.bio || undefined,
+            website: resolved.bandRecord?.website || resolved.profileRecord?.website || resolved.profileRecord?.primary_link || undefined,
+            epkUrl: resolved.bandRecord?.epk_url || resolved.profileRecord?.epk_url || undefined,
+            musicUrl: resolved.bandRecord?.music_url || resolved.profileRecord?.music_url || undefined,
+            experienceLevel: resolved.bandRecord?.touring_tier
+              ? (resolved.bandRecord.touring_tier.includes("National") ? "National Act" : resolved.bandRecord.touring_tier.includes("Regional") ? "Regional Tour" : "Local")
+              : ((resolved.profileRecord?.experience_level as any) || "Local")
+          };
+
+          const userObj = {
+            ...(resolved.profileRecord || {}),
+            id: session.user.id,
+            email: session.user.email,
+            name: finalName,
+            isVip
+          };
+
+          setCurrentUser(userObj);
+          setCurrentAccount(mappedAccount);
+          localStorage.setItem("current_user_account_v1", JSON.stringify(mappedAccount));
+          localStorage.removeItem("giglizard_active_user");
         } else {
           // No session exists (fresh guest or incognito)
           setCurrentUser(null);
@@ -228,57 +245,59 @@ export default function App() {
     // Listen for Supabase login / logout events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email);
-        const userObj = profile || {
+        // Explicitly link auth.uid() to user_id in public.bands matching official_email
+        await linkAuthUidToBand(session.user.id, session.user.email || "");
+
+        const resolved = await resolveAccountFromDatabase(session.user.id, session.user.email);
+        const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email) || resolved.isOwner;
+
+        const roleType = (resolved.role || "Band") as any;
+        const finalName = resolved.isOwner || session.user.email?.trim().toLowerCase() === "littlerusty@gmail.com"
+          ? "Dr Hadit"
+          : resolved.name;
+
+        const mappedAccount: UserAccount = {
+          id: resolved.bandRecord?.id || resolved.profileRecord?.id || session.user.id,
+          email: session.user.email || "",
+          role: roleType,
+          type: roleType,
+          name: finalName,
+          city: resolved.city,
+          isPremium: Boolean(resolved.profileRecord?.is_premium || resolved.profileRecord?.is_paid || isVip),
+          hasPaidAccess: Boolean(resolved.profileRecord?.is_paid || resolved.profileRecord?.is_premium || isVip),
+          autoRenew: Boolean(resolved.profileRecord?.auto_renew ?? true),
+          accessExpiresAt: resolved.profileRecord?.access_expires_at || (isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined),
+          contactEmail: resolved.bandRecord?.official_email || resolved.profileRecord?.contact_email || resolved.profileRecord?.email || session.user.email || "",
+          genre: Array.isArray(resolved.bandRecord?.genres) 
+            ? resolved.bandRecord.genres.join(", ") 
+            : (resolved.bandRecord?.genres || resolved.profileRecord?.genres || resolved.profileRecord?.genre || undefined),
+          bio: resolved.bandRecord?.bio || resolved.profileRecord?.bio || undefined,
+          website: resolved.bandRecord?.website || resolved.profileRecord?.website || resolved.profileRecord?.primary_link || undefined,
+          epkUrl: resolved.bandRecord?.epk_url || resolved.profileRecord?.epk_url || undefined,
+          musicUrl: resolved.bandRecord?.music_url || resolved.profileRecord?.music_url || undefined,
+          experienceLevel: resolved.bandRecord?.touring_tier
+            ? (resolved.bandRecord.touring_tier.includes("National") ? "National Act" : resolved.bandRecord.touring_tier.includes("Regional") ? "Regional Tour" : "Local")
+            : ((resolved.profileRecord?.experience_level as any) || "Local")
+        };
+
+        const userObj = {
+          ...(resolved.profileRecord || {}),
           id: session.user.id,
           email: session.user.email,
-          isVip,
+          name: finalName,
+          isVip
         };
-        setCurrentUser(userObj);
 
-        const mappedAccount: UserAccount = profile ? {
-          id: profile.id || session.user.id,
-          email: profile.email || session.user.email || "",
-          role: profile.role || profile.type || "Band",
-          type: (profile.type || profile.role || "Band") as any,
-          name: profile.name || session.user.email?.split("@")[0] || "User",
-          city: profile.city || "Seattle, WA",
-          isPremium: Boolean(profile.is_premium || profile.is_paid || isVip),
-          hasPaidAccess: Boolean(profile.is_paid || profile.is_premium || isVip),
-          autoRenew: Boolean(profile.auto_renew ?? true),
-          accessExpiresAt: profile.access_expires_at || (isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined),
-          contactEmail: profile.contact_email || profile.email || session.user.email || "",
-          genre: profile.genre,
-          bio: profile.bio,
-          website: profile.website,
-          epkUrl: profile.epk_url,
-          musicUrl: profile.music_url,
-          experienceLevel: profile.experience_level as any
-        } : {
-          id: session.user.id,
-          email: session.user.email || "",
-          role: "Band",
-          type: "Band",
-          name: session.user.email?.split("@")[0] || "User",
-          city: "Seattle, WA",
-          isPremium: isVip,
-          hasPaidAccess: isVip,
-          accessExpiresAt: isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined,
-          contactEmail: session.user.email || ""
-        };
+        setCurrentUser(userObj);
         setCurrentAccount(mappedAccount);
         localStorage.setItem("current_user_account_v1", JSON.stringify(mappedAccount));
+        localStorage.removeItem("giglizard_active_user");
       } else {
         // Explicitly wipe state when signed out or unauthenticated
         setCurrentUser(null);
         setCurrentAccount(null);
         localStorage.removeItem("current_user_account_v1");
+        localStorage.removeItem("giglizard_active_user");
       }
     });
 
@@ -777,16 +796,28 @@ export default function App() {
 
             {/* Dynamic Account Action Button: Edit Account if authenticated, Sign In if guest */}
             {isAuthenticated ? (
-              <button
-                type="button"
-                onClick={() => setShowEditAccountModal(true)}
-                id="tab-btn-edit-account"
-                className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
-                title="Edit your account password, view status, or update your band or venue page"
-              >
-                <Settings className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Edit Account</span>
-              </button>
+              <div className="flex items-center gap-1.5" id="header-authenticated-actions">
+                <span 
+                  id="header-user-display-badge"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-slate-800 bg-white border border-slate-200/90 rounded-xl shadow-2xs"
+                  title={`Active account: ${isOwnerUser ? "Dr Hadit" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="truncate max-w-[140px] text-slate-900 font-extrabold">
+                    {isOwnerUser ? "Dr Hadit" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowEditAccountModal(true)}
+                  id="tab-btn-edit-account"
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+                  title="Edit your account password, view status, or update your band or venue page"
+                >
+                  <Settings className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Edit Account</span>
+                </button>
+              </div>
             ) : (
               <button
                 type="button"
@@ -1073,6 +1104,8 @@ export default function App() {
       <Footer 
         onOpenTerms={() => setShowTermsModal(true)} 
         onOpenSecurity={() => setShowSecurityModal(true)} 
+        userEmail={currentAccount?.contactEmail || currentUser?.email || ""}
+        userName={currentAccount?.name || ""}
       />
 
       {/* Security & Anti-Scraping Diagnostics Modal */}

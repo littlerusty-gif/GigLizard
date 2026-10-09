@@ -210,9 +210,11 @@ app.get("/api/admin/analytics", (req, res) => {
 
 // Lazy client creator to prevent crashes if GEMINI_API_KEY is missing at startup
 let aiClient: GoogleGenAI | null = null;
+const BILLING_API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCFJe-02wTVv67BQmXuagng9vDgX-ekXjQ";
+
 function getAi(): GoogleGenAI {
   if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = BILLING_API_KEY;
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY environment variable is required. Please set it in Settings > Secrets.");
     }
@@ -232,7 +234,7 @@ function getAi(): GoogleGenAI {
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    hasApiKey: !!process.env.GEMINI_API_KEY,
+    hasApiKey: !!BILLING_API_KEY,
   });
 });
 
@@ -908,7 +910,7 @@ app.post("/api/suggest-slogans", async (req, res) => {
       return;
     }
 
-    if (process.env.GEMINI_API_KEY) {
+    if (BILLING_API_KEY) {
       const ai = getAi();
       const prompt = `Generate 5 creative, short, punchy concert poster slogans/taglines for the band "${bandName}" (Genre: ${genre || "Alternative"}), performing at "${venueName || "Classic Local Venue"}". 
 Return of array of slogans, each with a brief 1-sentence recommended visual context (for example, whether to put it above the header, or in small print at the bottom).

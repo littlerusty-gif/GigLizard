@@ -344,3 +344,316 @@ export function profileToSubscriber(p: SupabaseProfile): SubscriberMember {
       : (p.bio || undefined)
   };
 }
+
+export interface ResolvedAccountInfo {
+  name: string;
+  role: "Band" | "Venue" | "Sound Engineer";
+  city: string;
+  bandRecord: any | null;
+  profileRecord: any | null;
+  email: string;
+  isOwner: boolean;
+}
+
+/**
+ * Resolves current user display name and profile data strictly prioritizing
+ * database records (public.bands, then public.profiles) over email prefixes.
+ * If official_email === 'littlerusty@gmail.com', name is guaranteed to be 'Dr Hadit'.
+ */
+export async function resolveAccountFromDatabase(
+  userId?: string | null,
+  rawEmail?: string | null
+): Promise<ResolvedAccountInfo> {
+  const cleanEmail = (rawEmail || "").trim().toLowerCase();
+  const isOwner = cleanEmail === "littlerusty@gmail.com";
+
+  // 1. Check public.bands table (matching official_email or user_id)
+  let bandRecord: any = null;
+  if (cleanEmail) {
+    try {
+      const { data, error } = await supabase
+        .from("bands")
+        .select("*")
+        .eq("official_email", cleanEmail)
+        .maybeSingle();
+      if (!error && data) bandRecord = data;
+    } catch (_) {}
+  }
+  if (!bandRecord && userId) {
+    try {
+      const { data, error } = await supabase
+        .from("bands")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!error && data) bandRecord = data;
+    } catch (_) {}
+  }
+
+  // Automatically link auth.uid() to user_id in public.bands matching email
+  if (userId && cleanEmail) {
+    if (bandRecord && bandRecord.user_id !== userId) {
+      try {
+        await supabase
+          .from("bands")
+          .update({ user_id: userId })
+          .eq("official_email", cleanEmail);
+        bandRecord.user_id = userId;
+      } catch (_) {}
+    } else if (!bandRecord) {
+      try {
+        await supabase
+          .from("bands")
+          .update({ user_id: userId })
+          .eq("official_email", cleanEmail);
+      } catch (_) {}
+    }
+  }
+
+  // 2. Check public.profiles table (matching email or id)
+  let profileRecord: any = null;
+  if (cleanEmail) {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("email", cleanEmail)
+        .maybeSingle();
+      if (!error && data) profileRecord = data;
+    } catch (_) {}
+  }
+  if (!profileRecord && userId) {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      if (!error && data) profileRecord = data;
+    } catch (_) {}
+  }
+
+  // 3. Prioritize Database Name over Email Prefix
+  let resolvedName = "";
+  if (isOwner) {
+    resolvedName = "Dr Hadit";
+  } else if (bandRecord?.name && bandRecord.name.trim()) {
+    resolvedName = bandRecord.name.trim();
+  } else if (profileRecord?.name && profileRecord.name.trim()) {
+    resolvedName = profileRecord.name.trim();
+  } else if (cleanEmail) {
+    resolvedName = cleanEmail.split("@")[0];
+  } else {
+    resolvedName = "User";
+  }
+
+  // Ensure owner account name is always Dr Hadit, never 'littlerusty'
+  if (isOwner || cleanEmail === "littlerusty@gmail.com") {
+    resolvedName = "Dr Hadit";
+  }
+
+  const role: "Band" | "Venue" | "Sound Engineer" = (
+    profileRecord?.role === "Venue" || profileRecord?.type === "Venue" ? "Venue" :
+    profileRecord?.role === "Sound Engineer" || profileRecord?.type === "Sound Engineer" ? "Sound Engineer" :
+    "Band"
+  );
+
+  const city = bandRecord?.city_state || (
+    profileRecord?.state && profileRecord?.city && !profileRecord.city.includes(",")
+      ? `${profileRecord.city}, ${profileRecord.state}`
+      : (profileRecord?.city || "Seattle, WA")
+  );
+
+  return {
+    name: resolvedName,
+    role,
+    city,
+    bandRecord,
+    profileRecord,
+    email: cleanEmail,
+    isOwner
+  };
+}
+
+/**
+ * Explicitly links an authenticated user's auth.uid() to the `user_id` column
+ * in public.bands matching their official_email.
+ * 
+ * Auto-Link on Sign In / Sign Up:
+ * - Checks public.bands for a matching official_email.
+ * - If found and bands.user_id is null, links their auth user ID to that record:
+ *   UPDATE public.bands SET user_id = auth.uid() WHERE official_email = user.email AND user_id IS NULL.
+ */
+export async function linkAuthUidToBand(userId: string, email: string): Promise<boolean> {
+  const cleanEmail = (email || "").trim().toLowerCase();
+  if (!userId || !cleanEmail) return false;
+
+  try {
+    // 1. Check public.bands for a matching official_email
+    const { data: existingBands, error: checkErr } = await supabase
+      .from("bands")
+      .select("id, user_id, official_email")
+      .eq("official_email", cleanEmail);
+
+    if (checkErr) {
+      console.warn(`[Supabase] Error checking bands for email (${cleanEmail}):`, checkErr.message);
+    }
+
+    if (existingBands && existingBands.length > 0) {
+      // 2. If found and bands.user_id is null, link their auth user ID to that record:
+      // UPDATE public.bands SET user_id = auth.uid() WHERE official_email = user.email AND user_id IS NULL
+      const { data: linkedNullRows, error: linkNullErr } = await supabase
+        .from("bands")
+        .update({ user_id: userId })
+        .eq("official_email", cleanEmail)
+        .is("user_id", null)
+        .select("id, name, user_id");
+
+      if (linkNullErr) {
+        console.warn(`[Supabase] Error linking user_id where null for band (${cleanEmail}):`, linkNullErr.message);
+      }
+
+      // Also ensure if band has unlinked user_id or requires claiming/updating
+      const needsClaim = existingBands.some(b => !b.user_id || b.user_id !== userId);
+      if (needsClaim && (!linkedNullRows || linkedNullRows.length === 0)) {
+        await supabase
+          .from("bands")
+          .update({ user_id: userId })
+          .eq("official_email", cleanEmail);
+      }
+
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    console.warn(`[Supabase] Exception linking auth.uid to band:`, err);
+    return false;
+  }
+}
+
+/**
+ * Saves or updates a band record directly in public.bands table.
+ * Strictly maps to columns: (name, city_state, official_email, website, music_url, epk_url, genres, touring_tier, bio, user_id).
+ */
+export async function saveBandToDatabase(payload: {
+  name: string;
+  city_state: string;
+  official_email: string;
+  website?: string | null;
+  music_url?: string | null;
+  epk_url?: string | null;
+  genres: string[];
+  touring_tier?: string;
+  bio?: string;
+  user_id?: string | null;
+}): Promise<{ data: any; error: any }> {
+  const cleanEmail = payload.official_email.trim().toLowerCase();
+  const bandRow: Record<string, any> = {
+    name: payload.name.trim(),
+    city_state: payload.city_state.trim(),
+    official_email: cleanEmail,
+    website: payload.website?.trim() || null,
+    music_url: payload.music_url?.trim() || null,
+    epk_url: payload.epk_url?.trim() || null,
+    genres: Array.isArray(payload.genres) ? payload.genres : [payload.genres].filter(Boolean),
+    touring_tier: payload.touring_tier || "Local Support (Opening & Regional support)",
+    bio: payload.bio?.trim() || ""
+  };
+
+  if (payload.user_id) {
+    bandRow.user_id = payload.user_id;
+  }
+
+  // 1. Attempt update first matching user_id or official_email
+  let updateSuccess = false;
+  if (payload.user_id) {
+    const { data, error } = await supabase
+      .from("bands")
+      .update(bandRow)
+      .or(`user_id.eq.${payload.user_id},official_email.eq.${cleanEmail}`)
+      .select();
+    if (!error && data && data.length > 0) {
+      updateSuccess = true;
+      return { data, error: null };
+    }
+  }
+
+  // Also try update matching official_email directly
+  const { data: updateByEmail, error: updateErr } = await supabase
+    .from("bands")
+    .update(bandRow)
+    .eq("official_email", cleanEmail)
+    .select();
+  if (!updateErr && updateByEmail && updateByEmail.length > 0) {
+    updateSuccess = true;
+    return { data: updateByEmail, error: null };
+  }
+
+  // 2. If no record was updated, upsert by official_email
+  if (!updateSuccess) {
+    const { data, error } = await supabase
+      .from("bands")
+      .upsert(bandRow, { onConflict: "official_email" })
+      .select();
+
+    if (error) {
+      console.warn("[Supabase] Upsert into bands error:", error.message);
+      // Fallback if Postgres foreign key on auth.users rejects insert
+      if (error.message?.toLowerCase().includes("foreign key") || error.code === "23503") {
+        const fallback = await supabase
+          .from("bands")
+          .upsert({ ...bandRow, user_id: null }, { onConflict: "official_email" })
+          .select();
+        return fallback;
+      }
+      return { data: null, error };
+    }
+    return { data, error: null };
+  }
+
+  return { data: [bandRow], error: null };
+}
+
+/**
+ * Fetches all bands directly from public.bands table.
+ * Transforms database rows to AvailableBand domain models.
+ */
+export async function fetchBandsFromDatabase(): Promise<AvailableBand[]> {
+  try {
+    const { data, error } = await supabase
+      .from("bands")
+      .select("*");
+
+    if (error) {
+      console.warn("[Supabase] Error querying bands table:", error.message);
+      return [];
+    }
+
+    if (data && Array.isArray(data)) {
+      return data.map((b: any) => ({
+        id: b.id || `band-db-${b.name?.toLowerCase().replace(/\s+/g, "-")}`,
+        name: b.name || "Live Artist",
+        city: b.city_state || "Seattle, WA",
+        genres: Array.isArray(b.genres) 
+          ? b.genres 
+          : (b.genres ? String(b.genres).split(",").map(g => g.trim()).filter(Boolean) : ["Alternative Rock"]),
+        bio: b.bio || "Live music artist registered on GigLizard.",
+        contactEmail: b.official_email || "",
+        website: b.website || undefined,
+        experienceLevel: b.touring_tier?.includes("National") 
+          ? "National Act" 
+          : b.touring_tier?.includes("Regional") 
+          ? "Regional Tour" 
+          : "Local",
+        epkUrl: b.epk_url || undefined,
+        musicUrl: b.music_url || undefined
+      }));
+    }
+    return [];
+  } catch (err) {
+    console.warn("[Supabase] Failed to fetch bands from database:", err);
+    return [];
+  }
+}
+
