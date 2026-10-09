@@ -898,7 +898,7 @@ export default function App() {
       />
 
       {/* Edit Account Modal */}
-      {currentAccount && (
+      {showEditAccountModal && currentAccount && (
         <EditAccountModal
           isOpen={showEditAccountModal}
           onClose={() => setShowEditAccountModal(false)}

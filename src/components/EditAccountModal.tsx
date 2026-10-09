@@ -32,26 +32,24 @@ export default function EditAccountModal({
   onUpdateAccount,
   onOpenCheckout
 }: EditAccountModalProps) {
-  if (!isOpen || !currentAccount) return null;
-
   const [activeTab, setActiveTab] = useState<ModalTab>("page");
 
   // Page Information Form State
   const [formData, setFormData] = useState({
-    name: currentAccount.name || "",
-    city: currentAccount.city || "Seattle, WA",
-    contactEmail: currentAccount.contactEmail || "",
-    genre: currentAccount.genre || "",
-    bio: currentAccount.bio || "",
-    website: currentAccount.website || "",
-    experienceLevel: currentAccount.experienceLevel || "Local",
-    epkUrl: currentAccount.epkUrl || "",
-    musicUrl: currentAccount.musicUrl || "",
+    name: currentAccount?.name || "",
+    city: currentAccount?.city || "Seattle, WA",
+    contactEmail: currentAccount?.contactEmail || "",
+    genre: currentAccount?.genre || "",
+    bio: currentAccount?.bio || "",
+    website: currentAccount?.website || "",
+    experienceLevel: currentAccount?.experienceLevel || "Local",
+    epkUrl: currentAccount?.epkUrl || "",
+    musicUrl: currentAccount?.musicUrl || "",
     // Venue specific
-    address: currentAccount.address || "",
-    capacity: currentAccount.capacity || 150,
-    hasPA: currentAccount.hasPA ?? true,
-    hasLighting: currentAccount.hasLighting ?? true
+    address: currentAccount?.address || "",
+    capacity: currentAccount?.capacity || 150,
+    hasPA: currentAccount?.hasPA ?? true,
+    hasLighting: currentAccount?.hasLighting ?? true
   });
 
   // Password Form State
@@ -70,7 +68,7 @@ export default function EditAccountModal({
 
   // Sync form data when account prop changes or modal opens
   useEffect(() => {
-    if (currentAccount) {
+    if (currentAccount && isOpen) {
       setFormData({
         name: currentAccount.name || "",
         city: currentAccount.city || "Seattle, WA",
@@ -96,6 +94,8 @@ export default function EditAccountModal({
       setShowFloatingToast(false);
     }
   }, [currentAccount, isOpen]);
+
+  if (!isOpen || !currentAccount) return null;
 
   const accessDetails = getAccessStatusDetails(currentAccount);
   const activeAccess = isAccessActive(currentAccount);
