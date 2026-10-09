@@ -594,7 +594,7 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
       setSlogans(data);
     } catch (e: any) {
       console.error(e);
-      alert("Failed to prompt slogans. Confirm GEMINI_API_KEY environment config.");
+      alert("Failed to prompt slogans. Confirm VITE_GEMINI_API_KEY environment config.");
     } finally {
       setIsGeneratingSlogans(false);
     }

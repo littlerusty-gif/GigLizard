@@ -71,7 +71,7 @@ export default function BandAdvisor({ bandProfile }: BandAdvisorProps) {
         ...prev,
         {
           role: "assistant",
-          content: "⚠️ **System Communication Issue:** Unable to communicate with the backseat agent. Please ensure you have configured your **GEMINI_API_KEY** secret inside the application dashboard."
+          content: "⚠️ **System Communication Issue:** Unable to communicate with the backseat agent. Please ensure you have configured your **VITE_GEMINI_API_KEY** or **GEMINI_API_KEY** environment variable."
         }
       ]);
     } finally {

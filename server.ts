@@ -208,16 +208,19 @@ app.get("/api/admin/analytics", (req, res) => {
   });
 });
 
-// Lazy client creator to prevent crashes if GEMINI_API_KEY is missing at startup
+// Lazy client creator to prevent crashes if Gemini API key is missing at startup
 let aiClient: GoogleGenAI | null = null;
-const BILLING_API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCFJe-02wTVv67BQmXuagng9vDgX-ekXjQ";
+
+function getGeminiApiKey(): string | undefined {
+  return process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+}
 
 function getAi(): GoogleGenAI {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) {
+    throw new Error("VITE_GEMINI_API_KEY or GEMINI_API_KEY environment variable is required.");
+  }
   if (!aiClient) {
-    const apiKey = BILLING_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is required. Please set it in Settings > Secrets.");
-    }
     aiClient = new GoogleGenAI({
       apiKey,
       httpOptions: {
@@ -234,7 +237,7 @@ function getAi(): GoogleGenAI {
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    hasApiKey: !!BILLING_API_KEY,
+    hasApiKey: !!getGeminiApiKey(),
   });
 });
 
@@ -835,7 +838,7 @@ app.post("/api/reviews", (req, res) => {
 
 
 // 2. Chat helper for writing band press bio or booking pitch emails
-app.post("/api/band-advisor", async (req, res) => {
+app.post(["/api/band-advisor", "/api/advisor/chat"], async (req, res) => {
   try {
     const { messages, bandProfile } = req.body;
     if (!messages || !Array.isArray(messages)) {
@@ -896,7 +899,7 @@ Be concise, structured, and use bullet points or numbered lists. Use musical ter
 - Label all your DI boxes and pedal power strips before setting foot on stage.
 - Keep line check under 10 minutes so everyone stays on schedule.
 
-*(Note: To enable live dynamic AI chat responses, verify \`GEMINI_API_KEY\` is configured in your deployment environment variables.)*`
+*(Note: To enable live dynamic AI chat responses, verify \`VITE_GEMINI_API_KEY\` or \`GEMINI_API_KEY\` is configured in your deployment environment variables.)*`
     });
   }
 });
@@ -910,7 +913,7 @@ app.post("/api/suggest-slogans", async (req, res) => {
       return;
     }
 
-    if (BILLING_API_KEY) {
+    if (getGeminiApiKey()) {
       const ai = getAi();
       const prompt = `Generate 5 creative, short, punchy concert poster slogans/taglines for the band "${bandName}" (Genre: ${genre || "Alternative"}), performing at "${venueName || "Classic Local Venue"}". 
 Return of array of slogans, each with a brief 1-sentence recommended visual context (for example, whether to put it above the header, or in small print at the bottom).
