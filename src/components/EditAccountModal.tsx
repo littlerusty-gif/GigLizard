@@ -83,9 +83,12 @@ export default function EditAccountModal({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showFloatingToast, setShowFloatingToast] = useState(false);
 
-  // Sync form data when account prop changes or modal opens
+  // Sync form data when account prop changes or modal opens, and fetch directly from Supabase
   useEffect(() => {
-    if (currentAccount && isOpen) {
+    if (!isOpen) return;
+
+    // 1. Initial immediate sync from props/session to avoid flash of empty content
+    if (currentAccount) {
       const bName = currentAccount.name || "";
       const cCity = currentAccount.city || "Seattle, WA";
       const bEmail = currentAccount.contactEmail || currentAccount.email || "";
@@ -134,6 +137,111 @@ export default function EditAccountModal({
       setSaveSuccess(false);
       setShowFloatingToast(false);
     }
+
+    // 2. Pre-populate on open: Fetch freshest band record from Supabase matching current user's ID or official_email
+    let isCancelled = false;
+    const fetchLatestBandData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const searchEmail = (currentAccount?.contactEmail || currentAccount?.email || user?.email || "").trim().toLowerCase();
+
+        // Query bands table first matching user ID or official_email
+        let bandRecord: any = null;
+        if (user?.id && searchEmail) {
+          const { data, error } = await supabase
+            .from("bands")
+            .select("*")
+            .or(`user_id.eq.${user.id},official_email.eq.${searchEmail}`)
+            .maybeSingle();
+          if (!error && data) bandRecord = data;
+        } else if (searchEmail) {
+          const { data, error } = await supabase
+            .from("bands")
+            .select("*")
+            .eq("official_email", searchEmail)
+            .maybeSingle();
+          if (!error && data) bandRecord = data;
+        } else if (user?.id) {
+          const { data, error } = await supabase
+            .from("bands")
+            .select("*")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (!error && data) bandRecord = data;
+        }
+
+        // If not found in bands table, check profiles table as fallback
+        if (!bandRecord && searchEmail) {
+          const { data: profData } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("email", searchEmail)
+            .maybeSingle();
+          if (profData) {
+            bandRecord = {
+              name: profData.name,
+              city_state: profData.state && profData.city ? `${profData.city}, ${profData.state}` : (profData.city || ""),
+              official_email: profData.email,
+              website: profData.primary_link,
+              music_url: profData.primary_link,
+              genres: profData.genres,
+              bio: profData.bio
+            };
+          }
+        }
+
+        if (bandRecord && !isCancelled) {
+          if (bandRecord.name) {
+            setBandName(bandRecord.name);
+            setFormData(prev => ({ ...prev, name: bandRecord.name }));
+          }
+          if (bandRecord.city_state) {
+            setCityState(bandRecord.city_state);
+            setFormData(prev => ({ ...prev, city: bandRecord.city_state }));
+          }
+          const emailVal = bandRecord.official_email || user?.email || "";
+          if (emailVal) {
+            setBookingEmail(emailVal);
+            setFormData(prev => ({ ...prev, contactEmail: emailVal }));
+          }
+          if (bandRecord.website !== undefined && bandRecord.website !== null) {
+            setWebsite(bandRecord.website || "");
+            setFormData(prev => ({ ...prev, website: bandRecord.website || "" }));
+          }
+          const resolvedMusicLink = bandRecord.music_url || bandRecord.music_link || "";
+          setMusicLink(resolvedMusicLink);
+          setFormData(prev => ({ ...prev, musicUrl: resolvedMusicLink }));
+
+          const resolvedEpkLink = bandRecord.epk_url || bandRecord.epk_link || "";
+          setEpkLink(resolvedEpkLink);
+          setFormData(prev => ({ ...prev, epkUrl: resolvedEpkLink }));
+
+          if (bandRecord.touring_tier) {
+            setTouringTier(bandRecord.touring_tier);
+            setFormData(prev => ({ ...prev, experienceLevel: bandRecord.touring_tier as any }));
+          }
+          if (bandRecord.genres !== undefined && bandRecord.genres !== null) {
+            const formattedGenres = Array.isArray(bandRecord.genres)
+              ? bandRecord.genres.join(", ")
+              : (bandRecord.genres || "");
+            setGenres(formattedGenres);
+            setFormData(prev => ({ ...prev, genre: formattedGenres }));
+          }
+          if (bandRecord.bio !== undefined && bandRecord.bio !== null) {
+            setBio(bandRecord.bio || "");
+            setFormData(prev => ({ ...prev, bio: bandRecord.bio || "" }));
+          }
+        }
+      } catch (err) {
+        console.warn("Could not pre-populate from Supabase:", err);
+      }
+    };
+
+    fetchLatestBandData();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [currentAccount, isOpen]);
 
   if (!isOpen || !currentAccount) return null;
@@ -142,22 +250,22 @@ export default function EditAccountModal({
   const activeAccess = isAccessActive(currentAccount);
   const isOwner = isPerpetualPassEmail(currentAccount.contactEmail);
 
-  // Resilient Save Page Information Implementation
-  const handleSavePageInformation = async (e?: React.FormEvent) => {
+  // Resilient Save Band Profile / Page Information Implementation
+  const handleSaveBandProfile = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
     setIsSaving(true);
     try {
       // 1. Get authenticated session user
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        alert("Authentication error: Please log out and sign back in.");
+      const { data: { user }, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !user) {
+        alert("Authentication error: Please log in again.");
         return;
       }
 
       // 2. Validate required fields
       if (!bandName?.trim() || !cityState?.trim() || !bookingEmail?.trim()) {
-        alert("Please fill in all required fields (Band Name, City & State, and Booking Email).");
+        alert("Please provide Band Name, City & State, and Booking Email.");
         return;
       }
 
@@ -168,15 +276,16 @@ export default function EditAccountModal({
         : genreInput.split(',').map((g: string) => g.trim()).filter(Boolean);
 
       // 4. Construct payload matching Supabase bands schema
+      // Persist musicLink -> music_url, epkLink -> epk_url, and all fields
       const payload: Record<string, any> = {
         name: bandName.trim(),
         city_state: cityState.trim(),
         official_email: bookingEmail.trim().toLowerCase(),
         website: website?.trim() || null,
-        genres: genreArray,
-        touring_tier: touringTier || "Local Support (Opening & Regional support)",
         music_url: musicLink?.trim() || null,
         epk_url: epkLink?.trim() || null,
+        genres: genreArray,
+        touring_tier: touringTier || "Local Support (Opening & Regional support)",
         bio: bio?.trim() || "",
         updated_at: new Date().toISOString()
       };
@@ -209,6 +318,25 @@ export default function EditAccountModal({
           return;
         }
       }
+
+      // Also sync to profiles table so directory and profile lookups stay aligned
+      try {
+        const parts = cityState.split(",");
+        const cCity = parts[0]?.trim() || cityState.trim();
+        const cState = parts[1]?.trim() || "WA";
+
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          email: bookingEmail.trim().toLowerCase(),
+          name: bandName.trim(),
+          role: "Band",
+          city: cCity,
+          state: cState,
+          genres: genreArray.join(", "),
+          primary_link: musicLink?.trim() || website?.trim() || null,
+          bio: bio?.trim() || null
+        }, { onConflict: "email" });
+      } catch (_) {}
 
       // Sync active session and local directory state
       const expLevel = touringTier?.includes("National")
@@ -295,7 +423,8 @@ export default function EditAccountModal({
     }
   };
 
-  const handleSavePageInfo = handleSavePageInformation;
+  const handleSavePageInformation = handleSaveBandProfile;
+  const handleSavePageInfo = handleSaveBandProfile;
 
   // Handle Change Password
   const handleChangePassword = (e: React.FormEvent) => {
