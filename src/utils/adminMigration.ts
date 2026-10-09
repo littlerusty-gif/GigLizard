@@ -295,7 +295,6 @@ export async function syncLocalBandsAndVenuesToSupabase(
   for (let i = 0; i < uniqueVenues.length; i += VENUE_BATCH_SIZE) {
     const batch = uniqueVenues.slice(i, i + VENUE_BATCH_SIZE);
     const venuePayloads = batch.map(v => {
-      const deterministicId = generateDeterministicUUID(`venue-${v.id || v.name}`);
       const { city, state } = parseCityAndState(v.city, v.address);
       const genreArray = Array.isArray(v.genres)
         ? v.genres
@@ -303,12 +302,10 @@ export async function syncLocalBandsAndVenuesToSupabase(
       const officialEmail = (v.contactEmail || `venue-${v.id}@giglizard-venue.com`).trim().toLowerCase();
 
       return {
-        id: deterministicId,
         name: v.name?.trim() || "Live Venue",
         city,
         state,
         address: v.address?.trim() || `${city}, ${state}`,
-        booking_email: officialEmail,
         official_email: officialEmail,
         phone: (v.contactPhone || "").trim() || null,
         website: v.website?.trim() || null,
@@ -319,38 +316,32 @@ export async function syncLocalBandsAndVenuesToSupabase(
     });
 
     try {
-      const { error: vError } = await supabase
+      // Upsert venues strictly mapping requested columns:
+      // name, city, state, address, official_email, phone, website, capacity, genres_accepted, booking_contact
+      const { error: venueErr } = await supabase
         .from("venues")
-        .upsert(venuePayloads, { onConflict: "name", ignoreDuplicates: false });
+        .upsert(venuePayloads, { onConflict: "name" });
 
-      if (!vError) {
-        successfulVenues += batch.length;
-      } else {
-        // Fallback: try sanitized payload matching exact schema columns
-        const sanitizedVenuePayloads = venuePayloads.map(vp => ({
-          id: vp.id,
-          name: vp.name,
-          city: vp.city,
-          state: vp.state,
-          address: vp.address,
-          booking_email: vp.booking_email,
-          website: vp.website,
-          capacity: vp.capacity,
-          genres_accepted: vp.genres_accepted
-        }));
+      if (venueErr) {
+        console.error("Venues seed error:", venueErr);
+        errorLogs.push(`Venues seed error: ${venueErr.message}`);
 
-        const { error: vRetryError } = await supabase
+        // Retry with onConflict: 'official_email' if name constraint differs
+        const { error: retryVenueErr } = await supabase
           .from("venues")
-          .upsert(sanitizedVenuePayloads, { onConflict: "name" });
+          .upsert(venuePayloads, { onConflict: "official_email" });
 
-        if (!vRetryError) {
-          successfulVenues += batch.length;
+        if (retryVenueErr) {
+          console.error("Venues seed retry error:", retryVenueErr);
         } else {
-          errorLogs.push(`venues batch: ${vRetryError.message}`);
+          successfulVenues += batch.length;
         }
+      } else {
+        successfulVenues += batch.length;
       }
     } catch (err: any) {
-      errorLogs.push(`venues batch exception: ${err.message || err}`);
+      console.error("Venues seed error:", err);
+      errorLogs.push(`Venues seed exception: ${err?.message || err}`);
     }
 
     onProgress?.(`Synced ${Math.min(i + VENUE_BATCH_SIZE, uniqueVenues.length)} / ${uniqueVenues.length} venues...`);
@@ -364,14 +355,14 @@ export async function syncLocalBandsAndVenuesToSupabase(
     const batch = uniqueBands.slice(i, i + BAND_BATCH_SIZE);
     const bandPayloads = batch.map(b => {
       const deterministicId = generateDeterministicUUID(`band-${b.id || b.name}`);
-      const genreArray = Array.isArray(b.genres)
+      const genreArray: string[] = Array.isArray(b.genres)
         ? b.genres
         : (b.genres ? String(b.genres).split(",").map(g => g.trim()).filter(Boolean) : ["Alternative Rock"]);
       const officialEmail = (b.contactEmail || `band-${b.id}@giglizard-band.com`).trim().toLowerCase();
 
       return {
         id: deterministicId,
-        user_id: deterministicId,
+        user_id: null, // Set user_id to null so Postgres foreign key constraints on auth.users do not reject the insert
         name: b.name?.trim() || "Artist",
         city_state: b.city?.trim() || "Seattle, WA",
         official_email: officialEmail,
@@ -381,47 +372,26 @@ export async function syncLocalBandsAndVenuesToSupabase(
         touring_tier: b.experienceLevel || "Local Support (Opening & Regional support)",
         music_url: b.musicUrl?.trim() || null,
         epk_url: b.epkUrl?.trim() || null,
-        bio: b.bio?.trim() || "",
-        updated_at: new Date().toISOString()
+        bio: b.bio?.trim() || ""
       };
     });
 
     try {
-      const { error: bError } = await supabase
+      // Upsert bands strictly mapping requested columns:
+      // id, name, city_state, official_email, phone, website, genres (ensure array format text[]), touring_tier, music_url, epk_url, bio
+      const { error: bandErr } = await supabase
         .from("bands")
-        .upsert(bandPayloads, { onConflict: "official_email", ignoreDuplicates: false });
+        .upsert(bandPayloads, { onConflict: "official_email" });
 
-      if (!bError) {
-        successfulBands += batch.length;
+      if (bandErr) {
+        console.error("Bands seed error:", bandErr);
+        errorLogs.push(`Bands seed error: ${bandErr.message}`);
       } else {
-        // Fallback: try sanitized payload matching exact columns
-        const sanitizedBandPayloads = bandPayloads.map(bp => ({
-          id: bp.id,
-          user_id: bp.user_id,
-          name: bp.name,
-          city_state: bp.city_state,
-          official_email: bp.official_email,
-          website: bp.website,
-          genres: bp.genres,
-          touring_tier: bp.touring_tier,
-          music_url: bp.music_url,
-          epk_url: bp.epk_url,
-          bio: bp.bio,
-          updated_at: bp.updated_at
-        }));
-
-        const { error: bRetryError } = await supabase
-          .from("bands")
-          .upsert(sanitizedBandPayloads, { onConflict: "official_email" });
-
-        if (!bRetryError) {
-          successfulBands += batch.length;
-        } else {
-          errorLogs.push(`bands batch: ${bRetryError.message}`);
-        }
+        successfulBands += batch.length;
       }
     } catch (err: any) {
-      errorLogs.push(`bands batch exception: ${err.message || err}`);
+      console.error("Bands seed error:", err);
+      errorLogs.push(`Bands seed exception: ${err?.message || err}`);
     }
 
     onProgress?.(`Synced ${Math.min(i + BAND_BATCH_SIZE, uniqueBands.length)} / ${uniqueBands.length} bands...`);
