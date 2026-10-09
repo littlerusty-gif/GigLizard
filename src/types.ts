@@ -202,6 +202,9 @@ export interface TourPlan {
 }
 
 export interface UserAccount {
+  id?: string;
+  email?: string;
+  role?: string;
   type: AccountType;
   name: string;
   city: string;

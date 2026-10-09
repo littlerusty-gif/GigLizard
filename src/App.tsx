@@ -153,6 +153,9 @@ export default function App() {
             setCurrentUser(profile);
             const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email);
             const mappedAccount: UserAccount = {
+              id: profile.id || session.user.id,
+              email: profile.email || session.user.email || "",
+              role: profile.role || profile.type || "Band",
               type: (profile.type || profile.role || "Band") as any,
               name: profile.name || session.user.email?.split("@")[0] || "User",
               city: profile.city || "Seattle, WA",
@@ -180,6 +183,9 @@ export default function App() {
             };
             setCurrentUser(fallbackUser);
             const fallbackAccount: UserAccount = {
+              id: session.user.id,
+              email: session.user.email || "",
+              role: "Band",
               type: "Band",
               name: session.user.email?.split("@")[0] || "User",
               city: "Seattle, WA",
@@ -223,6 +229,9 @@ export default function App() {
         setCurrentUser(userObj);
 
         const mappedAccount: UserAccount = profile ? {
+          id: profile.id || session.user.id,
+          email: profile.email || session.user.email || "",
+          role: profile.role || profile.type || "Band",
           type: (profile.type || profile.role || "Band") as any,
           name: profile.name || session.user.email?.split("@")[0] || "User",
           city: profile.city || "Seattle, WA",
@@ -238,6 +247,9 @@ export default function App() {
           musicUrl: profile.music_url,
           experienceLevel: profile.experience_level as any
         } : {
+          id: session.user.id,
+          email: session.user.email || "",
+          role: "Band",
           type: "Band",
           name: session.user.email?.split("@")[0] || "User",
           city: "Seattle, WA",
@@ -391,6 +403,23 @@ export default function App() {
     }
 
     setCurrentAccount(account);
+    setCurrentUser(prev => prev ? {
+      ...prev,
+      name: account.name,
+      city: account.city,
+      genre: account.genre,
+      genres: account.genre,
+      bio: account.bio,
+      website: account.website,
+      epk_link: account.epkUrl,
+      music_link: account.musicUrl
+    } : {
+      id: account.id || "local-user",
+      email: account.contactEmail,
+      name: account.name,
+      city: account.city,
+      role: account.type
+    });
     localStorage.setItem("current_user_account_v1", JSON.stringify(account));
     
     // Automatically apply Band Profile values if user is a Band

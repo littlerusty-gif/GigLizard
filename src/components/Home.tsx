@@ -576,6 +576,9 @@ export default function Home({
 
       // ALL newly registered accounts start with isPremium = false (free account)
       const payload: UserAccount = {
+        id: authData.user?.id,
+        email: normalizedEmail,
+        role: form.role,
         type: accountType,
         name: formData.name.trim(),
         city: formData.city.trim(),
