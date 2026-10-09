@@ -5,7 +5,7 @@ import {
   Users, MapPin, Building, Mail, CreditCard, Star, DollarSign,
   HelpCircle, UserCheck, LogOut, ArrowRight, Lock, LogIn,
   Compass, Navigation, CheckCircle, X, ShieldCheck, Clock, CheckCircle2,
-  KeyRound, Eye, EyeOff, Headphones, ExternalLink, Settings, AlertCircle
+  KeyRound, Eye, EyeOff, Headphones, ExternalLink, Settings, AlertCircle, RefreshCw
 } from "lucide-react";
 import CaptchaChallenge from "./CaptchaChallenge";
 import PayPalAccessModal from "./PayPalAccessModal";
@@ -14,10 +14,18 @@ import { isAccessActive, getAccessStatusDetails, isBandBanned, isPerpetualPassEm
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { resolveBandMusicLinks, categorizeUserMusicLink } from "../utils/musicLinks";
 import { isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
-import { insertProfile } from "../lib/supabase";
+import { insertProfile, supabase } from "../lib/supabase";
+
+interface ToastNotification {
+  id: string;
+  type: "error" | "success" | "info";
+  message: string;
+}
 
 interface HomeProps {
   currentAccount: UserAccount | null;
+  currentUser?: any | null;
+  onSetCurrentUser?: (user: any) => void;
   onSelectTab: (tab: "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "admin") => void;
   onRegisterAccount: (account: UserAccount) => void;
   onUpdatePricing: (isPremium: boolean) => void;
@@ -28,6 +36,8 @@ interface HomeProps {
 
 export default function Home({ 
   currentAccount, 
+  currentUser,
+  onSetCurrentUser,
   onSelectTab, 
   onRegisterAccount, 
   onUpdatePricing,
@@ -39,6 +49,18 @@ export default function Home({
   const [successMessage, setSuccessMessage] = useState("");
   const [registerError, setRegisterError] = useState("");
   const [registeredSuccessAccount, setRegisteredSuccessAccount] = useState<UserAccount | null>(null);
+  const [isSubmittingRegister, setIsSubmittingRegister] = useState(false);
+  const [emailConfirmBanner, setEmailConfirmBanner] = useState("");
+  const [emailConfirmAddress, setEmailConfirmAddress] = useState("");
+  const [toasts, setToasts] = useState<ToastNotification[]>([]);
+
+  const showToast = (type: "error" | "success" | "info", message: string) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 6000);
+  };
 
   // Common Form Fields - expanded to match directory registration forms exactly
   const [formData, setFormData] = useState({
@@ -375,10 +397,11 @@ export default function Home({
     setTimeout(() => setSuccessMessage(""), 4000);
   };
 
-  // Auto-fill defaults if logged-out to keep it smooth
-  const handleRegister = (e: React.FormEvent) => {
+  // Handle registration submit
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterError("");
+    setEmailConfirmBanner("");
     
     const normalizedEmail = normalizeEmail(formData.contactEmail);
 
@@ -386,21 +409,21 @@ export default function Home({
       if (!formData.name.trim() || !formData.address.trim() || !formData.city.trim() || !normalizedEmail || !formData.password) {
         const msg = "Please fill in all requested fields: Venue Name, Address, City, Booking Email, and Account Password.";
         setRegisterError(msg);
-        alert(msg);
+        showToast("error", msg);
         return;
       }
     } else if (accountType === "Sound Engineer") {
       if (!formData.name.trim() || !formData.city.trim() || !normalizedEmail || !formData.password) {
         const msg = "Please fill in the required fields: Audio Tech Name, Base City, Contact Email, and Account Password.";
         setRegisterError(msg);
-        alert(msg);
+        showToast("error", msg);
         return;
       }
     } else {
       if (!formData.name.trim() || !formData.city.trim() || !normalizedEmail || !formData.password) {
         const msg = "Please fill in the required fields: Band Name, Hometown, Booking Email, and Account Password.";
         setRegisterError(msg);
-        alert(msg);
+        showToast("error", msg);
         return;
       }
     }
@@ -408,29 +431,29 @@ export default function Home({
     if (!normalizedEmail.includes("@")) {
       const msg = "Please enter a valid email address.";
       setRegisterError(msg);
-      alert(msg);
+      showToast("error", msg);
       return;
     }
 
-    if (formData.password.length < 4) {
-      const msg = "Account Password must be at least 4 characters long.";
+    if (formData.password.length < 6) {
+      const msg = "Account Password must be at least 6 characters long.";
       setRegisterError(msg);
-      alert(msg);
+      showToast("error", msg);
       return;
     }
 
-    // Check if email already exists in the database / directories
+    // Check if email already exists in local registry / directories
     if (isEmailAlreadyRegistered(normalizedEmail)) {
       const msg = `An account with the email "${normalizedEmail}" is already registered. Please sign in or use "Forgot Password" to access your account.`;
       setRegisterError(msg);
-      alert(msg);
+      showToast("error", msg);
       return;
     }
 
     if (isBandBanned(normalizedEmail, formData.name.trim())) {
       const msg = "Account registration is not permitted for this email or name.";
       setRegisterError(msg);
-      alert(msg);
+      showToast("error", msg);
       return;
     }
 
@@ -438,182 +461,278 @@ export default function Home({
       ? categorizeUserMusicLink(formData.epkOrMusicUrl) 
       : { epkUrl: undefined, musicUrl: undefined };
 
-    // ALL newly registered accounts start with isPremium = false (free account)
-    const payload: UserAccount = {
-      type: accountType,
+    const form = {
+      email: normalizedEmail,
+      password: formData.password,
+      role: accountType, // 'Band' | 'Venue' | 'Sound Engineer'
       name: formData.name.trim(),
+      bandName: accountType === "Band" ? formData.name.trim() : undefined,
+      venueName: accountType === "Venue" ? formData.name.trim() : undefined,
       city: formData.city.trim(),
-      isPremium: false,
-      contactEmail: normalizedEmail,
-      genre: formData.genre || (accountType === "Band" ? "Alternative Rock" : (accountType === "Venue" ? "Live Music" : "Front of House (FOH) / Audio Tech")),
-      bio: formData.bio || (accountType === "Band" ? "Performing live music with enthusiasm." : (accountType === "Venue" ? "A gorgeous live music environment." : "Live sound engineer ready for tour & club dates.")),
-      capacity: accountType === "Venue" ? Number(formData.capacity) || 150 : undefined,
-      address: accountType === "Venue" ? formData.address.trim() : undefined,
-      contactPhone: formData.contactPhone || undefined,
-      website: formData.website || undefined,
-      epkUrl: epkUrl || undefined,
-      musicUrl: musicUrl || undefined,
-      experienceLevel: (accountType === "Band" || accountType === "Sound Engineer") ? formData.experienceLevel : undefined,
-      hasPA: accountType === "Venue" ? formData.hasPA : undefined,
-      hasLighting: accountType === "Venue" ? formData.hasLighting : undefined,
-      password: formData.password
+      hometown: accountType === "Band" ? formData.city.trim() : undefined,
+      genres: formData.genre.trim(),
+      bio: formData.bio.trim(),
+      phone: formData.contactPhone.trim(),
+      website: formData.website.trim(),
+      epkLink: epkUrl || formData.epkOrMusicUrl.trim(),
+      musicLink: musicUrl || formData.epkOrMusicUrl.trim(),
+      touringStatus: formData.experienceLevel || "Local"
     };
 
-    // Auto-inject into venues, available bands, or sound engineers in localStorage & Supabase
-    if (accountType === "Venue") {
-      const saved = localStorage.getItem("custom_venues_v1");
-      let list: Venue[] = [];
-      if (saved) {
-        try { list = JSON.parse(saved); } catch (err) { console.error(err); }
+    setIsSubmittingRegister(true);
+
+    try {
+      // 1. Create Auth User First
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: form.email.trim(),
+        password: form.password,
+        options: {
+          data: {
+            role: form.role, // 'Band' | 'Venue' | 'Sound Engineer'
+            name: form.bandName || form.venueName || form.name,
+          }
+        }
+      });
+
+      if (authError) {
+        const errLower = authError.message.toLowerCase();
+        if (
+          errLower.includes("already registered") ||
+          errLower.includes("already in use") ||
+          errLower.includes("unique") ||
+          errLower.includes("user already exists")
+        ) {
+          const msg = `An account with the email "${form.email.trim()}" is already registered. Please sign in or use "Forgot Password" to access your account.`;
+          setRegisterError(msg);
+          showToast("error", msg);
+          return;
+        }
+        if (errLower.includes("password")) {
+          const msg = authError.message || "Password is too short. Please use at least 6 characters.";
+          setRegisterError(msg);
+          showToast("error", msg);
+          return;
+        }
+        throw authError;
       }
-      
-      const processedGenres = formData.genre 
-        ? formData.genre.split(",").map(g => g.trim()).filter(g => g.length > 0)
-        : ["Live Music"];
 
-      const newVenue: Venue = {
-        id: `venue-reg-${Date.now()}`,
-        name: formData.name.trim(),
-        capacity: Number(formData.capacity) || 150,
-        address: formData.address.trim(),
-        city: formData.city.trim(),
-        genres: processedGenres,
-        contactEmail: normalizedEmail,
-        contactPhone: formData.contactPhone || "Inquire",
-        description: `[Capacity: ${formData.capacity} guests] ${formData.bio || "A vibrant live performance room ready to play host to high quality events."}`,
-        website: formData.website || "www.customregisteredvenue.com",
-        hasPA: formData.hasPA,
-        hasLighting: formData.hasLighting,
-        password: formData.password
-      };
-      const updatedVenues = [newVenue, ...list.filter(v => v.name.toLowerCase() !== newVenue.name.toLowerCase() && normalizeEmail(v.contactEmail) !== normalizedEmail)];
-      localStorage.setItem("custom_venues_v1", JSON.stringify(updatedVenues));
-
-      // Write record into Supabase profiles table
-      insertProfile({
-        id: newVenue.id,
-        name: newVenue.name,
-        email: normalizedEmail,
-        contact_email: normalizedEmail,
-        type: "Venue",
-        role: "Venue",
-        city: newVenue.city,
-        address: newVenue.address,
-        capacity: newVenue.capacity,
-        genre: formData.genre || "Live Music",
-        genres: processedGenres,
-        bio: newVenue.description,
-        website: newVenue.website,
-        contact_phone: newVenue.contactPhone,
-        has_pa: newVenue.hasPA,
-        has_lighting: newVenue.hasLighting,
-        password: formData.password,
-        is_premium: false
-      }).catch(err => console.warn("Supabase profile insert error:", err));
-    } else if (accountType === "Sound Engineer") {
-      // Write Sound Engineer record into Supabase profiles table
-      insertProfile({
-        id: `engineer-reg-${Date.now()}`,
-        name: payload.name,
-        email: normalizedEmail,
-        contact_email: normalizedEmail,
-        type: "Sound Engineer",
-        role: "Sound Engineer",
-        city: payload.city,
-        genre: payload.genre,
-        bio: payload.bio,
-        contact_phone: payload.contactPhone,
-        website: payload.website,
-        experience_level: payload.experienceLevel,
-        password: formData.password,
-        is_premium: false
-      }).catch(err => console.warn("Supabase profile insert error:", err));
-    } else {
-      const saved = localStorage.getItem("custom_available_bands_v1");
-      let list: AvailableBand[] = [];
-      if (saved) {
-        try { list = JSON.parse(saved); } catch (err) { console.error(err); }
+      // Check for user enumeration mitigation where Supabase returns empty identities for duplicate user
+      if (authData?.user && authData.user.identities && authData.user.identities.length === 0) {
+        const msg = `An account with the email "${form.email.trim()}" is already registered. Please sign in or use "Forgot Password" to access your account.`;
+        setRegisterError(msg);
+        showToast("error", msg);
+        return;
       }
-      
-      const processedGenres = formData.genre
-        ? formData.genre.split(",").map(g => g.trim()).filter(g => g.length > 0)
-        : ["Rock"];
 
-      const newBand: AvailableBand = {
-        id: `band-reg-${Date.now()}`,
+      // 2. Link Profile Record with Auth UID
+      if (authData.user) {
+        let { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            email: form.email.trim(),
+            name: form.bandName || form.venueName || form.name,
+            role: form.role,
+            city: form.city || form.hometown,
+            genres: form.genres || '',
+            bio: form.bio || '',
+            phone: form.phone || '',
+            website: form.website || '',
+            epk_link: form.epkLink || form.musicLink || '',
+            touring_status: form.touringStatus || 'Local',
+            created_at: new Date().toISOString()
+          });
+
+        // Schema fallback if custom columns (epk_link / touring_status) do not exist in remote table
+        if (profileError && (profileError.message?.toLowerCase().includes("column") || profileError.code === "PGRST204")) {
+          const fallbackRes = await supabase
+            .from('profiles')
+            .upsert({
+              id: authData.user.id,
+              email: form.email.trim(),
+              name: form.bandName || form.venueName || form.name,
+              role: form.role,
+              city: form.city || form.hometown,
+              genres: form.genres || '',
+              bio: form.bio || '',
+              phone: form.phone || '',
+              primary_link: form.epkLink || form.musicLink || form.website || '',
+              created_at: new Date().toISOString()
+            });
+          profileError = fallbackRes.error;
+        }
+
+        if (profileError) {
+          console.warn("[Supabase] Profile upsert notice:", profileError.message);
+        }
+      }
+
+      // Store in password registry for offline session fallback
+      try {
+        const passwordsMap = JSON.parse(localStorage.getItem("user_custom_passwords_v1") || "{}");
+        passwordsMap[normalizedEmail] = formData.password;
+        localStorage.setItem("user_custom_passwords_v1", JSON.stringify(passwordsMap));
+      } catch (_) {}
+
+      // ALL newly registered accounts start with isPremium = false (free account)
+      const payload: UserAccount = {
+        type: accountType,
         name: formData.name.trim(),
-        genres: processedGenres,
         city: formData.city.trim(),
-        bio: formData.bio || "Indie music makers excited to perform on brand new stages.",
+        isPremium: false,
         contactEmail: normalizedEmail,
-        contactPhone: formData.contactPhone || "Inquire",
+        genre: formData.genre || (accountType === "Band" ? "Alternative Rock" : (accountType === "Venue" ? "Live Music" : "Front of House (FOH) / Audio Tech")),
+        bio: formData.bio || (accountType === "Band" ? "Performing live music with enthusiasm." : (accountType === "Venue" ? "A gorgeous live music environment." : "Live sound engineer ready for tour & club dates.")),
+        capacity: accountType === "Venue" ? Number(formData.capacity) || 150 : undefined,
+        address: accountType === "Venue" ? formData.address.trim() : undefined,
+        contactPhone: formData.contactPhone || undefined,
         website: formData.website || undefined,
         epkUrl: epkUrl || undefined,
         musicUrl: musicUrl || undefined,
-        experienceLevel: formData.experienceLevel,
+        experienceLevel: (accountType === "Band" || accountType === "Sound Engineer") ? formData.experienceLevel : undefined,
+        hasPA: accountType === "Venue" ? formData.hasPA : undefined,
+        hasLighting: accountType === "Venue" ? formData.hasLighting : undefined,
         password: formData.password
       };
 
-      // Register with backend server endpoint
-      try {
-        fetch("/api/bands/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ band: newBand })
-        }).catch(() => {});
-      } catch (_) {}
+      // Auto-inject into venues, available bands, or sound engineers in localStorage & Supabase
+      if (accountType === "Venue") {
+        const saved = localStorage.getItem("custom_venues_v1");
+        let list: Venue[] = [];
+        if (saved) {
+          try { list = JSON.parse(saved); } catch (err) { console.error(err); }
+        }
+        
+        const processedGenres = formData.genre 
+          ? formData.genre.split(",").map(g => g.trim()).filter(g => g.length > 0)
+          : ["Live Music"];
 
-      const updatedBands = [newBand, ...list.filter(b => b.name.toLowerCase() !== newBand.name.toLowerCase() && normalizeEmail(b.contactEmail) !== normalizedEmail)];
-      localStorage.setItem("custom_available_bands_v1", JSON.stringify(updatedBands));
+        const newVenue: Venue = {
+          id: authData.user?.id ? `venue-${authData.user.id}` : `venue-reg-${Date.now()}`,
+          name: formData.name.trim(),
+          capacity: Number(formData.capacity) || 150,
+          address: formData.address.trim(),
+          city: formData.city.trim(),
+          genres: processedGenres,
+          contactEmail: normalizedEmail,
+          contactPhone: formData.contactPhone || "Inquire",
+          description: `[Capacity: ${formData.capacity} guests] ${formData.bio || "A vibrant live performance room ready to play host to high quality events."}`,
+          website: formData.website || "www.customregisteredvenue.com",
+          hasPA: formData.hasPA,
+          hasLighting: formData.hasLighting,
+          password: formData.password
+        };
+        const updatedVenues = [newVenue, ...list.filter(v => v.name.toLowerCase() !== newVenue.name.toLowerCase() && normalizeEmail(v.contactEmail) !== normalizedEmail)];
+        localStorage.setItem("custom_venues_v1", JSON.stringify(updatedVenues));
+      } else if (accountType === "Band") {
+        const saved = localStorage.getItem("custom_available_bands_v1");
+        let list: AvailableBand[] = [];
+        if (saved) {
+          try { list = JSON.parse(saved); } catch (err) { console.error(err); }
+        }
+        
+        const processedGenres = formData.genre
+          ? formData.genre.split(",").map(g => g.trim()).filter(g => g.length > 0)
+          : ["Rock"];
 
-      // Write record into Supabase profiles table
-      insertProfile({
-        id: newBand.id,
-        name: newBand.name,
-        email: normalizedEmail,
-        contact_email: normalizedEmail,
-        type: "Band",
-        role: "Band",
-        city: newBand.city,
-        genre: formData.genre || "Rock",
-        genres: processedGenres,
-        bio: newBand.bio,
-        website: newBand.website,
-        epk_url: newBand.epkUrl,
-        music_url: newBand.musicUrl,
-        contact_phone: newBand.contactPhone,
-        experience_level: newBand.experienceLevel,
-        password: formData.password,
-        is_premium: false
-      }).catch(err => console.warn("Supabase profile insert error:", err));
+        const newBand: AvailableBand = {
+          id: authData.user?.id ? `band-${authData.user.id}` : `band-reg-${Date.now()}`,
+          name: formData.name.trim(),
+          genres: processedGenres,
+          city: formData.city.trim(),
+          bio: formData.bio || "Indie music makers excited to perform on brand new stages.",
+          contactEmail: normalizedEmail,
+          contactPhone: formData.contactPhone || "Inquire",
+          website: formData.website || undefined,
+          epkUrl: epkUrl || undefined,
+          musicUrl: musicUrl || undefined,
+          experienceLevel: formData.experienceLevel,
+          password: formData.password
+        };
+
+        // Register with backend server endpoint
+        try {
+          fetch("/api/bands/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ band: newBand })
+          }).catch(() => {});
+        } catch (_) {}
+
+        const updatedBands = [newBand, ...list.filter(b => b.name.toLowerCase() !== newBand.name.toLowerCase() && normalizeEmail(b.contactEmail) !== normalizedEmail)];
+        localStorage.setItem("custom_available_bands_v1", JSON.stringify(updatedBands));
+      }
+
+      // 3. Immediate Active State vs Email Confirmation Required
+      const hasActiveSession = Boolean(authData.session);
+
+      if (hasActiveSession) {
+        // Immediate active session: update currentUser & currentAccount -> transitions top bar to 'Edit Account'
+        const userProfile = {
+          id: authData.user?.id,
+          email: authData.user?.email || form.email.trim(),
+          name: form.bandName || form.venueName || form.name,
+          role: form.role,
+          city: form.city || form.hometown,
+          genres: form.genres || '',
+          bio: form.bio || '',
+          phone: form.phone || '',
+          website: form.website || '',
+          epk_link: form.epkLink || form.musicLink || '',
+          touring_status: form.touringStatus || 'Local',
+          created_at: new Date().toISOString()
+        };
+
+        if (onSetCurrentUser) {
+          onSetCurrentUser(userProfile);
+        }
+
+        onRegisterAccount(payload);
+        recordLiveSignup(payload);
+        setRegisteredSuccessAccount(payload);
+        setSuccessMessage(`Welcome! Your free ${accountType} account for "${payload.name}" was successfully registered and listed.`);
+        showToast("success", `Welcome ${payload.name}! You are registered and logged in.`);
+      } else {
+        // Email confirmation is required by Supabase
+        const confirmMsg = "Account created! Please check your email to confirm your account before logging in.";
+        setEmailConfirmBanner(confirmMsg);
+        setEmailConfirmAddress(form.email.trim());
+        setSuccessMessage(confirmMsg);
+        showToast("info", confirmMsg);
+        
+        // Broadcast subscriber addition for stats
+        recordLiveSignup(payload);
+      }
+      
+      // Reset form
+      setFormData({
+        name: "",
+        city: "",
+        contactEmail: "",
+        password: "",
+        genre: "",
+        bio: "",
+        capacity: 150,
+        address: "",
+        contactPhone: "",
+        website: "",
+        epkOrMusicUrl: "",
+        experienceLevel: "Local",
+        hasPA: true,
+        hasLighting: true
+      });
+
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 6000);
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      const msg = err?.message || "Failed to complete registration. Please try again.";
+      setRegisterError(msg);
+      showToast("error", msg);
+    } finally {
+      setIsSubmittingRegister(false);
     }
-
-    onRegisterAccount(payload);
-    recordLiveSignup(payload);
-    setRegisteredSuccessAccount(payload);
-    setSuccessMessage(`Welcome! Your free ${accountType} account for "${payload.name}" was successfully registered and listed.`);
-    
-    // Reset form
-    setFormData({
-      name: "",
-      city: "",
-      contactEmail: "",
-      password: "",
-      genre: "",
-      bio: "",
-      capacity: 150,
-      address: "",
-      contactPhone: "",
-      website: "",
-      epkOrMusicUrl: "",
-      experienceLevel: "Local",
-      hasPA: true,
-      hasLighting: true
-    });
-
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 5000);
   };
 
   return (
@@ -1394,6 +1513,29 @@ export default function Home({
             </button>
           </div>
 
+          {emailConfirmBanner && (
+            <div className="p-4 bg-emerald-50 border-2 border-emerald-500 rounded-2xl text-emerald-950 text-xs flex items-start gap-3 max-w-2xl mx-auto shadow-md animate-fade-in mb-3" id="registration-email-confirm-banner">
+              <Mail className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-black text-sm text-emerald-950">Confirm Your Email Address</p>
+                <p className="text-emerald-800 font-semibold mt-1">{emailConfirmBanner}</p>
+                {emailConfirmAddress && (
+                  <p className="text-emerald-700 text-[11px] mt-1">
+                    Verification link dispatched to: <strong className="font-mono text-emerald-950">{emailConfirmAddress}</strong>
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setEmailConfirmBanner("")}
+                className="text-emerald-500 hover:text-emerald-800 p-0.5 cursor-pointer"
+                title="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {registerError && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-start gap-2.5 max-w-2xl mx-auto shadow-xs" id="registration-error-banner">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -1823,11 +1965,21 @@ export default function Home({
             <div className="pt-4 text-center" id="register-btn-wrap">
               <button
                 type="submit"
-                className="w-full sm:w-auto py-3.5 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-md cursor-pointer transition-all border-0 text-sm inline-flex items-center justify-center gap-2"
+                disabled={isSubmittingRegister}
+                className="w-full sm:w-auto py-3.5 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-black shadow-md cursor-pointer transition-all border-0 text-sm inline-flex items-center justify-center gap-2"
                 id="btn-confirm-registration"
               >
-                <span>Register Free {accountType} Account</span>
-                <ArrowRight className="w-4 h-4" />
+                {isSubmittingRegister ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Creating Supabase Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Register Free {accountType} Account</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -1854,6 +2006,43 @@ export default function Home({
           setTimeout(() => setSuccessMessage(""), 5000);
         }}
       />
+
+      {/* Floating Toast Notification Container */}
+      {toasts.length > 0 && (
+        <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-md w-full px-4 pointer-events-none" id="home-toast-container">
+          {toasts.map(toast => (
+            <div
+              key={toast.id}
+              className={`pointer-events-auto p-4 rounded-2xl shadow-2xl border flex items-start gap-3 text-xs transition-all animate-slide-up backdrop-blur-md ${
+                toast.type === "error"
+                  ? "bg-rose-950/95 text-rose-100 border-rose-700 shadow-rose-950/50"
+                  : toast.type === "success"
+                  ? "bg-emerald-950/95 text-emerald-100 border-emerald-700 shadow-emerald-950/50"
+                  : "bg-indigo-950/95 text-indigo-100 border-indigo-700 shadow-indigo-950/50"
+              }`}
+            >
+              {toast.type === "error" ? (
+                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              ) : toast.type === "success" ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              ) : (
+                <Mail className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 font-semibold leading-relaxed">
+                {toast.message}
+              </div>
+              <button
+                type="button"
+                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                className="text-white/60 hover:text-white p-0.5 cursor-pointer shrink-0"
+                title="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

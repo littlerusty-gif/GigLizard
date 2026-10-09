@@ -11,8 +11,9 @@ import {
   X, Lock, Key, Eye, EyeOff, Save, CheckCircle2, 
   AlertCircle, Building, Users, FileText, Headphones, 
   MapPin, Sparkles, Clock, CreditCard, ExternalLink, 
-  Globe, Mail, UserCheck
+  Globe, Mail, UserCheck, Check, Loader2
 } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 interface EditAccountModalProps {
   isOpen: boolean;
@@ -63,6 +64,9 @@ export default function EditAccountModal({
   // Status & Notification Messages
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showFloatingToast, setShowFloatingToast] = useState(false);
 
   // Sync form data when account prop changes or modal opens
   useEffect(() => {
@@ -87,6 +91,9 @@ export default function EditAccountModal({
       setConfirmPassword("");
       setSuccessMsg("");
       setErrorMsg("");
+      setIsSaving(false);
+      setSaveSuccess(false);
+      setShowFloatingToast(false);
     }
   }, [currentAccount, isOpen]);
 
@@ -95,10 +102,11 @@ export default function EditAccountModal({
   const isOwner = isPerpetualPassEmail(currentAccount.contactEmail);
 
   // Handle Save Page Information
-  const handleSavePageInfo = (e: React.FormEvent) => {
+  const handleSavePageInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
+    setShowFloatingToast(false);
 
     const cleanName = sanitizeInputText(formData.name, 80).trim();
     const cleanCity = sanitizeInputText(formData.city, 80).trim();
@@ -136,7 +144,6 @@ export default function EditAccountModal({
     }
 
     // Helper to sanitize optional URL fields (Website, Music Link, EPK Link)
-    // If left empty or whitespace, returns null
     const sanitizeOptionalUrl = (rawUrl?: string | null): string | null => {
       if (!rawUrl) return null;
       const trimmed = sanitizeInputText(rawUrl.trim(), 250);
@@ -173,113 +180,189 @@ export default function EditAccountModal({
       })
     };
 
-    // 1. Update active account in localStorage
+    setIsSaving(true);
+
     try {
-      localStorage.setItem("current_user_account_v1", JSON.stringify(updatedAccount));
-      if (updatedAccount.type === "Venue") {
-        localStorage.setItem("venue_user_profile_v1", JSON.stringify(updatedAccount));
+      // 1. Live upsert to Supabase 'profiles' table
+      const { data: authSessionData } = await supabase.auth.getSession();
+      const currentAuthUser = authSessionData?.session?.user;
+
+      // Find profile ID: either existing user id, or query by email
+      let profileId = currentAuthUser?.id;
+      if (!profileId) {
+        const { data: matchedProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+        if (matchedProfile?.id) {
+          profileId = matchedProfile.id;
+        }
       }
-    } catch (e) {
-      console.error(e);
-    }
 
-    // 2. Sync to custom_available_bands_v1 or custom_venues_v1
-    if (updatedAccount.type === "Band") {
+      if (profileId) {
+        let { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: profileId,
+            email: cleanEmail,
+            name: cleanName,
+            role: updatedAccount.type,
+            city: cleanCity,
+            genres: cleanGenre,
+            bio: cleanBio,
+            website: cleanWebsite || '',
+            epk_link: cleanEpkUrl || cleanMusicUrl || '',
+            touring_status: (updatedAccount.experienceLevel as string) || 'Local'
+          });
+
+        if (profileError && (profileError.message?.toLowerCase().includes("column") || profileError.code === "PGRST204")) {
+          const fallbackRes = await supabase
+            .from('profiles')
+            .upsert({
+              id: profileId,
+              email: cleanEmail,
+              name: cleanName,
+              role: updatedAccount.type,
+              city: cleanCity,
+              genres: cleanGenre,
+              bio: cleanBio,
+              primary_link: cleanEpkUrl || cleanMusicUrl || cleanWebsite || ''
+            });
+          profileError = fallbackRes.error;
+        }
+
+        if (profileError) {
+          throw new Error(profileError.message);
+        }
+      }
+
+      // 2. Update active account in localStorage
       try {
-        const savedBands = localStorage.getItem("custom_available_bands_v1");
-        let bandsList: AvailableBand[] = [];
-        if (savedBands) {
-          try { bandsList = JSON.parse(savedBands); } catch (_) {}
+        localStorage.setItem("current_user_account_v1", JSON.stringify(updatedAccount));
+        if (updatedAccount.type === "Venue") {
+          localStorage.setItem("venue_user_profile_v1", JSON.stringify(updatedAccount));
         }
-        if (!Array.isArray(bandsList)) bandsList = [];
+      } catch (e) {
+        console.error(e);
+      }
 
-        const normalizedEmail = updatedAccount.contactEmail.toLowerCase();
-        const existingIdx = bandsList.findIndex(b => 
-          b.contactEmail?.toLowerCase() === normalizedEmail || 
-          b.id === `band-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`
-        );
-
-        const updatedBandEntry: AvailableBand = {
-          id: existingIdx >= 0 ? bandsList[existingIdx].id : `band-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
-          name: updatedAccount.name,
-          city: updatedAccount.city,
-          genres: updatedAccount.genre ? updatedAccount.genre.split(",").map(g => g.trim()).filter(Boolean) : ["Alternative Rock"],
-          bio: updatedAccount.bio || "Live music artist registered on BandGig.",
-          contactEmail: updatedAccount.contactEmail,
-          website: cleanWebsite ?? null,
-          experienceLevel: (updatedAccount.experienceLevel || "Local") as any,
-          epkUrl: cleanEpkUrl ?? null,
-          musicUrl: cleanMusicUrl ?? null,
-          password: updatedAccount.password
-        };
-
-        if (existingIdx >= 0) {
-          bandsList[existingIdx] = updatedBandEntry;
-        } else {
-          bandsList.unshift(updatedBandEntry);
-        }
-
-        localStorage.setItem("custom_available_bands_v1", JSON.stringify(bandsList));
-        window.dispatchEvent(new CustomEvent("giglizard_bands_updated"));
-
-        // Sync to backend register endpoint
+      // 3. Sync to custom_available_bands_v1 or custom_venues_v1
+      if (updatedAccount.type === "Band") {
         try {
-          fetch("/api/bands/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ band: updatedBandEntry })
-          }).catch(() => {});
-        } catch (_) {}
-      } catch (err) {
-        console.error("Error syncing band directory:", err);
-      }
-    } else {
-      // Sync to custom_venues_v1
-      try {
-        const savedVenues = localStorage.getItem("custom_venues_v1");
-        let venuesList: Venue[] = [];
-        if (savedVenues) {
-          try { venuesList = JSON.parse(savedVenues); } catch (_) {}
+          const savedBands = localStorage.getItem("custom_available_bands_v1");
+          let bandsList: AvailableBand[] = [];
+          if (savedBands) {
+            try { bandsList = JSON.parse(savedBands); } catch (_) {}
+          }
+          if (!Array.isArray(bandsList)) bandsList = [];
+
+          const normalizedEmail = updatedAccount.contactEmail.toLowerCase();
+          const existingIdx = bandsList.findIndex(b => 
+            b.contactEmail?.toLowerCase() === normalizedEmail || 
+            b.id === `band-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`
+          );
+
+          const updatedBandEntry: AvailableBand = {
+            id: existingIdx >= 0 ? bandsList[existingIdx].id : `band-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
+            name: updatedAccount.name,
+            city: updatedAccount.city,
+            genres: updatedAccount.genre ? updatedAccount.genre.split(",").map(g => g.trim()).filter(Boolean) : ["Alternative Rock"],
+            bio: updatedAccount.bio || "Live music artist registered on BandGig.",
+            contactEmail: updatedAccount.contactEmail,
+            website: cleanWebsite ?? null,
+            experienceLevel: (updatedAccount.experienceLevel || "Local") as any,
+            epkUrl: cleanEpkUrl ?? null,
+            musicUrl: cleanMusicUrl ?? null,
+            password: updatedAccount.password
+          };
+
+          if (existingIdx >= 0) {
+            bandsList[existingIdx] = updatedBandEntry;
+          } else {
+            bandsList.unshift(updatedBandEntry);
+          }
+
+          localStorage.setItem("custom_available_bands_v1", JSON.stringify(bandsList));
+          window.dispatchEvent(new CustomEvent("giglizard_bands_updated"));
+
+          // Sync to backend register endpoint
+          try {
+            fetch("/api/bands/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ band: updatedBandEntry })
+            }).catch(() => {});
+          } catch (_) {}
+        } catch (err) {
+          console.error("Error syncing band directory:", err);
         }
-        if (!Array.isArray(venuesList)) venuesList = [];
+      } else {
+        // Sync to custom_venues_v1
+        try {
+          const savedVenues = localStorage.getItem("custom_venues_v1");
+          let venuesList: Venue[] = [];
+          if (savedVenues) {
+            try { venuesList = JSON.parse(savedVenues); } catch (_) {}
+          }
+          if (!Array.isArray(venuesList)) venuesList = [];
 
-        const normalizedEmail = updatedAccount.contactEmail.toLowerCase();
-        const existingIdx = venuesList.findIndex(v => 
-          v.contactEmail?.toLowerCase() === normalizedEmail || 
-          v.id === `venue-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`
-        );
+          const normalizedEmail = updatedAccount.contactEmail.toLowerCase();
+          const existingIdx = venuesList.findIndex(v => 
+            v.contactEmail?.toLowerCase() === normalizedEmail || 
+            v.id === `venue-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`
+          );
 
-        const updatedVenueEntry: Venue = {
-          id: existingIdx >= 0 ? venuesList[existingIdx].id : `venue-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
-          name: updatedAccount.name,
-          city: updatedAccount.city,
-          address: updatedAccount.address || "123 Music Ave",
-          capacity: updatedAccount.capacity || 150,
-          description: updatedAccount.bio || "Live music performance space.",
-          contactEmail: updatedAccount.contactEmail,
-          contactPhone: updatedAccount.contactPhone || "Inquire",
-          website: updatedAccount.website || "www.inquire-booking.com",
-          genres: updatedAccount.genre ? updatedAccount.genre.split(",").map(g => g.trim()).filter(Boolean) : ["Live Music"],
-          hasPA: updatedAccount.hasPA ?? true,
-          hasLighting: updatedAccount.hasLighting ?? true
-        };
+          const updatedVenueEntry: Venue = {
+            id: existingIdx >= 0 ? venuesList[existingIdx].id : `venue-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
+            name: updatedAccount.name,
+            city: updatedAccount.city,
+            address: updatedAccount.address || "123 Music Ave",
+            capacity: updatedAccount.capacity || 150,
+            description: updatedAccount.bio || "Live music performance space.",
+            contactEmail: updatedAccount.contactEmail,
+            contactPhone: updatedAccount.contactPhone || "Inquire",
+            website: updatedAccount.website || "www.inquire-booking.com",
+            genres: updatedAccount.genre ? updatedAccount.genre.split(",").map(g => g.trim()).filter(Boolean) : ["Live Music"],
+            hasPA: updatedAccount.hasPA ?? true,
+            hasLighting: updatedAccount.hasLighting ?? true
+          };
 
-        if (existingIdx >= 0) {
-          venuesList[existingIdx] = updatedVenueEntry;
-        } else {
-          venuesList.unshift(updatedVenueEntry);
+          if (existingIdx >= 0) {
+            venuesList[existingIdx] = updatedVenueEntry;
+          } else {
+            venuesList.unshift(updatedVenueEntry);
+          }
+
+          localStorage.setItem("custom_venues_v1", JSON.stringify(venuesList));
+          window.dispatchEvent(new CustomEvent("giglizard_venues_updated"));
+        } catch (err) {
+          console.error("Error syncing venue directory:", err);
         }
-
-        localStorage.setItem("custom_venues_v1", JSON.stringify(venuesList));
-        window.dispatchEvent(new CustomEvent("giglizard_venues_updated"));
-      } catch (err) {
-        console.error("Error syncing venue directory:", err);
       }
+
+      // 4. Update the current active user session state in the app immediately
+      onUpdateAccount(updatedAccount);
+
+      // 5. Success UI state: button shows green checkmark for 3 seconds & floating toast appears
+      setSaveSuccess(true);
+      setShowFloatingToast(true);
+      setSuccessMsg(`✓ Changes Saved Live!`);
+
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
+
+      setTimeout(() => {
+        setShowFloatingToast(false);
+        setSuccessMsg("");
+      }, 5000);
+    } catch (err: any) {
+      console.error("Failed to save changes:", err);
+      setErrorMsg("Failed to save changes. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    onUpdateAccount(updatedAccount);
-    setSuccessMsg(`✅ ${updatedAccount.type} page information saved successfully! Directory updated.`);
-    setTimeout(() => setSuccessMsg(""), 4000);
   };
 
   // Handle Change Password
@@ -458,6 +541,27 @@ export default function EditAccountModal({
           </button>
         </div>
 
+        {/* Floating Green Confirmation Toast Banner at top of modal */}
+        {showFloatingToast && (
+          <div 
+            className="p-3.5 bg-emerald-500 text-slate-950 rounded-xl text-xs font-black flex items-center justify-between shadow-xl animate-bounce-short border border-emerald-400 shrink-0"
+            id="floating-save-toast-banner"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-slate-950 shrink-0" />
+              <span>Success! Your band profile updates are now live in the directory.</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFloatingToast(false)}
+              className="text-slate-900 hover:text-black p-0.5 cursor-pointer ml-2"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Global Feedback Notifications */}
         {errorMsg && (
           <div className="p-3 bg-rose-950/70 border border-rose-600/60 rounded-xl text-xs text-rose-200 flex items-center gap-2 flex-shrink-0 animate-fade-in">
@@ -466,7 +570,7 @@ export default function EditAccountModal({
           </div>
         )}
 
-        {successMsg && (
+        {successMsg && !showFloatingToast && (
           <div className="p-3 bg-emerald-950/70 border border-emerald-600/60 rounded-xl text-xs text-emerald-200 flex items-center gap-2 flex-shrink-0 animate-fade-in">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             <span>{successMsg}</span>
@@ -697,11 +801,32 @@ export default function EditAccountModal({
               <div className="flex justify-end pt-1">
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-black py-2.5 px-5 rounded-xl cursor-pointer transition-all shadow-md flex items-center gap-2 text-xs"
+                  disabled={isSaving}
+                  className={`font-black py-2.5 px-5 rounded-xl cursor-pointer transition-all shadow-md flex items-center gap-2 text-xs border-0 ${
+                    saveSuccess
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                      : isSaving
+                      ? "bg-indigo-700/80 text-white opacity-80 cursor-not-allowed"
+                      : "bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white"
+                  }`}
                   id="btn-save-page-info"
                 >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save Page Information</span>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving updates...</span>
+                    </>
+                  ) : saveSuccess ? (
+                    <>
+                      <Check className="w-4 h-4 text-white" />
+                      <span>✓ Changes Saved Live!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>Save Page Information</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

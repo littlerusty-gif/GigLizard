@@ -200,6 +200,47 @@ export default function UserLoginModal({
     })();
     const expectedCustomPass = customPasswordsMap[cleanEmail];
 
+    // 0. Attempt authentic Supabase Auth sign-in first for registered users
+    if (modalMode === "login") {
+      try {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPassword,
+        });
+
+        if (!signInError && signInData?.user) {
+          // Fetch user profile from Supabase profiles table
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', signInData.user.id)
+            .single();
+
+          const roleType = (profile?.role || profile?.type || "Band") as "Band" | "Venue" | "Sound Engineer";
+          const isVip = cleanEmail === 'giglizard.us@gmail.com' || isPerpetualPassEmail(cleanEmail);
+          const payload: UserAccount = {
+            type: roleType,
+            name: profile?.name || cleanEmail.split("@")[0],
+            city: profile?.city || "Seattle, WA",
+            isPremium: Boolean(profile?.is_premium || isVip),
+            hasPaidAccess: Boolean(profile?.is_paid || profile?.is_premium || isVip),
+            contactEmail: cleanEmail,
+            genre: profile?.genres || profile?.genre || undefined,
+            bio: profile?.bio || undefined,
+            website: profile?.primary_link || profile?.website || undefined,
+            contactPhone: profile?.phone || undefined,
+            experienceLevel: profile?.experience_level as any
+          };
+          setSuccessMessage(`✅ Welcome back! Logged in as ${roleType}: ${payload.name}.`);
+          setTimeout(() => {
+            onLoginSuccess(payload);
+            onClose();
+          }, 600);
+          return;
+        }
+      } catch (_) {}
+    }
+
     // 1. Platform Owner (littlerusty@gmail.com)
     if (cleanEmail === "littlerusty@gmail.com") {
       const validAdminPass = expectedCustomPass || "L,eilani1228";
@@ -398,6 +439,89 @@ export default function UserLoginModal({
     const finalCity = modalMode === "signup" && signupCity.trim()
       ? signupCity.trim()
       : "Seattle, WA";
+
+    if (modalMode === "signup") {
+      if (cleanPassword.length < 6) {
+        setErrorMessage("Password must be at least 6 characters long.");
+        return;
+      }
+
+      try {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: cleanPassword,
+          options: {
+            data: {
+              role: loginRole,
+              name: finalName,
+            }
+          }
+        });
+
+        if (authError) {
+          const errLower = authError.message.toLowerCase();
+          if (errLower.includes("already registered") || errLower.includes("already in use") || errLower.includes("unique")) {
+            setErrorMessage(`An account with the email "${cleanEmail}" is already registered. Please sign in or use "Forgot Password".`);
+            return;
+          }
+          if (errLower.includes("password")) {
+            setErrorMessage(authError.message || "Password is too short. Please use at least 6 characters.");
+            return;
+          }
+          setErrorMessage(authError.message);
+          return;
+        }
+
+        if (authData?.user && authData.user.identities && authData.user.identities.length === 0) {
+          setErrorMessage(`An account with the email "${cleanEmail}" is already registered. Please sign in or use "Forgot Password".`);
+          return;
+        }
+
+        // Link profile with auth UID
+        if (authData?.user) {
+          const profilePayload: any = {
+            id: authData.user.id,
+            email: cleanEmail,
+            name: finalName,
+            role: loginRole,
+            city: finalCity,
+            genres: loginRole === "Venue" ? "Live Music" : (loginRole === "Sound Engineer" ? "FOH, Monitors, Studio" : "Alternative Rock"),
+            bio: `${loginRole} profile registered on GigLizard.`,
+            phone: '',
+            website: '',
+            epk_link: '',
+            touring_status: 'Local',
+            created_at: new Date().toISOString()
+          };
+
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert(profilePayload);
+
+          if (profileError && (profileError.message?.toLowerCase().includes("column") || profileError.code === "PGRST204")) {
+            await supabase.from('profiles').upsert({
+              id: authData.user.id,
+              email: cleanEmail,
+              name: finalName,
+              role: loginRole,
+              city: finalCity,
+              genres: profilePayload.genres,
+              bio: profilePayload.bio,
+              created_at: new Date().toISOString()
+            });
+          }
+        }
+
+        // If email confirmation is required by Supabase
+        if (!authData?.session) {
+          setSuccessMessage("Account created! Please check your email to confirm your account before logging in.");
+          return;
+        }
+      } catch (err: any) {
+        setErrorMessage(err?.message || "Registration failed. Please try again.");
+        return;
+      }
+    }
 
     // Await insertProfile() to persist directly into Supabase 'profiles' table
     try {

@@ -727,6 +727,8 @@ export default function App() {
           <div className="space-y-6" id="view-home-wrapper">
             <Home 
               currentAccount={currentAccount}
+              currentUser={currentUser}
+              onSetCurrentUser={setCurrentUser}
               onSelectTab={setActiveTab}
               onRegisterAccount={handleRegisterAccount}
               onUpdatePricing={handleUpdatePricing}
