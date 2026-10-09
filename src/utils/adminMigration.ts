@@ -295,47 +295,37 @@ export async function syncLocalBandsAndVenuesToSupabase(
   for (let i = 0; i < uniqueVenues.length; i += VENUE_BATCH_SIZE) {
     const batch = uniqueVenues.slice(i, i + VENUE_BATCH_SIZE);
     const venuePayloads = batch.map(v => {
+      const deterministicId = generateDeterministicUUID(`venue-${v.id || v.name}`);
       const { city, state } = parseCityAndState(v.city, v.address);
       const genreArray = Array.isArray(v.genres)
         ? v.genres
         : (v.genres ? String(v.genres).split(",").map(g => g.trim()).filter(Boolean) : ["Live Music"]);
-      const officialEmail = (v.contactEmail || `venue-${v.id}@giglizard-venue.com`).trim().toLowerCase();
+      const contactEmail = (v.contactEmail || `venue-${v.id}@giglizard-venue.com`).trim().toLowerCase();
 
+      // Maps to existing columns in public.venues:
+      // (id, name, city, state, address, booking_email, website, capacity, genres_accepted)
       return {
+        id: deterministicId,
         name: v.name?.trim() || "Live Venue",
         city,
         state,
         address: v.address?.trim() || `${city}, ${state}`,
-        official_email: officialEmail,
-        phone: (v.contactPhone || "").trim() || null,
+        booking_email: contactEmail,
         website: v.website?.trim() || null,
         capacity: Number(v.capacity) || 200,
-        genres_accepted: genreArray,
-        booking_contact: v.name ? `${v.name} Booking` : "Booking Manager"
+        genres_accepted: genreArray
       };
     });
 
     try {
-      // Upsert venues strictly mapping requested columns:
-      // name, city, state, address, official_email, phone, website, capacity, genres_accepted, booking_contact
+      // Upsert venues with conflict resolution on primary key ID
       const { error: venueErr } = await supabase
         .from("venues")
-        .upsert(venuePayloads, { onConflict: "name" });
+        .upsert(venuePayloads, { onConflict: "id" });
 
       if (venueErr) {
         console.error("Venues seed error:", venueErr);
         errorLogs.push(`Venues seed error: ${venueErr.message}`);
-
-        // Retry with onConflict: 'official_email' if name constraint differs
-        const { error: retryVenueErr } = await supabase
-          .from("venues")
-          .upsert(venuePayloads, { onConflict: "official_email" });
-
-        if (retryVenueErr) {
-          console.error("Venues seed retry error:", retryVenueErr);
-        } else {
-          successfulVenues += batch.length;
-        }
       } else {
         successfulVenues += batch.length;
       }
@@ -360,13 +350,14 @@ export async function syncLocalBandsAndVenuesToSupabase(
         : (b.genres ? String(b.genres).split(",").map(g => g.trim()).filter(Boolean) : ["Alternative Rock"]);
       const officialEmail = (b.contactEmail || `band-${b.id}@giglizard-band.com`).trim().toLowerCase();
 
+      // Maps strictly to existing columns in public.bands:
+      // (id, user_id, name, city_state, official_email, website, genres, touring_tier, music_url, epk_url, bio)
       return {
         id: deterministicId,
-        user_id: null, // Set user_id to null so Postgres foreign key constraints on auth.users do not reject the insert
+        user_id: null, // Null prevents foreign key violations against auth.users
         name: b.name?.trim() || "Artist",
         city_state: b.city?.trim() || "Seattle, WA",
         official_email: officialEmail,
-        phone: (b.contactPhone || "").trim() || null,
         website: b.website?.trim() || null,
         genres: genreArray,
         touring_tier: b.experienceLevel || "Local Support (Opening & Regional support)",
@@ -377,8 +368,7 @@ export async function syncLocalBandsAndVenuesToSupabase(
     });
 
     try {
-      // Upsert bands strictly mapping requested columns:
-      // id, name, city_state, official_email, phone, website, genres (ensure array format text[]), touring_tier, music_url, epk_url, bio
+      // Upsert bands matching existing columns with onConflict on official_email
       const { error: bandErr } = await supabase
         .from("bands")
         .upsert(bandPayloads, { onConflict: "official_email" });
