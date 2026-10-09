@@ -26,7 +26,7 @@ import {
 } from "../utils/accessControl";
 import { getOwnerBandEdits, getOwnerDeletedBandIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
 import { fetchProfiles, profileToAvailableBand, insertProfile } from "../lib/supabase";
-import { updateAndAlphabetizeGenreDropdown } from "../utils/genreDropdown";
+import { updateAndAlphabetizeGenreDropdown, MASTER_GENRES, matchesMasterGenre } from "../utils/genreDropdown";
 
 interface BandDirectoryProps {
   onUpdateAvailableBands?: (bands: AvailableBand[]) => void;
@@ -428,55 +428,13 @@ export default function BandDirectory({
     }, 4000);
   };
 
-  // Extract unique genres, inject overarching Tribute category, and alphabetize
+  // Standard Master Genres list
   const genreOptions = React.useMemo(() => {
-    const uniqueRawGenres: string[] = Array.from(
-      new Set<string>(
-        bands
-          .flatMap((b) => b.genres)
-          .map((g) => g.trim())
-          .filter(Boolean)
-      )
-    );
-
-    const uniqueGenresMap = new Map<string, { value: string; text: string }>();
-
-    uniqueRawGenres.forEach((g) => {
-      if (g.toLowerCase() === "all" || g.toLowerCase().includes("all genre")) return;
-      if (!uniqueGenresMap.has(g.toLowerCase())) {
-        uniqueGenresMap.set(g.toLowerCase(), { value: g, text: g });
-      }
-    });
-
-    // Add the comprehensive Tribute umbrella option if not already present
-    const tributeKey = "tribute bands (all)";
-    if (!uniqueGenresMap.has(tributeKey)) {
-      uniqueGenresMap.set(tributeKey, {
-        value: "Tribute",
-        text: "Tribute Bands (All)"
-      });
-    }
-
-    // Sort alphabetically by visible text (case-insensitive)
-    const sortedGenres = Array.from(uniqueGenresMap.values()).sort((a, b) =>
-      a.text.localeCompare(b.text, undefined, { sensitivity: "base" })
-    );
-
-    return sortedGenres;
-  }, [bands]);
+    return MASTER_GENRES;
+  }, []);
 
   const filteredBands = bands.filter((band) => {
-    const matchesGenre = (() => {
-      if (selectedGenre === "All" || !selectedGenre) return true;
-      if (selectedGenre === "Tribute" || selectedGenre.toLowerCase() === "tribute bands (all)") {
-        return (
-          band.genres.some((g) => g.toLowerCase().includes("tribute") || g.toLowerCase().includes("cover")) ||
-          band.name.toLowerCase().includes("tribute") ||
-          band.bio.toLowerCase().includes("tribute")
-        );
-      }
-      return band.genres.some((g) => g.toLowerCase() === selectedGenre.toLowerCase());
-    })();
+    const matchesGenre = matchesMasterGenre(selectedGenre, band);
     const matchesLevel = selectedLevel === "All" || band.experienceLevel === selectedLevel;
     
     // State filter (Oregon, Washington, Colorado, Arizona, California, Other)

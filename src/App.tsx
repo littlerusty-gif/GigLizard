@@ -641,7 +641,7 @@ export default function App() {
               }`}
             >
               <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-              <span>For Venues</span>
+              <span>Venues</span>
             </button>
 
             <button
@@ -654,7 +654,7 @@ export default function App() {
               }`}
             >
               <Users className="w-3.5 h-3.5 text-amber-500" />
-              <span>For Bands</span>
+              <span>Bands</span>
             </button>
 
             <button
