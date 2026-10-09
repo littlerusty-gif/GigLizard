@@ -22,7 +22,7 @@ export function isEmailRevoked(email?: string): boolean {
 }
 
 // Special perpetual lifetime pass accounts with full unmasked access for life
-export const PERPETUAL_30_DAY_PASS_EMAILS = ["littlerusty@gmail.com"];
+export const PERPETUAL_30_DAY_PASS_EMAILS = ["littlerusty@gmail.com", "giglizard.us@gmail.com"];
 
 export function isPerpetualPassEmail(email?: string): boolean {
   if (!email) return false;

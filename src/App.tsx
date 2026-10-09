@@ -90,6 +90,10 @@ export default function App() {
   const [loginModalMode, setLoginModalMode] = useState<"login" | "signup" | "forgot">("login");
   const [loginModalEmail, setLoginModalEmail] = useState("");
 
+  // 1. Initial state MUST default to null, never mock Dr Hadit data
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+
   // User Accounts State
   const [currentAccount, setCurrentAccount] = useState<UserAccount | null>(() => {
     // Purge any banned bands from custom storage on initialization
@@ -108,7 +112,7 @@ export default function App() {
     if (saved) {
       try { 
         const parsed: UserAccount = JSON.parse(saved);
-        if (isBandBanned(parsed?.contactEmail, parsed?.name)) {
+        if (!parsed || !parsed.contactEmail || isBandBanned(parsed?.contactEmail, parsed?.name)) {
           localStorage.removeItem("current_user_account_v1");
           return null;
         }
@@ -129,6 +133,133 @@ export default function App() {
     }
     return null;
   });
+
+  // 2. Resolve the real session on load
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        // Get current active session from Supabase
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // Fetch the user's profile from your Supabase profiles/bands table
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile) {
+            setCurrentUser(profile);
+            const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email);
+            const mappedAccount: UserAccount = {
+              type: (profile.type || profile.role || "Band") as any,
+              name: profile.name || session.user.email?.split("@")[0] || "User",
+              city: profile.city || "Seattle, WA",
+              isPremium: Boolean(profile.is_premium || profile.is_paid || isVip),
+              hasPaidAccess: Boolean(profile.is_paid || profile.is_premium || isVip),
+              autoRenew: Boolean(profile.auto_renew ?? true),
+              accessExpiresAt: profile.access_expires_at || (isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined),
+              contactEmail: profile.contact_email || profile.email || session.user.email || "",
+              genre: profile.genre,
+              bio: profile.bio,
+              website: profile.website,
+              epkUrl: profile.epk_url,
+              musicUrl: profile.music_url,
+              experienceLevel: profile.experience_level as any
+            };
+            setCurrentAccount(mappedAccount);
+            localStorage.setItem("current_user_account_v1", JSON.stringify(mappedAccount));
+          } else {
+            // Fallback to basic session info if profile row is pending
+            const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email);
+            const fallbackUser = {
+              id: session.user.id,
+              email: session.user.email,
+              isVip,
+            };
+            setCurrentUser(fallbackUser);
+            const fallbackAccount: UserAccount = {
+              type: "Band",
+              name: session.user.email?.split("@")[0] || "User",
+              city: "Seattle, WA",
+              isPremium: isVip,
+              hasPaidAccess: isVip,
+              accessExpiresAt: isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined,
+              contactEmail: session.user.email || ""
+            };
+            setCurrentAccount(fallbackAccount);
+            localStorage.setItem("current_user_account_v1", JSON.stringify(fallbackAccount));
+          }
+        } else {
+          // No session exists (fresh guest or incognito)
+          setCurrentUser(null);
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+        setCurrentUser(null);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    initAuth();
+
+    // Listen for Supabase login / logout events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        const isVip = session.user.email === 'giglizard.us@gmail.com' || isPerpetualPassEmail(session.user.email);
+        const userObj = profile || {
+          id: session.user.id,
+          email: session.user.email,
+          isVip,
+        };
+        setCurrentUser(userObj);
+
+        const mappedAccount: UserAccount = profile ? {
+          type: (profile.type || profile.role || "Band") as any,
+          name: profile.name || session.user.email?.split("@")[0] || "User",
+          city: profile.city || "Seattle, WA",
+          isPremium: Boolean(profile.is_premium || profile.is_paid || isVip),
+          hasPaidAccess: Boolean(profile.is_paid || profile.is_premium || isVip),
+          autoRenew: Boolean(profile.auto_renew ?? true),
+          accessExpiresAt: profile.access_expires_at || (isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined),
+          contactEmail: profile.contact_email || profile.email || session.user.email || "",
+          genre: profile.genre,
+          bio: profile.bio,
+          website: profile.website,
+          epkUrl: profile.epk_url,
+          musicUrl: profile.music_url,
+          experienceLevel: profile.experience_level as any
+        } : {
+          type: "Band",
+          name: session.user.email?.split("@")[0] || "User",
+          city: "Seattle, WA",
+          isPremium: isVip,
+          hasPaidAccess: isVip,
+          accessExpiresAt: isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined,
+          contactEmail: session.user.email || ""
+        };
+        setCurrentAccount(mappedAccount);
+        localStorage.setItem("current_user_account_v1", JSON.stringify(mappedAccount));
+      } else {
+        // Explicitly wipe state when signed out or unauthenticated
+        setCurrentUser(null);
+        setCurrentAccount(null);
+        localStorage.removeItem("current_user_account_v1");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const [activeTab, setActiveTabState] = useState<TabType>(getInitialTab);
 
@@ -387,7 +518,11 @@ export default function App() {
     localStorage.setItem("current_user_account_v1", JSON.stringify(account));
   };
 
-  const handleLogOut = () => {
+  const handleLogOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (_) {}
+    setCurrentUser(null);
     setCurrentAccount(null);
     localStorage.removeItem("current_user_account_v1");
   };
@@ -723,6 +858,8 @@ export default function App() {
           <div className="space-y-6" id="view-bands-wrapper">
             <BandDirectory 
               currentAccount={currentAccount}
+              currentUser={currentUser}
+              isAuthLoading={isAuthLoading}
               onUpdateAccount={handleUpdateAccount}
               onTriggerEditAccount={() => setShowEditAccountModal(true)}
               onTriggerUpgrade={() => {

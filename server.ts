@@ -340,7 +340,13 @@ app.post("/api/auth/reset-password", (req, res) => {
 
 // Secure Bands Directory API with Server-Side Redaction & Access Enforcement
 const BANNED_BAND_EMAILS = ["sherie.szubski@gmail.com"];
+const PERPETUAL_OWNER_EMAILS = ["littlerusty@gmail.com", "giglizard.us@gmail.com"];
 const PERPETUAL_OWNER_EMAIL = "littlerusty@gmail.com";
+
+function isOwnerEmail(email?: string): boolean {
+  if (!email) return false;
+  return PERPETUAL_OWNER_EMAILS.includes(email.trim().toLowerCase());
+}
 
 function isBandBanned(email?: string, name?: string): boolean {
   if (email && (BANNED_BAND_EMAILS.includes(email.trim().toLowerCase()) || email.toLowerCase().includes("sherie.szubski"))) {
@@ -413,7 +419,7 @@ app.get("/api/bands", (req, res) => {
   const userEmail = ((req.headers["x-user-email"] || req.query.email) as string || "").trim().toLowerCase();
   
   const isUserLoggedIn = Boolean(userEmail && userEmail.length > 0 && userEmail.includes("@"));
-  const isOwner = isUserLoggedIn && userEmail === PERPETUAL_OWNER_EMAIL;
+  const isOwner = isUserLoggedIn && isOwnerEmail(userEmail);
   const isRevoked = isBandBanned(userEmail);
 
   // Require user to be logged in AND have an unexpired paid subscription (or be lifetime owner)
@@ -477,7 +483,7 @@ app.post("/api/bands", (req, res) => {
   ).trim().toLowerCase();
 
   const isUserLoggedIn = Boolean(userEmail && userEmail.length > 0 && userEmail.includes("@"));
-  const isOwner = isUserLoggedIn && userEmail === PERPETUAL_OWNER_EMAIL;
+  const isOwner = isUserLoggedIn && isOwnerEmail(userEmail);
   const isRevoked = isBandBanned(userEmail);
 
   // Require user to be logged in AND have an unexpired paid subscription (or be lifetime owner)
@@ -554,8 +560,8 @@ app.post("/api/bands/register", (req, res) => {
 // Owner endpoints for Bands
 app.post("/api/owner/bands/edit", (req, res) => {
   const ownerEmail = (req.body?.ownerEmail || req.headers["x-user-email"] || "").toString().trim().toLowerCase();
-  if (ownerEmail !== PERPETUAL_OWNER_EMAIL) {
-    res.status(403).json({ error: `Forbidden: Only ${PERPETUAL_OWNER_EMAIL} can edit bands in the owner dashboard.` });
+  if (!isOwnerEmail(ownerEmail)) {
+    res.status(403).json({ error: `Forbidden: Only authorized owners can edit bands in the owner dashboard.` });
     return;
   }
 
@@ -577,8 +583,8 @@ app.post("/api/owner/bands/edit", (req, res) => {
 
 app.post("/api/owner/bands/delete", (req, res) => {
   const ownerEmail = (req.body?.ownerEmail || req.headers["x-user-email"] || "").toString().trim().toLowerCase();
-  if (ownerEmail !== PERPETUAL_OWNER_EMAIL) {
-    res.status(403).json({ error: `Forbidden: Only ${PERPETUAL_OWNER_EMAIL} can delete bands.` });
+  if (!isOwnerEmail(ownerEmail)) {
+    res.status(403).json({ error: `Forbidden: Only authorized owners can delete bands.` });
     return;
   }
 
@@ -597,8 +603,8 @@ app.get("/api/venues", (req, res) => {
 
 app.post("/api/owner/venues/edit", (req, res) => {
   const ownerEmail = (req.body?.ownerEmail || req.headers["x-user-email"] || "").toString().trim().toLowerCase();
-  if (ownerEmail !== PERPETUAL_OWNER_EMAIL) {
-    res.status(403).json({ error: `Forbidden: Only ${PERPETUAL_OWNER_EMAIL} can edit venues in the owner dashboard.` });
+  if (!isOwnerEmail(ownerEmail)) {
+    res.status(403).json({ error: `Forbidden: Only authorized owners can edit venues in the owner dashboard.` });
     return;
   }
 
@@ -620,8 +626,8 @@ app.post("/api/owner/venues/edit", (req, res) => {
 
 app.post("/api/owner/venues/delete", (req, res) => {
   const ownerEmail = (req.body?.ownerEmail || req.headers["x-user-email"] || "").toString().trim().toLowerCase();
-  if (ownerEmail !== PERPETUAL_OWNER_EMAIL) {
-    res.status(403).json({ error: `Forbidden: Only ${PERPETUAL_OWNER_EMAIL} can delete venues.` });
+  if (!isOwnerEmail(ownerEmail)) {
+    res.status(403).json({ error: `Forbidden: Only authorized owners can delete venues.` });
     return;
   }
 
@@ -635,13 +641,13 @@ app.post("/api/owner/venues/delete", (req, res) => {
 // Export Directory as multi-tab Excel spreadsheet (.xlsx)
 // Tab 1: Bands with Contact Emails
 // Tab 2: Venues with Contact Emails
-// RESTRICTED: Only littlerusty@gmail.com is authorized to export or download
+// RESTRICTED: Only authorized owners can export or download
 app.get("/api/export/directory.xlsx", (req, res) => {
   try {
     const ownerEmail = (req.query?.email || req.headers["x-user-email"] || "").toString().trim().toLowerCase();
-    if (ownerEmail !== PERPETUAL_OWNER_EMAIL) {
+    if (!isOwnerEmail(ownerEmail)) {
       res.status(403).json({ 
-        error: `Forbidden: Directory export files and contact spreadsheets are restricted exclusively to ${PERPETUAL_OWNER_EMAIL}. Unauthorized access is prevented.` 
+        error: `Forbidden: Directory export files and contact spreadsheets are restricted exclusively to platform owners. Unauthorized access is prevented.` 
       });
       return;
     }

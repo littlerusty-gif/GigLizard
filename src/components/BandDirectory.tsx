@@ -21,7 +21,8 @@ import {
   canViewBandContacts,
   getAccessStatusDetails, 
   maskContactEmail, 
-  isBandBanned
+  isBandBanned,
+  isPerpetualPassEmail
 } from "../utils/accessControl";
 import { getOwnerBandEdits, getOwnerDeletedBandIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
 import { fetchProfiles, profileToAvailableBand, insertProfile } from "../lib/supabase";
@@ -30,6 +31,8 @@ import { updateAndAlphabetizeGenreDropdown } from "../utils/genreDropdown";
 interface BandDirectoryProps {
   onUpdateAvailableBands?: (bands: AvailableBand[]) => void;
   currentAccount?: UserAccount | null;
+  currentUser?: any | null;
+  isAuthLoading?: boolean;
   onTriggerUpgrade?: () => void;
   onTriggerLogin?: () => void;
   onUpdateAccount?: (account: UserAccount) => void;
@@ -39,6 +42,8 @@ interface BandDirectoryProps {
 export default function BandDirectory({ 
   onUpdateAvailableBands,
   currentAccount,
+  currentUser,
+  isAuthLoading,
   onTriggerUpgrade,
   onTriggerLogin,
   onUpdateAccount,
@@ -63,19 +68,35 @@ export default function BandDirectory({
   const itemsPerPage = 20;
 
   // Access-check helper: Only logged-in paid subscribers with unexpired access can see contacts
-  const isLoggedIn = isUserLoggedIn(currentAccount);
-  const isSubscriptionActive = isAccessActive(currentAccount);
+  const isLoggedIn = isUserLoggedIn(currentAccount) || Boolean(currentUser?.email);
+  const isPerpetualUser = Boolean(
+    (currentAccount?.contactEmail && isPerpetualPassEmail(currentAccount.contactEmail)) ||
+    (currentUser?.email && isPerpetualPassEmail(currentUser.email)) ||
+    currentUser?.isVip
+  );
+  const isSubscriptionActive = isAccessActive(currentAccount) || isPerpetualUser || Boolean(currentUser?.is_premium || currentUser?.is_paid);
   const activeAccess = isLoggedIn && isSubscriptionActive;
-  const accessDetails = getAccessStatusDetails(currentAccount);
+  const accessDetails = getAccessStatusDetails(
+    currentAccount || (currentUser ? {
+      contactEmail: currentUser.email,
+      isPremium: isPerpetualUser || currentUser.is_premium,
+      hasPaidAccess: isPerpetualUser || currentUser.is_paid,
+      accessExpiresAt: isPerpetualUser ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : currentUser.access_expires_at
+    } : null)
+  );
+
+  const isLifetimeOwner = Boolean(accessDetails.isPerpetual || isPerpetualUser);
+  const hasActivePass = activeAccess || isLifetimeOwner;
 
   // Check if currently logged-in user already has a band profile registered
-  const userContactEmail = currentAccount?.contactEmail?.trim().toLowerCase();
-  const userAccountName = currentAccount?.name?.trim().toLowerCase();
+  const userContactEmail = (currentAccount?.contactEmail || currentUser?.email || currentUser?.contact_email)?.trim().toLowerCase();
+  const userAccountName = (currentAccount?.name || currentUser?.name)?.trim().toLowerCase();
+  const userAccountRole = currentAccount?.type || currentUser?.role || currentUser?.type;
   const hasRegisteredBandProfile = Boolean(
-    isLoggedIn && currentAccount && (
-      (currentAccount.type === "Band" && Boolean(currentAccount.name?.trim())) ||
+    isLoggedIn && (
+      (userAccountRole === "Band" && Boolean(userAccountName)) ||
       (userContactEmail && bands.some(b => b.contactEmail && b.contactEmail.trim().toLowerCase() === userContactEmail)) ||
-      (userAccountName && currentAccount.type === "Band" && bands.some(b => b.name && b.name.trim().toLowerCase() === userAccountName))
+      (userAccountName && userAccountRole === "Band" && bands.some(b => b.name && b.name.trim().toLowerCase() === userAccountName))
     )
   );
 
@@ -669,17 +690,35 @@ export default function BandDirectory({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Hide the 'All Access Contacts ($9.99 / 30 Days)' button whenever the user has an active pass or isLifetimeOwner / lifetime pass active */}
+          {!hasActivePass && (
+            <button
+              type="button"
+              onClick={handleOpenPayment}
+              className="flex-shrink-0 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-black text-xs py-3 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
+              id="btn-all-access-contacts"
+              title="Unlock full unmasked booking emails, press kits, and music links for 30 days ($9.99)"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>All Access Contacts ($9.99 / 30 Days)</span>
+            </button>
+          )}
+
           {hasRegisteredBandProfile ? (
-            onTriggerEditAccount && (
-              <button
-                type="button"
-                onClick={onTriggerEditAccount}
-                className="flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs py-3 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-                id="btn-trigger-edit-my-page"
-              >
-                <span>Edit My Account / Page</span>
-              </button>
-            )
+            <button
+              type="button"
+              onClick={() => {
+                if (onTriggerEditAccount) {
+                  onTriggerEditAccount();
+                } else {
+                  window.dispatchEvent(new CustomEvent("giglizard_open_edit_account"));
+                }
+              }}
+              className="flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs py-3 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+              id="btn-trigger-edit-my-page"
+            >
+              <span>Edit My Account / Page</span>
+            </button>
           ) : (
             <button
               type="button"
