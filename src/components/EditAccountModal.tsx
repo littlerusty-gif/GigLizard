@@ -34,6 +34,23 @@ export default function EditAccountModal({
 }: EditAccountModalProps) {
   const [activeTab, setActiveTab] = useState<ModalTab>("page");
 
+  // Input State Bindings (bandName, cityState, bookingEmail, website, genres, touringTier, musicLink, epkLink, bio)
+  const [bandName, setBandName] = useState(currentAccount?.name || "");
+  const [cityState, setCityState] = useState(currentAccount?.city || "Seattle, WA");
+  const [bookingEmail, setBookingEmail] = useState(currentAccount?.contactEmail || currentAccount?.email || "");
+  const [website, setWebsite] = useState(currentAccount?.website || "");
+  const [genres, setGenres] = useState(currentAccount?.genre || "");
+  const [touringTier, setTouringTier] = useState(
+    currentAccount?.experienceLevel === "Regional Tour"
+      ? "Regional Headliner (West Coast regional touring)"
+      : currentAccount?.experienceLevel === "National Act"
+      ? "National Act (Full touring agency / established draw)"
+      : "Local Support (Opening & Regional support)"
+  );
+  const [musicLink, setMusicLink] = useState(currentAccount?.musicUrl || "");
+  const [epkLink, setEpkLink] = useState(currentAccount?.epkUrl || "");
+  const [bio, setBio] = useState(currentAccount?.bio || "");
+
   // Page Information Form State
   const [formData, setFormData] = useState({
     name: currentAccount?.name || "",
@@ -69,16 +86,40 @@ export default function EditAccountModal({
   // Sync form data when account prop changes or modal opens
   useEffect(() => {
     if (currentAccount && isOpen) {
+      const bName = currentAccount.name || "";
+      const cCity = currentAccount.city || "Seattle, WA";
+      const bEmail = currentAccount.contactEmail || currentAccount.email || "";
+      const wSite = currentAccount.website || "";
+      const gNres = currentAccount.genre || "";
+      const tTier = currentAccount.experienceLevel === "Regional Tour"
+        ? "Regional Headliner (West Coast regional touring)"
+        : currentAccount.experienceLevel === "National Act"
+        ? "National Act (Full touring agency / established draw)"
+        : "Local Support (Opening & Regional support)";
+      const mLink = currentAccount.musicUrl || "";
+      const eLink = currentAccount.epkUrl || "";
+      const bBio = currentAccount.bio || "";
+
+      setBandName(bName);
+      setCityState(cCity);
+      setBookingEmail(bEmail);
+      setWebsite(wSite);
+      setGenres(gNres);
+      setTouringTier(tTier);
+      setMusicLink(mLink);
+      setEpkLink(eLink);
+      setBio(bBio);
+
       setFormData({
-        name: currentAccount.name || "",
-        city: currentAccount.city || "Seattle, WA",
-        contactEmail: currentAccount.contactEmail || "",
-        genre: currentAccount.genre || "",
-        bio: currentAccount.bio || "",
-        website: currentAccount.website || "",
+        name: bName,
+        city: cCity,
+        contactEmail: bEmail,
+        genre: gNres,
+        bio: bBio,
+        website: wSite,
         experienceLevel: currentAccount.experienceLevel || "Local",
-        epkUrl: currentAccount.epkUrl || "",
-        musicUrl: currentAccount.musicUrl || "",
+        epkUrl: eLink,
+        musicUrl: mLink,
         address: currentAccount.address || "",
         capacity: currentAccount.capacity || 150,
         hasPA: currentAccount.hasPA ?? true,
@@ -101,299 +142,137 @@ export default function EditAccountModal({
   const activeAccess = isAccessActive(currentAccount);
   const isOwner = isPerpetualPassEmail(currentAccount.contactEmail);
 
-  // Handle Save Page Information
-  const handleSavePageInfo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
-    setShowFloatingToast(false);
-
-    const cleanName = sanitizeInputText(formData.name, 80).trim();
-    const cleanCity = sanitizeInputText(formData.city, 80).trim();
-    const cleanEmail = sanitizeInputText(formData.contactEmail, 100).trim().toLowerCase();
-    const cleanBio = sanitizeInputText(formData.bio, 1000).trim();
-    const cleanGenre = sanitizeInputText(formData.genre, 150).trim();
-
-    // Required fields validation
-    if (!cleanName) {
-      setErrorMsg(currentAccount.type === "Band" ? "Please provide your Band Name." : "Please provide your Venue Name.");
-      return;
-    }
-    if (!cleanCity) {
-      setErrorMsg("Please provide City & State.");
-      return;
-    }
-    if (!cleanEmail || !cleanEmail.includes("@")) {
-      setErrorMsg("Please provide a valid Official Booking Email.");
-      return;
-    }
-
-    if (currentAccount.type === "Band") {
-      if (!cleanGenre) {
-        setErrorMsg("Please provide Musical Genres for your band.");
-        return;
-      }
-      if (!formData.experienceLevel) {
-        setErrorMsg("Please select a Touring Experience Level.");
-        return;
-      }
-      if (!cleanBio) {
-        setErrorMsg("Please provide a Band Bio & Sound Description.");
-        return;
-      }
-    }
-
-    // Helper to sanitize optional URL fields (Website, Music Link, EPK Link)
-    const sanitizeOptionalUrl = (rawUrl?: string | null): string | null => {
-      if (!rawUrl) return null;
-      const trimmed = sanitizeInputText(rawUrl.trim(), 250);
-      if (!trimmed || trimmed === "null" || trimmed === "undefined") {
-        return null;
-      }
-      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-        return trimmed;
-      }
-      return `https://${trimmed}`;
-    };
-
-    const cleanWebsite = sanitizeOptionalUrl(formData.website);
-    const cleanEpkUrl = currentAccount.type === "Band" ? sanitizeOptionalUrl(formData.epkUrl) : null;
-    const cleanMusicUrl = currentAccount.type === "Band" ? sanitizeOptionalUrl(formData.musicUrl) : null;
-
-    const updatedAccount: UserAccount = {
-      ...currentAccount,
-      name: cleanName,
-      city: cleanCity,
-      contactEmail: cleanEmail,
-      genre: cleanGenre,
-      bio: cleanBio,
-      website: cleanWebsite ?? null,
-      ...(currentAccount.type === "Band" ? {
-        experienceLevel: (formData.experienceLevel || "Local") as any,
-        epkUrl: cleanEpkUrl ?? null,
-        musicUrl: cleanMusicUrl ?? null
-      } : {
-        address: sanitizeInputText(formData.address, 120).trim(),
-        capacity: Math.max(1, Number(formData.capacity) || 150),
-        hasPA: Boolean(formData.hasPA),
-        hasLighting: Boolean(formData.hasLighting)
-      })
-    };
+  // Resilient Save Page Information Implementation
+  const handleSavePageInformation = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
     setIsSaving(true);
-
     try {
-      // 1. Resolve Profile ID from currentAccount, email match, active session, or email lookup
-      const isUuid = (val?: string): boolean =>
-        Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
-
-      let profileId = isUuid(currentAccount.id) ? currentAccount.id : undefined;
-
-      if (!profileId && cleanEmail.toLowerCase() === "littlerusty@gmail.com") {
-        profileId = "41c6fde8-9462-4402-a0f1-79155786fb03";
+      // 1. Get authenticated session user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        alert("Authentication error: Please log out and sign back in.");
+        return;
       }
 
-      if (!profileId) {
-        try {
-          const authRes = await Promise.race([
-            supabase.auth.getSession(),
-            new Promise<any>((resolve) => setTimeout(() => resolve({ data: { session: null } }), 800))
-          ]);
-          if (authRes?.data?.session?.user?.id && isUuid(authRes.data.session.user.id)) {
-            profileId = authRes.data.session.user.id;
-          }
-        } catch (_) {}
+      // 2. Validate required fields
+      if (!bandName?.trim() || !cityState?.trim() || !bookingEmail?.trim()) {
+        alert("Please fill in all required fields (Band Name, City & State, and Booking Email).");
+        return;
       }
 
-      if (!profileId) {
-        try {
-          const matchedProfileRes = await Promise.race([
-            supabase.from('profiles').select('id').eq('email', cleanEmail).maybeSingle(),
-            new Promise<any>((resolve) => setTimeout(() => resolve({ data: null }), 800))
-          ]);
-          if (matchedProfileRes?.data?.id && isUuid(matchedProfileRes.data.id)) {
-            profileId = matchedProfileRes.data.id;
-          }
-        } catch (_) {}
+      // 3. Format genres (handles array vs string column schemas)
+      const genreInput = genres || "";
+      const genreArray = Array.isArray(genreInput)
+        ? genreInput
+        : genreInput.split(',').map((g: string) => g.trim()).filter(Boolean);
+
+      // 4. Construct payload matching Supabase bands schema
+      const payload: Record<string, any> = {
+        name: bandName.trim(),
+        city_state: cityState.trim(),
+        official_email: bookingEmail.trim().toLowerCase(),
+        website: website?.trim() || null,
+        genres: genreArray,
+        touring_tier: touringTier || "Local Support (Opening & Regional support)",
+        music_url: musicLink?.trim() || null,
+        epk_url: epkLink?.trim() || null,
+        bio: bio?.trim() || "",
+        updated_at: new Date().toISOString()
+      };
+
+      // 5. Try updating existing record first matching user_id or email
+      const { data: updateData, error: updateError } = await supabase
+        .from('bands')
+        .update(payload)
+        .or(`user_id.eq.${user.id},official_email.eq.${user.email?.toLowerCase()}`)
+        .select();
+
+      if (updateError) {
+        console.error("Supabase update error:", updateError);
+        alert(`Save error: ${updateError.message}`);
+        return;
       }
 
-      if (profileId) {
-        updatedAccount.id = profileId;
-      }
+      // 6. If no existing row was updated, run upsert to create or sync it
+      if (!updateData || updateData.length === 0) {
+        const { error: upsertError } = await supabase
+          .from('bands')
+          .upsert({
+            ...payload,
+            user_id: user.id
+          }, { onConflict: 'official_email' });
 
-      let cityPart = cleanCity;
-      let statePart = "WA";
-      if (cleanCity.includes(",")) {
-        const parts = cleanCity.split(",").map(p => p.trim());
-        cityPart = parts[0] || cleanCity;
-        statePart = parts[1] || "WA";
-      }
-
-      // 2. Robust Supabase Upsert & Error Handling
-      try {
-        const payloadToUpsert: any = {
-          ...(profileId ? { id: profileId } : (currentAccount.id ? { id: currentAccount.id } : {})),
-          email: currentAccount.email || currentAccount.contactEmail || cleanEmail,
-          name: formData.bandName || formData.name || cleanName,
-          city: formData.city || cleanCity,
-          genres: formData.genres || cleanGenre,
-          bio: formData.bio || cleanBio,
-          website: formData.website || cleanWebsite || null,
-          epk_link: formData.epkLink || cleanEpkUrl || null,
-          music_link: formData.musicLink || cleanMusicUrl || null,
-          role: currentAccount.role || currentAccount.type || 'Band',
-          updated_at: new Date().toISOString()
-        };
-
-        const targetId = profileId || currentAccount.id;
-        const upsertPromise = targetId
-          ? supabase.from('profiles').upsert(payloadToUpsert, { onConflict: 'id' })
-          : supabase.from('profiles').upsert(payloadToUpsert);
-
-        // Safe timeout that resolves without throwing/rejecting
-        const timeoutPromise = new Promise<any>((resolve) =>
-          setTimeout(() => resolve({ error: null, timeout: true }), 4000)
-        );
-
-        let writeRes = await Promise.race([upsertPromise, timeoutPromise]);
-        let profileError = writeRes?.error;
-
-        // If specific custom columns (epk_link, music_link, website, updated_at) are absent in remote schema cache,
-        // retry with standard profiles table columns (name, email, city, state, genres, bio, primary_link, role)
-        if (profileError && (profileError.message?.toLowerCase().includes("column") || profileError.code === "PGRST204")) {
-          const fallbackRes = await supabase
-            .from('profiles')
-            .upsert({
-              ...(targetId ? { id: targetId } : {}),
-              email: currentAccount.email || currentAccount.contactEmail || cleanEmail,
-              name: formData.bandName || formData.name || cleanName,
-              city: cityPart,
-              state: statePart,
-              genres: formData.genres || cleanGenre,
-              bio: formData.bio || cleanBio,
-              primary_link: formData.epkLink || formData.musicLink || formData.website || cleanWebsite || null,
-              role: currentAccount.role || currentAccount.type || 'Band'
-            }, targetId ? { onConflict: 'id' } : undefined);
-          profileError = fallbackRes.error;
+        if (upsertError) {
+          console.error("Supabase upsert error:", upsertError);
+          alert(`Save error: ${upsertError.message}`);
+          return;
         }
-
-        if (profileError && !writeRes?.timeout) {
-          console.error('Supabase profile save error:', profileError);
-          setErrorMsg(`Database notice: ${profileError.message || "Could not write to cloud"}. Updates saved to active session.`);
-        }
-      } catch (supabaseErr: any) {
-        console.error('Supabase profile save error:', supabaseErr);
-        setErrorMsg(`Failed to save changes. Please try again.`);
       }
 
-      // 3. Fallback Mechanism: Local application state & localStorage
+      // Sync active session and local directory state
+      const expLevel = touringTier?.includes("National")
+        ? "National Act"
+        : touringTier?.includes("Regional")
+        ? "Regional Tour"
+        : "Local";
+
+      const updatedAccount: UserAccount = {
+        ...currentAccount,
+        name: bandName.trim(),
+        city: cityState.trim(),
+        contactEmail: bookingEmail.trim().toLowerCase(),
+        website: website?.trim() || null,
+        genre: Array.isArray(genreArray) ? genreArray.join(", ") : genreArray,
+        bio: bio?.trim() || "",
+        experienceLevel: expLevel as any,
+        musicUrl: musicLink?.trim() || null,
+        epkUrl: epkLink?.trim() || null,
+      };
+
       try {
         localStorage.setItem("current_user_account_v1", JSON.stringify(updatedAccount));
-        if (updatedAccount.type === "Venue") {
-          localStorage.setItem("venue_user_profile_v1", JSON.stringify(updatedAccount));
+        const savedBands = localStorage.getItem("custom_available_bands_v1");
+        let bandsList: AvailableBand[] = [];
+        if (savedBands) {
+          try { bandsList = JSON.parse(savedBands); } catch (_) {}
         }
-      } catch (e) {
-        console.error("LocalStorage save error:", e);
+        if (!Array.isArray(bandsList)) bandsList = [];
+
+        const normalizedEmail = updatedAccount.contactEmail.toLowerCase();
+        const existingIdx = bandsList.findIndex(b => 
+          b.contactEmail?.toLowerCase() === normalizedEmail || 
+          b.id === `band-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`
+        );
+
+        const updatedBandEntry: AvailableBand = {
+          id: existingIdx >= 0 ? bandsList[existingIdx].id : `band-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
+          name: updatedAccount.name,
+          city: updatedAccount.city,
+          genres: genreArray,
+          bio: updatedAccount.bio || "Live music artist registered on BandGig.",
+          contactEmail: updatedAccount.contactEmail,
+          website: updatedAccount.website ?? null,
+          experienceLevel: updatedAccount.experienceLevel as any,
+          epkUrl: updatedAccount.epkUrl ?? null,
+          musicUrl: updatedAccount.musicUrl ?? null,
+          password: updatedAccount.password
+        };
+
+        if (existingIdx >= 0) {
+          bandsList[existingIdx] = updatedBandEntry;
+        } else {
+          bandsList.unshift(updatedBandEntry);
+        }
+
+        localStorage.setItem("custom_available_bands_v1", JSON.stringify(bandsList));
+        window.dispatchEvent(new CustomEvent("giglizard_bands_updated"));
+      } catch (_) {}
+
+      if (onUpdateAccount) {
+        onUpdateAccount(updatedAccount);
       }
 
-      // 4. Sync to custom bands or venues lists in localStorage
-      if (updatedAccount.type === "Band") {
-        try {
-          const savedBands = localStorage.getItem("custom_available_bands_v1");
-          let bandsList: AvailableBand[] = [];
-          if (savedBands) {
-            try { bandsList = JSON.parse(savedBands); } catch (_) {}
-          }
-          if (!Array.isArray(bandsList)) bandsList = [];
-
-          const normalizedEmail = updatedAccount.contactEmail.toLowerCase();
-          const existingIdx = bandsList.findIndex(b => 
-            b.contactEmail?.toLowerCase() === normalizedEmail || 
-            b.id === `band-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`
-          );
-
-          const updatedBandEntry: AvailableBand = {
-            id: existingIdx >= 0 ? bandsList[existingIdx].id : `band-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
-            name: updatedAccount.name,
-            city: updatedAccount.city,
-            genres: updatedAccount.genre ? updatedAccount.genre.split(",").map(g => g.trim()).filter(Boolean) : ["Alternative Rock"],
-            bio: updatedAccount.bio || "Live music artist registered on BandGig.",
-            contactEmail: updatedAccount.contactEmail,
-            website: cleanWebsite ?? null,
-            experienceLevel: (updatedAccount.experienceLevel || "Local") as any,
-            epkUrl: cleanEpkUrl ?? null,
-            musicUrl: cleanMusicUrl ?? null,
-            password: updatedAccount.password
-          };
-
-          if (existingIdx >= 0) {
-            bandsList[existingIdx] = updatedBandEntry;
-          } else {
-            bandsList.unshift(updatedBandEntry);
-          }
-
-          localStorage.setItem("custom_available_bands_v1", JSON.stringify(bandsList));
-          window.dispatchEvent(new CustomEvent("giglizard_bands_updated"));
-
-          // Sync to backend register endpoint
-          try {
-            fetch("/api/bands/register", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ band: updatedBandEntry })
-            }).catch(() => {});
-          } catch (_) {}
-        } catch (err) {
-          console.error("Error syncing band directory:", err);
-        }
-      } else {
-        // Sync to custom_venues_v1
-        try {
-          const savedVenues = localStorage.getItem("custom_venues_v1");
-          let venuesList: Venue[] = [];
-          if (savedVenues) {
-            try { venuesList = JSON.parse(savedVenues); } catch (_) {}
-          }
-          if (!Array.isArray(venuesList)) venuesList = [];
-
-          const normalizedEmail = updatedAccount.contactEmail.toLowerCase();
-          const existingIdx = venuesList.findIndex(v => 
-            v.contactEmail?.toLowerCase() === normalizedEmail || 
-            v.id === `venue-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`
-          );
-
-          const updatedVenueEntry: Venue = {
-            id: existingIdx >= 0 ? venuesList[existingIdx].id : `venue-user-${updatedAccount.name.toLowerCase().replace(/\s+/g, "-")}`,
-            name: updatedAccount.name,
-            city: updatedAccount.city,
-            address: updatedAccount.address || "123 Music Ave",
-            capacity: updatedAccount.capacity || 150,
-            description: updatedAccount.bio || "Live music performance space.",
-            contactEmail: updatedAccount.contactEmail,
-            contactPhone: updatedAccount.contactPhone || "Inquire",
-            website: updatedAccount.website || "www.inquire-booking.com",
-            genres: updatedAccount.genre ? updatedAccount.genre.split(",").map(g => g.trim()).filter(Boolean) : ["Live Music"],
-            hasPA: updatedAccount.hasPA ?? true,
-            hasLighting: updatedAccount.hasLighting ?? true
-          };
-
-          if (existingIdx >= 0) {
-            venuesList[existingIdx] = updatedVenueEntry;
-          } else {
-            venuesList.unshift(updatedVenueEntry);
-          }
-
-          localStorage.setItem("custom_venues_v1", JSON.stringify(venuesList));
-          window.dispatchEvent(new CustomEvent("giglizard_venues_updated"));
-        } catch (err) {
-          console.error("Error syncing venue directory:", err);
-        }
-      }
-
-      // 5. Update the current active user session state in the app immediately
-      onUpdateAccount(updatedAccount);
-
-      // 6. Green Confirmation Guarantee
       setSaveSuccess(true);
       setShowFloatingToast(true);
       setSuccessMsg("✓ Changes Saved Live!");
@@ -406,13 +285,17 @@ export default function EditAccountModal({
         setShowFloatingToast(false);
         setSuccessMsg("");
       }, 5000);
-    } catch (generalErr: any) {
-      console.error("Failed to save changes:", generalErr);
-      setErrorMsg(generalErr?.message || "Failed to save changes. Please try again.");
+
+      alert("Band information saved successfully!");
+    } catch (err: any) {
+      console.error("Save failed:", err);
+      alert(`Unexpected error: ${err.message || err}`);
     } finally {
       setIsSaving(false);
     }
   };
+
+  const handleSavePageInfo = handleSavePageInformation;
 
   // Handle Change Password
   const handleChangePassword = (e: React.FormEvent) => {
@@ -631,7 +514,7 @@ export default function EditAccountModal({
           
           {/* TAB 1: EDIT BAND / VENUE PAGE INFO */}
           {activeTab === "page" && (
-            <form onSubmit={handleSavePageInfo} className="space-y-4" id="form-edit-page-info">
+            <form onSubmit={handleSavePageInformation} className="space-y-4" id="form-edit-page-info">
               <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
                   <span className="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
@@ -650,8 +533,11 @@ export default function EditAccountModal({
                     <input
                       type="text"
                       required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      value={bandName}
+                      onChange={(e) => {
+                        setBandName(e.target.value);
+                        setFormData((prev) => ({ ...prev, name: e.target.value }));
+                      }}
                       placeholder={currentAccount.type === "Band" ? "e.g. The Midnight Echoes" : "e.g. The Crocodile"}
                       className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                     />
@@ -664,8 +550,11 @@ export default function EditAccountModal({
                     <input
                       type="text"
                       required
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      value={cityState}
+                      onChange={(e) => {
+                        setCityState(e.target.value);
+                        setFormData((prev) => ({ ...prev, city: e.target.value }));
+                      }}
                       placeholder="e.g. Seattle, WA or Portland, OR"
                       className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                     />
@@ -682,8 +571,11 @@ export default function EditAccountModal({
                     <input
                       type="email"
                       required
-                      value={formData.contactEmail}
-                      onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                      value={bookingEmail}
+                      onChange={(e) => {
+                        setBookingEmail(e.target.value);
+                        setFormData((prev) => ({ ...prev, contactEmail: e.target.value }));
+                      }}
                       placeholder="booking@band.com"
                       className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none font-mono"
                     />
@@ -696,8 +588,11 @@ export default function EditAccountModal({
                     </label>
                     <input
                       type="text"
-                      value={formData.website}
-                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      value={website}
+                      onChange={(e) => {
+                        setWebsite(e.target.value);
+                        setFormData((prev) => ({ ...prev, website: e.target.value }));
+                      }}
                       placeholder="https://www.yourband.com"
                       className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                     />
@@ -712,8 +607,11 @@ export default function EditAccountModal({
                   <input
                     type="text"
                     required={currentAccount.type === "Band"}
-                    value={formData.genre}
-                    onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                    value={genres}
+                    onChange={(e) => {
+                      setGenres(e.target.value);
+                      setFormData((prev) => ({ ...prev, genre: e.target.value }));
+                    }}
                     placeholder="e.g. Alternative Rock, Post-Punk, Indie Pop"
                     className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
@@ -728,13 +626,16 @@ export default function EditAccountModal({
                       </label>
                       <select
                         required
-                        value={formData.experienceLevel}
-                        onChange={(e) => setFormData({ ...formData, experienceLevel: e.target.value as any })}
+                        value={touringTier}
+                        onChange={(e) => {
+                          setTouringTier(e.target.value);
+                          setFormData((prev) => ({ ...prev, experienceLevel: e.target.value as any }));
+                        }}
                         className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer"
                       >
-                        <option value="Local">Local Support (Opening & Regional support)</option>
-                        <option value="Regional Tour">Regional Headliner (West Coast regional touring)</option>
-                        <option value="National Act">National Act (Full touring agency / established draw)</option>
+                        <option value="Local Support (Opening & Regional support)">Local Support (Opening & Regional support)</option>
+                        <option value="Regional Headliner (West Coast regional touring)">Regional Headliner (West Coast regional touring)</option>
+                        <option value="National Act (Full touring agency / established draw)">National Act (Full touring agency / established draw)</option>
                       </select>
                     </div>
 
@@ -746,8 +647,11 @@ export default function EditAccountModal({
                         </label>
                         <input
                           type="text"
-                          value={formData.musicUrl}
-                          onChange={(e) => setFormData({ ...formData, musicUrl: e.target.value })}
+                          value={musicLink}
+                          onChange={(e) => {
+                            setMusicLink(e.target.value);
+                            setFormData((prev) => ({ ...prev, musicUrl: e.target.value }));
+                          }}
                           placeholder="e.g. Bandcamp, Spotify, YouTube URL"
                           className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:border-emerald-500 outline-none"
                         />
@@ -763,8 +667,11 @@ export default function EditAccountModal({
                         </label>
                         <input
                           type="text"
-                          value={formData.epkUrl}
-                          onChange={(e) => setFormData({ ...formData, epkUrl: e.target.value })}
+                          value={epkLink}
+                          onChange={(e) => {
+                            setEpkLink(e.target.value);
+                            setFormData((prev) => ({ ...prev, epkUrl: e.target.value }));
+                          }}
                           placeholder="e.g. https://www.yourband.com/press"
                           className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:border-indigo-500 outline-none"
                         />
@@ -839,8 +746,11 @@ export default function EditAccountModal({
                   <textarea
                     rows={3}
                     required={currentAccount.type === "Band"}
-                    value={formData.bio}
-                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    value={bio}
+                    onChange={(e) => {
+                      setBio(e.target.value);
+                      setFormData((prev) => ({ ...prev, bio: e.target.value }));
+                    }}
                     placeholder={currentAccount.type === "Band" ? "Tell venues and booking agents about your sound and stage show..." : "Describe your venue room, stage dimensions, and booking policy..."}
                     className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:border-indigo-500 outline-none resize-y"
                   />
