@@ -1029,6 +1029,12 @@ export default function App() {
             <TourScheduler 
               bandProfile={bandProfile}
               onSelectVenueForPoster={handleSelectVenueForGig}
+              currentUser={currentUser}
+              currentAccount={currentAccount}
+              onTriggerLogin={() => {
+                setLoginModalMode("login");
+                setShowUserLoginModal(true);
+              }}
             />
           </div>
         )}

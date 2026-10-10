@@ -212,13 +212,13 @@ app.get("/api/admin/analytics", (req, res) => {
 let aiClient: GoogleGenAI | null = null;
 
 function getGeminiApiKey(): string | undefined {
-  return process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+  return process.env.GEMINI_API_KEY;
 }
 
 function getAi(): GoogleGenAI {
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
-    throw new Error("VITE_GEMINI_API_KEY or GEMINI_API_KEY environment variable is required.");
+    throw new Error("GEMINI_API_KEY environment variable is required.");
   }
   if (!aiClient) {
     aiClient = new GoogleGenAI({

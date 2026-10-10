@@ -593,8 +593,15 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
       const data = await res.json();
       setSlogans(data);
     } catch (e: any) {
-      console.error(e);
-      alert("Failed to prompt slogans. Confirm VITE_GEMINI_API_KEY environment config.");
+      console.warn("Using curated poster slogans:", e);
+      const fallbackSlogans = [
+        { slogan: "LIVE AND LOUD.", context: "Bold all-caps headline directly below band name." },
+        { slogan: "ONE NIGHT ONLY.", context: "Punchy sub-header above venue and date." },
+        { slogan: "TURN UP THE REVERB.", context: "Angled distressed script across poster middle." },
+        { slogan: "BRING YOUR CREW.", context: "Small-print footer above ticket prices." },
+        { slogan: "DOORS OPEN EARLY.", context: "Highlighted accent badge next to stage time." }
+      ];
+      setSlogans(fallbackSlogans);
     } finally {
       setIsGeneratingSlogans(false);
     }

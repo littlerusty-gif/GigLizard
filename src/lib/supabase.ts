@@ -657,3 +657,230 @@ export async function fetchBandsFromDatabase(): Promise<AvailableBand[]> {
   }
 }
 
+/**
+ * Tour Record definition for public.tours table
+ */
+export interface SavedTourRecord {
+  id: string;
+  user_id?: string | null;
+  name: string;
+  status: "draft" | "confirmed";
+  route_data: {
+    origin: string;
+    destination: string;
+    startDate: string;
+    endDate: string;
+    currentStep?: number;
+    intermediateDestinations?: string[];
+    stops: any[];
+    totalDistanceMiles: number;
+    totalDriveTime: string;
+    financials?: {
+      totalGas: number;
+      totalLodgingCost: number;
+      totalExpenses: number;
+      confirmedVenuesCount: number;
+      confirmedLodgingCount: number;
+    };
+    bandProfile?: any;
+    customNotes?: string;
+    createdAtHuman?: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+const STORAGE_SAVED_TOURS = "giglizard_saved_tours_cache_v1";
+const STORAGE_PENDING_DRAFT = "giglizard_pending_tour_draft";
+
+/**
+ * Saves or updates a tour record in public.tours and local cache.
+ * Columns: (id, user_id, name, status, route_data, created_at, updated_at).
+ */
+export async function saveTourToDatabase(payload: {
+  id?: string;
+  user_id?: string | null;
+  name: string;
+  status: "draft" | "confirmed";
+  route_data: any;
+  created_at?: string;
+}): Promise<{ data: SavedTourRecord; error: any }> {
+  const now = new Date().toISOString();
+  const tourId = payload.id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `tour-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`);
+
+  const tourRecord: SavedTourRecord = {
+    id: tourId,
+    user_id: payload.user_id || null,
+    name: payload.name.trim() || "Untitled Tour",
+    status: payload.status,
+    route_data: payload.route_data,
+    created_at: payload.created_at || now,
+    updated_at: now
+  };
+
+  // 1. Always update local storage cache immediately for zero-loss reliability
+  try {
+    const raw = localStorage.getItem(STORAGE_SAVED_TOURS);
+    let list: SavedTourRecord[] = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) list = [];
+    const existingIdx = list.findIndex(t => t.id === tourRecord.id);
+    if (existingIdx >= 0) {
+      list[existingIdx] = tourRecord;
+    } else {
+      list.unshift(tourRecord);
+    }
+    localStorage.setItem(STORAGE_SAVED_TOURS, JSON.stringify(list));
+    // Clear pending draft key once saved
+    localStorage.removeItem(STORAGE_PENDING_DRAFT);
+  } catch (err) {
+    console.warn("[Tours Cache] Could not persist to localStorage:", err);
+  }
+
+  // 2. Attempt upsert into Supabase public.tours table
+  try {
+    const { data, error } = await supabase
+      .from("tours")
+      .upsert({
+        id: tourRecord.id,
+        user_id: tourRecord.user_id,
+        name: tourRecord.name,
+        status: tourRecord.status,
+        route_data: tourRecord.route_data,
+        created_at: tourRecord.created_at,
+        updated_at: tourRecord.updated_at
+      }, { onConflict: "id" })
+      .select();
+
+    if (error) {
+      console.warn("[Supabase] Notice when saving to public.tours:", error.message);
+      // If foreign key constraint failed on user_id, retry with user_id: null
+      if (error.code === "23503" || error.message?.toLowerCase().includes("foreign key")) {
+        const retryRes = await supabase
+          .from("tours")
+          .upsert({
+            id: tourRecord.id,
+            user_id: null,
+            name: tourRecord.name,
+            status: tourRecord.status,
+            route_data: tourRecord.route_data,
+            created_at: tourRecord.created_at,
+            updated_at: tourRecord.updated_at
+          }, { onConflict: "id" })
+          .select();
+        if (!retryRes.error) {
+          return { data: tourRecord, error: null };
+        }
+      }
+      return { data: tourRecord, error };
+    }
+
+    return { data: tourRecord, error: null };
+  } catch (err: any) {
+    console.warn("[Supabase] Exception writing to public.tours:", err);
+    return { data: tourRecord, error: err };
+  }
+}
+
+/**
+ * Fetches user's saved tours from public.tours, merging with local cache.
+ */
+export async function fetchUserTours(userId?: string | null): Promise<SavedTourRecord[]> {
+  // Read local cache first for instant synchronous feedback
+  let cachedTours: SavedTourRecord[] = [];
+  try {
+    const raw = localStorage.getItem(STORAGE_SAVED_TOURS);
+    if (raw) cachedTours = JSON.parse(raw);
+    if (!Array.isArray(cachedTours)) cachedTours = [];
+  } catch (_) {}
+
+  try {
+    let query = supabase
+      .from("tours")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (userId) {
+      query = query.eq("user_id", userId);
+    }
+
+    const { data, error } = await query;
+
+    if (!error && data && Array.isArray(data)) {
+      // Merge remote and local tours, deduplicating by ID
+      const remoteIds = new Set(data.map((d: any) => d.id));
+      const localOnly = cachedTours.filter(t => !remoteIds.has(t.id));
+      const combined = [...data, ...localOnly];
+      try {
+        localStorage.setItem(STORAGE_SAVED_TOURS, JSON.stringify(combined));
+      } catch (_) {}
+      return combined;
+    }
+  } catch (err) {
+    console.warn("[Supabase] Could not fetch remote tours, using local cache:", err);
+  }
+
+  return cachedTours;
+}
+
+/**
+ * Deletes a tour from public.tours and local cache.
+ */
+export async function deleteTourFromDatabase(tourId: string): Promise<boolean> {
+  try {
+    const raw = localStorage.getItem(STORAGE_SAVED_TOURS);
+    if (raw) {
+      const list: SavedTourRecord[] = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        const filtered = list.filter(t => t.id !== tourId);
+        localStorage.setItem(STORAGE_SAVED_TOURS, JSON.stringify(filtered));
+      }
+    }
+  } catch (_) {}
+
+  try {
+    await supabase.from("tours").delete().eq("id", tourId);
+    return true;
+  } catch (err) {
+    console.warn("[Supabase] Error deleting tour:", err);
+    return false;
+  }
+}
+
+/**
+ * Queries venues for a specific city from public.venues in Supabase.
+ */
+export async function fetchVenuesFromDatabaseForCity(cityName: string): Promise<Venue[]> {
+  const cleanCity = cityName.trim();
+  if (!cleanCity) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from("venues")
+      .select("*")
+      .ilike("city", `%${cleanCity}%`);
+
+    if (!error && data && Array.isArray(data)) {
+      return data.map((v: any) => ({
+        id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
+        name: v.name || "Live Venue",
+        city: v.city || cleanCity,
+        address: v.address || `${cleanCity}, ${v.state || ""}`.trim(),
+        capacity: Number(v.capacity) || 150,
+        genres: Array.isArray(v.genres_accepted) 
+          ? v.genres_accepted 
+          : (v.genres_accepted ? String(v.genres_accepted).split(",").map(g => g.trim()) : ["Live Music"]),
+        contactEmail: v.booking_email || v.email || "",
+        contactPhone: v.phone || "Inquire",
+        website: v.website || undefined,
+        hasPA: true,
+        hasLighting: true,
+        description: v.description || `Live music venue located in ${cleanCity}.`
+      }));
+    }
+  } catch (err) {
+    console.warn("[Supabase] Failed to query venues for city:", err);
+  }
+  return [];
+}
+
+

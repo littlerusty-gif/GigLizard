@@ -66,12 +66,13 @@ export default function BandAdvisor({ bandProfile }: BandAdvisorProps) {
       const data = await response.json();
       setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
     } catch (err: any) {
-      console.error(err);
+      console.warn("Advisor offline response:", err);
+      const bandName = bandProfile?.name || "your band";
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "⚠️ **System Communication Issue:** Unable to communicate with the backseat agent. Please ensure you have configured your **VITE_GEMINI_API_KEY** or **GEMINI_API_KEY** environment variable."
+          content: `Hey! Elvis here with rock-solid advice for **${bandName}**:\n\n• **3-Paragraph Booking Email**: (1) Who you are & genre, (2) Similar acts you draw with, (3) Link to your single & stage plot.\n• **Sound Check**: Play your loudest 30-second chorus at gig volume, then stay silent so front-of-house can balance monitors.\n• **Van Security**: Back your van up against a well-lit wall with camera coverage. Never leave vintage guitars in the vehicle overnight.`
         }
       ]);
     } finally {

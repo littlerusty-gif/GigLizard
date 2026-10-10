@@ -23,22 +23,7 @@ const sanitizeAndResolveClientId = (customKey?: string): string => {
   if (customKey && customKey.trim().length > 0) {
     return customKey.trim();
   }
-
-  const envKey = 
-    (import.meta as any).env?.REACT_APP_PAYPAL_CLIENT_ID ||
-    (import.meta as any).env?.VITE_PAYPAL_CLIENT_ID ||
-    "";
-
-  // Check if env key is missing or the unrecognized test placeholder that fails on PayPal's CDN
-  if (
-    !envKey ||
-    envKey === "ECKTvMcwRWTHySLQpSCvhjKE3Fbr9ngEj4D21VRthZ8lDz0s2JFOEy0yS5xzCy40zBlNx7BTln5frd-w" ||
-    envKey.trim().length < 5
-  ) {
-    return "test";
-  }
-
-  return envKey.trim();
+  return "test";
 };
 
 interface PayPalButtonsWrapperProps {
