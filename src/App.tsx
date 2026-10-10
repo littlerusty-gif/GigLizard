@@ -341,6 +341,18 @@ export default function GigLizardApp() {
 
   const [activeTab, setActiveTabState] = useState<TabType>(getInitialTab);
 
+  // Automatic Scroll-to-Top on View / Tab Mount / Change:
+  // When activeTab changes (e.g., navigating to Poster Builder), instantly scroll to the top
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    } catch (_) {
+      try {
+        window.scrollTo(0, 0);
+      } catch (__) {}
+    }
+  }, [activeTab]);
+
   const setActiveTab = (tab: TabType) => {
     if (tab === "admin" && currentAccount?.contactEmail?.trim().toLowerCase() !== "littlerusty@gmail.com") {
       setActiveTabState("home");

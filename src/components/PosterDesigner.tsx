@@ -707,9 +707,9 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in" id="poster-designer-panel">
-      {/* 5-Columns: Control inputs */}
-      <div className="lg:col-span-5 bg-white rounded-2xl border border-gray-100 p-5 space-y-5 shadow-xs" id="designer-controls">
+    <div className="flex flex-col space-y-8 animate-fade-in w-full max-w-5xl mx-auto" id="poster-designer-panel">
+      {/* SECTION 1 (Top) & SECTION 2 (Middle): Control inputs in top-down workflow stack */}
+      <div className="w-full bg-white rounded-2xl border border-gray-100 p-5 sm:p-7 space-y-6 shadow-xs" id="designer-controls">
         <div className="border-b border-gray-100 pb-3" id="control-intro">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5" id="controls-title">
@@ -1139,8 +1139,8 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
         </div>
       </div>
 
-      {/* 7-Columns: Digital Canvas Layout Rendering representing the physical output */}
-      <div className="lg:col-span-7 flex flex-col items-center justify-between space-y-6" id="poster-rendering-panel">
+      {/* SECTION 3 (Bottom): Live Poster Preview Canvas, Print Specs, and Action Buttons */}
+      <div className="w-full flex flex-col items-center justify-between space-y-6 pt-2" id="poster-rendering-panel">
         
         {/* Unified Tab selector for direct downloading and print ordering */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center w-full gap-3 bg-slate-900 text-white rounded-xl p-3.5 border border-slate-800" id="rendering-header-row">
