@@ -883,4 +883,286 @@ export async function fetchVenuesFromDatabaseForCity(cityName: string): Promise<
   return [];
 }
 
+/**
+ * Stage Plot Persistence & Supabase Storage Helpers
+ */
+export const STORAGE_STAGE_PLOT_PREFIX = "giglizard_stage_plot_data_";
+export const STORAGE_SAVED_PLOTS_LIST = "stage_plots_saved_v1";
+
+export interface StagePlotSavePayload {
+  userId?: string | null;
+  officialEmail?: string | null;
+  bandId?: string | null;
+  bandName?: string;
+  stagePlotData: {
+    elements: any[];
+    inputChannels?: any[];
+    theme?: string;
+    notes?: string;
+    stagePlotUrl?: string | null;
+    updatedAt: string;
+  };
+}
+
+/**
+ * Saves or updates a band's stage_plot_data in public.bands and local cache.
+ * Serializes item positions, drum kits, amps, monitors, DI boxes, mic inputs, labels, and input patch.
+ */
+export async function saveBandStagePlotToDatabase(payload: StagePlotSavePayload): Promise<{ success: boolean; data?: any; error?: any; localOnly?: boolean }> {
+  const cleanEmail = (payload.officialEmail || "").trim().toLowerCase();
+  const cacheKey = `${STORAGE_STAGE_PLOT_PREFIX}${cleanEmail || payload.userId || payload.bandId || "default"}`;
+  
+  // 1. Immediately cache to local storage for zero data loss
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify(payload.stagePlotData));
+    
+    // Also track in saved plots array for admin / offline history
+    const existingRaw = localStorage.getItem(STORAGE_SAVED_PLOTS_LIST);
+    let list: any[] = existingRaw ? JSON.parse(existingRaw) : [];
+    if (!Array.isArray(list)) list = [];
+    const itemEntry = {
+      id: payload.bandId || `plot-${Date.now()}`,
+      bandName: payload.bandName || "My Band",
+      email: cleanEmail,
+      updatedAt: payload.stagePlotData.updatedAt || new Date().toISOString(),
+      elementsCount: payload.stagePlotData.elements?.length || 0,
+      data: payload.stagePlotData
+    };
+    const idx = list.findIndex(p => p.email === cleanEmail || p.id === payload.bandId);
+    if (idx >= 0) {
+      list[idx] = itemEntry;
+    } else {
+      list.unshift(itemEntry);
+    }
+    localStorage.setItem(STORAGE_SAVED_PLOTS_LIST, JSON.stringify(list));
+  } catch (err) {
+    console.warn("[Stage Plot] LocalStorage save warning:", err);
+  }
+
+  // 2. Persist to public.bands table in Supabase
+  try {
+    const updatePayload: Record<string, any> = {
+      stage_plot_data: payload.stagePlotData,
+      updated_at: new Date().toISOString()
+    };
+
+    if (payload.stagePlotData.stagePlotUrl) {
+      updatePayload.stage_plot_url = payload.stagePlotData.stagePlotUrl;
+    }
+
+    // Try matching user_id first if authenticated
+    if (payload.userId) {
+      const { data: userMatchData, error: userMatchErr } = await supabase
+        .from("bands")
+        .update(updatePayload)
+        .eq("user_id", payload.userId)
+        .select("id, name, stage_plot_data, stage_plot_url");
+
+      if (!userMatchErr && userMatchData && userMatchData.length > 0) {
+        return { success: true, data: userMatchData[0] };
+      }
+    }
+
+    // Try matching official_email
+    if (cleanEmail) {
+      const { data: emailMatchData, error: emailMatchErr } = await supabase
+        .from("bands")
+        .update(updatePayload)
+        .eq("official_email", cleanEmail)
+        .select("id, name, stage_plot_data, stage_plot_url");
+
+      if (!emailMatchErr && emailMatchData && emailMatchData.length > 0) {
+        return { success: true, data: emailMatchData[0] };
+      }
+
+      // If column stage_plot_data is missing on PostgreSQL (code 42703), handle gracefully
+      if (emailMatchErr && emailMatchErr.code === "42703") {
+        console.warn("[Supabase] Notice: stage_plot_data column not yet present on remote table:", emailMatchErr.message);
+        return { success: true, localOnly: true, error: emailMatchErr };
+      }
+    }
+
+    // Try matching bandId if provided
+    if (payload.bandId) {
+      const { data: idMatchData, error: idMatchErr } = await supabase
+        .from("bands")
+        .update(updatePayload)
+        .eq("id", payload.bandId)
+        .select("id, name, stage_plot_data, stage_plot_url");
+
+      if (!idMatchErr && idMatchData && idMatchData.length > 0) {
+        return { success: true, data: idMatchData[0] };
+      }
+    }
+
+    return { success: true, localOnly: true };
+  } catch (err: any) {
+    console.warn("[Supabase] Exception writing stage_plot_data:", err);
+    return { success: true, localOnly: true, error: err };
+  }
+}
+
+/**
+ * Fetches saved stage_plot_data from public.bands or local cache.
+ */
+export async function fetchBandStagePlotFromDatabase(params: {
+  userId?: string | null;
+  officialEmail?: string | null;
+  bandId?: string | null;
+}): Promise<{ plotData: any | null; band: any | null; stagePlotUrl?: string | null }> {
+  const cleanEmail = (params.officialEmail || "").trim().toLowerCase();
+  const cacheKey = `${STORAGE_STAGE_PLOT_PREFIX}${cleanEmail || params.userId || params.bandId || "default"}`;
+
+  // 1. Try querying remote Supabase public.bands table
+  try {
+    let query = supabase.from("bands").select("*");
+
+    if (params.bandId) {
+      // Check ID or normalized name
+      const { data, error } = await query.or(`id.eq.${params.bandId},name.ilike.${params.bandId.replace(/[-_]/g, " ")}`);
+      if (!error && data && data.length > 0) {
+        const found = data[0];
+        if (found.stage_plot_data) {
+          // Sync to cache
+          try { localStorage.setItem(cacheKey, JSON.stringify(found.stage_plot_data)); } catch (_) {}
+          return { plotData: found.stage_plot_data, band: found, stagePlotUrl: found.stage_plot_url };
+        }
+        return { plotData: null, band: found, stagePlotUrl: found.stage_plot_url };
+      }
+    }
+
+    if (params.userId) {
+      const { data, error } = await supabase.from("bands").select("*").eq("user_id", params.userId);
+      if (!error && data && data.length > 0) {
+        const found = data[0];
+        if (found.stage_plot_data) {
+          try { localStorage.setItem(cacheKey, JSON.stringify(found.stage_plot_data)); } catch (_) {}
+          return { plotData: found.stage_plot_data, band: found, stagePlotUrl: found.stage_plot_url };
+        }
+        return { plotData: null, band: found, stagePlotUrl: found.stage_plot_url };
+      }
+    }
+
+    if (cleanEmail) {
+      const { data, error } = await supabase.from("bands").select("*").eq("official_email", cleanEmail);
+      if (!error && data && data.length > 0) {
+        const found = data[0];
+        if (found.stage_plot_data) {
+          try { localStorage.setItem(cacheKey, JSON.stringify(found.stage_plot_data)); } catch (_) {}
+          return { plotData: found.stage_plot_data, band: found, stagePlotUrl: found.stage_plot_url };
+        }
+        return { plotData: null, band: found, stagePlotUrl: found.stage_plot_url };
+      }
+    }
+  } catch (err) {
+    console.warn("[Supabase] Could not fetch remote stage_plot_data:", err);
+  }
+
+  // 2. Fallback to local storage cache
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return { plotData: parsed, band: null, stagePlotUrl: parsed?.stagePlotUrl };
+    }
+
+    // Check generic saved plots list
+    const listRaw = localStorage.getItem(STORAGE_SAVED_PLOTS_LIST);
+    if (listRaw) {
+      const list = JSON.parse(listRaw);
+      if (Array.isArray(list) && list.length > 0) {
+        const match = list.find((p: any) => 
+          (cleanEmail && p.email?.toLowerCase() === cleanEmail) ||
+          (params.bandId && p.id === params.bandId)
+        ) || list[0];
+        if (match && match.data) {
+          return { plotData: match.data, band: null, stagePlotUrl: match.data?.stagePlotUrl };
+        }
+      }
+    }
+  } catch (_) {}
+
+  return { plotData: null, band: null };
+}
+
+/**
+ * Uploads a stage plot image/pdf to Supabase Storage in the 'band-assets' bucket.
+ */
+export async function uploadStagePlotToStorage(params: {
+  bandIdOrSlug: string;
+  blob: Blob;
+  fileExt?: "png" | "pdf";
+  contentType?: string;
+}): Promise<{ publicUrl: string | null; filePath?: string; error?: any }> {
+  const ext = params.fileExt || "png";
+  const contentType = params.contentType || (ext === "pdf" ? "application/pdf" : "image/png");
+  const cleanSlug = params.bandIdOrSlug.toLowerCase().replace(/[^a-z0-9_-]/g, "-") || "stage-plot";
+  const filePath = `stage-plots/${cleanSlug}-${Date.now()}.${ext}`;
+
+  try {
+    const { data, error } = await supabase.storage
+      .from("band-assets")
+      .upload(filePath, params.blob, {
+        contentType,
+        upsert: true
+      });
+
+    if (error) {
+      console.warn("[Supabase Storage] Notice uploading stage plot to 'band-assets':", error.message);
+      return { publicUrl: null, filePath, error };
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("band-assets")
+      .getPublicUrl(filePath);
+
+    return { publicUrl: urlData?.publicUrl || null, filePath, error: null };
+  } catch (err: any) {
+    console.warn("[Supabase Storage] Exception uploading stage plot:", err);
+    return { publicUrl: null, filePath, error: err };
+  }
+}
+
+/**
+ * Updates public.bands.stage_plot_url in the database.
+ */
+export async function updateBandStagePlotUrl(params: {
+  userId?: string | null;
+  officialEmail?: string | null;
+  bandId?: string | null;
+  stagePlotUrl: string;
+}): Promise<boolean> {
+  const cleanEmail = (params.officialEmail || "").trim().toLowerCase();
+
+  try {
+    if (params.userId) {
+      const { error } = await supabase
+        .from("bands")
+        .update({ stage_plot_url: params.stagePlotUrl, updated_at: new Date().toISOString() })
+        .eq("user_id", params.userId);
+      if (!error) return true;
+    }
+
+    if (cleanEmail) {
+      const { error } = await supabase
+        .from("bands")
+        .update({ stage_plot_url: params.stagePlotUrl, updated_at: new Date().toISOString() })
+        .eq("official_email", cleanEmail);
+      if (!error) return true;
+    }
+
+    if (params.bandId) {
+      const { error } = await supabase
+        .from("bands")
+        .update({ stage_plot_url: params.stagePlotUrl, updated_at: new Date().toISOString() })
+        .eq("id", params.bandId);
+      if (!error) return true;
+    }
+  } catch (err) {
+    console.warn("[Supabase] Error updating stage_plot_url:", err);
+  }
+
+  return false;
+}
+
 

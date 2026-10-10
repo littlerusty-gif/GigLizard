@@ -64,6 +64,35 @@ export default function BandDirectory({
   const [reviewModalBand, setReviewModalBand] = useState<AvailableBand | null>(null);
   const [reviewsVersion, setReviewsVersion] = useState(0);
 
+  // Android back-swipe / back button listener: close active reviews or modals
+  useEffect(() => {
+    const handleBackButton = (e: Event) => {
+      if (reviewModalBand) {
+        setReviewModalBand(null);
+        e.preventDefault();
+        return;
+      }
+      if (showPayPalModal) {
+        setShowPayPalModal(false);
+        e.preventDefault();
+        return;
+      }
+      if (showLoginModal) {
+        setShowLoginModal(false);
+        e.preventDefault();
+        return;
+      }
+      if (showAddForm) {
+        setShowAddForm(false);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("giglizard_back_press", handleBackButton);
+    return () => {
+      window.removeEventListener("giglizard_back_press", handleBackButton);
+    };
+  }, [reviewModalBand, showPayPalModal, showLoginModal, showAddForm]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 

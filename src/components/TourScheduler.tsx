@@ -144,6 +144,36 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
   const effectiveUserId = currentUser?.id || currentAccount?.id || null;
 
+  // Android back-swipe / back button listener: close print modal or step back in wizard
+  useEffect(() => {
+    const handleBackButton = (e: Event) => {
+      if (showPrintModal) {
+        setShowPrintModal(false);
+        e.preventDefault();
+        return;
+      }
+      if (viewState !== "landing") {
+        if (viewState === "saved-tours") {
+          setViewState("landing");
+          e.preventDefault();
+        } else if (viewState === "city-detail") {
+          setViewState("optimizer");
+          e.preventDefault();
+        } else if (viewState === "optimizer") {
+          setViewState("route-setup");
+          e.preventDefault();
+        } else if (viewState === "route-setup") {
+          setViewState("landing");
+          e.preventDefault();
+        }
+      }
+    };
+    window.addEventListener("giglizard_back_press", handleBackButton);
+    return () => {
+      window.removeEventListener("giglizard_back_press", handleBackButton);
+    };
+  }, [showPrintModal, viewState]);
+
   // Load user's saved tours from Supabase on mount
   const refreshTours = async () => {
     setIsLoadingTours(true);

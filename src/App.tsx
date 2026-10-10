@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { App } from "@capacitor/app";
 import { Venue, StageElement, TechRider, PosterConfig, UserAccount } from "./types";
 import Home from "./components/Home";
 import VenueDirectory from "./components/VenueDirectory";
@@ -49,9 +50,13 @@ const INITIAL_RIDER_INPUTS = [
   { channel: 6, instrument: "Backing Vocals (Drums)", micOrDi: "SM58", stand: "Tall Boom", phantomPower: false, notes: "Noise gate needed" }
 ];
 
-export default function App() {
+export default function GigLizardApp() {
   type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "admin";
   const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "admin"];
+
+  // Android back-swipe / double-tap exit state
+  const [showExitToast, setShowExitToast] = useState(false);
+  const lastBackPressTimeRef = useRef<number>(0);
 
   const isStoredAccountOwner = (): boolean => {
     try {
@@ -64,11 +69,37 @@ export default function App() {
     }
   };
 
+  const getInitialStagePlotBandId = (): string | null => {
+    try {
+      // 1. Check path: /stage-plot/:bandId
+      const path = window.location.pathname;
+      const pathMatch = path.match(/^\/stage-plot\/([a-zA-Z0-9_-]+)/i);
+      if (pathMatch && pathMatch[1]) return decodeURIComponent(pathMatch[1]);
+
+      // 2. Check hash: #stage-plot/:bandId or #stage-plot=:bandId
+      const rawHash = window.location.hash.replace("#", "");
+      const hashMatch = rawHash.match(/^stage-plot[\/=:]([a-zA-Z0-9_-]+)/i);
+      if (hashMatch && hashMatch[1]) return decodeURIComponent(hashMatch[1]);
+
+      // 3. Check query param: ?stage-plot=:bandId or ?stagePlot=:bandId
+      const urlParams = new URLSearchParams(window.location.search);
+      const qParam = urlParams.get("stage-plot") || urlParams.get("stagePlot");
+      if (qParam) return decodeURIComponent(qParam);
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  };
+
   const getInitialTab = (): TabType => {
     try {
+      // Check if arriving via direct shareable stage-plot link
+      if (getInitialStagePlotBandId()) return "plot";
+
       const isOwner = isStoredAccountOwner();
       const rawHash = window.location.hash.replace("#", "").toLowerCase();
       if (rawHash === "dashboard" || rawHash === "admin") return isOwner ? "admin" : "home";
+      if (rawHash.startsWith("stage-plot")) return "plot";
       if (validTabs.includes(rawHash as TabType)) {
         if (rawHash === "admin" && !isOwner) return "home";
         return rawHash as TabType;
@@ -86,6 +117,8 @@ export default function App() {
     }
     return "home";
   };
+
+  const [publicStagePlotBandId, setPublicStagePlotBandId] = useState<string | null>(getInitialStagePlotBandId);
 
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showEditAccountModal, setShowEditAccountModal] = useState(false);
@@ -349,6 +382,13 @@ export default function App() {
   // Listen to browser hash changes (e.g. back/forward or direct URL clicks)
   useEffect(() => {
     const handleHashChange = () => {
+      const stageBandId = getInitialStagePlotBandId();
+      if (stageBandId) {
+        setPublicStagePlotBandId(stageBandId);
+        setActiveTabState("plot");
+        return;
+      }
+
       const isOwner = currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com";
       const rawHash = window.location.hash.replace("#", "").toLowerCase();
       if (rawHash === "dashboard" || rawHash === "admin") {
@@ -415,6 +455,196 @@ export default function App() {
       window.removeEventListener("popstate", checkRecoveryHash);
       window.removeEventListener("giglizard_open_login", handleGlobalOpenLogin);
       authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Ref to hold current navigation and modal states for back button listeners
+  const modalStatesRef = useRef({
+    showEditAccountModal,
+    showUserLoginModal,
+    showPayPalModal,
+    showResetPasswordModal,
+    showSecurityModal,
+    showTermsModal,
+    publicStagePlotBandId,
+    activeTab
+  });
+
+  useEffect(() => {
+    modalStatesRef.current = {
+      showEditAccountModal,
+      showUserLoginModal,
+      showPayPalModal,
+      showResetPasswordModal,
+      showSecurityModal,
+      showTermsModal,
+      publicStagePlotBandId,
+      activeTab
+    };
+  }, [
+    showEditAccountModal,
+    showUserLoginModal,
+    showPayPalModal,
+    showResetPasswordModal,
+    showSecurityModal,
+    showTermsModal,
+    publicStagePlotBandId,
+    activeTab
+  ]);
+
+  // Push history state whenever any modal opens so back-swipe on Android Chrome pops cleanly
+  useEffect(() => {
+    if (
+      showEditAccountModal || 
+      showUserLoginModal || 
+      showPayPalModal || 
+      showResetPasswordModal || 
+      showSecurityModal || 
+      showTermsModal
+    ) {
+      try {
+        window.history.pushState({ giglizardModal: true }, "", window.location.href);
+      } catch (_) {}
+    }
+  }, [
+    showEditAccountModal,
+    showUserLoginModal,
+    showPayPalModal,
+    showResetPasswordModal,
+    showSecurityModal,
+    showTermsModal
+  ]);
+
+  // Core back navigation handler for Capacitor hardware button and Web popstate
+  const handleBackNavigation = (canGoBackFromPlugin?: boolean) => {
+    // 1. Check child overlays first (e.g. StagePlot export sheet, TourPrintModal, reviews)
+    const childBackEvent = new CustomEvent("giglizard_back_press", { cancelable: true });
+    window.dispatchEvent(childBackEvent);
+    if (childBackEvent.defaultPrevented) {
+      try {
+        window.history.pushState({ giglizard: "active" }, "", window.location.href);
+      } catch (_) {}
+      return;
+    }
+
+    const state = modalStatesRef.current;
+
+    // 2. Check App-level modals (EditAccountModal, UserLoginModal, PayPalModal, SecurityModal, ResetPasswordModal, TermsModal)
+    if (state.showEditAccountModal) {
+      setShowEditAccountModal(false);
+      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      return;
+    }
+    if (state.showUserLoginModal) {
+      setShowUserLoginModal(false);
+      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      return;
+    }
+    if (state.showPayPalModal) {
+      setShowPayPalModal(false);
+      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      return;
+    }
+    if (state.showResetPasswordModal) {
+      setShowResetPasswordModal(false);
+      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      return;
+    }
+    if (state.showSecurityModal) {
+      setShowSecurityModal(false);
+      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      return;
+    }
+    if (state.showTermsModal) {
+      setShowTermsModal(false);
+      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      return;
+    }
+
+    // 3. Check public stage plot review mode (/stage-plot/:bandId)
+    if (state.publicStagePlotBandId) {
+      setPublicStagePlotBandId(null);
+      try {
+        window.history.pushState({ giglizard: "root" }, "", "/");
+      } catch (_) {}
+      setActiveTabState("home");
+      return;
+    }
+
+    // 4. Check browser / router history:
+    // If the user is on a sub-route or can go back (window.history.length > 1 and location.pathname !== '/'), call window.history.back()
+    const isSubRoute = window.location.pathname !== "/" && window.location.pathname !== "";
+    if (isSubRoute && (canGoBackFromPlugin || window.history.length > 1)) {
+      window.history.back();
+      return;
+    }
+
+    // 5. If user is on a sub-tab (e.g. plot, venues, rider, poster, tour, etc.), navigate back to 'home'
+    if (state.activeTab !== "home") {
+      setActiveTab("home");
+      try { window.history.pushState({ giglizard: "root" }, "", "#home"); } catch (_) {}
+      return;
+    }
+
+    // 6. Only if user is already on root home screen with all modals closed: Require double-tap within 2 seconds
+    const now = Date.now();
+    if (now - lastBackPressTimeRef.current < 2000) {
+      try {
+        App.exitApp();
+      } catch (err) {
+        console.debug("Capacitor exitApp note:", err);
+      }
+    } else {
+      lastBackPressTimeRef.current = now;
+      setShowExitToast(true);
+      setTimeout(() => {
+        setShowExitToast(false);
+      }, 2000);
+      try {
+        window.history.pushState({ giglizard: "root" }, "", window.location.href);
+      } catch (_) {}
+    }
+  };
+
+  // Capacitor App Plugin Listener:
+  useEffect(() => {
+    let removePluginListener: (() => void) | null = null;
+
+    const setupCapacitor = async () => {
+      try {
+        const handle = await App.addListener("backButton", ({ canGoBack }) => {
+          handleBackNavigation(canGoBack);
+        });
+        removePluginListener = () => {
+          handle.remove();
+        };
+      } catch (err) {
+        console.debug("Capacitor App plugin listener note:", err);
+      }
+    };
+
+    setupCapacitor();
+
+    return () => {
+      if (removePluginListener) removePluginListener();
+    };
+  }, []);
+
+  // Web Fallback: Ensure popstate events prevent closing when running in standard Android Chrome as a PWA/web app
+  useEffect(() => {
+    try {
+      if (!window.history.state || !window.history.state.giglizard) {
+        window.history.replaceState({ giglizard: "root" }, "", window.location.href);
+      }
+    } catch (_) {}
+
+    const handleWebPopState = (e: PopStateEvent) => {
+      handleBackNavigation(false);
+    };
+
+    window.addEventListener("popstate", handleWebPopState);
+    return () => {
+      window.removeEventListener("popstate", handleWebPopState);
     };
   }, []);
 
@@ -610,25 +840,45 @@ export default function App() {
     governingState: "Washington"
   });
 
-  // Concert poster config
-  const [posterConfig, setPosterConfig] = useState<PosterConfig>({
-    bandName: INITIAL_BAND_PROFILE.name.toUpperCase(),
-    supportingActs: "WITH SPECIAL GUESTS: THE STATIC VEIL • COPPERHEAD",
-    secondaryText: "LIVE ON STAGE",
-    venueName: "The Subterranean Cellar",
-    venueAddress: "412 Pike St, Seattle, WA 98101",
-    dateStr: "Friday, Nov 14th",
-    timeStr: "Doors at 8:00 PM • Music at 9:00 PM",
-    priceStr: "$12 Adv / $15 Day of Show",
-    allAges: "All Ages",
-    amenities: {
-      servesFood: true,
-      servesAlcohol: true,
-      merchArea: true
-    },
-    extraDetails: "Cash only bar. Nearby parking available. Proof of reservation required.",
-    themeId: "heavy-grunge",
-    colorId: "default"
+  // Concert poster config (defaults to clean empty strings so users don't have to backspace placeholder text)
+  const [posterConfig, setPosterConfig] = useState<PosterConfig>(() => {
+    try {
+      const saved = localStorage.getItem("user_saved_poster_v1");
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+
+    // Check if user is already authenticated with a band profile
+    let defaultBand = "";
+    try {
+      const savedAccount = localStorage.getItem("current_user_account_v1");
+      if (savedAccount) {
+        const acc = JSON.parse(savedAccount);
+        if (acc?.name && acc?.name !== "littlerusty") {
+          defaultBand = acc.name;
+        }
+      }
+    } catch (_) {}
+
+    return {
+      bandName: defaultBand,
+      supportingActs: "",
+      secondaryText: "",
+      venueName: "",
+      venueAddress: "",
+      dateStr: "",
+      timeStr: "",
+      priceStr: "",
+      allAges: "All Ages",
+      amenities: {
+        servesFood: false,
+        servesAlcohol: false,
+        merchArea: false
+      },
+      extraDetails: "",
+      themeId: "heavy-grunge",
+      colorId: "default",
+      fontStyle: "impact"
+    };
   });
 
   // Cascade Band Profile edits to related modules
@@ -975,6 +1225,20 @@ export default function App() {
             <StagePlotDesigner 
               elements={stageElements}
               onUpdateElements={setStageElements}
+              bandProfile={bandProfile}
+              currentAccount={currentAccount}
+              currentUser={currentUser}
+              onTriggerLogin={() => {
+                setLoginModalMode("login");
+                setShowUserLoginModal(true);
+              }}
+              publicBandId={publicStagePlotBandId}
+              onClearPublicView={() => {
+                setPublicStagePlotBandId(null);
+                try {
+                  window.history.pushState(null, "", "#plot");
+                } catch (_) {}
+              }}
             />
           </div>
         )}
@@ -993,6 +1257,8 @@ export default function App() {
             <PosterDesigner 
               config={posterConfig}
               onChangeConfig={setPosterConfig}
+              currentUser={currentUser}
+              currentAccount={currentAccount}
             />
           </div>
         )}
@@ -1205,6 +1471,21 @@ export default function App() {
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
       />
+
+      {/* Android Back Button Double-Tap Exit Toast */}
+      {showExitToast && (
+        <div 
+          id="android-back-exit-toast"
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[10000] px-4 py-2.5 bg-slate-900/95 text-slate-100 text-xs font-semibold rounded-full shadow-2xl border border-slate-700/80 backdrop-blur-md flex items-center gap-2 pointer-events-none transition-all"
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Press back again to exit GigLizard</span>
+        </div>
+      )}
     </div>
   );
 }
+
+export { GigLizardApp as App };

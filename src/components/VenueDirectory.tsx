@@ -57,6 +57,30 @@ export default function VenueDirectory({
     hasLighting: true
   });
 
+  // Android back-swipe / back button listener: close active reviews or modals
+  useEffect(() => {
+    const handleBackButton = (e: Event) => {
+      if (reviewModalVenue) {
+        setReviewModalVenue(null);
+        e.preventDefault();
+        return;
+      }
+      if (showSecurityModal) {
+        setShowSecurityModal(false);
+        e.preventDefault();
+        return;
+      }
+      if (showAddForm) {
+        setShowAddForm(false);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("giglizard_back_press", handleBackButton);
+    return () => {
+      window.removeEventListener("giglizard_back_press", handleBackButton);
+    };
+  }, [reviewModalVenue, showSecurityModal, showAddForm]);
+
   useEffect(() => {
     // 1. Check for automated headless scrapers (Puppeteer, Selenium, headless Chrome)
     const botCheck = detectAutomatedBot();

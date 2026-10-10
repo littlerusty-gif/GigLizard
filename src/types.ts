@@ -74,6 +74,7 @@ export interface PosterConfig {
   extraDetails: string; // e.g. "Limited tickets at the door. No dynamic parking."
   themeId: string; // "heavy-grunge" | "retro-neon" | "indie-minimal" | "folk-acoustic"
   colorId?: string; // custom color swatch override e.g. "default", "red", "blue", "green", "purple", "amber", "pink", "black"
+  fontStyle?: string; // custom typography style e.g. "impact", "serif", "clean", "mono", "distressed"
 }
 
 export interface SloganProposal {

@@ -1,12 +1,28 @@
-import React, { useState } from "react";
-import { PosterConfig, SloganProposal } from "../types";
+import React, { useState, useEffect } from "react";
+import { PosterConfig, SloganProposal, UserAccount } from "../types";
 import { 
   Sparkles, Image, RefreshCw, Layers, CheckSquare, Wine, UtensilsCrossed, 
   Calendar, DollarSign, MapPin, Eye, Wand2, Check, Download, Truck, Printer, 
-  CreditCard, ShoppingBag, ArrowLeft, Users
+  CreditCard, ShoppingBag, ArrowLeft, Users, Save, Type, Palette
 } from "lucide-react";
 import html2canvas from "html2canvas";
 
+// Helper to resolve font family classes for poster title
+const getFontFamilyClass = (fontStyle?: string) => {
+  switch (fontStyle) {
+    case "serif":
+      return "font-serif tracking-normal";
+    case "clean":
+      return "font-sans font-extrabold tracking-wide";
+    case "mono":
+      return "font-mono font-bold tracking-tight";
+    case "distressed":
+      return "font-black tracking-tighter uppercase";
+    case "impact":
+    default:
+      return "font-black tracking-tight uppercase";
+  }
+};
 
 // Maps theme presets and dynamic color swatch selections into cohesive visual elements
 const getThemeClasses = (themeId: string, colorId: string = "default") => {
@@ -36,6 +52,41 @@ const getThemeClasses = (themeId: string, colorId: string = "default") => {
         black:  { frame: "bg-neutral-950 text-zinc-300 border-2 border-zinc-800 font-sans tracking-tighter", tagline: "text-zinc-500", bandName: "text-zinc-100", venue: "text-zinc-400", date: "bg-zinc-900/40 text-zinc-100", time: "bg-neutral-950/40 text-zinc-450" }
       };
       const sel = map[colorId] || map.red;
+      return {
+        frame: sel.frame,
+        tagline: sel.tagline,
+        bandName: `text-4xl uppercase font-black ${sel.bandName}`,
+        venueName: sel.venue,
+        dateBadge: sel.date,
+        timeBadge: sel.time,
+        graphicColor: sel.tagline,
+        sloganColor: sel.tagline
+      };
+    }
+
+    case "classic-rock": {
+      if (isDefault) {
+        return {
+          frame: "bg-[#14100c] text-amber-100 font-serif border-4 border-amber-600/70 shadow-2xl tracking-normal",
+          tagline: "text-amber-400 font-sans uppercase font-bold tracking-widest",
+          bandName: "text-amber-200 font-black tracking-tight",
+          venueName: "text-amber-100 font-serif uppercase tracking-widest",
+          dateBadge: "bg-amber-900/60 border border-amber-600 text-amber-200 font-bold",
+          timeBadge: "bg-stone-900 text-amber-300 border border-amber-800/40",
+          graphicColor: "text-amber-500",
+          sloganColor: "text-amber-400"
+        };
+      }
+      const map: Record<string, any> = {
+        red:    { frame: "bg-[#1a0a0a] text-red-100 font-serif border-4 border-red-700", tagline: "text-red-400", bandName: "text-red-200", venue: "text-red-100", date: "bg-red-950 border-red-700 text-red-200", time: "bg-black text-red-300" },
+        blue:   { frame: "bg-[#0a121a] text-sky-100 font-serif border-4 border-sky-700", tagline: "text-sky-400", bandName: "text-sky-200", venue: "text-sky-100", date: "bg-sky-950 border-sky-700 text-sky-200", time: "bg-black text-sky-300" },
+        green:  { frame: "bg-[#0a180e] text-emerald-100 font-serif border-4 border-emerald-700", tagline: "text-emerald-400", bandName: "text-emerald-200", venue: "text-emerald-100", date: "bg-emerald-950 border-emerald-700 text-emerald-200", time: "bg-black text-emerald-300" },
+        purple: { frame: "bg-[#160a1f] text-purple-100 font-serif border-4 border-purple-700", tagline: "text-purple-400", bandName: "text-purple-200", venue: "text-purple-100", date: "bg-purple-950 border-purple-700 text-purple-200", time: "bg-black text-purple-300" },
+        amber:  { frame: "bg-[#1c1208] text-amber-100 font-serif border-4 border-amber-600", tagline: "text-amber-400", bandName: "text-amber-200", venue: "text-amber-100", date: "bg-amber-950 border-amber-600 text-amber-200", time: "bg-black text-amber-300" },
+        pink:   { frame: "bg-[#1f0a17] text-pink-100 font-serif border-4 border-pink-700", tagline: "text-pink-400", bandName: "text-pink-200", venue: "text-pink-100", date: "bg-pink-950 border-pink-700 text-pink-200", time: "bg-black text-pink-300" },
+        black:  { frame: "bg-[#0d0d0d] text-zinc-100 font-serif border-4 border-zinc-700", tagline: "text-zinc-400", bandName: "text-zinc-200", venue: "text-zinc-100", date: "bg-zinc-900 border-zinc-700 text-zinc-200", time: "bg-black text-zinc-300" }
+      };
+      const sel = map[colorId] || map.amber;
       return {
         frame: sel.frame,
         tagline: sel.tagline,
@@ -380,12 +431,44 @@ const getThemeClasses = (themeId: string, colorId: string = "default") => {
 interface PosterDesignerProps {
   config: PosterConfig;
   onChangeConfig: (config: PosterConfig) => void;
+  currentUser?: any;
+  currentAccount?: UserAccount | null;
 }
 
-export default function PosterDesigner({ config, onChangeConfig }: PosterDesignerProps) {
+export default function PosterDesigner({ config, onChangeConfig, currentUser, currentAccount }: PosterDesignerProps) {
   const [slogans, setSlogans] = useState<SloganProposal[]>([]);
   const [isGeneratingSlogans, setIsGeneratingSlogans] = useState(false);
   const [appliedSloganIdx, setAppliedSloganIdx] = useState<number | null>(null);
+  const [saveToast, setSaveToast] = useState<{ show: boolean; message: string } | null>(null);
+
+  // 1. User Band Name Default: check linked band record or profile
+  useEffect(() => {
+    const linkedBandName = 
+      currentAccount?.type === "Band" && currentAccount?.name
+        ? currentAccount.name
+        : currentAccount?.name ||
+          (currentUser as any)?.band_name ||
+          (currentUser as any)?.name ||
+          "";
+
+    // If available and Headline Band Name is not yet set by the user, set it to their actual band name
+    if (linkedBandName && !config.bandName) {
+      onChangeConfig({
+        ...config,
+        bandName: linkedBandName
+      });
+    }
+  }, [currentAccount, currentUser]);
+
+  const handleSavePoster = () => {
+    try {
+      localStorage.setItem("user_saved_poster_v1", JSON.stringify(config));
+      setSaveToast({ show: true, message: "✓ Concert poster design saved!" });
+      setTimeout(() => setSaveToast(null), 3000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Download & Print Order state managers
   const [panelTab, setPanelTab] = useState<"preview" | "order">("preview");
@@ -524,18 +607,28 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
 
   const c = getThemeClasses(config.themeId, config.colorId || "default");
 
-  // Core Themes Config - Expanded to 10 distinct, attention-grabbing presets
+  // Core Themes Config - Expanded to distinct, attention-grabbing presets
   const themes = [
-    { id: "heavy-grunge", label: "🤘 Grunge Stencil", color: "border-rose-450", bg: "bg-red-950" },
+    { id: "heavy-grunge", label: "🤘 Grunge", color: "border-rose-450", bg: "bg-red-950" },
+    { id: "classic-rock", label: "⚡ Classic Rock", color: "border-amber-500", bg: "bg-stone-900" },
+    { id: "indie-minimal", label: "☘️ Modern Minimalist", color: "border-emerald-305", bg: "bg-slate-50" },
+    { id: "psychedelic-acid", label: "🌈 Psychedelic", color: "border-purple-600", bg: "bg-[#180824]" },
     { id: "retro-neon", label: "👾 Retro Synthwave", color: "border-pink-500", bg: "bg-indigo-950" },
-    { id: "indie-minimal", label: "☘️ Modern Indie", color: "border-emerald-305", bg: "bg-slate-50" },
-    { id: "folk-acoustic", label: "🌻 Organic Folk", color: "border-amber-700", bg: "bg-amber-50" },
-    { id: "psychedelic-acid", label: "🌈 Psychedelic Acid", color: "border-purple-600", bg: "bg-[#180824]" },
     { id: "metal-hellfire", label: "🔥 Metal Hellfire", color: "border-red-650", bg: "bg-[#090504]" },
+    { id: "folk-acoustic", label: "🌻 Organic Folk", color: "border-amber-700", bg: "bg-amber-50" },
     { id: "pop-bubblegum", label: "🍭 Pop Bubblegum", color: "border-[#f472b6]", bg: "bg-[#fdf2f8]" },
     { id: "jazz-vanguard", label: "🎷 Jazz Vanguard", color: "border-yellow-950", bg: "bg-[#020617]" },
     { id: "dubstep-laser", label: "⚡ Rave Dubstep", color: "border-[#10b981]", bg: "bg-black" },
     { id: "punk-diy", label: "✂️ Punk DIY Collage", color: "border-black", bg: "bg-white" }
+  ];
+
+  // Typography font presets
+  const fontStyles = [
+    { id: "impact", label: "Heavy Impact", sample: "IMPACT", fontClass: "font-black tracking-tight uppercase" },
+    { id: "serif", label: "Classic Serif", sample: "Vintage", fontClass: "font-serif tracking-normal" },
+    { id: "clean", label: "Modern Clean", sample: "Minimal", fontClass: "font-sans font-bold tracking-wide" },
+    { id: "mono", label: "Monospace", sample: "UNDERGROUND", fontClass: "font-mono font-bold tracking-tight" },
+    { id: "distressed", label: "Distressed Stencil", sample: "GRUNGE", fontClass: "font-black tracking-tighter uppercase" }
   ];
 
   // Additional color presets requested by user
@@ -616,24 +709,39 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in" id="poster-designer-panel">
       {/* 5-Columns: Control inputs */}
-      <div className="lg:col-span-5 bg-white rounded-xl border border-gray-100 p-5 space-y-6" id="designer-controls">
-        <div className="border-b border-gray-50 pb-3" id="control-intro">
-          <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5" id="controls-title">
-            <Layers className="w-4 h-4 text-indigo-500" />
-            Concert Poster Designer & Text Layouts
-          </h3>
-          <p className="text-[10px] text-gray-400 font-medium" id="controls-desc">
-            Directly customize what represents your band, venue dates, refreshments, and age limits. Keep your materials accurate.
+      <div className="lg:col-span-5 bg-white rounded-2xl border border-gray-100 p-5 space-y-5 shadow-xs" id="designer-controls">
+        <div className="border-b border-gray-100 pb-3" id="control-intro">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5" id="controls-title">
+              <Layers className="w-4 h-4 text-indigo-500" />
+              Concert Poster Designer
+            </h3>
+            {saveToast && (
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 animate-fade-in flex items-center gap-1">
+                <Check className="w-3 h-3 text-emerald-600" />
+                {saveToast.message}
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5" id="controls-desc">
+            Top-down design workflow: choose your theme preset, pick your color scheme & typography, enter concert billing details, and export prints.
           </p>
         </div>
 
-        {/* Inputs Layout */}
-        <div className="space-y-4 text-xs" id="control-fields-box">
-          {/* Theme select buttons */}
-          <div className="space-y-1.5" id="theme-selector-group">
-            <span className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-              Concert Poster Theme Preset
-            </span>
+        {/* Inputs Layout - Top-Down Editor Workflow */}
+        <div className="space-y-5 text-xs" id="control-fields-box">
+          
+          {/* STEP 1: THEME / STYLE PRESET SELECTOR */}
+          <div className="space-y-2" id="step-1-theme-section">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center font-bold">1</span>
+                Theme & Style Preset
+              </span>
+              <span className="text-[10px] text-indigo-600 font-bold capitalize">
+                {themes.find(t => t.id === config.themeId)?.label.replace(/^[^\w]+/, '') || config.themeId}
+              </span>
+            </div>
             <div className="grid grid-cols-2 gap-2" id="themes-grid-input">
               {themes.map((th) => (
                 <button
@@ -641,55 +749,108 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                   type="button"
                   id={`btn-theme-${th.id}`}
                   onClick={() => handleFieldChange("themeId", th.id)}
-                  className={`p-2 rounded-lg border text-[11px] font-bold text-left transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-xl border text-[11px] font-bold text-left transition-all cursor-pointer flex items-center justify-between ${
                     config.themeId === th.id
-                      ? "border-indigo-600 bg-indigo-50/50 text-indigo-950"
-                      : "border-gray-100 bg-white text-gray-505 hover:border-gray-300"
+                      ? "border-indigo-600 bg-indigo-50/70 text-indigo-950 shadow-xs ring-1 ring-indigo-500"
+                      : "border-gray-200/80 bg-white text-slate-700 hover:border-gray-300 hover:bg-slate-50/50"
                   }`}
                 >
-                  {th.label}
+                  <span className="truncate">{th.label}</span>
+                  {config.themeId === th.id && (
+                    <Check className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
+                  )}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* User-customizable dynamic Color Accent Swatch */}
-          <div className="space-y-2 border-t border-gray-100/60 pt-3" id="color-swatch-group">
-            <span className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-              <span>🎨 Poster Color Swatch Scheme</span>
-            </span>
-            <div className="flex flex-wrap gap-2 items-center" id="color-swatches-row">
-              {colorSwatches.map((sw) => {
-                const isSelected = (config.colorId || "default") === sw.id;
-                return (
-                  <button
-                    key={sw.id}
-                    type="button"
-                    onClick={() => handleFieldChange("colorId", sw.id)}
-                    title={sw.label}
-                    className={`w-6 h-6 rounded-full border border-gray-200 cursor-pointer transition-all flex items-center justify-center hover:scale-110 active:scale-95 shadow-sm ${sw.swatchBg} ${
-                      isSelected 
-                        ? "scale-110 ring-2 ring-indigo-550 border-white" 
-                        : "opacity-85 hover:opacity-100"
-                    }`}
-                    id={`swatch-picker-btn-${sw.id}`}
-                  >
-                    {isSelected && (
-                      <Check className={`w-3 h-3 ${sw.id === "default" || sw.id === "black" ? "text-slate-800" : "text-white"}`} />
-                    )}
-                  </button>
-                );
-              })}
+          {/* STEP 2: COLOR PALETTE & TYPOGRAPHY PICKER */}
+          <div className="space-y-3.5 border-t border-gray-100 pt-4" id="step-2-palette-typography-section">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center font-bold">2</span>
+                Color Palette & Typography Picker
+              </span>
             </div>
-            <p className="text-[9.5px] text-gray-400 font-medium leading-relaxed italic">
-              *Tapping a swatch dynamically adjusts background elements, borders, and text highlights within the poster template!
-            </p>
+
+            {/* Color Palette (Background, Accent, Text colors) */}
+            <div className="space-y-1.5 bg-slate-50/60 p-3 rounded-xl border border-slate-100" id="color-swatch-group">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                  <Palette className="w-3.5 h-3.5 text-slate-500" />
+                  Color Scheme Accent
+                </span>
+                <span className="text-[9.5px] text-slate-400 font-medium">
+                  {colorSwatches.find(s => s.id === (config.colorId || "default"))?.label}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 items-center pt-1" id="color-swatches-row">
+                {colorSwatches.map((sw) => {
+                  const isSelected = (config.colorId || "default") === sw.id;
+                  return (
+                    <button
+                      key={sw.id}
+                      type="button"
+                      onClick={() => handleFieldChange("colorId", sw.id)}
+                      title={sw.label}
+                      className={`w-7 h-7 rounded-full border border-gray-200 cursor-pointer transition-all flex items-center justify-center hover:scale-110 active:scale-95 shadow-xs ${sw.swatchBg} ${
+                        isSelected 
+                          ? "scale-110 ring-2 ring-indigo-600 ring-offset-2 border-white" 
+                          : "opacity-85 hover:opacity-100"
+                      }`}
+                      id={`swatch-picker-btn-${sw.id}`}
+                    >
+                      {isSelected && (
+                        <Check className={`w-3.5 h-3.5 ${sw.id === "default" || sw.id === "black" ? "text-slate-800" : "text-white"}`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[9.5px] text-gray-400 font-medium leading-relaxed italic pt-1">
+                Dynamically adjusts background tones, border accents, and text highlights.
+              </p>
+            </div>
+
+            {/* Typography Font Picker */}
+            <div className="space-y-1.5 bg-slate-50/60 p-3 rounded-xl border border-slate-100" id="typography-font-picker">
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                <Type className="w-3.5 h-3.5 text-slate-500" />
+                Headline Typography Style
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
+                {fontStyles.map((f) => {
+                  const isSelected = (config.fontStyle || "impact") === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => handleFieldChange("fontStyle", f.id)}
+                      className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? "border-indigo-600 bg-white text-indigo-900 shadow-xs ring-1 ring-indigo-500"
+                          : "border-gray-200 bg-white/70 text-slate-600 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="text-[10px] font-bold">{f.label}</div>
+                      <div className={`text-[12px] truncate ${f.fontClass}`}>{f.sample}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Band details */}
-          <div className="grid grid-cols-1 gap-3" id="fields-band-section">
+          {/* STEP 3: POSTER CONTENT DETAILS */}
+          <div className="space-y-3.5 border-t border-gray-100 pt-4" id="step-3-content-details-section">
+            <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center font-bold">3</span>
+              Poster Content Details
+            </span>
+
+            {/* Headline Band Name */}
             <div id="field-wrap-band">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                 Headline Band Name
               </label>
               <input
@@ -697,17 +858,17 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                 id="field-poster-bandName"
                 value={config.bandName}
                 onChange={(e) => handleFieldChange("bandName", e.target.value)}
-                placeholder="E.g., THE NOISE ENGINE"
-                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                placeholder="e.g., The Midnight Echoes"
+                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold placeholder:text-gray-400 placeholder:text-zinc-500"
               />
             </div>
 
-            {/* Supporting Acts (Appears under the headlining act) */}
-            <div id="field-wrap-supporting-acts" className="bg-indigo-50/40 p-3 rounded-lg border border-indigo-100/60 space-y-1.5">
+            {/* Supporting Acts */}
+            <div id="field-wrap-supporting-acts" className="space-y-1">
               <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-indigo-600" />
-                  Supporting Acts / Openers
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                  <Users className="w-3 h-3 text-indigo-500" />
+                  Supporting Acts
                 </label>
                 {config.supportingActs && (
                   <button
@@ -724,37 +885,93 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                 id="field-poster-supportingActs"
                 value={config.supportingActs || ""}
                 onChange={(e) => handleFieldChange("supportingActs", e.target.value)}
-                placeholder="E.g., WITH SPECIAL GUESTS: THE STATIC VEIL • COPPERHEAD"
-                className="w-full text-xs p-2.5 bg-white border border-indigo-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-800"
+                placeholder="e.g., Special Guests: Velvet Rust, The Drifters"
+                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium placeholder:text-gray-400 placeholder:text-zinc-500"
               />
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[9px] text-indigo-600 font-bold">Quick suggestions:</span>
-                {["with Special Guests", "plus Support from", "w/ The Static Veil", "w/ Dr Hadit", "w/ Dead City Sound"].map((hint, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      const current = (config.supportingActs || "").trim();
-                      if (!current) {
-                        handleFieldChange("supportingActs", hint);
-                      } else if (!current.toLowerCase().includes(hint.toLowerCase())) {
-                        handleFieldChange("supportingActs", `${current} • ${hint}`);
-                      }
-                    }}
-                    className="text-[9.5px] px-2 py-0.5 bg-white hover:bg-indigo-100/70 border border-indigo-200/60 rounded-full text-indigo-700 transition-colors cursor-pointer"
-                  >
-                    + {hint}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[9px] text-gray-400 italic">
-                *Appears directly beneath the headliner on the printed concert poster.
-              </p>
             </div>
 
-            <div id="field-wrap-tagline">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Header Slogan / Tour Subtitle
+            {/* Venue & Location */}
+            <div id="field-wrap-venue" className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                Venue & Location
+              </label>
+              <input
+                type="text"
+                id="field-poster-venueName"
+                value={config.venueName}
+                onChange={(e) => handleFieldChange("venueName", e.target.value)}
+                placeholder="e.g., The Crystal Ballroom · Portland, OR"
+                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold placeholder:text-gray-400 placeholder:text-zinc-500"
+              />
+            </div>
+
+            {/* Date & Time */}
+            <div id="field-wrap-datetime" className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                Date & Time
+              </label>
+              <input
+                type="text"
+                id="field-poster-dateStr"
+                value={config.dateStr}
+                onChange={(e) => handleFieldChange("dateStr", e.target.value)}
+                placeholder="e.g., Friday, Nov 14 · Doors 7:00 PM / Show 8:00 PM"
+                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder:text-gray-400 placeholder:text-zinc-500"
+              />
+            </div>
+
+            {/* Admission / Ticket Info & Age limit */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" id="fields-pricing-ages-row">
+              <div id="field-wrap-price">
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                  Admission / Ticket Info
+                </label>
+                <input
+                  type="text"
+                  id="field-poster-priceStr"
+                  value={config.priceStr}
+                  onChange={(e) => handleFieldChange("priceStr", e.target.value)}
+                  placeholder="e.g., $15 Advance / $20 Door · 21+ · Tickets at link"
+                  className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium placeholder:text-gray-400 placeholder:text-zinc-500"
+                />
+              </div>
+
+              <div id="age-selector-grp">
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                  Age Restriction
+                </label>
+                <select
+                  id="field-poster-allAges"
+                  value={config.allAges}
+                  onChange={(e) => handleFieldChange("allAges", e.target.value)}
+                  className="w-full p-2.5 text-xs border border-gray-200 bg-slate-50 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="All Ages">All Ages</option>
+                  <option value="18+ w/ ID">18+ Entrance</option>
+                  <option value="21+ w/ ID">21+ Entrance</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Additional Details */}
+            <div id="field-wrap-extraDetails">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                Additional Details
+              </label>
+              <input
+                type="text"
+                id="field-poster-extraDetails"
+                value={config.extraDetails}
+                onChange={(e) => handleFieldChange("extraDetails", e.target.value)}
+                placeholder="e.g., Presented by Monolith Audio · Visuals by LightWave"
+                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder:text-gray-400 placeholder:text-zinc-500"
+              />
+            </div>
+
+            {/* Tour Subtitle / Header Slogan with Gemini AI */}
+            <div id="field-wrap-tagline" className="pt-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                Tour Subtitle / Header Slogan
               </label>
               <div className="flex gap-2" id="tagline-with-ai-btn">
                 <input
@@ -762,153 +979,58 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                   id="field-poster-secondaryText"
                   value={config.secondaryText}
                   onChange={(e) => handleFieldChange("secondaryText", e.target.value)}
-                  placeholder="E.g., ON TOUR NOW / PACIFIC NORTHWEST TOUR"
-                  className="flex-grow text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  placeholder="e.g., LIVE ON STAGE · ONE NIGHT ONLY"
+                  className="flex-grow text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder:text-gray-400 placeholder:text-zinc-500"
                 />
                 <button
                   type="button"
                   id="btn-trigger-ai-slogans"
                   onClick={handleGenerateSlogans}
                   disabled={isGeneratingSlogans || !config.bandName}
-                  className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-lg font-bold transition-all flex-shrink-0 cursor-pointer disabled:bg-slate-200 disabled:text-slate-400"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2.5 rounded-lg font-bold transition-all flex-shrink-0 cursor-pointer disabled:bg-slate-200 disabled:text-slate-400 flex items-center gap-1.5"
                   title="Generate Catchy Concert Slogans via Gemini AI"
                 >
                   {isGeneratingSlogans ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Wand2 className="w-4 h-4 animate-bounce" />
+                    <Wand2 className="w-4 h-4" />
                   )}
+                  <span className="text-[10px] hidden sm:inline">AI Ideas</span>
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* AI Suggested Slogan list if ready */}
-          {slogans.length > 0 && (
-            <div className="bg-slate-50 rounded-lg p-3 space-y-2 border border-slate-100" id="ai-slogans-results">
-              <span className="text-[10px] uppercase font-black tracking-wider text-purple-700 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" />
-                Gemini AI Slogan Proposals (Tap to Apply):
-              </span>
-              <div className="space-y-1.5" id="slogans-list">
-                {slogans.map((s, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    id={`btn-apply-slogan-${i}`}
-                    onClick={() => handleApplySlogan(s.slogan, i)}
-                    className="w-full text-left bg-white border border-gray-100 hover:border-purple-300 rounded p-1.5 text-[10px] transition-all flex justify-between items-center group cursor-pointer"
-                  >
-                    <span className="font-bold text-gray-800 italic">" {s.slogan} "</span>
-                    <span className="text-[9px] text-gray-400 group-hover:text-purple-600">{s.context}</span>
-                  </button>
-                ))}
+            {/* AI Suggested Slogan list if ready */}
+            {slogans.length > 0 && (
+              <div className="bg-slate-50 rounded-lg p-3 space-y-2 border border-slate-100" id="ai-slogans-results">
+                <span className="text-[10px] uppercase font-black tracking-wider text-purple-700 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Gemini AI Slogan Proposals (Tap to Apply):
+                </span>
+                <div className="space-y-1.5" id="slogans-list">
+                  {slogans.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      id={`btn-apply-slogan-${i}`}
+                      onClick={() => handleApplySlogan(s.slogan, i)}
+                      className="w-full text-left bg-white border border-gray-100 hover:border-purple-300 rounded p-1.5 text-[10px] transition-all flex justify-between items-center group cursor-pointer"
+                    >
+                      <span className="font-bold text-gray-800 italic">" {s.slogan} "</span>
+                      <span className="text-[9px] text-gray-400 group-hover:text-purple-600">{s.context}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Venue specifics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3" id="fields-venue-section">
-            <div id="field-wrap-venue">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Venue Room Name
-              </label>
-              <input
-                type="text"
-                id="field-poster-venueName"
-                value={config.venueName}
-                onChange={(e) => handleFieldChange("venueName", e.target.value)}
-                placeholder="E.g., The Underbelly Hall"
-                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
-              />
-            </div>
-
-            <div id="field-wrap-address">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Venue Street Address
-              </label>
-              <input
-                type="text"
-                id="field-poster-venueAddress"
-                value={config.venueAddress}
-                onChange={(e) => handleFieldChange("venueAddress", e.target.value)}
-                placeholder="E.g., 204 Pine St, Seattle"
-                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-
-          {/* Date, Time and Prices */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3" id="fields-details-section">
-            <div id="field-wrap-date">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Show Date Str
-              </label>
-              <input
-                type="text"
-                id="field-poster-dateStr"
-                value={config.dateStr}
-                onChange={(e) => handleFieldChange("dateStr", e.target.value)}
-                placeholder="E.g., Friday, Oct 24th"
-                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div id="field-wrap-time">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Gate & Show Time
-              </label>
-              <input
-                type="text"
-                id="field-poster-timeStr"
-                value={config.timeStr}
-                onChange={(e) => handleFieldChange("timeStr", e.target.value)}
-                placeholder="E.g., Doors 8 / Live 9"
-                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div id="field-wrap-price">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Entry Tickets Fee
-              </label>
-              <input
-                type="text"
-                id="field-poster-priceStr"
-                value={config.priceStr}
-                onChange={(e) => handleFieldChange("priceStr", e.target.value)}
-                placeholder="E.g., $10 Adv / $15 Door"
-                className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
-              />
-            </div>
-          </div>
-
-          {/* Age restricts and Amenities checkboxes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-50" id="amenities-options-row">
-            {/* Age dropdown representation */}
-            <div id="age-selector-grp">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Age Restriction Limit
-              </label>
-              <select
-                id="field-poster-allAges"
-                value={config.allAges}
-                onChange={(e) => handleFieldChange("allAges", e.target.value)}
-                className="w-full p-2.5 text-xs border border-gray-250 bg-white rounded-lg focus:outline-none"
-              >
-                <option value="All Ages">All Ages (No restrictions)</option>
-                <option value="18+ w/ ID">18+ Entrance (ID Checked)</option>
-                <option value="21+ w/ ID">21+ Entrance (Alcohol Served)</option>
-              </select>
-            </div>
-
-            {/* Micro checks for services */}
-            <div className="space-y-2 mt-2 md:mt-0" id="amenity-switches">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+            {/* Poster Icon Annotations (Food, Drinks, Merch) */}
+            <div className="space-y-1 pt-1" id="amenities-switches">
+              <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                 Poster Icon Annotations
               </span>
-              <div className="space-y-1" id="amenities-checks font-medium">
-                <label className="flex items-center gap-2 cursor-pointer text-[10px] text-gray-650" id="lbl-check-food">
+              <div className="flex flex-wrap gap-3 pt-1 text-[10px] text-gray-600">
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
                     id="check-poster-servesFood"
@@ -916,10 +1038,9 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                     onChange={() => handleAmenityChange("servesFood")}
                     className="rounded text-indigo-600 focus:ring-indigo-200"
                   />
-                  <span>Food served at venue</span>
+                  <span>Food Available</span>
                 </label>
-
-                <label className="flex items-center gap-2 cursor-pointer text-[10px] text-gray-650" id="lbl-check-alcohol">
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
                     id="check-poster-servesAlcohol"
@@ -927,10 +1048,9 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                     onChange={() => handleAmenityChange("servesAlcohol")}
                     className="rounded text-indigo-600 focus:ring-indigo-200"
                   />
-                  <span>Alcohol beverages served (Beer/Cocktails)</span>
+                  <span>Bar / Drinks</span>
                 </label>
-
-                <label className="flex items-center gap-2 cursor-pointer text-[10px] text-gray-650" id="lbl-check-merch">
+                <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
                     id="check-poster-merchArea"
@@ -938,26 +1058,84 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                     onChange={() => handleAmenityChange("merchArea")}
                     className="rounded text-indigo-600 focus:ring-indigo-200"
                   />
-                  <span>Band merch stand inside</span>
+                  <span>Band Merch</span>
                 </label>
               </div>
             </div>
           </div>
 
-          {/* Extra Notes details */}
-          <div id="field-wrap-extraDetails">
-            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-              Safety / Extra Venue Information
-            </label>
-            <input
-              type="text"
-              id="field-poster-extraDetails"
-              value={config.extraDetails}
-              onChange={(e) => handleFieldChange("extraDetails", e.target.value)}
-              placeholder="E.g., Cash only bar. No professional cameras. Nearby parking available."
-              className="w-full text-xs p-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
+          {/* STEP 4: FINAL ACTIONS (DOWNLOAD, SAVE, ORDER PRINTS) */}
+          <div className="space-y-3 border-t border-gray-100 pt-4" id="step-4-final-actions-section">
+            <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center font-bold">4</span>
+              Final Actions
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" id="final-actions-grid">
+              {/* Action 1: Download PNG */}
+              <button
+                type="button"
+                id="btn-poster-download-png"
+                onClick={downloadPosterAsImage}
+                disabled={isDownloading}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {isDownloading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Rendering...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PNG</span>
+                  </>
+                )}
+              </button>
+
+              {/* Action 2: Save Poster */}
+              <button
+                type="button"
+                id="btn-poster-save"
+                onClick={handleSavePoster}
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5 text-indigo-300" />
+                <span>Save Poster</span>
+              </button>
+
+              {/* Action 3: Order Prints */}
+              <button
+                type="button"
+                id="btn-poster-order-prints"
+                onClick={() => {
+                  setPanelTab("order");
+                  setShippingAddress(prev => ({
+                    ...prev,
+                    name: prev.name || config.bandName || "",
+                    street: prev.street || config.venueAddress || ""
+                  }));
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Order Prints</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Local Print / Print Dialog</span>
+              </button>
+              <span className="text-[10px] text-slate-400">High-Res 300 DPI Export</span>
+            </div>
           </div>
+
         </div>
       </div>
 
@@ -1044,10 +1222,10 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                 >
                   <div className="space-y-2 pt-4 z-10">
                     <h5 className={`text-[10px] uppercase font-black tracking-widest ${c.tagline}`}>
-                      {config.secondaryText || "ON TOUR NOW / SPECIAL GUESTS"}
+                      {config.secondaryText || "LIVE ON STAGE · ONE NIGHT ONLY"}
                     </h5>
-                    <h1 className={`leading-none font-bold select-all tracking-tighter ${c.bandName}`}>
-                      {config.bandName || "GENERIC HEADLINER BAND"}
+                    <h1 className={`leading-none font-bold select-all tracking-tighter ${c.bandName} ${getFontFamilyClass(config.fontStyle)} ${!config.bandName ? 'opacity-40 italic' : ''}`}>
+                      {config.bandName || "The Midnight Echoes"}
                     </h1>
                     {config.supportingActs && (
                       <div className="pt-0.5">
@@ -1059,20 +1237,22 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
                   </div>
 
                   <div className="space-y-3 py-4 z-10">
-                    <h2 className={`text-sm font-bold uppercase tracking-wide ${c.venueName}`}>
-                      {config.venueName || "LOCAL MUSIC HALL"}
+                    <h2 className={`text-sm font-bold uppercase tracking-wide ${c.venueName} ${!config.venueName ? 'opacity-40 italic' : ''}`}>
+                      {config.venueName || "The Crystal Ballroom · Portland, OR"}
                     </h2>
-                    <p className="text-[9px] text-gray-500 flex items-center justify-center gap-1">
-                      <MapPin className="w-3 h-3 text-rose-500" />
-                      {config.venueAddress || "412 Pike St, Seattle, WA"}
-                    </p>
+                    {config.venueAddress && (
+                      <p className="text-[9px] text-gray-500 flex items-center justify-center gap-1">
+                        <MapPin className="w-3 h-3 text-rose-500" />
+                        {config.venueAddress}
+                      </p>
+                    )}
                   </div>
 
                   <div className="border-t pt-4 space-y-4 z-10" style={{ borderColor: "rgba(100,100,100,0.15)" }}>
                     <div className="flex justify-center items-center gap-3 text-xs">
-                      <span className={`px-2.5 py-1 rounded font-bold font-mono tracking-tight flex items-center gap-1 ${c.dateBadge}`}>
+                      <span className={`px-2.5 py-1 rounded font-bold font-mono tracking-tight flex items-center gap-1 ${c.dateBadge} ${!config.dateStr ? 'opacity-40' : ''}`}>
                         <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        {config.dateStr || "Friday, Oct 24th"}
+                        {config.dateStr || "Friday, Nov 14 · Doors 7:00 PM / Show 8:00 PM"}
                       </span>
                     </div>
                   </div>
@@ -1745,16 +1925,28 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
               </div>
             )}
 
+            {/* 11. CLASSIC ROCK 70S BORDER */}
+            {config.themeId === "classic-rock" && (
+              <div className="absolute inset-0 pointer-events-none border-2 border-amber-500/25 m-2 rounded-xl flex flex-col justify-between" id="classic-rock-decorations">
+                <div className="absolute top-2 left-3 right-3 border-b border-amber-500/30" />
+                <div className="absolute bottom-2 left-3 right-3 border-t border-amber-500/30" />
+                <div className="absolute top-3 left-3 text-amber-500/40 text-[10px]">★</div>
+                <div className="absolute top-3 right-3 text-amber-500/40 text-[10px]">★</div>
+                <div className="absolute bottom-3 left-3 text-amber-500/40 text-[10px]">★</div>
+                <div className="absolute bottom-3 right-3 text-amber-500/40 text-[10px]">★</div>
+              </div>
+            )}
+
             {/* Top details card info */}
             <div className="space-y-3 pt-4 z-10" id="poster-layout-top">
               {/* Supporting Tagline / Tour subtitle */}
               <h5 className={`text-[10px] uppercase font-black tracking-widest ${c.tagline}`} id="poster-tagline-preview">
-                {config.secondaryText || "ON TOUR NOW / SPECIAL GUESTS"}
+                {config.secondaryText || "LIVE ON STAGE · ONE NIGHT ONLY"}
               </h5>
 
               {/* Main Headline band title */}
-              <h1 className={`leading-none font-bold select-all tracking-tighter ${c.bandName}`} id="poster-band-preview">
-                {config.bandName || "GENERIC HEADLINER BAND"}
+              <h1 className={`leading-none font-bold select-all tracking-tighter ${c.bandName} ${getFontFamilyClass(config.fontStyle)} ${!config.bandName ? 'opacity-40 italic' : ''}`} id="poster-band-preview">
+                {config.bandName || "The Midnight Echoes"}
               </h1>
 
               {/* Supporting Acts / Openers appearing under the headlining act */}
@@ -1836,38 +2028,42 @@ export default function PosterDesigner({ config, onChangeConfig }: PosterDesigne
               )}
 
               <div className="space-y-1" id="venue-text-previews">
-                <h2 className={`text-base font-bold uppercase tracking-wide ${c.venueName}`} id="poster-venue-name-preview">
-                  {config.venueName || "LOCAL MUSIC HALL"}
+                <h2 className={`text-base font-bold uppercase tracking-wide ${c.venueName} ${!config.venueName ? 'opacity-40 italic' : ''}`} id="poster-venue-name-preview">
+                  {config.venueName || "The Crystal Ballroom · Portland, OR"}
                 </h2>
 
-                <p className={`text-[10px] font-medium flex items-center justify-center gap-1 leading-normal ${
-                  config.themeId === "punk-diy" ? "text-black font-black" : "text-gray-500"
-                }`} id="poster-venue-addr-preview">
-                  <MapPin className="w-3 h-3 text-rose-500 flex-shrink-0" />
-                  {config.venueAddress || "412 Pike St, Seattle, WA"}
-                </p>
+                {config.venueAddress && (
+                  <p className={`text-[10px] font-medium flex items-center justify-center gap-1 leading-normal ${
+                    config.themeId === "punk-diy" ? "text-black font-black" : "text-gray-500"
+                  }`} id="poster-venue-addr-preview">
+                    <MapPin className="w-3 h-3 text-rose-500 flex-shrink-0" />
+                    {config.venueAddress}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Bottom detail footer tags (Time, entry fees, limits, snacks icons) */}
             <div className="border-t pt-4 space-y-4 z-10" id="poster-layout-bottom" style={{ borderColor: "rgba(100,100,100,0.15)" }}>
               {/* Date and time badges */}
-              <div className="flex justify-center items-center gap-3 text-xs" id="footer-badges-preview">
-                <span className={`px-2.5 py-1 rounded font-bold font-mono tracking-tight flex items-center gap-1.5 ${c.dateBadge}`} id="poster-date-preview">
+              <div className="flex justify-center items-center gap-3 text-xs flex-wrap" id="footer-badges-preview">
+                <span className={`px-2.5 py-1 rounded font-bold font-mono tracking-tight flex items-center gap-1.5 ${c.dateBadge} ${!config.dateStr ? 'opacity-40' : ''}`} id="poster-date-preview">
                   <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                  {config.dateStr || "Friday, Oct 24th"}
+                  {config.dateStr || "Friday, Nov 14 · Doors 7:00 PM / Show 8:00 PM"}
                 </span>
 
-                <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${c.timeBadge}`} id="poster-time-preview">
-                  {config.timeStr || "Music at 9 PM"}
-                </span>
+                {config.timeStr && (
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${c.timeBadge}`} id="poster-time-preview">
+                    {config.timeStr}
+                  </span>
+                )}
               </div>
 
               {/* Pricing and Entrance Limit badges row */}
               <div className="flex items-center justify-center gap-3 text-[10px] font-bold" id="pricing-age-preview">
-                <span className={`flex items-center gap-0.5 ${config.themeId === "punk-diy" ? "text-black font-black font-mono border-b border-blackL" : "text-slate-500"}`} id="poster-price-label">
+                <span className={`flex items-center gap-0.5 ${config.themeId === "punk-diy" ? "text-black font-black font-mono border-b border-black" : "text-slate-500"} ${!config.priceStr ? 'opacity-40' : ''}`} id="poster-price-label">
                   <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-                  {config.priceStr || "$10 Adv / $15 Door"}
+                  {config.priceStr || "$15 Advance / $20 Door · 21+ · Tickets at link"}
                 </span>
 
                 <span className={`px-2 py-0.5 text-[9px] uppercase font-black rounded-sm tracking-wider ${
