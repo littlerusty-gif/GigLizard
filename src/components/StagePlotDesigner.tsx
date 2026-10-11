@@ -41,21 +41,21 @@ const TOOLBOX_TEMPLATES: { type: EquipmentType; label: string; color: string; de
 
 const INITIAL_ROCKS: StageElement[] = [
   { id: "drum-1", type: "drum_kit", label: "Drums", x: 50, y: 22, rotation: 0 },
-  { id: "monitor-drums", type: "monitor_wedge", label: "Drum Mix", x: 38, y: 30, rotation: 0 },
+  { id: "monitor-drums", type: "monitor_wedge", label: "Drum Mix", x: 62, y: 30, rotation: 0 },
   { id: "lead-vocal-1", type: "vocal_mic", label: "Lead Vocal", x: 50, y: 66, rotation: 0 },
   { id: "monitor-center", type: "monitor_wedge", label: "Vocal Mix", x: 50, y: 82, rotation: 0 },
-  { id: "guitar-amp-1", type: "guitar_amp", label: "Guitar Amp", x: 20, y: 34, rotation: 0 },
-  { id: "monitor-guitar", type: "monitor_wedge", label: "Gtr Mix", x: 20, y: 72, rotation: 0 },
-  { id: "bass-amp-1", type: "bass_amp", label: "Bass Rig", x: 80, y: 34, rotation: 0 },
-  { id: "monitor-bass", type: "monitor_wedge", label: "Bass Mix", x: 80, y: 72, rotation: 0 }
+  { id: "guitar-amp-1", type: "guitar_amp", label: "Guitar Amp (SR)", x: 20, y: 34, rotation: 0 },
+  { id: "monitor-guitar", type: "monitor_wedge", label: "Gtr Mix (SR)", x: 20, y: 72, rotation: 0 },
+  { id: "bass-amp-1", type: "bass_amp", label: "Bass Rig (SL)", x: 80, y: 34, rotation: 0 },
+  { id: "monitor-bass", type: "monitor_wedge", label: "Bass Mix (SL)", x: 80, y: 72, rotation: 0 }
 ];
 
 const DEFAULT_INPUT_CHANNELS: InputChannel[] = [
   { channel: 1, instrument: "Kick Drum", micOrDi: "Shure Beta 52 / Audix D6", stand: "Short Boom", phantomPower: false, notes: "Gated, heavy punch" },
   { channel: 2, instrument: "Snare Top", micOrDi: "Shure SM57", stand: "Short Boom", phantomPower: false, notes: "Crisp top end, light reverb" },
   { channel: 3, instrument: "Hi-Hat", micOrDi: "Small Diaphragm Condenser", stand: "Short Boom", phantomPower: true, notes: "Gentle high-pass" },
-  { channel: 4, instrument: "Bass Rig DI", micOrDi: "Active DI Box (Direct)", stand: "None", phantomPower: true, notes: "Pre-EQ balanced line" },
-  { channel: 5, instrument: "Guitar Amp (Stage Left)", micOrDi: "Shure SM57 / Sennheiser e906", stand: "Short Boom", phantomPower: false, notes: "Centering cone, 30% pan left" },
+  { channel: 4, instrument: "Bass Rig DI (Stage Left)", micOrDi: "Active DI Box (Direct)", stand: "None", phantomPower: true, notes: "Pre-EQ balanced line" },
+  { channel: 5, instrument: "Guitar Amp (Stage Right)", micOrDi: "Shure SM57 / Sennheiser e906", stand: "Short Boom", phantomPower: false, notes: "Centering cone, 30% pan right in FOH" },
   { channel: 6, instrument: "Lead Vocal (Center)", micOrDi: "Shure SM58 / Beta 58A", stand: "Tall Boom", phantomPower: false, notes: "Frontline wedge 1 priority foldback" },
   { channel: 7, instrument: "Backing Vocal (Bass/SL)", micOrDi: "Shure SM58", stand: "Tall Boom", phantomPower: false, notes: "Foldback to SL & Center wedges" },
   { channel: 8, instrument: "Backing Vocal (Drums)", micOrDi: "Shure SM58 / Headset", stand: "Tall Boom", phantomPower: false, notes: "Gated drum-vox foldback" }
@@ -269,6 +269,9 @@ export default function StagePlotDesigner({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!activeDragId || !containerRef.current || e.touches.length === 0) return;
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     updateCoordinate(e.touches[0].clientX, e.touches[0].clientY);
   };
 
@@ -294,6 +297,28 @@ export default function StagePlotDesigner({
   const handleStopDrag = () => {
     setActiveDragId(null);
   };
+
+  // Attach non-passive touchmove listener to container to guarantee mobile scrolling is disabled during drag
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onNativeTouchMove = (e: TouchEvent) => {
+      if (activeDragId) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        if (e.touches.length > 0) {
+          updateCoordinate(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }
+    };
+
+    container.addEventListener("touchmove", onNativeTouchMove, { passive: false });
+    return () => {
+      container.removeEventListener("touchmove", onNativeTouchMove);
+    };
+  }, [activeDragId, elements]);
 
   // Reset stage helper
   const handleResetStage = () => {
@@ -750,47 +775,48 @@ export default function StagePlotDesigner({
       {/* Main Designer Grid: Sidebar Toolbox + Canvas + Patch List */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" id="stage-designer-panel">
         
-        {/* Left Column: Toolbox sidebar */}
-        <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200/80 p-5 space-y-5 shadow-xs" id="plot-toolbox">
+        {/* Left Column (or Top Stack on Mobile): Toolbox palette */}
+        <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 space-y-4 sm:space-y-5 shadow-xs" id="plot-toolbox">
           <div>
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest" id="toolbox-title">
               Gear Toolbox
             </h3>
             <p className="text-[11px] text-slate-500 mt-1" id="toolbox-desc">
-              Click an item to spawn it on-stage. Drag items around the stage to build your layout.
+              Tap an item to spawn it on-stage. Drag items around the stage to build your layout.
             </p>
           </div>
 
-          <div className="flex flex-col gap-2" id="toolbox-items-list">
+          {/* Responsive gear selector palette: grid of 2-3 columns on mobile, single column on lg */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2" id="toolbox-items-list">
             {TOOLBOX_TEMPLATES.map((tmpl) => (
               <button
                 key={tmpl.type}
                 type="button"
                 id={`btn-toolbox-${tmpl.type}`}
                 onClick={() => handleAddTemplateToStage(tmpl.type, tmpl.label)}
-                className="w-full flex items-center justify-between text-left p-2.5 rounded-xl border border-slate-200/80 hover:border-indigo-400 hover:bg-indigo-50/30 text-xs font-bold text-slate-800 group transition-all cursor-pointer"
+                className="w-full flex items-center justify-between text-left p-2 sm:p-2.5 rounded-xl border border-slate-200/80 hover:border-indigo-400 hover:bg-indigo-50/30 text-xs font-bold text-slate-800 group transition-all cursor-pointer shadow-2xs"
               >
-                <div className="flex items-center gap-2.5">
-                  <span className={`w-3.5 h-3.5 rounded-full ${tmpl.color.split(" ")[0]} border border-white shadow-xs`} />
-                  <span>{tmpl.label}</span>
+                <div className="flex items-center gap-2 truncate">
+                  <span className={`w-3.5 h-3.5 shrink-0 rounded-full ${tmpl.color.split(" ")[0]} border border-white shadow-xs`} />
+                  <span className="truncate">{tmpl.label}</span>
                 </div>
-                <Plus className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:scale-110 transition-transform" />
+                <Plus className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover:text-indigo-600 group-hover:scale-110 transition-transform" />
               </button>
             ))}
           </div>
 
           <hr className="border-slate-100 my-2" />
 
-          {/* Quick preset utilities */}
-          <div className="space-y-2" id="toolbox-utils">
+          {/* Quick preset utilities: 3-col on small screens, 1-col on lg */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2" id="toolbox-utils">
             <button
               type="button"
               id="btn-plot-auto-patch"
               onClick={handleAutoGenerateChannelsFromStage}
               className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs py-2 px-3 rounded-xl font-bold border border-indigo-200/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Zap className="w-3.5 h-3.5 text-indigo-600" />
-              Auto-Patch from Stage Gear
+              <Zap className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Auto-Patch Gear</span>
             </button>
             <button
               type="button"
@@ -798,8 +824,8 @@ export default function StagePlotDesigner({
               onClick={handleResetStage}
               className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs py-2 px-3 rounded-xl font-bold border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-              Reload 4-Piece Setup
+              <RefreshCw className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span>Reload 4-Piece</span>
             </button>
             <button
               type="button"
@@ -807,8 +833,8 @@ export default function StagePlotDesigner({
               onClick={handleClearStage}
               className="w-full text-rose-600 hover:bg-rose-50 text-xs py-2 px-3 rounded-xl font-bold border border-transparent transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Trash className="w-3.5 h-3.5" />
-              Clear Stage Gear
+              <Trash className="w-3.5 h-3.5 shrink-0" />
+              <span>Clear Stage</span>
             </button>
           </div>
         </div>
@@ -863,11 +889,11 @@ export default function StagePlotDesigner({
             </div>
           </div>
 
-          {/* Physical Stage Canvas */}
+          {/* Physical Stage Canvas: Responsive aspect ratio (aspect-[4/3] on mobile, aspect-[16/10] on sm+, min height 340px) */}
           <div 
             ref={containerRef}
             id="live-stage-canvas"
-            className="relative bg-slate-950 border-4 border-slate-900 rounded-3xl h-[500px] w-full overflow-hidden shadow-2xl selection:bg-transparent"
+            className="relative bg-slate-950 border-4 border-slate-900 rounded-3xl w-full aspect-[4/3] sm:aspect-[16/10] min-h-[340px] max-h-[620px] overflow-hidden shadow-2xl selection:bg-transparent touch-none select-none"
           >
             {/* SVG stage backgrounds */}
             <div className="absolute inset-0 pointer-events-none select-none z-0" id="stage-visual-base">
@@ -949,32 +975,32 @@ export default function StagePlotDesigner({
               )}
             </div>
 
-            {/* Edge Label Indicators */}
-            {/* Backline indicator */}
+            {/* Edge Label Indicators (FOH Audience Perspective) */}
+            {/* Backline indicator (Upstage / Back) */}
             <div className="absolute top-2.5 left-0 right-0 text-center pointer-events-none z-10" id="label-rear">
-              <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest bg-slate-950/90 px-4 py-1.5 rounded-full border border-slate-800 shadow-sm">
-                ▲ Backline / Drums &amp; Amplifier Line ▲
+              <span className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-widest bg-slate-950/90 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border border-slate-800 shadow-sm">
+                ▲ Upstage (Back) • Backline &amp; Drums ▲
               </span>
             </div>
 
-            {/* Frontline / Crowd indicator */}
-            <div className="absolute bottom-3 left-0 right-0 text-center pointer-events-none z-10" id="label-front">
-              <span className="text-[9px] text-teal-400 font-black uppercase tracking-widest bg-slate-950/90 px-4 py-1.5 rounded-full border border-teal-900 shadow-sm">
-                ▼ Frontline Monitors • Audience / Crowd Edge ▼
+            {/* Frontline / Crowd indicator (Downstage / Front / Audience) */}
+            <div className="absolute bottom-2.5 sm:bottom-3 left-0 right-0 text-center pointer-events-none z-10" id="label-front">
+              <span className="text-[8px] sm:text-[9px] text-teal-400 font-black uppercase tracking-widest bg-slate-950/90 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border border-teal-900 shadow-sm">
+                ▼ Downstage (Front / Audience) • Frontline Monitors ▼
               </span>
             </div>
 
-            {/* Stage Left Wing */}
+            {/* Stage Right Wing: Looking from House/FOH, Stage Right is on the LEFT */}
             <div className="absolute top-1/2 left-2 -translate-y-1/2 select-none pointer-events-none origin-left -rotate-90 z-10" id="label-left-wing">
-              <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider">
-                Stage Left (SL)
+              <span className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-wider bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800">
+                Stage Right (SR)
               </span>
             </div>
 
-            {/* Stage Right Wing */}
+            {/* Stage Left Wing: Looking from House/FOH, Stage Left is on the RIGHT */}
             <div className="absolute top-1/2 right-2 -translate-y-1/2 select-none pointer-events-none origin-right rotate-90 z-10" id="label-right-wing">
-              <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider">
-                Stage Right (SR)
+              <span className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-wider bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800">
+                Stage Left (SL)
               </span>
             </div>
 
@@ -987,7 +1013,7 @@ export default function StagePlotDesigner({
                 <div
                   key={el.id}
                   id={`placed-gear-${el.id}`}
-                  className="absolute w-20 h-20 flex flex-col group touch-none"
+                  className="absolute w-16 h-16 sm:w-20 sm:h-20 flex flex-col group touch-none cursor-grab active:cursor-grabbing select-none"
                   style={{
                     left: `${el.x}%`,
                     top: `${el.y}%`,
@@ -1002,6 +1028,7 @@ export default function StagePlotDesigner({
                       handleStartDrag(el.id, e.clientX, e.clientY, el.x, el.y);
                     }}
                     onTouchStart={(e) => {
+                      if (e.cancelable) e.preventDefault();
                       handleStartDrag(el.id, e.touches[0].clientX, e.touches[0].clientY, el.x, el.y);
                     }}
                   >
@@ -1029,8 +1056,8 @@ export default function StagePlotDesigner({
                       </div>
                     )}
 
-                    {/* Mini gear tools: rotate, rename, delete */}
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 bg-slate-950/95 border border-slate-700/80 rounded-md px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+                    {/* Mini gear tools: rotate, rename, delete (visible on hover or tap) */}
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 bg-slate-950/95 border border-slate-700/80 rounded-md px-1.5 py-0.5 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity z-30 shadow-md">
                       <button
                         type="button"
                         aria-label="Rotate gear item"
@@ -1379,23 +1406,23 @@ export default function StagePlotDesigner({
               {/* Backline indicator */}
               <div className="absolute top-2 left-0 right-0 text-center">
                 <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest bg-slate-950/90 px-3 py-1 rounded-full border border-slate-800">
-                  ▲ Backline / Backstage (Amps &amp; Drums) ▲
+                  ▲ Upstage (Back) • Backline &amp; Drums ▲
                 </span>
               </div>
 
               {/* Frontline indicator */}
               <div className="absolute bottom-2 left-0 right-0 text-center">
                 <span className="text-[9px] text-teal-400 font-black uppercase tracking-widest bg-slate-950/90 px-3 py-1 rounded-full border border-teal-900">
-                  ▼ Frontline Monitors • Audience / Crowd Edge ▼
+                  ▼ Downstage (Front / Audience) • Frontline Monitors ▼
                 </span>
               </div>
 
-              {/* Stage Left / Right */}
-              <div className="absolute top-1/2 left-2 -translate-y-1/2 origin-left -rotate-90 text-[8px] text-slate-500 font-black uppercase">
-                Stage Left (SL)
-              </div>
-              <div className="absolute top-1/2 right-2 -translate-y-1/2 origin-right rotate-90 text-[8px] text-slate-500 font-black uppercase">
+              {/* Stage Right / Left (House/FOH Audience Perspective) */}
+              <div className="absolute top-1/2 left-2 -translate-y-1/2 origin-left -rotate-90 text-[8px] text-slate-400 font-black uppercase bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800">
                 Stage Right (SR)
+              </div>
+              <div className="absolute top-1/2 right-2 -translate-y-1/2 origin-right rotate-90 text-[8px] text-slate-400 font-black uppercase bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800">
+                Stage Left (SL)
               </div>
 
               {/* Placed Elements Graphic */}

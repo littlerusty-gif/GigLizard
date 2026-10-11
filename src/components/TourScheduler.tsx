@@ -32,6 +32,7 @@ import {
   SavedTourRecord
 } from "../lib/supabase";
 import { TourPrintModal } from "./TourPrintModal";
+import { TourLodgingModal } from "./TourLodgingModal";
 import { TourMap } from "./TourMap";
 import { 
   MapPin, 
@@ -218,6 +219,13 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // In-app lodging booking modal state
+  const [bookingModalStopIndex, setBookingModalStopIndex] = useState<number | null>(null);
+
+  const handleOpenBookingModal = (stopIdx: number) => {
+    setBookingModalStopIndex(stopIdx);
+  };
+
   // New waypoint input in Step 2
   const [newWaypointInput, setNewWaypointInput] = useState("");
 
@@ -226,6 +234,11 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   // Android back-swipe / back button listener: close print modal or step back in wizard
   useEffect(() => {
     const handleBackButton = (e: Event) => {
+      if (bookingModalStopIndex !== null) {
+        setBookingModalStopIndex(null);
+        e.preventDefault();
+        return;
+      }
       if (showPrintModal) {
         setShowPrintModal(false);
         e.preventDefault();
@@ -629,6 +642,113 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
       return copy;
     });
   };
+
+  // Commit lodging reservation and auto-sync directly into the stop's route_data JSONB in Supabase
+  const handleCommitLodgingReservation = async (
+    stopIdx: number,
+    reservation: {
+      name: string;
+      confirmationNumber: string;
+      cost: number | string;
+      parkingNotes: string;
+      notes: string;
+      address?: string;
+      type?: string;
+      checkIn: string;
+      checkOut: string;
+    }
+  ) => {
+    let updatedStopsList: TourStop[] = [];
+
+    setStops(prev => {
+      const copy = [...prev];
+      const target = copy[stopIdx];
+      if (target) {
+        target.selectedLodging = {
+          name: reservation.name,
+          confirmationNumber: reservation.confirmationNumber,
+          cost: reservation.cost,
+          gearSecurityNote: reservation.parkingNotes,
+          notes: reservation.notes,
+          address: reservation.address,
+          type: reservation.type || "Band-Friendly Hotel"
+        };
+        target.lodgingNotes = reservation.parkingNotes || reservation.notes;
+      }
+      updatedStopsList = copy;
+      return copy;
+    });
+
+    const stopsToSave = updatedStopsList.length > 0 ? updatedStopsList : stops;
+    const updatedFinancials = calculateTourFinancials(stopsToSave);
+
+    // Commit to route_data in Supabase if tourId or effectiveUserId exists
+    if (effectiveUserId || tourId) {
+      const activePlanName = tourTitle.trim() || `${originCity} to ${destinationCity} Tour`;
+      const routeData = {
+        origin: originCity,
+        destination: destinationCity,
+        startDate,
+        endDate,
+        currentStep: wizardStep,
+        stops: stopsToSave,
+        totalDistanceMiles,
+        totalDriveTime,
+        financials: updatedFinancials,
+        bandProfile: bandProfile ? { name: bandProfile.name, genre: bandProfile.genre } : undefined,
+        createdAtHuman: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      };
+
+      try {
+        const { data } = await saveTourToDatabase({
+          id: tourId || undefined,
+          user_id: effectiveUserId || "local",
+          name: activePlanName,
+          status: tourStatus,
+          route_data: routeData
+        });
+        if (data?.id && !tourId) {
+          setTourId(data.id);
+        }
+      } catch (err) {
+        console.warn("Auto-syncing lodging reservation to Supabase route_data:", err);
+      }
+    }
+
+    triggerToast("Lodging locked into tour itinerary", "success");
+    setBookingModalStopIndex(null);
+  };
+
+  // Listen for partner booking window postMessage event (from embedded iframe or widget callback)
+  useEffect(() => {
+    const handleBookingWidgetMessage = (event: MessageEvent) => {
+      if (!event.data) return;
+      const data = event.data;
+      if (
+        data.type === "LODGING_BOOKING_COMPLETED" || 
+        data.type === "GIGLIZARD_HOTEL_BOOKED" || 
+        data.action === "booking_complete"
+      ) {
+        const payload = data.payload || data;
+        const targetIdx = typeof data.stopIndex === "number" ? data.stopIndex : (bookingModalStopIndex ?? activeStageIndex);
+        if (targetIdx !== null && targetIdx >= 0 && targetIdx < stops.length) {
+          handleCommitLodgingReservation(targetIdx, {
+            name: payload.hotelName || payload.name || "Booked Partner Hotel",
+            confirmationNumber: payload.confirmationNumber || payload.bookingId || `CONF-${Math.floor(100000 + Math.random() * 900000)}`,
+            cost: payload.cost || payload.totalCost || 85,
+            parkingNotes: payload.parkingNotes || payload.parking || "Van & trailer parking confirmed",
+            notes: payload.notes || payload.parking || "Booked via partner widget",
+            address: payload.address || `${stops[targetIdx].city}, ${stops[targetIdx].state}`,
+            type: payload.type || "Band-Friendly Hotel",
+            checkIn: payload.checkIn || stops[targetIdx].date || "",
+            checkOut: payload.checkOut || ""
+          });
+        }
+      }
+    };
+    window.addEventListener("message", handleBookingWidgetMessage);
+    return () => window.removeEventListener("message", handleBookingWidgetMessage);
+  }, [bookingModalStopIndex, activeStageIndex, stops, tourId, effectiveUserId, originCity, destinationCity, startDate, endDate, wizardStep, totalDistanceMiles, totalDriveTime, bandProfile, tourTitle, tourStatus]);
 
   // Update custom stop notes
   const handleUpdateStopNotes = (stopIdx: number, notes: string) => {
@@ -1616,7 +1736,25 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                           </div>
 
                           {/* Stop Actions */}
-                          <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                          <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-auto">
+                            {/* In-App Lodging Booking Action */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenBookingModal(idx)}
+                              className={`text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
+                                stop.selectedLodging?.name 
+                                  ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200" 
+                                  : "bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200"
+                              }`}
+                              title={stop.selectedLodging?.name ? "Update lodging reservation" : "Book band lodging in-app"}
+                            >
+                              <Hotel className={`w-3.5 h-3.5 ${stop.selectedLodging?.name ? "text-emerald-600" : "text-amber-600"}`} />
+                              <span className="truncate max-w-[130px] sm:max-w-[180px]">
+                                {stop.selectedLodging?.name ? stop.selectedLodging.name : "Book Lodging"}
+                              </span>
+                              {stop.selectedLodging?.name && <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />}
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => handleMoveStop(idx, "up")}
@@ -2088,6 +2226,39 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                   <span className="font-black text-slate-900">{formattedCheckOut}</span>
                                 </div>
                               </div>
+                            </div>
+
+                            {/* In-App Lodging Booking Modal Banner */}
+                            <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-orange-700 rounded-2xl p-4 sm:p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                                    Direct In-App Workflow
+                                  </span>
+                                  {currentStop.selectedLodging?.name && (
+                                    <span className="bg-emerald-400 text-slate-900 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                                      <Check className="w-3 h-3 stroke-[3]" />
+                                      <span>Booked &amp; Confirmed</span>
+                                    </span>
+                                  )}
+                                </div>
+                                <h5 className="font-black text-sm sm:text-base flex items-center gap-2 text-white">
+                                  <Hotel className="w-4 h-4 text-amber-200" />
+                                  <span>In-App Lodging Search &amp; Itinerary Auto-Sync</span>
+                                </h5>
+                                <p className="text-xs text-amber-100 max-w-xl">
+                                  Open the embedded booking modal for {currentStop.city} to compare rates, browse van-trailer clearance specs, and automatically sync confirmed booking details into your route.
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleOpenBookingModal(activeStageIndex)}
+                                className="px-5 py-3 rounded-xl bg-white text-slate-900 hover:bg-amber-50 font-black text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                              >
+                                <Sparkles className="w-4 h-4 text-amber-600" />
+                                <span>{currentStop.selectedLodging?.name ? "Update / Rebook Lodging" : "Book Lodging (In-App Modal)"}</span>
+                              </button>
                             </div>
 
                             {/* Action Buttons: Pre-filtered External Links */}
@@ -2636,6 +2807,25 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                 🔒 {stop.selectedLodging?.notes || stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes}
                               </div>
                             )}
+
+                            {/* In-App Booking and Confirmed Badge */}
+                            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenBookingModal(i)}
+                                className="text-[11px] font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Hotel className="w-3.5 h-3.5 text-amber-600" />
+                                <span>{stop.selectedLodging?.name ? "Update Lodging →" : "Book Lodging →"}</span>
+                              </button>
+
+                              {stop.selectedLodging?.name && (
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                  <Check className="w-3 h-3 stroke-[3]" />
+                                  <span>Booked &amp; Confirmed</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -2704,6 +2894,18 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           tourPlan={currentTourPlan}
           bandName={bandProfile?.name}
           onClose={() => setShowPrintModal(false)}
+        />
+      )}
+
+      {/* In-App Lodging Booking & Auto-Sync Modal */}
+      {bookingModalStopIndex !== null && stops[bookingModalStopIndex] && (
+        <TourLodgingModal
+          isOpen={bookingModalStopIndex !== null}
+          onClose={() => setBookingModalStopIndex(null)}
+          stop={stops[bookingModalStopIndex]}
+          stopIndex={bookingModalStopIndex}
+          tourStartDate={startDate}
+          onCommitReservation={handleCommitLodgingReservation}
         />
       )}
 
