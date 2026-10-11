@@ -285,19 +285,38 @@ export const TourLodgingModal: React.FC<TourLodgingModalProps> = ({
     if (parsed.parkingNotes) setParkingSpecs(parsed.parkingNotes);
   }, [pastedEmailSnippet]);
 
-  // Generate external provider search URLs
+  // Generate external provider search URLs with exact dates and destination
   const fullCity = stop.state ? `${stop.city}, ${stop.state}` : stop.city;
-  const bookingDotComUrl = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
-    fullCity
-  )}&checkin=${checkInDate}&checkout=${checkOutDate}&group_adults=2&no_rooms=1&nflt=hotelfacility%3D2`;
+  const bookingDotComUrl = useMemo(() => {
+    return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
+      fullCity
+    )}&checkin=${checkInDate}&checkout=${checkOutDate}&group_adults=2&no_rooms=1&nflt=hotelfacility%3D2`;
+  }, [fullCity, checkInDate, checkOutDate]);
 
-  const hotelsDotComUrl = `https://www.hotels.com/Hotel-Search?destination=${encodeURIComponent(
-    fullCity
-  )}&startDate=${checkInDate}&endDate=${checkOutDate}&adults=2&sort=PRICE_LOW_TO_HIGH`;
+  const hotelsDotComUrl = useMemo(() => {
+    return `https://www.hotels.com/Hotel-Search?destination=${encodeURIComponent(
+      fullCity
+    )}&startDate=${checkInDate}&endDate=${checkOutDate}&adults=2&sort=PRICE_LOW_TO_HIGH`;
+  }, [fullCity, checkInDate, checkOutDate]);
 
-  const googleHotelsUrl = `https://www.google.com/travel/hotels/${encodeURIComponent(
-    fullCity
-  )}?dates=${checkInDate}%2C${checkOutDate}`;
+  const googleHotelsUrl = useMemo(() => {
+    return `https://www.google.com/travel/hotels?q=${encodeURIComponent(
+      `${fullCity} hotels`
+    )}&dates=${checkInDate}%2C${checkOutDate}`;
+  }, [fullCity, checkInDate, checkOutDate]);
+
+  const currentProviderUrl = useMemo(() => {
+    if (activeProvider === "hotels") return hotelsDotComUrl;
+    if (activeProvider === "google") return googleHotelsUrl;
+    return bookingDotComUrl;
+  }, [activeProvider, bookingDotComUrl, hotelsDotComUrl, googleHotelsUrl]);
+
+  const currentProviderName = useMemo(() => {
+    if (activeProvider === "hotels") return "Hotels.com";
+    if (activeProvider === "google") return "Google Hotels";
+    if (activeProvider === "booking") return "Booking.com";
+    return "Booking.com";
+  }, [activeProvider]);
 
   // Complete in-app booking transaction from interactive engine
   const handleExecuteEngineBooking = () => {
@@ -569,6 +588,45 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
               <span>Google Hotels (Lot Satellite)</span>
               <ExternalLink className="w-3 h-3 opacity-70" />
             </button>
+          </div>
+
+          {/* Iframe Fallback Banner directly above the booking window */}
+          <div className="bg-amber-50/95 border-2 border-amber-400 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/15 text-amber-800 shrink-0 mt-0.5">
+                <AlertCircle className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs sm:text-sm font-black text-amber-950 flex items-center gap-2 flex-wrap">
+                  <span>Iframe Checkout Fallback</span>
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold">
+                    {currentProviderName} Live Query
+                  </span>
+                </div>
+                <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                  If the booking partner blocks embedded checkout on your device, tap{" "}
+                  <a
+                    href={currentProviderUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 font-black text-amber-950 underline decoration-amber-500 hover:text-black cursor-pointer"
+                  >
+                    <span>[Open Provider in New Window ↗]</span>
+                  </a>
+                  , then paste your confirmation email snippet into the box below to auto-sync your itinerary.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href={currentProviderUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              <span>Open Provider in New Window ↗</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
 
           {/* 1. Real Embedded Booking Engine View */}
@@ -867,66 +925,69 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
                     </span>
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    Use our partner search with pre-applied van parking and dates, then paste your confirmation snippet below.
+                    Pre-applied query: <strong>{fullCity}</strong> • Check-in: <strong>{checkInDate}</strong> • Check-out: <strong>{checkOutDate}</strong> • Van parking filters active
                   </p>
                 </div>
 
                 <a
-                  href={
-                    activeProvider === "booking" 
-                      ? bookingDotComUrl 
-                      : activeProvider === "hotels" 
-                      ? hotelsDotComUrl 
-                      : googleHotelsUrl
-                  }
+                  href={currentProviderUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs hover:border-indigo-300 transition-all cursor-pointer"
+                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs hover:border-indigo-300 transition-all cursor-pointer"
                 >
-                  <span>Open Partner in New Window</span>
+                  <span>Open Provider in New Window ↗</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
 
-              {/* Webview Sandbox Bar */}
-              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="font-mono text-[11px] truncate max-w-[280px] sm:max-w-md">
-                      {activeProvider === "booking" && bookingDotComUrl}
-                      {activeProvider === "hotels" && hotelsDotComUrl}
-                      {activeProvider === "google" && googleHotelsUrl}
+              {/* Embedded Webview / Iframe Frame */}
+              <div className="relative w-full h-[450px] sm:h-[500px] rounded-2xl overflow-hidden border border-slate-300 bg-slate-900 shadow-inner flex flex-col">
+                {/* Browser-style address / status bar */}
+                <div className="bg-slate-800 px-4 py-2 border-b border-slate-700 flex items-center justify-between text-xs text-slate-300 shrink-0">
+                  <div className="flex items-center gap-2 truncate max-w-[70%]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
+                    <span className="font-mono text-[11px] truncate text-slate-300">
+                      {currentProviderUrl}
                     </span>
                   </div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400">SSL Encrypted Stream</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 hidden sm:inline">SSL Encrypted Stream</span>
+                    <a
+                      href={currentProviderUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-300 hover:text-amber-200 font-bold text-xs underline flex items-center gap-1"
+                    >
+                      <span>New Window ↗</span>
+                    </a>
+                  </div>
                 </div>
 
-                <div className="bg-slate-900 text-slate-200 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="space-y-1">
-                    <div className="font-bold text-white flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>PostMessage Callback Listener Ready</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400">
-                      When your reservation completes in the partner window, our listener automatically imports the confirmation. If the partner blocks scripts, simply paste your confirmation snippet below!
-                    </p>
-                  </div>
+                {/* Embedded Partner Iframe */}
+                <iframe
+                  src={currentProviderUrl}
+                  title={`${currentProviderName} Booking Portal`}
+                  className="w-full flex-1 border-0 bg-white"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                  loading="lazy"
+                />
 
+                {/* Bottom Overlay Bar */}
+                <div className="bg-slate-950/95 backdrop-blur-xs text-white px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 shrink-0">
+                  <div className="flex items-center gap-1.5 text-slate-300 text-[11px]">
+                    <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>
+                      Live {currentProviderName} stream for {fullCity} ({checkInDate} to {checkOutDate})
+                    </span>
+                  </div>
                   <a
-                    href={
-                      activeProvider === "booking" 
-                        ? bookingDotComUrl 
-                        : activeProvider === "hotels" 
-                        ? hotelsDotComUrl 
-                        : googleHotelsUrl
-                    }
+                    href={currentProviderUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shrink-0 cursor-pointer transition-all shadow-sm flex items-center gap-1.5"
+                    className="font-bold text-amber-300 hover:text-amber-200 underline text-xs flex items-center gap-1 cursor-pointer"
                   >
-                    <span>Launch Booking Window</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Open Provider in New Window ↗</span>
+                    <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
               </div>
@@ -1040,7 +1101,24 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
                   </button>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/80 p-3.5 rounded-xl border border-amber-200/80 text-xs">
+                <div className="flex items-center gap-2 text-slate-600">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    Paste any email or text snippet above to extract hotel name, confirmation code, and parking details for 1-click importing.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleLoadSample("booking")}
+                  className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shrink-0 cursor-pointer shadow-2xs transition-all flex items-center gap-1.5"
+                >
+                  <Clipboard className="w-3.5 h-3.5" />
+                  <span>Load Sample Receipt</span>
+                </button>
+              </div>
+            )}
 
           </div>
 
