@@ -993,7 +993,7 @@ export default function GigLizardApp() {
       )}
 
       {/* Visual Workspace Bar Header */}
-      <header className="bg-white border-b border-gray-200/60 sticky top-0 z-50 py-2 sm:py-3.5 px-3 sm:px-6 md:px-8" id="main-header">
+      <header className="bg-white border-b border-gray-200/60 sticky top-0 z-50 py-2 sm:py-3 md:py-4 px-3 sm:px-6 md:px-8" id="main-header">
         <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 sm:gap-4" id="header-inner">
           
           {/* Logo pinned on the far left */}
@@ -1008,7 +1008,7 @@ export default function GigLizardApp() {
               <img
                 src={gigLizardLogo || "/giglizard_logo.png"}
                 alt="GigLizard"
-                className="h-9 sm:h-11 md:h-16 lg:h-20 max-w-[140px] md:max-w-[260px] w-auto object-contain transition-transform group-hover:scale-102"
+                className="h-13 sm:h-16 md:h-22 lg:h-28 xl:h-32 max-w-[180px] sm:max-w-[230px] md:max-w-[340px] lg:max-w-[420px] w-auto object-contain transition-transform group-hover:scale-102"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   if (e.currentTarget.src !== window.location.origin + "/giglizard_logo.png") {

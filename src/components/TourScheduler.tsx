@@ -725,18 +725,22 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
       if (!event.data) return;
       const data = event.data;
       if (
+        data.type === "HOTEL_RESERVATION_CONFIRMED" ||
+        data.type === "BOOKING_COMPLETE" ||
         data.type === "LODGING_BOOKING_COMPLETED" || 
         data.type === "GIGLIZARD_HOTEL_BOOKED" || 
-        data.action === "booking_complete"
+        data.action === "booking_complete" ||
+        data.action === "HOTEL_RESERVATION_CONFIRMED" ||
+        (data.propertyName && (data.confirmationId || data.confirmationNumber))
       ) {
         const payload = data.payload || data;
         const targetIdx = typeof data.stopIndex === "number" ? data.stopIndex : (bookingModalStopIndex ?? activeStageIndex);
         if (targetIdx !== null && targetIdx >= 0 && targetIdx < stops.length) {
           handleCommitLodgingReservation(targetIdx, {
-            name: payload.hotelName || payload.name || "Booked Partner Hotel",
-            confirmationNumber: payload.confirmationNumber || payload.bookingId || `CONF-${Math.floor(100000 + Math.random() * 900000)}`,
-            cost: payload.cost || payload.totalCost || 85,
-            parkingNotes: payload.parkingNotes || payload.parking || "Van & trailer parking confirmed",
+            name: payload.propertyName || payload.hotelName || payload.name || "Booked Partner Hotel",
+            confirmationNumber: payload.confirmationId || payload.confirmationNumber || payload.bookingId || `CONF-${Math.floor(100000 + Math.random() * 900000)}`,
+            cost: payload.totalPaid || payload.cost || payload.totalCost || 85,
+            parkingNotes: payload.parkingSpecifications || payload.parkingNotes || payload.parking || "Van & trailer parking confirmed",
             notes: payload.notes || payload.parking || "Booked via partner widget",
             address: payload.address || `${stops[targetIdx].city}, ${stops[targetIdx].state}`,
             type: payload.type || "Band-Friendly Hotel",
@@ -1749,8 +1753,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                               title={stop.selectedLodging?.name ? "Update lodging reservation" : "Book band lodging in-app"}
                             >
                               <Hotel className={`w-3.5 h-3.5 ${stop.selectedLodging?.name ? "text-emerald-600" : "text-amber-600"}`} />
-                              <span className="truncate max-w-[130px] sm:max-w-[180px]">
-                                {stop.selectedLodging?.name ? stop.selectedLodging.name : "Book Lodging"}
+                              <span className="truncate max-w-[140px] sm:max-w-[200px]">
+                                {stop.selectedLodging?.name ? `Booked & Confirmed: ${stop.selectedLodging.name}` : "Book Lodging"}
                               </span>
                               {stop.selectedLodging?.name && <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />}
                             </button>
