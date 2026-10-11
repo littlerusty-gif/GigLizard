@@ -319,7 +319,7 @@ export const TourPrintModal: React.FC<TourPrintModalProps> = ({ tourPlan, bandNa
                     
                     <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-amber-900 font-medium">
                       <p>
-                        ⚠️ {stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes || "Back van tightly against wall. Bring high-value instruments into rooms."}
+                        ⚠️ {stop.selectedLodging?.notes || stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes || "Back van tightly against wall. Bring high-value instruments into rooms."}
                       </p>
                     </div>
                   </div>

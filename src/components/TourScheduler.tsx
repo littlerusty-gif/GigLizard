@@ -69,8 +69,87 @@ import {
   Save,
   ArrowLeftRight,
   Eye,
-  Sliders
+  Sliders,
+  Car,
+  Receipt,
+  BedDouble
 } from "lucide-react";
+
+/**
+ * Helper to compute check-in (show night) and check-out (following morning)
+ */
+const getStopCheckInAndOut = (stop: TourStop, tourStartDate: string, stopIndex: number) => {
+  let checkIn = stop.date;
+  if (!checkIn || !/^\d{4}-\d{2}-\d{2}$/.test(checkIn)) {
+    try {
+      const base = new Date(tourStartDate || new Date().toISOString().split("T")[0]);
+      if (!isNaN(base.getTime())) {
+        base.setDate(base.getDate() + stopIndex);
+        checkIn = base.toISOString().split("T")[0];
+      } else {
+        const now = new Date();
+        now.setDate(now.getDate() + stopIndex);
+        checkIn = now.toISOString().split("T")[0];
+      }
+    } catch {
+      checkIn = new Date().toISOString().split("T")[0];
+    }
+  }
+
+  let checkOut = "";
+  try {
+    const parts = checkIn.split("-");
+    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    d.setDate(d.getDate() + 1);
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    checkOut = `${yr}-${mo}-${day}`;
+  } catch {
+    checkOut = checkIn;
+  }
+
+  return { checkIn, checkOut };
+};
+
+/**
+ * Format YYYY-MM-DD into readable date like "Fri, Nov 14, 2026"
+ */
+const formatReadableDate = (dateStr: string) => {
+  try {
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    }
+  } catch {}
+  return dateStr;
+};
+
+/**
+ * Generate pre-filtered lodging search links targeting low-cost, band-friendly accommodations
+ * with parking suitable for vans or trailers.
+ */
+const generateHotelSearchUrls = (city: string, state: string, checkIn: string, checkOut: string) => {
+  const fullCity = state ? `${city}, ${state}` : city;
+
+  // Hotels.com query with price low-to-high and parking destination term
+  const hotelsDotComUrl = `https://www.hotels.com/Hotel-Search?destination=${encodeURIComponent(
+    fullCity
+  )}&startDate=${checkIn}&endDate=${checkOut}&adults=2&sort=PRICE_LOW_TO_HIGH`;
+
+  // Booking.com query with free parking filter (nflt=hotelfacility%3D2%3B) and lowest price first
+  const bookingDotComUrl = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
+    fullCity
+  )}&checkin=${checkIn}&checkout=${checkOut}&group_adults=2&no_rooms=1&order=price&nflt=hotelfacility%3D2%3B`;
+
+  // Google Hotels search targeting trailer/van parking & budget motel
+  const googleHotelsUrl = `https://www.google.com/travel/hotels/${encodeURIComponent(
+    fullCity
+  )}?q=${encodeURIComponent(`${fullCity} budget motel van trailer parking`)}&dates=${checkIn},${checkOut}`;
+
+  return { hotelsDotComUrl, bookingDotComUrl, googleHotelsUrl };
+};
 
 interface TourSchedulerProps {
   bandProfile?: BandProfile;
@@ -498,9 +577,54 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           type: lodging.type,
           address: lodging.address,
           cost: lodging.estPricePerNight ? parseFloat(lodging.estPricePerNight.replace(/[^0-9.]/g, "")) : 95,
+          confirmationNumber: target.selectedLodging?.confirmationNumber || "",
           gearSecurityNote: lodging.gearSecurityNote,
-          bookingUrl: lodging.bookingSearchUrl
+          bookingUrl: lodging.bookingSearchUrl,
+          notes: target.selectedLodging?.notes || lodging.gearSecurityNote || ""
         };
+        if (!target.lodgingNotes && lodging.gearSecurityNote) {
+          target.lodgingNotes = lodging.gearSecurityNote;
+        }
+      }
+      return copy;
+    });
+  };
+
+  // Update direct lodging fields (hotel name, confirmation number, budget, notes) in stop's route_data
+  const handleUpdateLodgingField = (
+    stopIdx: number,
+    field: "name" | "confirmationNumber" | "cost" | "notes" | "address" | "type",
+    value: any
+  ) => {
+    setStops(prev => {
+      const copy = [...prev];
+      const target = copy[stopIdx];
+      if (target) {
+        const existing = target.selectedLodging || {
+          name: "",
+          cost: 85,
+          confirmationNumber: "",
+          notes: ""
+        };
+        target.selectedLodging = {
+          ...existing,
+          [field]: value
+        };
+        if (field === "notes") {
+          target.lodgingNotes = value;
+        }
+      }
+      return copy;
+    });
+  };
+
+  // Clear lodging details for stop
+  const handleClearLodgingForStop = (stopIdx: number) => {
+    setStops(prev => {
+      const copy = [...prev];
+      if (copy[stopIdx]) {
+        copy[stopIdx].selectedLodging = undefined;
+        copy[stopIdx].lodgingNotes = "";
       }
       return copy;
     });
@@ -1907,48 +2031,312 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                     </div>
 
                     {/* Section 3: Lodging & Crash Pad */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                        <Hotel className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Band Lodging &amp; Secure Parking in {currentStop.city}</span>
-                      </h4>
+                    {(() => {
+                      const { checkIn, checkOut } = getStopCheckInAndOut(currentStop, startDate, activeStageIndex);
+                      const formattedCheckIn = formatReadableDate(checkIn);
+                      const formattedCheckOut = formatReadableDate(checkOut);
+                      const { hotelsDotComUrl, bookingDotComUrl, googleHotelsUrl } = generateHotelSearchUrls(
+                        currentStop.city,
+                        currentStop.state,
+                        checkIn,
+                        checkOut
+                      );
+                      const hasLodgingDetails = Boolean(
+                        currentStop.selectedLodging?.name ||
+                        currentStop.selectedLodging?.confirmationNumber ||
+                        currentStop.selectedLodging?.cost ||
+                        currentStop.selectedLodging?.notes
+                      );
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {currentStop.lodgingOptions?.slice(0, 2).map((opt, i) => {
-                          const isLodgingSelected = currentStop.selectedLodging?.name === opt.name;
-
-                          return (
-                            <div
-                              key={opt.name || i}
-                              onClick={() => handleSelectLodgingForStop(activeStageIndex, opt)}
-                              className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
-                                isLodgingSelected 
-                                  ? "bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/30" 
-                                  : "bg-white border-slate-200 hover:border-slate-300"
-                              }`}
-                            >
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <div className="font-black text-slate-900 text-xs">{opt.name}</div>
-                                  <div className="text-[11px] text-slate-500">{opt.type}</div>
+                      return (
+                        <div className="space-y-6 pt-2">
+                          {/* 1. Find Nearby Hotels Card */}
+                          <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-slate-50 border border-amber-500/30 rounded-3xl p-6 sm:p-7 shadow-xs space-y-5">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-white shadow-xs">
+                                    Van &amp; Tour Logistics
+                                  </span>
+                                  <span className="text-xs font-bold text-amber-900/80">
+                                    Stop {activeStageIndex + 1} • {currentStop.city}, {currentStop.state}
+                                  </span>
                                 </div>
-                                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                                  {opt.estPricePerNight || "$85/nt"}
-                                </span>
+                                <h4 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                  <Hotel className="w-5 h-5 text-amber-600" />
+                                  <span>Find Nearby Hotels</span>
+                                </h4>
+                                <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                                  Target low-cost, band-friendly accommodations with oversized parking suitable for touring vans and trailers. Links are automatically generated with your scheduled show night check-in and next morning checkout dates.
+                                </p>
                               </div>
 
-                              <div className="text-[11px] text-slate-600 italic bg-slate-50 p-2 rounded-lg">
-                                🔒 {opt.gearSecurityNote}
-                              </div>
-
-                              <div className="text-[11px] font-black text-indigo-600 pt-1">
-                                {isLodgingSelected ? "✓ Lodging Assigned" : "Assign to Tour"}
+                              {/* Date Badges */}
+                              <div className="bg-white/90 backdrop-blur-xs p-3.5 rounded-2xl border border-amber-200 shadow-2xs shrink-0 space-y-1.5 text-xs">
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    <Calendar className="w-3 h-3 text-amber-600" />
+                                    <span>Check-In (Show Night):</span>
+                                  </span>
+                                  <span className="font-black text-slate-900">{formattedCheckIn}</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-1.5">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-slate-400" />
+                                    <span>Check-Out (Morning):</span>
+                                  </span>
+                                  <span className="font-black text-slate-900">{formattedCheckOut}</span>
+                                </div>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+
+                            {/* Action Buttons: Pre-filtered External Links */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                              <a
+                                href={hotelsDotComUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group p-4 rounded-2xl bg-white border border-amber-300 hover:border-amber-500 hover:shadow-md transition-all flex flex-col justify-between space-y-2.5 text-left cursor-pointer"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="font-black text-slate-900 text-sm group-hover:text-amber-700 flex items-center gap-1.5">
+                                    <span>Hotels.com</span>
+                                    <ExternalLink className="w-3.5 h-3.5 text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+                                    Low Rates
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 line-clamp-2">
+                                  Pre-filtered for {currentStop.city} show dates with lowest nightly rates and parking.
+                                </p>
+                                <span className="text-xs font-black text-amber-700 group-hover:underline inline-flex items-center gap-1 pt-1">
+                                  Search Hotels.com →
+                                </span>
+                              </a>
+
+                              <a
+                                href={bookingDotComUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group p-4 rounded-2xl bg-white border border-indigo-200 hover:border-indigo-500 hover:shadow-md transition-all flex flex-col justify-between space-y-2.5 text-left cursor-pointer"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="font-black text-slate-900 text-sm group-hover:text-indigo-700 flex items-center gap-1.5">
+                                    <span>Booking.com</span>
+                                    <ExternalLink className="w-3.5 h-3.5 text-indigo-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-900">
+                                    Free Parking
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 line-clamp-2">
+                                  Auto-applied on-site parking filter to protect vans, gear trailers, and equipment.
+                                </p>
+                                <span className="text-xs font-black text-indigo-700 group-hover:underline inline-flex items-center gap-1 pt-1">
+                                  Search Booking.com →
+                                </span>
+                              </a>
+
+                              <a
+                                href={googleHotelsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md transition-all flex flex-col justify-between space-y-2.5 text-left cursor-pointer"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="font-black text-slate-900 text-sm group-hover:text-slate-900 flex items-center gap-1.5">
+                                    <span>Google Hotels</span>
+                                    <ExternalLink className="w-3.5 h-3.5 text-slate-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                    Van &amp; Trailer
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 line-clamp-2">
+                                  Satellite map views of motel lots, outdoor van parking, and room exterior access.
+                                </p>
+                                <span className="text-xs font-black text-slate-800 group-hover:underline inline-flex items-center gap-1 pt-1">
+                                  Search Google Hotels →
+                                </span>
+                              </a>
+                            </div>
+
+                            {/* Curated Pre-Seeded Suggestions (Quick select option) */}
+                            {currentStop.lodgingOptions && currentStop.lodgingOptions.length > 0 && (
+                              <div className="space-y-2.5 pt-2 border-t border-amber-200/60">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Or Quick-Select Vetted Local Rooms in {currentStop.city}:</span>
+                                  </span>
+                                  <span className="text-[10px] text-slate-500">Click to fill details below</span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {currentStop.lodgingOptions.slice(0, 2).map((opt, i) => {
+                                    const isSelected = currentStop.selectedLodging?.name === opt.name;
+
+                                    return (
+                                      <div
+                                        key={opt.name || i}
+                                        onClick={() => handleSelectLodgingForStop(activeStageIndex, opt)}
+                                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                                          isSelected
+                                            ? "bg-amber-100/80 border-amber-600 ring-2 ring-amber-500/30 shadow-xs"
+                                            : "bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white"
+                                        }`}
+                                      >
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div>
+                                            <div className="font-black text-slate-900 text-xs flex items-center gap-1.5">
+                                              <span>{opt.name}</span>
+                                              {isSelected && <Check className="w-3 h-3 text-amber-700 stroke-[3]" />}
+                                            </div>
+                                            <div className="text-[11px] text-slate-500">{opt.type} • {opt.address || currentStop.city}</div>
+                                          </div>
+                                          <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md shrink-0">
+                                            {opt.estPricePerNight || "$85/nt"}
+                                          </span>
+                                        </div>
+
+                                        {opt.gearSecurityNote && (
+                                          <div className="text-[11px] text-slate-600 bg-slate-50/90 p-2 rounded-lg border border-slate-200/60 flex items-start gap-1.5">
+                                            <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                            <span className="italic">{opt.gearSecurityNote}</span>
+                                          </div>
+                                        )}
+
+                                        <div className="text-[11px] font-black text-amber-800 pt-0.5 flex items-center justify-between">
+                                          <span>{isSelected ? "✓ Assigned to this Stop" : "Click to Fill Form"}</span>
+                                          {opt.bookingSearchUrl && (
+                                            <a
+                                              href={opt.bookingSearchUrl}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="text-[10px] text-indigo-600 hover:underline flex items-center gap-0.5"
+                                            >
+                                              <span>Direct Link</span>
+                                              <ExternalLink className="w-2.5 h-2.5" />
+                                            </a>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 2. Lodging Notes & Reservation Details Form (Directly stored in route_data) */}
+                          <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="space-y-0.5">
+                                <h5 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                  <Receipt className="w-4 h-4 text-indigo-600" />
+                                  <span>Confirmed Reservation &amp; Lodging Details for {currentStop.city}</span>
+                                </h5>
+                                <p className="text-xs text-slate-500">
+                                  Paste your reservation confirmation number, hotel name, and lodging budget directly into this stop's route itinerary.
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {hasLodgingDetails && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Saved in Route Data</span>
+                                  </span>
+                                )}
+                                {hasLodgingDetails && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleClearLodgingForStop(activeStageIndex)}
+                                    className="text-[11px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                  >
+                                    Clear Details
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                              {/* Hotel Name */}
+                              <div className="sm:col-span-2 lg:col-span-1">
+                                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                  Booked Hotel / Accommodation Name
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    value={currentStop.selectedLodging?.name || ""}
+                                    onChange={(e) => handleUpdateLodgingField(activeStageIndex, "name", e.target.value)}
+                                    placeholder="e.g. Motel 6 Portland Central or Airbnb on 4th"
+                                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                  <Hotel className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                                </div>
+                              </div>
+
+                              {/* Confirmed Reservation Number */}
+                              <div>
+                                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                  Confirmed Reservation #
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    value={currentStop.selectedLodging?.confirmationNumber || ""}
+                                    onChange={(e) => handleUpdateLodgingField(activeStageIndex, "confirmationNumber", e.target.value)}
+                                    placeholder="e.g. CONF-8924192 or PIN #4819"
+                                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                  <Receipt className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                                </div>
+                              </div>
+
+                              {/* Lodging Budget / Cost */}
+                              <div>
+                                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                  Lodging Budget / Cost ($)
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    value={currentStop.selectedLodging?.cost ?? ""}
+                                    onChange={(e) => handleUpdateLodgingField(activeStageIndex, "cost", e.target.value)}
+                                    placeholder="e.g. 85 or 120"
+                                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                  <DollarSign className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Lodging & Van Parking Notes */}
+                            <div>
+                              <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                Van &amp; Trailer Parking / Lodging Notes
+                              </label>
+                              <div className="relative">
+                                <textarea
+                                  rows={2}
+                                  value={currentStop.selectedLodging?.notes ?? currentStop.lodgingNotes ?? ""}
+                                  onChange={(e) => handleUpdateLodgingField(activeStageIndex, "notes", e.target.value)}
+                                  placeholder="e.g. 2 double beds reserved under band manager name. Front desk confirmed van + trailer parking in rear lot under spotlight. Late check-in after midnight show."
+                                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                />
+                              </div>
+                              <p className="text-[11px] text-slate-500 mt-1">
+                                Stored in <code className="bg-slate-200/80 px-1 py-0.5 rounded text-[10px] font-mono text-slate-700">public.tours.route_data</code> and printed on the master crew run-of-show itinerary.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Section 4: Custom City / Stage Notes */}
                     <div className="space-y-1.5">
@@ -2235,12 +2623,19 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                             <div className="font-black text-slate-900">
                               {stop.selectedLodging?.name || "Band-friendly accommodations"}
                             </div>
+                            {stop.selectedLodging?.confirmationNumber && (
+                              <div className="text-[11px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded inline-block">
+                                Confirmation #: {stop.selectedLodging.confirmationNumber}
+                              </div>
+                            )}
                             <div className="text-[11px] text-slate-600">
                               Est. Cost: <strong>${stop.selectedLodging?.cost || 85}/night</strong>
                             </div>
-                            <div className="text-[11px] text-slate-500 italic">
-                              🔒 {stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes}
-                            </div>
+                            {(stop.selectedLodging?.notes || stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes) && (
+                              <div className="text-[11px] text-slate-500 italic">
+                                🔒 {stop.selectedLodging?.notes || stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes}
+                              </div>
+                            )}
                           </div>
                         </div>
 

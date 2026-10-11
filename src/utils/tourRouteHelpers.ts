@@ -121,6 +121,7 @@ export const formatPersonalizedItineraryText = (
       if (stop.selectedLodging.cost) lines.push(`  Cost: $${stop.selectedLodging.cost}`);
       if (stop.selectedLodging.confirmationNumber) lines.push(`  Confirmation #: ${stop.selectedLodging.confirmationNumber}`);
       if (stop.selectedLodging.gearSecurityNote) lines.push(`  Van/Gear Security: ${stop.selectedLodging.gearSecurityNote}`);
+      if (stop.selectedLodging.notes) lines.push(`  Lodging Notes: ${stop.selectedLodging.notes}`);
     } else {
       lines.push(`• 🛏️ LODGING: ${stop.lodgingNotes || "Local band-friendly accommodations"}`);
     }
