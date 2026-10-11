@@ -1017,16 +1017,34 @@ export default function GigLizardApp() {
           role="status"
           aria-live="polite"
         >
-          <div className="w-full max-w-[240px] md:max-w-[420px] flex flex-col items-center justify-center p-4 sm:p-6">
-            <img 
-              src={gigLizardLogo || "/icon-512.png"}
-              alt="GigLizard"
-              className="w-full max-w-[65vw] sm:max-w-[240px] md:max-w-[420px] h-auto md:h-auto object-contain mx-auto drop-shadow-2xl transition-transform"
+          {/* Centered circular glowing emerald emblem badge */}
+          <div className="relative flex items-center justify-center">
+            {/* Subtle emerald pulsing glow perimeter halo */}
+            <div 
+              className="absolute -inset-2 rounded-full bg-radial from-emerald-500/40 via-emerald-600/15 to-transparent blur-xl animate-pulse" 
+              aria-hidden="true" 
             />
-            <div className="mt-6 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-slate-400 font-sans text-xs font-bold tracking-wider uppercase">Loading GigLizard...</span>
+            
+            {/* Inner circle container (~260px on mobile, ~340px on desktop) */}
+            <div className="relative w-[260px] h-[260px] md:w-[340px] md:h-[340px] rounded-full overflow-hidden shadow-[0_0_35px_rgba(16,185,129,0.45),0_0_70px_rgba(5,150,105,0.22)] border-2 border-emerald-500/65 bg-[#121212] flex items-center justify-center">
+              <img 
+                src="/icon-512.png" 
+                alt="GigLizard: The Ultimate Live Music Stage Director" 
+                className="w-full h-full object-contain block"
+              />
             </div>
+          </div>
+
+          {/* Animated emerald loading dots cleanly below the circular badge */}
+          <div className="mt-7 flex flex-col items-center gap-2.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.3s]" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.15s]" />
+              <span className="w-2 h-2 rounded-full bg-emerald-300 animate-bounce" />
+            </div>
+            <span className="text-slate-400 font-sans text-[11px] font-extrabold tracking-widest uppercase">
+              Loading GigLizard...
+            </span>
           </div>
         </div>
       )}

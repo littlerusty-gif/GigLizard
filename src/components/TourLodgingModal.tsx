@@ -725,7 +725,7 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
             </a>
           </div>
 
-          {/* 1. Real Embedded Booking Engine View */}
+          {/* 1. Band-Friendly Motels & Outbound Booking View */}
           {activeProvider === "engine" && (
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
               

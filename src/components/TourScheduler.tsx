@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
   TourPlan, 
   TourStop, 
@@ -161,6 +161,7 @@ interface TourSchedulerProps {
   currentUser?: any;
   currentAccount?: UserAccount | null;
   onTriggerLogin?: () => void;
+  onNavigateToHome?: () => void;
 }
 
 type ViewState = "landing" | "history" | "wizard";
@@ -173,11 +174,12 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   onSelectVenueForPoster,
   currentUser,
   currentAccount,
-  onTriggerLogin
+  onTriggerLogin,
+  onNavigateToHome
 }) => {
   // Navigation & View Mode
   const [viewState, setViewState] = useState<ViewState>("landing");
-  const [wizardStep, setWizardStep] = useState<number>(1); // 1: Setup, 2: Optimization, 3: Stages, 4: Review
+  const [wizardStep, setWizardStep] = useState<number>(1); // 1: Setup, 2: Optimization, 3: Stages, 4: Lodging, 5: Review
 
   // Saved tours list
   const [savedTours, setSavedTours] = useState<SavedTourRecord[]>([]);
@@ -220,6 +222,174 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   const [activeLodgingIndex, setActiveLodgingIndex] = useState(0);
   const [pastedConfirmationSnippet, setPastedConfirmationSnippet] = useState<Record<number, string>>({});
 
+  // In-app lodging booking modal state
+  const [bookingModalStopIndex, setBookingModalStopIndex] = useState<number | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+  // References to keep event listeners always pointing to latest state
+  const wizardStepRef = useRef(wizardStep);
+  wizardStepRef.current = wizardStep;
+
+  const viewStateRef = useRef(viewState);
+  viewStateRef.current = viewState;
+
+  const bookingModalStopIndexRef = useRef(bookingModalStopIndex);
+  bookingModalStopIndexRef.current = bookingModalStopIndex;
+
+  const showPrintModalRef = useRef(showPrintModal);
+  showPrintModalRef.current = showPrintModal;
+
+  // 1. Wizard History State Synchronization:
+  // Advances or updates wizard step and pushes history entry
+  const goToWizardStep = (newStep: number, pushHistory = true) => {
+    setWizardStep(newStep);
+    if (pushHistory) {
+      try {
+        window.history.pushState({ wizardStep: newStep, isTourPlanner: true }, "");
+      } catch (_) {}
+    }
+  };
+
+  const handleOpenBookingModal = (stopIdx: number) => {
+    setBookingModalStopIndex(stopIdx);
+    try {
+      window.history.pushState(
+        { wizardStep: wizardStepRef.current, isTourPlanner: true, modal: "lodging", stopIndex: stopIdx },
+        ""
+      );
+    } catch (_) {}
+  };
+
+  const handleOpenPrintModal = () => {
+    setShowPrintModal(true);
+    try {
+      window.history.pushState(
+        { wizardStep: wizardStepRef.current, isTourPlanner: true, modal: "print" },
+        ""
+      );
+    } catch (_) {}
+  };
+
+  // Restore wizard step if state exists on initial mount
+  useEffect(() => {
+    try {
+      if (window.history.state?.wizardStep) {
+        setWizardStep(window.history.state.wizardStep);
+        setViewState("wizard");
+      }
+    } catch (_) {}
+  }, []);
+
+  // 2. Intercept Edge-Swipe (popstate) & Hardware Back (giglizard_back_press) Events:
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      // 1. If any inner modal is open, close it first and prevent further back actions
+      if (bookingModalStopIndexRef.current !== null) {
+        setBookingModalStopIndex(null);
+        e.preventDefault?.();
+        return;
+      }
+      if (showPrintModalRef.current) {
+        setShowPrintModal(false);
+        e.preventDefault?.();
+        return;
+      }
+
+      // 2. If inside the wizard and on wizardStep > 1:
+      // Prevent default app exit and decrement wizard step
+      if (viewStateRef.current === "wizard" && wizardStepRef.current > 1) {
+        e.preventDefault?.();
+        const currentStep = wizardStepRef.current;
+        const targetStep = (e.state && typeof e.state.wizardStep === "number" && e.state.wizardStep < currentStep)
+          ? e.state.wizardStep
+          : currentStep - 1;
+
+        setWizardStep(Math.max(1, targetStep));
+
+        // Reset scroll to top on step back
+        try {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+          const tourScrollContainer = document.getElementById("tour-wizard-container");
+          if (tourScrollContainer) tourScrollContainer.scrollTop = 0;
+        } catch (_) {}
+        return;
+      }
+
+      // 3. If on wizardStep === 1 and the user swipes back:
+      // Transition activeTab back to 'home' instead of allowing the app shell/PWA to close
+      if (viewStateRef.current === "wizard" && wizardStepRef.current === 1) {
+        e.preventDefault?.();
+        if (onNavigateToHome) {
+          onNavigateToHome();
+        } else {
+          try {
+            window.history.pushState({ tab: "home" }, "", "#home");
+            window.dispatchEvent(new CustomEvent("giglizard_switch_tab", { detail: { tab: "home" } }));
+          } catch (_) {}
+        }
+        return;
+      }
+
+      // 4. If in history view, step back to landing
+      if (viewStateRef.current === "history") {
+        e.preventDefault?.();
+        setViewState("landing");
+        return;
+      }
+    };
+
+    const handleBackButton = (e: Event) => {
+      // 1. Check inner modals
+      if (bookingModalStopIndexRef.current !== null) {
+        setBookingModalStopIndex(null);
+        e.preventDefault();
+        return;
+      }
+      if (showPrintModalRef.current) {
+        setShowPrintModal(false);
+        e.preventDefault();
+        return;
+      }
+
+      // 2. Wizard back navigation
+      if (viewStateRef.current === "wizard") {
+        if (wizardStepRef.current > 1) {
+          e.preventDefault();
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            setWizardStep(prev => Math.max(1, prev - 1));
+          }
+          return;
+        } else {
+          // wizardStep === 1: go home
+          e.preventDefault();
+          if (onNavigateToHome) {
+            onNavigateToHome();
+          } else {
+            window.dispatchEvent(new CustomEvent("giglizard_switch_tab", { detail: { tab: "home" } }));
+          }
+          return;
+        }
+      }
+
+      // 3. Saved history view
+      if (viewStateRef.current === "history") {
+        setViewState("landing");
+        e.preventDefault();
+        return;
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("giglizard_back_press", handleBackButton);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("giglizard_back_press", handleBackButton);
+    };
+  }, [onNavigateToHome]);
+
   // Scroll restoration: reset window and tour container scroll on step or stop index changes
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -234,55 +404,12 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     type: "success"
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [showPrintModal, setShowPrintModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-
-  // In-app lodging booking modal state
-  const [bookingModalStopIndex, setBookingModalStopIndex] = useState<number | null>(null);
-
-  const handleOpenBookingModal = (stopIdx: number) => {
-    setBookingModalStopIndex(stopIdx);
-  };
 
   // New waypoint input in Step 2
   const [newWaypointInput, setNewWaypointInput] = useState("");
 
   const effectiveUserId = currentUser?.id || currentAccount?.id || null;
-
-  // Android back-swipe / back button listener: close print modal or step back in wizard
-  useEffect(() => {
-    const handleBackButton = (e: Event) => {
-      if (bookingModalStopIndex !== null) {
-        setBookingModalStopIndex(null);
-        e.preventDefault();
-        return;
-      }
-      if (showPrintModal) {
-        setShowPrintModal(false);
-        e.preventDefault();
-        return;
-      }
-      if (viewState !== "landing") {
-        if (viewState === "saved-tours") {
-          setViewState("landing");
-          e.preventDefault();
-        } else if (viewState === "city-detail") {
-          setViewState("optimizer");
-          e.preventDefault();
-        } else if (viewState === "optimizer") {
-          setViewState("route-setup");
-          e.preventDefault();
-        } else if (viewState === "route-setup") {
-          setViewState("landing");
-          e.preventDefault();
-        }
-      }
-    };
-    window.addEventListener("giglizard_back_press", handleBackButton);
-    return () => {
-      window.removeEventListener("giglizard_back_press", handleBackButton);
-    };
-  }, [showPrintModal, viewState]);
 
   // Load user's saved tours from Supabase on mount
   const refreshTours = async () => {
