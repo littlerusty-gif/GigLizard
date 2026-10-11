@@ -25,6 +25,7 @@ import {
   formatDriveTime
 } from "../utils/corridorOptimizer";
 import { 
+  supabase,
   saveTourToDatabase, 
   fetchUserTours, 
   deleteTourFromDatabase, 
@@ -32,7 +33,7 @@ import {
   SavedTourRecord
 } from "../lib/supabase";
 import { TourPrintModal } from "./TourPrintModal";
-import { TourLodgingModal } from "./TourLodgingModal";
+import { TourLodgingModal, parseNightlyRate, parseBookingConfirmationSnippet, calculateStayCost } from "./TourLodgingModal";
 import { TourMap } from "./TourMap";
 import { 
   MapPin, 
@@ -63,6 +64,7 @@ import {
   Music,
   Bookmark,
   RotateCcw,
+  RefreshCw,
   Search,
   FolderOpen,
   ArrowRight,
@@ -203,11 +205,27 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   const [totalDriveTime, setTotalDriveTime] = useState("");
   const [tourStatus, setTourStatus] = useState<"draft" | "confirmed">("draft");
 
+  // Vehicle & MPG configuration and Round-Trip Loop toggle
+  const [vehicleType, setVehicleType] = useState("15-Passenger Touring Van");
+  const [vehicleMpg, setVehicleMpg] = useState(14);
+  const [isRoundTripLoop, setIsRoundTripLoop] = useState(false);
+
   // Step 3 City-by-City stage navigation
   const [activeStageIndex, setActiveStageIndex] = useState(0);
   const [cityVenuesMap, setCityVenuesMap] = useState<Record<string, Venue[]>>({});
   const [isLoadingVenues, setIsLoadingVenues] = useState(false);
   const [customVenueMode, setCustomVenueMode] = useState<Record<string, boolean>>({});
+
+  // Step 4 City-by-City lodging navigation & confirmation snippets
+  const [activeLodgingIndex, setActiveLodgingIndex] = useState(0);
+  const [pastedConfirmationSnippet, setPastedConfirmationSnippet] = useState<Record<number, string>>({});
+
+  // Scroll restoration: reset window and tour container scroll on step or stop index changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    const tourScrollContainer = document.getElementById("tour-wizard-container");
+    if (tourScrollContainer) tourScrollContainer.scrollTop = 0;
+  }, [wizardStep, activeStageIndex, activeLodgingIndex]);
 
   // UI helpers & Feedback
   const [saveToast, setSaveToast] = useState<{ show: boolean; message: string; type: "success" | "info" }>({
@@ -411,9 +429,48 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     }
 
     const res = calculateCorridorStops(originCity, destinationCity, startDate, endDate);
-    setStops(res.stops);
-    setTotalDistanceMiles(res.totalDistanceMiles);
-    setTotalDriveTime(res.totalDriveTime);
+    const generatedStops = res.stops;
+
+    if (isRoundTripLoop && generatedStops.length > 0) {
+      // Generate return leg stops back to starting city
+      const intermediates = generatedStops.slice(1, generatedStops.length - 1).reverse();
+      const returnStops: TourStop[] = intermediates.map((stop, rIdx) => ({
+        ...stop,
+        id: `return-${stop.id || rIdx}-${Date.now()}`,
+        stopName: `Return Leg: ${stop.city}`,
+        selectedVenue: undefined,
+        selectedLodging: undefined
+      }));
+
+      const originParts = originCity.split(",").map(p => p.trim());
+      const oCity = originParts[0];
+      const oState = originParts[1] || "WA";
+
+      const homeStop: TourStop = {
+        id: `return-home-${Date.now()}`,
+        stopName: `Homecoming Finale: ${oCity}`,
+        city: oCity,
+        state: oState,
+        dayNumber: generatedStops.length + returnStops.length + 1,
+        date: "",
+        driveTimeFromPrev: "2 hr 30 min",
+        distanceMilesFromPrev: 130,
+        routeHighlight: `Final return leg to kickoff city ${oCity}. Complete round-trip tour loop!`,
+        localSceneNotes: "Celebratory homecoming tour wrap-up show.",
+        suggestedVenues: [],
+        lodgingOptions: findLodgingForCity(oCity, oState)
+      };
+
+      const fullChain = [...generatedStops, ...returnStops, homeStop];
+      const recal = recalculateStopsMetrics(fullChain, startDate);
+      setStops(recal.updatedStops);
+      setTotalDistanceMiles(recal.totalDistanceMiles);
+      setTotalDriveTime(recal.totalDriveTime);
+    } else {
+      setStops(res.stops);
+      setTotalDistanceMiles(res.totalDistanceMiles);
+      setTotalDriveTime(res.totalDriveTime);
+    }
     setWizardStep(2);
   };
 
@@ -489,16 +546,62 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     }
     setActiveStageIndex(0);
     setWizardStep(3);
-    loadVenuesForStageCity(stops[0].city);
+    if (stops[0]) {
+      loadVenuesForStageCity(stops[0].city, stops[0].state);
+    }
   };
 
-  // Loads venues for a specific city
-  const loadVenuesForStageCity = async (cityName: string) => {
-    if (cityVenuesMap[cityName]) return;
+  // Loads venues for a specific city with strict state/province precision
+  const loadVenuesForStageCity = async (cityName: string, stateName?: string) => {
+    const cacheKey = stateName ? `${cityName}_${stateName}` : cityName;
+    if (cityVenuesMap[cacheKey] && cityVenuesMap[cacheKey].length > 0) return;
     setIsLoadingVenues(true);
     try {
-      // 1. Query Supabase public.venues
-      const remoteVenues = await fetchVenuesFromDatabaseForCity(cityName);
+      // 1. Query Supabase public.venues strictly checking city and state
+      let remoteVenues: Venue[] = [];
+      try {
+        let query = supabase
+          .from("venues")
+          .select("*")
+          .ilike("city", `%${cityName.trim()}%`);
+
+        if (stateName && stateName.trim()) {
+          const s = stateName.trim().toUpperCase();
+          if (s === "BC") {
+            // Strictly BC / Canada
+            query = query.or("state.eq.BC,state_province.eq.BC,country.eq.CA,country.eq.Canada");
+          } else if (s === "WA") {
+            // Strictly Washington State, not BC
+            query = query.or("state.eq.WA,state_province.eq.WA");
+          } else {
+            query = query.or(`state.eq.${s},state_province.eq.${s}`);
+          }
+        }
+
+        const { data, error } = await query;
+        if (!error && data && Array.isArray(data)) {
+          remoteVenues = data.map((v: any) => ({
+            id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
+            name: v.name || "Live Venue",
+            city: v.city || cityName,
+            state: v.state || v.state_province || stateName,
+            country: v.country || (stateName?.toUpperCase() === "BC" ? "CA" : "US"),
+            address: v.address || `${cityName}, ${v.state || stateName || ""}`.trim(),
+            capacity: Number(v.capacity) || 150,
+            genres: Array.isArray(v.genres_accepted) 
+              ? v.genres_accepted 
+              : (v.genres_accepted ? String(v.genres_accepted).split(",").map((g: string) => g.trim()) : ["Live Music"]),
+            contactEmail: v.booking_email || v.email || "",
+            contactPhone: v.phone || "Inquire",
+            website: v.website || undefined,
+            hasPA: true,
+            hasLighting: true,
+            description: v.description || `Live music venue located in ${cityName}.`
+          }));
+        }
+      } catch (err) {
+        console.warn("Could not query Supabase venues:", err);
+      }
       
       // 2. Query local curated MUSIC_VENUES & localStorage custom_venues_v1
       const localCustom: Venue[] = (() => {
@@ -507,10 +610,31 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
         } catch { return []; }
       })();
       const allLocal = [...MUSIC_VENUES, ...localCustom];
-      const matchedLocal = allLocal.filter(v => 
-        v.city.toLowerCase().includes(cityName.toLowerCase()) || 
-        cityName.toLowerCase().includes(v.city.toLowerCase())
-      );
+      const matchedLocal = allLocal.filter(v => {
+        const cityMatch = v.city.toLowerCase() === cityName.toLowerCase() ||
+          v.city.toLowerCase().includes(cityName.toLowerCase()) || 
+          cityName.toLowerCase().includes(v.city.toLowerCase());
+        if (!cityMatch) return false;
+
+        if (stateName) {
+          const s = stateName.toUpperCase();
+          if (s === "BC") {
+            // Strictly BC / Canada venues (Rickshaw, Commodore Ballroom, Cobalt, Biltmore, Fox, Wise Hall)
+            // DO NOT return venues located in WA / Washington State
+            return v.state?.toUpperCase() === "BC" || v.country?.toUpperCase() === "CA" || v.address?.includes("BC");
+          }
+          if (s === "WA") {
+            // Strictly WA / US venues
+            return (v.state?.toUpperCase() === "WA" || v.address?.includes(", WA")) &&
+                   v.state?.toUpperCase() !== "BC" &&
+                   !v.address?.includes("BC");
+          }
+          if (v.state) {
+            return v.state.toUpperCase() === s;
+          }
+        }
+        return true;
+      });
 
       // Merge and deduplicate
       const seenNames = new Set<string>();
@@ -523,7 +647,11 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
         }
       });
 
-      setCityVenuesMap(prev => ({ ...prev, [cityName]: merged }));
+      setCityVenuesMap(prev => ({ 
+        ...prev, 
+        [cacheKey]: merged,
+        [cityName]: merged 
+      }));
     } catch (err) {
       console.warn("Could not query city venues:", err);
     } finally {
@@ -589,7 +717,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           name: lodging.name,
           type: lodging.type,
           address: lodging.address,
-          cost: lodging.estPricePerNight ? parseFloat(lodging.estPricePerNight.replace(/[^0-9.]/g, "")) : 95,
+          cost: parseNightlyRate(lodging.estPricePerNight),
           confirmationNumber: target.selectedLodging?.confirmationNumber || "",
           gearSecurityNote: lodging.gearSecurityNote,
           bookingUrl: lodging.bookingSearchUrl,
@@ -739,7 +867,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           handleCommitLodgingReservation(targetIdx, {
             name: payload.propertyName || payload.hotelName || payload.name || "Booked Partner Hotel",
             confirmationNumber: payload.confirmationId || payload.confirmationNumber || payload.bookingId || `CONF-${Math.floor(100000 + Math.random() * 900000)}`,
-            cost: payload.totalPaid || payload.cost || payload.totalCost || 85,
+            cost: Number(parseNightlyRate(payload.totalPaid || payload.cost || payload.totalCost || 85)),
             parkingNotes: payload.parkingSpecifications || payload.parkingNotes || payload.parking || "Van & trailer parking confirmed",
             notes: payload.notes || payload.parking || "Booked via partner widget",
             address: payload.address || `${stops[targetIdx].city}, ${stops[targetIdx].state}`,
@@ -781,9 +909,12 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     if (activeStageIndex < stops.length - 1) {
       const nextIdx = activeStageIndex + 1;
       setActiveStageIndex(nextIdx);
-      loadVenuesForStageCity(stops[nextIdx].city);
+      if (stops[nextIdx]) {
+        loadVenuesForStageCity(stops[nextIdx].city, stops[nextIdx].state);
+      }
     } else {
-      // Finished all cities -> proceed to Step 4
+      // Finished all cities -> proceed to Step 4 (Lodging)
+      setActiveLodgingIndex(0);
       setWizardStep(4);
     }
   };
@@ -792,7 +923,25 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     if (activeStageIndex > 0) {
       const prevIdx = activeStageIndex - 1;
       setActiveStageIndex(prevIdx);
-      loadVenuesForStageCity(stops[prevIdx].city);
+      if (stops[prevIdx]) {
+        loadVenuesForStageCity(stops[prevIdx].city, stops[prevIdx].state);
+      }
+    }
+  };
+
+  // Navigate between cities in Step 4 (Lodging)
+  const handleLodgingNext = () => {
+    if (activeLodgingIndex < stops.length - 1) {
+      setActiveLodgingIndex(activeLodgingIndex + 1);
+    } else {
+      // Finished all lodging -> proceed to Step 5 (Review & Finalize)
+      setWizardStep(5);
+    }
+  };
+
+  const handleLodgingPrev = () => {
+    if (activeLodgingIndex > 0) {
+      setActiveLodgingIndex(activeLodgingIndex - 1);
     }
   };
 
@@ -807,7 +956,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
       destination: destinationCity,
       startDate,
       endDate,
-      currentStep: markConfirmed ? 4 : wizardStep,
+      currentStep: markConfirmed ? 5 : wizardStep,
       stops,
       totalDistanceMiles,
       totalDriveTime,
@@ -886,11 +1035,12 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
       setTotalDriveTime(rd.totalDriveTime || "");
 
       // Open on saved step or review
-      const targetStep = record.status === "confirmed" ? 4 : (rd.currentStep || 2);
+      const targetStep = record.status === "confirmed" ? 5 : (rd.currentStep || 2);
       setWizardStep(targetStep);
       setActiveStageIndex(0);
+      setActiveLodgingIndex(0);
       if (rd.stops && rd.stops[0]) {
-        loadVenuesForStageCity(rd.stops[0].city);
+        loadVenuesForStageCity(rd.stops[0].city, rd.stops[0].state);
       }
     }
 
@@ -1375,7 +1525,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
       {/* VIEW 3: GUIDED 4-STEP WIZARD (Setup -> Optimize -> Stages -> Review)      */}
       {/* ========================================================================= */}
       {viewState === "wizard" && (
-        <div className="space-y-6 animate-in fade-in duration-300" id="tour-wizard-view">
+        <div className="space-y-6 animate-in fade-in duration-300" id="tour-wizard-container">
           
           {/* Wizard Header Bar & Action Menu */}
           <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1393,7 +1543,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                   <span className="text-xs font-black px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
                     Tour Creation Wizard
                   </span>
-                  <span className="text-xs text-slate-400">• Step {wizardStep} of 4</span>
+                  <span className="text-xs text-slate-400">• Step {wizardStep} of 5</span>
                 </div>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -1430,7 +1580,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           </div>
 
           {/* Stepper Progress Tabs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
             <button
               type="button"
               onClick={() => setWizardStep(1)}
@@ -1441,7 +1591,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
               }`}
             >
               <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 1</div>
-              <div className="text-xs font-black truncate">Route Setup</div>
+              <div className="text-xs font-black truncate">1. Route Setup</div>
             </button>
 
             <button
@@ -1457,7 +1607,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
               }`}
             >
               <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 2</div>
-              <div className="text-xs font-black truncate">Corridor Optimizer</div>
+              <div className="text-xs font-black truncate">2. Corridor &amp; Stops</div>
             </button>
 
             <button
@@ -1473,7 +1623,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
               }`}
             >
               <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 3</div>
-              <div className="text-xs font-black truncate">Stages &amp; Lodging</div>
+              <div className="text-xs font-black truncate">3. Choose Stages &amp; Venues</div>
             </button>
 
             <button
@@ -1489,7 +1639,23 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
               }`}
             >
               <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 4</div>
-              <div className="text-xs font-black truncate">Review &amp; Finalize</div>
+              <div className="text-xs font-black truncate">4. Book Hotels &amp; Lodging</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => stops.length > 0 && setWizardStep(5)}
+              disabled={stops.length === 0}
+              className={`p-3 rounded-xl text-left transition-all ${
+                wizardStep === 5 
+                  ? "bg-indigo-600 text-white shadow-md" 
+                  : stops.length > 0 
+                  ? "hover:bg-slate-50 text-slate-700 cursor-pointer" 
+                  : "opacity-40 cursor-not-allowed text-slate-400"
+              }`}
+            >
+              <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 5</div>
+              <div className="text-xs font-black truncate">5. Review &amp; Finalize</div>
             </button>
           </div>
 
@@ -1584,6 +1750,91 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                       className="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white"
                     />
                   </div>
+                </div>
+
+                {/* Vehicle Specifications & MPG */}
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Fuel className="w-4 h-4 text-amber-600" />
+                      <span>Tour Vehicle &amp; Fuel Efficiency</span>
+                    </label>
+                    <span className="text-[11px] text-slate-500">Used for leg gas budgeting</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                        Vehicle Type
+                      </label>
+                      <select
+                        value={vehicleType}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setVehicleType(val);
+                          if (val.includes("15-Passenger")) setVehicleMpg(14);
+                          else if (val.includes("Sprinter")) setVehicleMpg(18);
+                          else if (val.includes("SUV")) setVehicleMpg(22);
+                          else if (val.includes("Passenger Car")) setVehicleMpg(28);
+                          else if (val.includes("Bus")) setVehicleMpg(8);
+                        }}
+                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600 cursor-pointer"
+                      >
+                        <option value="15-Passenger Touring Van">15-Passenger Touring Van (~14 MPG)</option>
+                        <option value="Sprinter Van / Cargo">Sprinter Van / Diesel Cargo (~18 MPG)</option>
+                        <option value="Mini-Van / SUV">Mini-Van / SUV (~22 MPG)</option>
+                        <option value="Passenger Car / Wagon">Passenger Car / Station Wagon (~28 MPG)</option>
+                        <option value="Tour Bus / RV">Tour Bus / Splitter RV (~8 MPG)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                        Estimated MPG (Miles Per Gallon)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="5"
+                          max="50"
+                          value={vehicleMpg}
+                          onChange={(e) => setVehicleMpg(Math.max(5, Number(e.target.value) || 14))}
+                          className="w-full p-3 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
+                        />
+                        <Fuel className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3.5 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Round-Trip Loop Toggle */}
+                <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-5 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                        <RefreshCw className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Book Tour on Way Back Home (Round-Trip Loop)</span>
+                      </span>
+                      {isRoundTripLoop && (
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-600 text-white">
+                          Enabled
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-indigo-800/80 max-w-xl">
+                      Automatically generate reverse routing stops returning to your starting city, turning your tour into a complete round-trip loop.
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={isRoundTripLoop}
+                      onChange={(e) => setIsRoundTripLoop(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
                 </div>
               </div>
 
@@ -1741,7 +1992,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
                           {/* Stop Actions */}
                           <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-auto">
-                            {/* In-App Lodging Booking Action */}
+                            {/* Lodging Action */}
                             <button
                               type="button"
                               onClick={() => handleOpenBookingModal(idx)}
@@ -1750,11 +2001,11 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                   ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200" 
                                   : "bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200"
                               }`}
-                              title={stop.selectedLodging?.name ? "Update lodging reservation" : "Book band lodging in-app"}
+                              title={stop.selectedLodging?.name ? "Update lodging reservation details" : "Find lodging options and save reservation"}
                             >
                               <Hotel className={`w-3.5 h-3.5 ${stop.selectedLodging?.name ? "text-emerald-600" : "text-amber-600"}`} />
                               <span className="truncate max-w-[140px] sm:max-w-[200px]">
-                                {stop.selectedLodging?.name ? `Booked & Confirmed: ${stop.selectedLodging.name}` : "Book Lodging"}
+                                {stop.selectedLodging?.name ? `Confirmed: ${stop.selectedLodging.name}` : "Find Lodging"}
                               </span>
                               {stop.selectedLodging?.name && <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />}
                             </button>
@@ -1885,7 +2136,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
               {/* Active Stop Card */}
               {(() => {
                 const currentStop = stops[activeStageIndex];
-                const availableVenues = cityVenuesMap[currentStop.city] || [];
+                const availableVenues = cityVenuesMap[`${currentStop.city}_${currentStop.state}`] || cityVenuesMap[currentStop.city] || [];
                 const isCustomMode = customVenueMode[currentStop.id];
 
                 return (
@@ -1896,7 +2147,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="space-y-0.5">
                           <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
-                            Step 3 • City-by-City Venue &amp; Budget Setup
+                            Step 3 • Choose Stages &amp; Performance Venues
                           </span>
                           <h3 className="text-2xl font-black text-slate-900 tracking-tight">
                             Stop {activeStageIndex + 1} of {stops.length}: {currentStop.city}, {currentStop.state}
@@ -1918,7 +2169,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                             onClick={handleStageNext}
                             className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-1 cursor-pointer"
                           >
-                            <span>{activeStageIndex === stops.length - 1 ? "Finish to Review" : "Next City"}</span>
+                            <span>{activeStageIndex === stops.length - 1 ? "Proceed to Lodging (Step 4)" : "Next City"}</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -1936,11 +2187,11 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                               type="button"
                               onClick={() => {
                                 setActiveStageIndex(idx);
-                                loadVenuesForStageCity(s.city);
+                                loadVenuesForStageCity(s.city, s.state);
                               }}
                               className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 cursor-pointer transition-all ${
                                 isActive 
-                                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-black" 
+                                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-black" 
                                   : isDone
                                   ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
                                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
@@ -2172,348 +2423,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                       </div>
                     </div>
 
-                    {/* Section 3: Lodging & Crash Pad */}
-                    {(() => {
-                      const { checkIn, checkOut } = getStopCheckInAndOut(currentStop, startDate, activeStageIndex);
-                      const formattedCheckIn = formatReadableDate(checkIn);
-                      const formattedCheckOut = formatReadableDate(checkOut);
-                      const { hotelsDotComUrl, bookingDotComUrl, googleHotelsUrl } = generateHotelSearchUrls(
-                        currentStop.city,
-                        currentStop.state,
-                        checkIn,
-                        checkOut
-                      );
-                      const hasLodgingDetails = Boolean(
-                        currentStop.selectedLodging?.name ||
-                        currentStop.selectedLodging?.confirmationNumber ||
-                        currentStop.selectedLodging?.cost ||
-                        currentStop.selectedLodging?.notes
-                      );
-
-                      return (
-                        <div className="space-y-6 pt-2">
-                          {/* 1. Find Nearby Hotels Card */}
-                          <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-slate-50 border border-amber-500/30 rounded-3xl p-6 sm:p-7 shadow-xs space-y-5">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-white shadow-xs">
-                                    Van &amp; Tour Logistics
-                                  </span>
-                                  <span className="text-xs font-bold text-amber-900/80">
-                                    Stop {activeStageIndex + 1} • {currentStop.city}, {currentStop.state}
-                                  </span>
-                                </div>
-                                <h4 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                  <Hotel className="w-5 h-5 text-amber-600" />
-                                  <span>Find Nearby Hotels</span>
-                                </h4>
-                                <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-                                  Target low-cost, band-friendly accommodations with oversized parking suitable for touring vans and trailers. Links are automatically generated with your scheduled show night check-in and next morning checkout dates.
-                                </p>
-                              </div>
-
-                              {/* Date Badges */}
-                              <div className="bg-white/90 backdrop-blur-xs p-3.5 rounded-2xl border border-amber-200 shadow-2xs shrink-0 space-y-1.5 text-xs">
-                                <div className="flex items-center justify-between gap-4">
-                                  <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                                    <Calendar className="w-3 h-3 text-amber-600" />
-                                    <span>Check-In (Show Night):</span>
-                                  </span>
-                                  <span className="font-black text-slate-900">{formattedCheckIn}</span>
-                                </div>
-                                <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-1.5">
-                                  <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-slate-400" />
-                                    <span>Check-Out (Morning):</span>
-                                  </span>
-                                  <span className="font-black text-slate-900">{formattedCheckOut}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* In-App Lodging Booking Modal Banner */}
-                            <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-orange-700 rounded-2xl p-4 sm:p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
-                                    Direct In-App Workflow
-                                  </span>
-                                  {currentStop.selectedLodging?.name && (
-                                    <span className="bg-emerald-400 text-slate-900 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                                      <Check className="w-3 h-3 stroke-[3]" />
-                                      <span>Booked &amp; Confirmed</span>
-                                    </span>
-                                  )}
-                                </div>
-                                <h5 className="font-black text-sm sm:text-base flex items-center gap-2 text-white">
-                                  <Hotel className="w-4 h-4 text-amber-200" />
-                                  <span>In-App Lodging Search &amp; Itinerary Auto-Sync</span>
-                                </h5>
-                                <p className="text-xs text-amber-100 max-w-xl">
-                                  Open the embedded booking modal for {currentStop.city} to compare rates, browse van-trailer clearance specs, and automatically sync confirmed booking details into your route.
-                                </p>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => handleOpenBookingModal(activeStageIndex)}
-                                className="px-5 py-3 rounded-xl bg-white text-slate-900 hover:bg-amber-50 font-black text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
-                              >
-                                <Sparkles className="w-4 h-4 text-amber-600" />
-                                <span>{currentStop.selectedLodging?.name ? "Update / Rebook Lodging" : "Book Lodging (In-App Modal)"}</span>
-                              </button>
-                            </div>
-
-                            {/* Action Buttons: Pre-filtered External Links */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                              <a
-                                href={hotelsDotComUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group p-4 rounded-2xl bg-white border border-amber-300 hover:border-amber-500 hover:shadow-md transition-all flex flex-col justify-between space-y-2.5 text-left cursor-pointer"
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="font-black text-slate-900 text-sm group-hover:text-amber-700 flex items-center gap-1.5">
-                                    <span>Hotels.com</span>
-                                    <ExternalLink className="w-3.5 h-3.5 text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                                  </div>
-                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
-                                    Low Rates
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-slate-500 line-clamp-2">
-                                  Pre-filtered for {currentStop.city} show dates with lowest nightly rates and parking.
-                                </p>
-                                <span className="text-xs font-black text-amber-700 group-hover:underline inline-flex items-center gap-1 pt-1">
-                                  Search Hotels.com →
-                                </span>
-                              </a>
-
-                              <a
-                                href={bookingDotComUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group p-4 rounded-2xl bg-white border border-indigo-200 hover:border-indigo-500 hover:shadow-md transition-all flex flex-col justify-between space-y-2.5 text-left cursor-pointer"
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="font-black text-slate-900 text-sm group-hover:text-indigo-700 flex items-center gap-1.5">
-                                    <span>Booking.com</span>
-                                    <ExternalLink className="w-3.5 h-3.5 text-indigo-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                                  </div>
-                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-900">
-                                    Free Parking
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-slate-500 line-clamp-2">
-                                  Auto-applied on-site parking filter to protect vans, gear trailers, and equipment.
-                                </p>
-                                <span className="text-xs font-black text-indigo-700 group-hover:underline inline-flex items-center gap-1 pt-1">
-                                  Search Booking.com →
-                                </span>
-                              </a>
-
-                              <a
-                                href={googleHotelsUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-400 hover:shadow-md transition-all flex flex-col justify-between space-y-2.5 text-left cursor-pointer"
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="font-black text-slate-900 text-sm group-hover:text-slate-900 flex items-center gap-1.5">
-                                    <span>Google Hotels</span>
-                                    <ExternalLink className="w-3.5 h-3.5 text-slate-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                                  </div>
-                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                                    Van &amp; Trailer
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-slate-500 line-clamp-2">
-                                  Satellite map views of motel lots, outdoor van parking, and room exterior access.
-                                </p>
-                                <span className="text-xs font-black text-slate-800 group-hover:underline inline-flex items-center gap-1 pt-1">
-                                  Search Google Hotels →
-                                </span>
-                              </a>
-                            </div>
-
-                            {/* Curated Pre-Seeded Suggestions (Quick select option) */}
-                            {currentStop.lodgingOptions && currentStop.lodgingOptions.length > 0 && (
-                              <div className="space-y-2.5 pt-2 border-t border-amber-200/60">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Or Quick-Select Vetted Local Rooms in {currentStop.city}:</span>
-                                  </span>
-                                  <span className="text-[10px] text-slate-500">Click to fill details below</span>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  {currentStop.lodgingOptions.slice(0, 2).map((opt, i) => {
-                                    const isSelected = currentStop.selectedLodging?.name === opt.name;
-
-                                    return (
-                                      <div
-                                        key={opt.name || i}
-                                        onClick={() => handleSelectLodgingForStop(activeStageIndex, opt)}
-                                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
-                                          isSelected
-                                            ? "bg-amber-100/80 border-amber-600 ring-2 ring-amber-500/30 shadow-xs"
-                                            : "bg-white/80 border-slate-200 hover:border-slate-300 hover:bg-white"
-                                        }`}
-                                      >
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div>
-                                            <div className="font-black text-slate-900 text-xs flex items-center gap-1.5">
-                                              <span>{opt.name}</span>
-                                              {isSelected && <Check className="w-3 h-3 text-amber-700 stroke-[3]" />}
-                                            </div>
-                                            <div className="text-[11px] text-slate-500">{opt.type} • {opt.address || currentStop.city}</div>
-                                          </div>
-                                          <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md shrink-0">
-                                            {opt.estPricePerNight || "$85/nt"}
-                                          </span>
-                                        </div>
-
-                                        {opt.gearSecurityNote && (
-                                          <div className="text-[11px] text-slate-600 bg-slate-50/90 p-2 rounded-lg border border-slate-200/60 flex items-start gap-1.5">
-                                            <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                            <span className="italic">{opt.gearSecurityNote}</span>
-                                          </div>
-                                        )}
-
-                                        <div className="text-[11px] font-black text-amber-800 pt-0.5 flex items-center justify-between">
-                                          <span>{isSelected ? "✓ Assigned to this Stop" : "Click to Fill Form"}</span>
-                                          {opt.bookingSearchUrl && (
-                                            <a
-                                              href={opt.bookingSearchUrl}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              onClick={(e) => e.stopPropagation()}
-                                              className="text-[10px] text-indigo-600 hover:underline flex items-center gap-0.5"
-                                            >
-                                              <span>Direct Link</span>
-                                              <ExternalLink className="w-2.5 h-2.5" />
-                                            </a>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* 2. Lodging Notes & Reservation Details Form (Directly stored in route_data) */}
-                          <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <div className="space-y-0.5">
-                                <h5 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                                  <Receipt className="w-4 h-4 text-indigo-600" />
-                                  <span>Confirmed Reservation &amp; Lodging Details for {currentStop.city}</span>
-                                </h5>
-                                <p className="text-xs text-slate-500">
-                                  Paste your reservation confirmation number, hotel name, and lodging budget directly into this stop's route itinerary.
-                                </p>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                {hasLodgingDetails && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Saved in Route Data</span>
-                                  </span>
-                                )}
-                                {hasLodgingDetails && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleClearLodgingForStop(activeStageIndex)}
-                                    className="text-[11px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                                  >
-                                    Clear Details
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                              {/* Hotel Name */}
-                              <div className="sm:col-span-2 lg:col-span-1">
-                                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                  Booked Hotel / Accommodation Name
-                                </label>
-                                <div className="relative">
-                                  <input
-                                    type="text"
-                                    value={currentStop.selectedLodging?.name || ""}
-                                    onChange={(e) => handleUpdateLodgingField(activeStageIndex, "name", e.target.value)}
-                                    placeholder="e.g. Motel 6 Portland Central or Airbnb on 4th"
-                                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                  />
-                                  <Hotel className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                                </div>
-                              </div>
-
-                              {/* Confirmed Reservation Number */}
-                              <div>
-                                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                  Confirmed Reservation #
-                                </label>
-                                <div className="relative">
-                                  <input
-                                    type="text"
-                                    value={currentStop.selectedLodging?.confirmationNumber || ""}
-                                    onChange={(e) => handleUpdateLodgingField(activeStageIndex, "confirmationNumber", e.target.value)}
-                                    placeholder="e.g. CONF-8924192 or PIN #4819"
-                                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                  />
-                                  <Receipt className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                                </div>
-                              </div>
-
-                              {/* Lodging Budget / Cost */}
-                              <div>
-                                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                  Lodging Budget / Cost ($)
-                                </label>
-                                <div className="relative">
-                                  <input
-                                    type="text"
-                                    value={currentStop.selectedLodging?.cost ?? ""}
-                                    onChange={(e) => handleUpdateLodgingField(activeStageIndex, "cost", e.target.value)}
-                                    placeholder="e.g. 85 or 120"
-                                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                  />
-                                  <DollarSign className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Lodging & Van Parking Notes */}
-                            <div>
-                              <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                Van &amp; Trailer Parking / Lodging Notes
-                              </label>
-                              <div className="relative">
-                                <textarea
-                                  rows={2}
-                                  value={currentStop.selectedLodging?.notes ?? currentStop.lodgingNotes ?? ""}
-                                  onChange={(e) => handleUpdateLodgingField(activeStageIndex, "notes", e.target.value)}
-                                  placeholder="e.g. 2 double beds reserved under band manager name. Front desk confirmed van + trailer parking in rear lot under spotlight. Late check-in after midnight show."
-                                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                />
-                              </div>
-                              <p className="text-[11px] text-slate-500 mt-1">
-                                Stored in <code className="bg-slate-200/80 px-1 py-0.5 rounded text-[10px] font-mono text-slate-700">public.tours.route_data</code> and printed on the master crew run-of-show itinerary.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Section 4: Custom City / Stage Notes */}
+                    {/* Section 3: Custom City / Stage Notes */}
                     <div className="space-y-1.5">
                       <label className="block text-xs font-black text-slate-800 uppercase tracking-wider">
                         City &amp; Technical Notes (Optional)
@@ -2535,7 +2445,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                           onClick={() => setWizardStep(2)}
                           className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
                         >
-                          ← Back to Corridor
+                          ← Back to Corridor (Step 2)
                         </button>
 
                         <button
@@ -2555,7 +2465,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                             onClick={handleStagePrev}
                             className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
                           >
-                            Previous City
+                            Previous City Stage
                           </button>
                         )}
 
@@ -2567,7 +2477,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                         >
                           <span>
                             {activeStageIndex === stops.length - 1 
-                              ? "Review & Finalize Tour (Step 4) →" 
+                              ? "Proceed to Book Hotels & Lodging (Step 4) →" 
                               : "Next City Stage →"}
                           </span>
                         </button>
@@ -2582,10 +2492,475 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           )}
 
           {/* --------------------------------------------------------------------- */}
-          {/* STEP 4: REVIEW, INTERACTIVE MAP & FINALIZATION                        */}
+          {/* STEP 4: TOUR LODGING & ACCOMMODATIONS (Unlocked after stages chosen)  */}
           {/* --------------------------------------------------------------------- */}
-          {wizardStep === 4 && (
-            <div className="space-y-6 animate-in fade-in duration-200" id="tour-step-4-review">
+          {wizardStep === 4 && stops[activeLodgingIndex] && (
+            <div className="space-y-6 animate-in fade-in duration-200" id="tour-step-4-lodging">
+              {(() => {
+                const currentStop = stops[activeLodgingIndex];
+                const { checkIn, checkOut } = getStopCheckInAndOut(currentStop, startDate, activeLodgingIndex);
+                const formattedCheckIn = formatReadableDate(checkIn);
+                const formattedCheckOut = formatReadableDate(checkOut);
+                const { hotelsDotComUrl, bookingDotComUrl, googleHotelsUrl } = generateHotelSearchUrls(
+                  currentStop.city,
+                  currentStop.state,
+                  checkIn,
+                  checkOut
+                );
+                const hasLodgingDetails = Boolean(
+                  currentStop.selectedLodging?.name ||
+                  currentStop.selectedLodging?.confirmationNumber ||
+                  currentStop.selectedLodging?.cost ||
+                  currentStop.selectedLodging?.notes
+                );
+                const currentSnippet = pastedConfirmationSnippet[activeLodgingIndex] || "";
+
+                return (
+                  <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8">
+                    
+                    {/* Header & City Tabs */}
+                    <div className="space-y-4 pb-6 border-b border-slate-100">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <span className="text-xs font-black uppercase tracking-wider text-amber-600">
+                            Step 4 • Book Hotels &amp; Accommodations
+                          </span>
+                          <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                            Stop {activeLodgingIndex + 1} of {stops.length}: {currentStop.city}, {currentStop.state}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Show Night: <strong className="text-slate-800">{currentStop.date || formattedCheckIn}</strong> • Check-In: <strong className="text-slate-800">{formattedCheckIn}</strong> → Check-Out: <strong className="text-slate-800">{formattedCheckOut}</strong>
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleLodgingPrev}
+                            disabled={activeLodgingIndex === 0}
+                            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                            <span>Previous City</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleLodgingNext}
+                            className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-black flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{activeLodgingIndex === stops.length - 1 ? "Proceed to Review (Step 5)" : "Next City"}</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Horizontal City Tabs */}
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
+                        {stops.map((s, idx) => {
+                          const isLodgingDone = Boolean(s.selectedLodging?.name || s.selectedLodging?.confirmationNumber);
+                          const isActive = idx === activeLodgingIndex;
+
+                          return (
+                            <button
+                              key={s.id || idx}
+                              type="button"
+                              onClick={() => setActiveLodgingIndex(idx)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 cursor-pointer transition-all ${
+                                isActive 
+                                  ? "bg-amber-600 text-white shadow-md shadow-amber-600/30 font-black" 
+                                  : isLodgingDone
+                                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                              }`}
+                            >
+                              <span>{idx + 1}. {s.city}</span>
+                              {isLodgingDone && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Clear, Honest Lodging Disclaimer Banner */}
+                    <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-xs">
+                      <div className="p-2 rounded-xl bg-amber-500/20 text-amber-800 shrink-0 mt-0.5">
+                        <Info className="w-5 h-5 text-amber-800" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-amber-900">
+                          Direct Hotel Booking Policy
+                        </h4>
+                        <p className="text-xs sm:text-sm text-amber-950 leading-relaxed font-medium">
+                          GigLizard helps your band find budget-friendly rooms and trailer parking along your route, but does NOT book rooms or charge your card. You will book directly on each hotel&apos;s official site. We are working on a seamless hotel booking solution.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Direct Outbound Provider Buttons */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                        <ExternalLink className="w-4 h-4 text-emerald-600" />
+                        <span>Book with Direct Providers for {currentStop.city}</span>
+                      </h4>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                        {/* Hotels.com */}
+                        <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-slate-900 text-sm">Hotels.com</span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Low Rates</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500">
+                              Pre-filtered with check-in on {formattedCheckIn} &amp; checkout on {formattedCheckOut}.
+                            </p>
+                          </div>
+                          <a
+                            href={hotelsDotComUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs hover:shadow-emerald-600/20 transition-all cursor-pointer"
+                          >
+                            <span>Book on Hotels.com ↗</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+
+                        {/* Booking.com */}
+                        <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-slate-900 text-sm">Booking.com</span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Free Parking</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500">
+                              Auto-filtered for on-site parking to safeguard tour vans and equipment trailers.
+                            </p>
+                          </div>
+                          <a
+                            href={bookingDotComUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs hover:shadow-emerald-600/20 transition-all cursor-pointer"
+                          >
+                            <span>Book on Booking.com ↗</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+
+                        {/* Google Hotels */}
+                        <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-slate-900 text-sm">Google Hotels</span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Van &amp; Trailer</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500">
+                              Satellite map views of motel lots, outdoor van parking, and exterior room access.
+                            </p>
+                          </div>
+                          <a
+                            href={googleHotelsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs hover:shadow-emerald-600/20 transition-all cursor-pointer"
+                          >
+                            <span>Book on Google Hotels ↗</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Vetted Band-Friendly Hotels for this Stop */}
+                    {currentStop.lodgingOptions && currentStop.lodgingOptions.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <span>Recommended Band Motels in {currentStop.city}</span>
+                        </h4>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          {currentStop.lodgingOptions.map((opt, i) => {
+                            const nightlyRate = parseNightlyRate(opt.estPricePerNight);
+                            const totalCost = calculateStayCost(nightlyRate, 1);
+                            const fullCity = currentStop.state ? `${currentStop.city}, ${currentStop.state}` : currentStop.city;
+                            const nameLower = opt.name.toLowerCase();
+                            let providerUrl = opt.bookingSearchUrl || `https://www.google.com/travel/hotels/${encodeURIComponent(currentStop.city)}?q=${encodeURIComponent(`${opt.name} ${fullCity}`)}&dates=${checkIn},${checkOut}`;
+                            if (nameLower.includes("motel 6")) {
+                              providerUrl = `https://www.motel6.com/en/home/reservations.html#/search?destination=${encodeURIComponent(currentStop.city)}&checkin=${checkIn}&checkout=${checkOut}`;
+                            } else if (nameLower.includes("red roof")) {
+                              providerUrl = `https://www.redroof.com/search?q=${encodeURIComponent(fullCity)}&checkin=${checkIn}&checkout=${checkOut}`;
+                            } else if (nameLower.includes("best western")) {
+                              providerUrl = `https://www.bestwestern.com/en_US/book/hotels-in-${encodeURIComponent(currentStop.city.toLowerCase().replace(/\s+/g, "-"))}.html?destination=${encodeURIComponent(fullCity)}&checkIn=${checkIn}&checkOut=${checkOut}`;
+                            } else if (nameLower.includes("super 8") || nameLower.includes("wyndham")) {
+                              providerUrl = `https://www.wyndhamhotels.com/super-8?destination=${encodeURIComponent(fullCity)}&checkin_date=${checkIn}&checkout_date=${checkOut}`;
+                            } else if (opt.bookingSearchUrl && opt.bookingSearchUrl.startsWith("http")) {
+                              if (opt.bookingSearchUrl.includes("google.com/travel/hotels") && !opt.bookingSearchUrl.includes("dates=")) {
+                                providerUrl = `${opt.bookingSearchUrl}?dates=${checkIn},${checkOut}`;
+                              }
+                            }
+                            const providerName = opt.name.includes("Motel 6") ? "Motel 6" : opt.name.includes("Best Western") ? "Best Western" : opt.name.includes("Red Roof") ? "Red Roof Inn" : opt.name.includes("Super 8") ? "Super 8" : opt.name.includes("Hotel Leo") ? "Hotel Leo" : opt.name.includes("Belltown") ? "The Belltown Inn" : opt.name;
+
+                            return (
+                              <div
+                                key={opt.name || i}
+                                className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 shadow-xs flex flex-col justify-between space-y-3"
+                              >
+                                <div className="space-y-1.5">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <h5 className="font-black text-slate-900 text-sm">{opt.name}</h5>
+                                      <span className="text-xs text-slate-500">{opt.type} • {opt.address || currentStop.city}</span>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
+                                        ${nightlyRate}/nt
+                                      </span>
+                                      <div className="text-[10px] text-slate-400 mt-0.5">
+                                        Est. Total: ${totalCost}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {opt.gearSecurityNote && (
+                                    <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-start gap-1.5">
+                                      <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                      <span>{opt.gearSecurityNote}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectLodgingForStop(activeLodgingIndex, opt)}
+                                    className="text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                                  >
+                                    Fill details below ↓
+                                  </button>
+
+                                  <a
+                                    href={providerUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1 shadow-xs hover:shadow-emerald-600/20 transition-all cursor-pointer shrink-0"
+                                  >
+                                    <span>Book on {providerName} ↗</span>
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Streamlined Itinerary Import */}
+                    <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border-2 border-slate-200 space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <h5 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                            <Receipt className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Already booked your room? Enter your details below to save them to your master tour itinerary.</span>
+                          </h5>
+                          <p className="text-xs text-slate-500">
+                            Enter your confirmed booking details to lock lodging into your route data and financial totals.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {hasLodgingDetails && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Saved in Route Data</span>
+                            </span>
+                          )}
+                          {hasLodgingDetails && (
+                            <button
+                              type="button"
+                              onClick={() => handleClearLodgingForStop(activeLodgingIndex)}
+                              className="text-[11px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                            >
+                              Clear Details
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Confirmation Email Paste Snippet Reader */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700">
+                          Instant Confirmation Paste Reader
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={currentSnippet}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPastedConfirmationSnippet(prev => ({ ...prev, [activeLodgingIndex]: val }));
+                            const parsed = parseBookingConfirmationSnippet(val);
+                            if (parsed.hotelName) handleUpdateLodgingField(activeLodgingIndex, "name", parsed.hotelName);
+                            if (parsed.confirmationNumber) handleUpdateLodgingField(activeLodgingIndex, "confirmationNumber", parsed.confirmationNumber);
+                            if (parsed.totalCost) handleUpdateLodgingField(activeLodgingIndex, "cost", parsed.totalCost);
+                            if (parsed.parkingNotes) handleUpdateLodgingField(activeLodgingIndex, "notes", parsed.parkingNotes);
+                          }}
+                          placeholder="Paste booking confirmation snippet from Booking.com, Hotels.com, or motel email to auto-extract fields..."
+                          className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+
+                      {/* Clean Entry Fields */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                        <div>
+                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                            Hotel Name *
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={currentStop.selectedLodging?.name || ""}
+                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "name", e.target.value)}
+                              placeholder="e.g. Motel 6 Central"
+                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
+                            />
+                            <Hotel className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                            Confirmed Reservation # *
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={currentStop.selectedLodging?.confirmationNumber || ""}
+                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "confirmationNumber", e.target.value)}
+                              placeholder="e.g. CONF-8924192"
+                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
+                            />
+                            <Receipt className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                            Cost ($) *
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={currentStop.selectedLodging?.cost ?? ""}
+                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "cost", e.target.value)}
+                              placeholder="e.g. 95"
+                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
+                            />
+                            <DollarSign className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                          Trailer Parking Notes *
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={currentStop.selectedLodging?.notes ?? currentStop.lodgingNotes ?? ""}
+                          onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "notes", e.target.value)}
+                          placeholder="e.g. Front desk confirmed van + trailer parking in rear lot under spotlight. 14ft height clearance."
+                          className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+
+                      {/* Direct Commit to Supabase route_data */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                        <span className="text-[11px] text-slate-500">
+                          Saves directly into your tour route_data in Supabase.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const lodging = currentStop.selectedLodging;
+                            handleCommitLodgingReservation(activeLodgingIndex, {
+                              name: lodging?.name || `Hotel in ${currentStop.city}`,
+                              confirmationNumber: lodging?.confirmationNumber || `CONF-${Date.now().toString().slice(-6)}`,
+                              cost: lodging?.cost !== undefined ? lodging.cost : 85,
+                              parkingNotes: lodging?.notes || currentStop.lodgingNotes || "Ground lot trailer clearance confirmed",
+                              notes: lodging?.notes || "",
+                              checkIn,
+                              checkOut
+                            });
+                          }}
+                          disabled={!currentStop.selectedLodging?.name}
+                          className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-emerald-600/30 transition-all cursor-pointer"
+                        >
+                          <Check className="w-4 h-4 stroke-[3]" />
+                          <span>Save Reservation to Tour Itinerary</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Step 4 Navigation Controls */}
+                    <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => setWizardStep(3)}
+                          className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
+                        >
+                          ← Back to Stages (Step 3)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSaveAndFinishLater(false)}
+                          className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span>Save Draft</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-3 w-full sm:w-auto">
+                        {activeLodgingIndex > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleLodgingPrev}
+                            className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
+                          >
+                            Previous City Lodging
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleLodgingNext}
+                          className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-black shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-98"
+                          id="btn-next-lodging-or-review"
+                        >
+                          <span>
+                            {activeLodgingIndex === stops.length - 1 
+                              ? "Proceed to Review & Finalize (Step 5) →" 
+                              : "Next City Lodging →"}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* --------------------------------------------------------------------- */}
+          {/* STEP 5: REVIEW, INTERACTIVE MAP & FINALIZATION                        */}
+          {/* --------------------------------------------------------------------- */}
+          {wizardStep === 5 && (
+            <div className="space-y-6 animate-in fade-in duration-200" id="tour-step-5-review">
               
               {/* Review Overview Banner */}
               <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-6">
@@ -2804,7 +3179,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                               </div>
                             )}
                             <div className="text-[11px] text-slate-600">
-                              Est. Cost: <strong>${stop.selectedLodging?.cost || 85}/night</strong>
+                              Est. Cost: <strong>${parseNightlyRate(stop.selectedLodging?.cost || 85).toLocaleString()}/night</strong>
                             </div>
                             {(stop.selectedLodging?.notes || stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes) && (
                               <div className="text-[11px] text-slate-500 italic">
@@ -2812,7 +3187,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                               </div>
                             )}
 
-                            {/* In-App Booking and Confirmed Badge */}
+                            {/* Lodging Link and Confirmed Badge */}
                             <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
                               <button
                                 type="button"
@@ -2820,7 +3195,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                 className="text-[11px] font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1 cursor-pointer transition-colors"
                               >
                                 <Hotel className="w-3.5 h-3.5 text-amber-600" />
-                                <span>{stop.selectedLodging?.name ? "Update Lodging →" : "Book Lodging →"}</span>
+                                <span>{stop.selectedLodging?.name ? "Update Lodging →" : "Find Lodging →"}</span>
                               </button>
 
                               {stop.selectedLodging?.name && (
@@ -2843,15 +3218,15 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                   </div>
                 </div>
 
-                {/* Step 4 Navigation Controls */}
+                {/* Step 5 Navigation Controls */}
                 <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                       type="button"
-                      onClick={() => setWizardStep(3)}
+                      onClick={() => setWizardStep(4)}
                       className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
                     >
-                      ← Back to Stage Setup
+                      ← Back to Hotel Lodging (Step 4)
                     </button>
 
                     <button

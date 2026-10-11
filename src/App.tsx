@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { App } from "@capacitor/app";
+import { App as CapacitorApp } from "@capacitor/app";
 import { Venue, StageElement, TechRider, PosterConfig, UserAccount } from "./types";
 import Home from "./components/Home";
 import VenueDirectory from "./components/VenueDirectory";
@@ -353,18 +353,23 @@ export default function GigLizardApp() {
     }
   }, [activeTab]);
 
-  const setActiveTab = (tab: TabType) => {
+  // Track whether navigation state change originated from a browser popstate event
+  const isNavigatingViaPopstateRef = useRef<boolean>(false);
+
+  const setActiveTab = (tab: TabType, pushToHistory = true) => {
     if (tab === "admin" && currentAccount?.contactEmail?.trim().toLowerCase() !== "littlerusty@gmail.com") {
       setActiveTabState("home");
       try {
-        window.history.replaceState(null, "", "#home");
+        window.history.replaceState({ tab: "home" }, "", "#home");
       } catch (e) {}
       return;
     }
     setActiveTabState(tab);
     try {
-      if (window.location.hash !== `#${tab}`) {
-        window.history.replaceState(null, "", `#${tab}`);
+      if (pushToHistory && !isNavigatingViaPopstateRef.current) {
+        window.history.pushState({ tab }, "", `#${tab}`);
+      } else if (window.location.hash !== `#${tab}`) {
+        window.history.replaceState({ tab }, "", `#${tab}`);
       }
     } catch (e) {
       console.error(e);
@@ -420,10 +425,8 @@ export default function GigLizardApp() {
       }
     };
     window.addEventListener("hashchange", handleHashChange);
-    window.addEventListener("popstate", handleHashChange);
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
-      window.removeEventListener("popstate", handleHashChange);
     };
   }, [currentAccount]);
 
@@ -504,7 +507,7 @@ export default function GigLizardApp() {
     activeTab
   ]);
 
-  // Push history state whenever any modal opens so back-swipe on Android Chrome pops cleanly
+  // Push history state whenever any modal opens so back gestures capture it cleanly
   useEffect(() => {
     if (
       showEditAccountModal || 
@@ -515,7 +518,7 @@ export default function GigLizardApp() {
       showTermsModal
     ) {
       try {
-        window.history.pushState({ giglizardModal: true }, "", window.location.href);
+        window.history.pushState({ tab: activeTab, giglizardModal: true }, "", window.location.href);
       } catch (_) {}
     }
   }, [
@@ -524,85 +527,85 @@ export default function GigLizardApp() {
     showPayPalModal,
     showResetPasswordModal,
     showSecurityModal,
-    showTermsModal
+    showTermsModal,
+    activeTab
   ]);
 
   // Core back navigation handler for Capacitor hardware button and Web popstate
   const handleBackNavigation = (canGoBackFromPlugin?: boolean) => {
-    // 1. Check child overlays first (e.g. StagePlot export sheet, TourPrintModal, reviews)
+    // 1. Check child overlays first (e.g. TourLodgingModal, TourPrintModal, StagePlot export sheet, TechRider dialogs)
     const childBackEvent = new CustomEvent("giglizard_back_press", { cancelable: true });
     window.dispatchEvent(childBackEvent);
     if (childBackEvent.defaultPrevented) {
       try {
-        window.history.pushState({ giglizard: "active" }, "", window.location.href);
+        window.history.pushState({ tab: modalStatesRef.current.activeTab, giglizard: "active" }, "", window.location.href);
       } catch (_) {}
       return;
     }
 
     const state = modalStatesRef.current;
 
-    // 2. Check App-level modals (EditAccountModal, UserLoginModal, PayPalModal, SecurityModal, ResetPasswordModal, TermsModal)
+    // 2. If any modal is open (TourLodgingModal, PrintModal, TechRider, EditAccountModal, UserLoginModal, etc.), close the active modal first
     if (state.showEditAccountModal) {
       setShowEditAccountModal(false);
-      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      try { window.history.pushState({ tab: state.activeTab, giglizard: "active" }, "", window.location.href); } catch (_) {}
       return;
     }
     if (state.showUserLoginModal) {
       setShowUserLoginModal(false);
-      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      try { window.history.pushState({ tab: state.activeTab, giglizard: "active" }, "", window.location.href); } catch (_) {}
       return;
     }
     if (state.showPayPalModal) {
       setShowPayPalModal(false);
-      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      try { window.history.pushState({ tab: state.activeTab, giglizard: "active" }, "", window.location.href); } catch (_) {}
       return;
     }
     if (state.showResetPasswordModal) {
       setShowResetPasswordModal(false);
-      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      try { window.history.pushState({ tab: state.activeTab, giglizard: "active" }, "", window.location.href); } catch (_) {}
       return;
     }
     if (state.showSecurityModal) {
       setShowSecurityModal(false);
-      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      try { window.history.pushState({ tab: state.activeTab, giglizard: "active" }, "", window.location.href); } catch (_) {}
       return;
     }
     if (state.showTermsModal) {
       setShowTermsModal(false);
-      try { window.history.pushState({ giglizard: "active" }, "", window.location.href); } catch (_) {}
+      try { window.history.pushState({ tab: state.activeTab, giglizard: "active" }, "", window.location.href); } catch (_) {}
       return;
     }
 
-    // 3. Check public stage plot review mode (/stage-plot/:bandId)
+    // Check public stage plot review mode (/stage-plot/:bandId)
     if (state.publicStagePlotBandId) {
       setPublicStagePlotBandId(null);
       try {
-        window.history.pushState({ giglizard: "root" }, "", "/");
+        window.history.pushState({ tab: "home", giglizard: "root" }, "", "/#home");
       } catch (_) {}
       setActiveTabState("home");
       return;
     }
 
-    // 4. Check browser / router history:
-    // If the user is on a sub-route or can go back (window.history.length > 1 and location.pathname !== '/'), call window.history.back()
+    // 3. If canGoBack and window.history.length > 1 on a sub-route, execute window.history.back()
     const isSubRoute = window.location.pathname !== "/" && window.location.pathname !== "";
     if (isSubRoute && (canGoBackFromPlugin || window.history.length > 1)) {
       window.history.back();
       return;
     }
 
-    // 5. If user is on a sub-tab (e.g. plot, venues, rider, poster, tour, etc.), navigate back to 'home'
+    // 4. If the user is on an inner view or secondary tab (e.g., activeTab !== 'home'), navigate back to the home view instead of exiting
     if (state.activeTab !== "home") {
-      setActiveTab("home");
-      try { window.history.pushState({ giglizard: "root" }, "", "#home"); } catch (_) {}
+      setActiveTab("home", false);
+      try { window.history.pushState({ tab: "home", giglizard: "root" }, "", "#home"); } catch (_) {}
       return;
     }
 
-    // 6. Only if user is already on root home screen with all modals closed: Require double-tap within 2 seconds
+    // 5. Only call CapacitorApp.exitApp() if the user is already on the root home screen with no modals open and double-taps back within 2 seconds
     const now = Date.now();
     if (now - lastBackPressTimeRef.current < 2000) {
       try {
-        App.exitApp();
+        CapacitorApp.exitApp();
       } catch (err) {
         console.debug("Capacitor exitApp note:", err);
       }
@@ -613,18 +616,18 @@ export default function GigLizardApp() {
         setShowExitToast(false);
       }, 2000);
       try {
-        window.history.pushState({ giglizard: "root" }, "", window.location.href);
+        window.history.pushState({ tab: "home", giglizard: "root" }, "", window.location.href);
       } catch (_) {}
     }
   };
 
-  // Capacitor App Plugin Listener:
+  // 1. Handle Hardware & Gesture Back Button (Capacitor/Native Wrapper)
   useEffect(() => {
     let removePluginListener: (() => void) | null = null;
 
     const setupCapacitor = async () => {
       try {
-        const handle = await App.addListener("backButton", ({ canGoBack }) => {
+        const handle = await CapacitorApp.addListener("backButton", ({ canGoBack }) => {
           handleBackNavigation(canGoBack);
         });
         removePluginListener = () => {
@@ -642,23 +645,59 @@ export default function GigLizardApp() {
     };
   }, []);
 
-  // Web Fallback: Ensure popstate events prevent closing when running in standard Android Chrome as a PWA/web app
+  // 2. Sync In-App Navigation State with Browser History (PWA / Mobile Browser):
+  // Whenever user swipes from the edge to trigger a back gesture, capture popstate event, prevent app exit, and step backward cleanly
   useEffect(() => {
     try {
-      if (!window.history.state || !window.history.state.giglizard) {
-        window.history.replaceState({ giglizard: "root" }, "", window.location.href);
+      if (!window.history.state || !window.history.state.tab) {
+        window.history.replaceState({ tab: activeTab, giglizard: "root" }, "", window.location.href);
       }
     } catch (_) {}
 
     const handleWebPopState = (e: PopStateEvent) => {
-      handleBackNavigation(false);
+      isNavigatingViaPopstateRef.current = true;
+      try {
+        // If an in-app modal or child overlay was open, close it first
+        const state = modalStatesRef.current;
+        const hasOpenModal = 
+          state.showEditAccountModal || 
+          state.showUserLoginModal || 
+          state.showPayPalModal || 
+          state.showResetPasswordModal || 
+          state.showSecurityModal || 
+          state.showTermsModal || 
+          Boolean(state.publicStagePlotBandId);
+
+        if (hasOpenModal) {
+          handleBackNavigation(false);
+          return;
+        }
+
+        // If history state specifies a tab, transition cleanly
+        if (e.state && e.state.tab && validTabs.includes(e.state.tab as TabType)) {
+          const targetTab = e.state.tab as TabType;
+          if (targetTab === "admin" && currentAccount?.contactEmail?.trim().toLowerCase() !== "littlerusty@gmail.com") {
+            setActiveTabState("home");
+          } else {
+            setActiveTabState(targetTab);
+          }
+          return;
+        }
+
+        // Otherwise handle general back navigation (sub-tab to home, or double-tap exit check)
+        handleBackNavigation(false);
+      } finally {
+        setTimeout(() => {
+          isNavigatingViaPopstateRef.current = false;
+        }, 50);
+      }
     };
 
     window.addEventListener("popstate", handleWebPopState);
     return () => {
       window.removeEventListener("popstate", handleWebPopState);
     };
-  }, []);
+  }, [currentAccount]);
 
   const handleRegisterAccount = (account: UserAccount) => {
     if (isBandBanned(account?.contactEmail, account?.name)) {

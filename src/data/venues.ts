@@ -1,6 +1,7 @@
 import { Venue } from "../types";
 import { WASHINGTON_VENUES } from "./waVenues";
 import { OREGON_VENUES } from "./orVenues";
+import { BC_VENUES } from "./bcVenues";
 
 const NATIONAL_BASE_VENUES: Venue[] = [
   {
@@ -146,7 +147,8 @@ const NATIONAL_BASE_VENUES: Venue[] = [
 ];
 
 export const MUSIC_VENUES: Venue[] = [
-  ...WASHINGTON_VENUES,
-  ...OREGON_VENUES,
+  ...WASHINGTON_VENUES.map(v => ({ ...v, state: v.state || "WA", country: v.country || "US" })),
+  ...OREGON_VENUES.map(v => ({ ...v, state: v.state || "OR", country: v.country || "US" })),
+  ...BC_VENUES.map(v => ({ ...v, state: v.state || "BC", country: v.country || "CA" })),
   ...NATIONAL_BASE_VENUES
 ];

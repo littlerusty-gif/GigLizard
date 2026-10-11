@@ -21,6 +21,71 @@ export interface ParsedBookingSnippet {
 }
 
 /**
+ * Safely extracts a numeric nightly rate from any price string or number.
+ * Fixes string concatenation corruption (e.g., "$95 - $135" being parsed as "95135" or "$95,135").
+ * Returns realistic band motel rate (e.g., $85 to $135/night).
+ */
+export function parseNightlyRate(priceInput?: string | number | null): number {
+  if (priceInput === null || priceInput === undefined) return 85;
+
+  let numVal: number;
+  if (typeof priceInput === "number") {
+    numVal = priceInput;
+  } else {
+    const raw = String(priceInput).trim();
+    if (!raw) return 85;
+
+    // Check if it's already corrupted by concatenation like "95135" or "95,135"
+    const unformatted = raw.replace(/[$,\s]/g, "");
+    if (/^\d{5,}$/.test(unformatted)) {
+      const parsedCorrupt = parseFloat(unformatted);
+      if (parsedCorrupt > 1000) {
+        // Corrupted concatenated range like 95135 (from 95-135) or 115145 (from 115-145)
+        const firstTwo = parseInt(unformatted.slice(0, 2), 10);
+        if (firstTwo >= 50 && firstTwo <= 250) return firstTwo;
+        const firstThree = parseInt(unformatted.slice(0, 3), 10);
+        if (firstThree >= 50 && firstThree <= 250) return firstThree;
+        return 95;
+      }
+    }
+
+    // Match the first numeric sequence e.g. "$95 - $135 / night" -> 95, "$79/nt" -> 79
+    const match = raw.match(/(?:^|[^\d])(\d+(?:\.\d+)?)/);
+    if (match && match[1]) {
+      numVal = parseFloat(match[1]);
+    } else {
+      numVal = parseFloat(raw.replace(/[^0-9.]/g, ""));
+    }
+  }
+
+  if (isNaN(numVal) || !isFinite(numVal) || numVal <= 0) {
+    return 85;
+  }
+
+  // Guard against corrupted huge numbers e.g. 95135
+  if (numVal > 1000) {
+    const strVal = String(Math.round(numVal));
+    const firstTwo = parseInt(strVal.slice(0, 2), 10);
+    if (firstTwo >= 50 && firstTwo <= 250) return firstTwo;
+    const firstThree = parseInt(strVal.slice(0, 3), 10);
+    if (firstThree >= 50 && firstThree <= 250) return firstThree;
+    return 95;
+  }
+
+  return Math.round(numVal);
+}
+
+/**
+ * Calculate total stay cost strictly as:
+ * const totalCost = Math.round(Number(nightlyRate) * numberOfNights * 1.12); // 12% est. tax
+ */
+export function calculateStayCost(nightlyRate: number | string, numberOfNights: number): number {
+  const rateNum = Number(parseNightlyRate(nightlyRate));
+  const nightsNum = Math.max(1, Number(numberOfNights) || 1);
+  return Math.round(rateNum * nightsNum * 1.12); // 12% est. tax
+}
+
+/**
  * Smart confirmation email and text receipt parser.
  * Extracts Hotel Property Name, Real Confirmation Code, Total Cost, and Parking specs.
  */
@@ -189,27 +254,53 @@ export const TourLodgingModal: React.FC<TourLodgingModalProps> = ({
   const [filterLateCheckin, setFilterLateCheckin] = useState(true);
   const [filterFreeBreakfast, setFilterFreeBreakfast] = useState(false);
 
-  // Interactive booking checkout view state
-  const [selectedPropertyForCheckout, setSelectedPropertyForCheckout] = useState<any | null>(null);
-  const [checkoutGuestName, setCheckoutGuestName] = useState("Touring Band Manager");
-  const [checkoutVanPlate, setCheckoutVanPlate] = useState("Van + 12ft Gear Trailer");
-  const [isProcessingBooking, setIsProcessingBooking] = useState(false);
-
   // Confirmation email paste reader state
   const [pastedEmailSnippet, setPastedEmailSnippet] = useState("");
   const [parsedPreview, setParsedPreview] = useState<ParsedBookingSnippet | null>(null);
 
+  // Duration in nights between check-in and check-out
+  const numberOfNights = useMemo(() => {
+    try {
+      if (checkInDate && checkOutDate) {
+        const d1 = new Date(checkInDate);
+        const d2 = new Date(checkOutDate);
+        const diffTime = d2.getTime() - d1.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        if (Number.isFinite(diffDays) && diffDays > 0) {
+          return diffDays;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return 1;
+  }, [checkInDate, checkOutDate]);
+
   // Manual adjustment form state
   const existing = stop.selectedLodging;
+  const initialNightlyRate = useMemo(() => {
+    if (existing?.cost) {
+      return parseNightlyRate(existing.cost);
+    }
+    return parseNightlyRate(rawCityLodgings[0]?.estPricePerNight || 85);
+  }, [existing?.cost, rawCityLodgings]);
+
   const [propertyName, setPropertyName] = useState<string>(
     existing?.name || (rawCityLodgings[0]?.name ?? `Band Motel ${stop.city}`)
   );
   const [confirmationNumber, setConfirmationNumber] = useState<string>(
     existing?.confirmationNumber || `GLZ-${Math.floor(100000 + Math.random() * 900000)}`
   );
-  const [totalCost, setTotalCost] = useState<string>(
-    existing?.cost ? String(existing.cost) : (rawCityLodgings[0]?.estPricePerNight?.replace(/[^0-9]/g, "") || "85")
-  );
+  const [totalCost, setTotalCost] = useState<string>(() => {
+    if (existing?.cost) {
+      const parsedRate = parseNightlyRate(existing.cost);
+      const calculatedTotal = Math.round(Number(parsedRate) * 1 * 1.12);
+      return String(calculatedTotal);
+    }
+    const defaultRate = parseNightlyRate(rawCityLodgings[0]?.estPricePerNight || 85);
+    const calculatedTotal = Math.round(Number(defaultRate) * 1 * 1.12);
+    return String(calculatedTotal);
+  });
   const [parkingSpecs, setParkingSpecs] = useState<string>(
     existing?.gearSecurityNote || existing?.notes || "Ground-level surface lot with 14ft trailer clearance, lighted parking under CCTV."
   );
@@ -261,7 +352,7 @@ export const TourLodgingModal: React.FC<TourLodgingModalProps> = ({
 
     if (filterUnder100) {
       list = list.filter(p => {
-        const num = parseInt(p.estPricePerNight?.replace(/[^0-9]/g, "") || "99", 10);
+        const num = parseNightlyRate(p.estPricePerNight);
         return num <= 100;
       });
     }
@@ -281,7 +372,10 @@ export const TourLodgingModal: React.FC<TourLodgingModalProps> = ({
     // Auto-sync into active form fields if values were extracted
     if (parsed.hotelName) setPropertyName(parsed.hotelName);
     if (parsed.confirmationNumber) setConfirmationNumber(parsed.confirmationNumber);
-    if (parsed.totalCost) setTotalCost(String(parsed.totalCost));
+    if (parsed.totalCost !== undefined && parsed.totalCost !== null) {
+      const parsedNum = typeof parsed.totalCost === "number" ? parsed.totalCost : parseNightlyRate(parsed.totalCost);
+      setTotalCost(String(Math.round(parsedNum)));
+    }
     if (parsed.parkingNotes) setParkingSpecs(parsed.parkingNotes);
   }, [pastedEmailSnippet]);
 
@@ -318,57 +412,43 @@ export const TourLodgingModal: React.FC<TourLodgingModalProps> = ({
     return "Booking.com";
   }, [activeProvider]);
 
-  // Complete in-app booking transaction from interactive engine
-  const handleExecuteEngineBooking = () => {
-    if (!selectedPropertyForCheckout) return;
-    setIsProcessingBooking(true);
+  // Outbound URL builder pre-filled with city, show night check-in, and check-out dates
+  const getOutboundHotelUrl = (hotel: TourLodgingOption) => {
+    const fullCity = stop.state ? `${stop.city}, ${stop.state}` : stop.city;
+    const nameLower = hotel.name.toLowerCase();
 
-    const priceNum = parseInt(selectedPropertyForCheckout.estPricePerNight?.replace(/[^0-9]/g, "") || "85", 10);
-    const taxAndFees = Math.round(priceNum * 0.12);
-    const totalStayPrice = priceNum + taxAndFees;
-    const realConfirmationId = `BKG-${Math.floor(100000 + Math.random() * 900000)}`;
+    if (nameLower.includes("motel 6")) {
+      return `https://www.motel6.com/en/home/reservations.html#/search?destination=${encodeURIComponent(stop.city)}&checkin=${checkInDate}&checkout=${checkOutDate}`;
+    }
+    if (nameLower.includes("red roof")) {
+      return `https://www.redroof.com/search?q=${encodeURIComponent(fullCity)}&checkin=${checkInDate}&checkout=${checkOutDate}`;
+    }
+    if (nameLower.includes("best western")) {
+      return `https://www.bestwestern.com/en_US/book/hotels-in-${encodeURIComponent(stop.city.toLowerCase().replace(/\s+/g, "-"))}.html?destination=${encodeURIComponent(fullCity)}&checkIn=${checkInDate}&checkOut=${checkOutDate}`;
+    }
+    if (nameLower.includes("super 8") || nameLower.includes("wyndham")) {
+      return `https://www.wyndhamhotels.com/super-8?destination=${encodeURIComponent(fullCity)}&checkin_date=${checkInDate}&checkout_date=${checkOutDate}`;
+    }
+    if (hotel.bookingSearchUrl && hotel.bookingSearchUrl.startsWith("http")) {
+      if (hotel.bookingSearchUrl.includes("google.com/travel/hotels") && !hotel.bookingSearchUrl.includes("dates=")) {
+        return `${hotel.bookingSearchUrl}?dates=${checkInDate},${checkOutDate}`;
+      }
+      return hotel.bookingSearchUrl;
+    }
+    return `https://www.google.com/travel/hotels/${encodeURIComponent(fullCity)}?q=${encodeURIComponent(`${hotel.name} ${fullCity}`)}&dates=${checkInDate},${checkOutDate}`;
+  };
 
-    const bookingPayload = {
-      type: "HOTEL_RESERVATION_CONFIRMED",
-      payload: {
-        propertyName: selectedPropertyForCheckout.name,
-        hotelName: selectedPropertyForCheckout.name,
-        confirmationId: realConfirmationId,
-        confirmationNumber: realConfirmationId,
-        totalPaid: totalStayPrice,
-        cost: totalStayPrice,
-        parkingSpecifications: `${selectedPropertyForCheckout.gearSecurityNote || "Van & trailer ground parking confirmed"}. Registered vehicle: ${checkoutVanPlate}.`,
-        parkingNotes: selectedPropertyForCheckout.gearSecurityNote || "Van & trailer ground parking confirmed",
-        address: selectedPropertyForCheckout.address || `${stop.city}, ${stop.state}`,
-        type: selectedPropertyForCheckout.type || "Band-Friendly Hotel",
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        notes: `Guest: ${checkoutGuestName}. Late check-in after concert confirmed.`
-      },
-      stopIndex
-    };
-
-    setTimeout(() => {
-      // 1. Post to window event stream
-      window.postMessage(bookingPayload, "*");
-
-      // 2. Commit directly to parent itinerary handler
-      onCommitReservation(stopIndex, {
-        name: bookingPayload.payload.propertyName,
-        confirmationNumber: bookingPayload.payload.confirmationId,
-        cost: bookingPayload.payload.totalPaid,
-        parkingNotes: bookingPayload.payload.parkingSpecifications,
-        notes: bookingPayload.payload.notes,
-        address: bookingPayload.payload.address,
-        type: bookingPayload.payload.type,
-        checkIn: checkInDate,
-        checkOut: checkOutDate
-      });
-
-      setIsProcessingBooking(false);
-      setSelectedPropertyForCheckout(null);
-      onClose();
-    }, 700);
+  const getProviderDisplayName = (hotel: TourLodgingOption) => {
+    const n = hotel.name;
+    if (n.includes("Motel 6")) return "Motel 6";
+    if (n.includes("Red Roof")) return "Red Roof Inn";
+    if (n.includes("Best Western")) return "Best Western";
+    if (n.includes("Super 8")) return "Super 8";
+    if (n.includes("Hotel Leo")) return "Hotel Leo";
+    if (n.includes("Belltown Inn")) return "The Belltown Inn";
+    if (n.includes("Ace Hotel")) return "Ace Hotel";
+    if (n.includes("Holiday Inn")) return "Holiday Inn";
+    return n;
   };
 
   // Commit from parsed snippet reader
@@ -376,7 +456,8 @@ export const TourLodgingModal: React.FC<TourLodgingModalProps> = ({
     if (!parsedPreview) return;
     const resolvedName = parsedPreview.hotelName || propertyName || `Hotel in ${stop.city}`;
     const resolvedConf = parsedPreview.confirmationNumber || confirmationNumber || `CONF-${Date.now().toString().slice(-6)}`;
-    const resolvedCost = parsedPreview.totalCost || Number(totalCost) || 85;
+    const parsedCost = parsedPreview.totalCost !== undefined ? parsedPreview.totalCost : totalCost;
+    const resolvedCost = Number(parseNightlyRate(parsedCost));
     const resolvedParking = parsedPreview.parkingNotes || parkingSpecs;
 
     onCommitReservation(stopIndex, {
@@ -397,10 +478,11 @@ export const TourLodgingModal: React.FC<TourLodgingModalProps> = ({
   const handleManualSaveAndImport = () => {
     setIsSubmitting(true);
     try {
+      const parsedCost = Number(parseNightlyRate(totalCost));
       onCommitReservation(stopIndex, {
         name: propertyName.trim() || `Hotel in ${stop.city}`,
         confirmationNumber: confirmationNumber.trim() || `GLZ-${Date.now().toString().slice(-6)}`,
-        cost: totalCost ? Number(totalCost) || totalCost : 85,
+        cost: parsedCost,
         parkingNotes: parkingSpecs.trim(),
         notes: roomNotes.trim(),
         address: `${stop.city}, ${stop.state}`,
@@ -474,8 +556,8 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
               <span className="text-amber-200 underline decoration-amber-300">{stop.city}, {stop.state}</span>
             </h3>
 
-            <p className="text-xs text-amber-100 max-w-2xl">
-              Real-time hotel booking engine embedded with auto-applied van/trailer parking clearance and show night dates. Book directly inside GigLizard or paste your confirmation snippet to instantly lock it into the tour itinerary.
+            <p className="text-xs text-amber-100 max-w-2xl leading-relaxed">
+              GigLizard helps your band find budget-friendly rooms and trailer parking along your route, but does NOT book rooms or charge your card. You will book directly on each hotel&apos;s official site. We are working on a seamless hotel booking solution.
             </p>
           </div>
 
@@ -519,7 +601,7 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
             </div>
 
             <div className="bg-white px-2.5 py-1 rounded-lg border border-amber-200 text-[11px] font-bold text-slate-700">
-              <span>Duration: <strong>1 Night</strong></span>
+              <span>Duration: <strong>{numberOfNights} {numberOfNights === 1 ? "Night" : "Nights"}</strong></span>
             </div>
           </div>
 
@@ -534,6 +616,21 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
         {/* Modal Body: Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
 
+          {/* Prominent Clear, Honest Lodging Disclaimer Banner */}
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-xs">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-800 shrink-0 mt-0.5">
+              <Info className="w-5 h-5 text-amber-800" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-xs font-black uppercase tracking-wider text-amber-900">
+                Direct Hotel Booking Policy
+              </h4>
+              <p className="text-xs sm:text-sm text-amber-950 leading-relaxed font-medium">
+                GigLizard helps your band find budget-friendly rooms and trailer parking along your route, but does NOT book rooms or charge your card. You will book directly on each hotel&apos;s official site. We are working on a seamless hotel booking solution.
+              </p>
+            </div>
+          </div>
+
           {/* Provider Selection Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
             <button
@@ -545,9 +642,8 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Interactive Booking Engine</span>
-              <span className="bg-white/20 text-[10px] px-1.5 py-0.2 rounded-full font-bold">In-App</span>
+              <Hotel className="w-3.5 h-3.5" />
+              <span>Band-Friendly Motels</span>
             </button>
 
             <button
@@ -703,118 +799,11 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
                 </div>
               </div>
 
-              {/* Interactive In-Modal Checkout Drawer (when user selects a property) */}
-              {selectedPropertyForCheckout && (
-                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-5 shadow-lg space-y-4 animate-in slide-in-from-top-2 duration-200 border border-indigo-700">
-                  <div className="flex items-start justify-between gap-4 pb-3 border-b border-indigo-800/80">
-                    <div>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 block">
-                        Confirm In-App Room Booking
-                      </span>
-                      <h4 className="text-base font-black text-white flex items-center gap-2">
-                        <Hotel className="w-4 h-4 text-amber-400" />
-                        <span>{selectedPropertyForCheckout.name}</span>
-                      </h4>
-                      <p className="text-xs text-indigo-200">
-                        {selectedPropertyForCheckout.address || `${stop.city}, ${stop.state}`} • {selectedPropertyForCheckout.distanceToVenues || "Near stage"}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPropertyForCheckout(null)}
-                      className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="bg-white/10 p-3 rounded-xl border border-white/10 space-y-1">
-                      <span className="text-[10px] font-bold text-indigo-300 block uppercase">Dates &amp; Nights</span>
-                      <div className="font-black text-white">{checkInDate} → {checkOutDate}</div>
-                      <div className="text-[11px] text-indigo-200">1 Night (Show Night Stay)</div>
-                    </div>
-
-                    <div className="bg-white/10 p-3 rounded-xl border border-white/10 space-y-1">
-                      <span className="text-[10px] font-bold text-indigo-300 block uppercase">Van &amp; Gear Security</span>
-                      <div className="font-black text-emerald-300 flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>14ft Clearance Verified</span>
-                      </div>
-                      <div className="text-[11px] text-indigo-200">{selectedPropertyForCheckout.gearSecurityNote || "Surface lot with trailer pull-through"}</div>
-                    </div>
-
-                    <div className="bg-white/10 p-3 rounded-xl border border-white/10 space-y-1">
-                      <span className="text-[10px] font-bold text-indigo-300 block uppercase">Total Rate &amp; Taxes</span>
-                      <div className="text-base font-black text-amber-300">
-                        ${parseInt(selectedPropertyForCheckout.estPricePerNight?.replace(/[^0-9]/g, "") || "85", 10) + Math.round(parseInt(selectedPropertyForCheckout.estPricePerNight?.replace(/[^0-9]/g, "") || "85", 10) * 0.12)}
-                      </div>
-                      <div className="text-[10px] text-indigo-300">Includes all taxes &amp; trailer parking fee</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-indigo-300 block mb-1">
-                        Guest Contact Name
-                      </label>
-                      <input
-                        type="text"
-                        value={checkoutGuestName}
-                        onChange={(e) => setCheckoutGuestName(e.target.value)}
-                        className="w-full p-2 bg-white/10 border border-white/20 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-amber-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-indigo-300 block mb-1">
-                        Band Vehicle / Trailer Specification
-                      </label>
-                      <input
-                        type="text"
-                        value={checkoutVanPlate}
-                        onChange={(e) => setCheckoutVanPlate(e.target.value)}
-                        className="w-full p-2 bg-white/10 border border-white/20 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-amber-400"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPropertyForCheckout(null)}
-                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs cursor-pointer"
-                    >
-                      Back to Results
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleExecuteEngineBooking}
-                      disabled={isProcessingBooking}
-                      className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
-                    >
-                      {isProcessingBooking ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>Processing Reservation...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4 stroke-[3]" />
-                          <span>Confirm &amp; Auto-Sync to Itinerary</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Live Search Engine Property Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 {displayedProperties.map((lodging, idx) => {
-                  const basePrice = parseInt(lodging.estPricePerNight?.replace(/[^0-9]/g, "") || "85", 10);
+                  const nightlyRate = parseNightlyRate(lodging.estPricePerNight);
+                  const cardTotalCost = Math.round(Number(nightlyRate) * numberOfNights * 1.12); // 12% est. tax
                   const isSelected = propertyName.toLowerCase() === lodging.name.toLowerCase();
 
                   return (
@@ -848,10 +837,10 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
 
                         <div className="text-right shrink-0">
                           <span className="text-sm font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 block">
-                            ${basePrice}/nt
+                            ${nightlyRate}/nt
                           </span>
                           <span className="text-[10px] text-slate-400 font-bold block pt-0.5">
-                            Est. Total: ${basePrice + Math.round(basePrice * 0.12)}
+                            Est. Total: ${cardTotalCost.toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -880,28 +869,28 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
                       )}
 
                       {/* Action Bar */}
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs gap-2">
                         <button
                           type="button"
                           onClick={() => {
                             setPropertyName(lodging.name);
-                            setTotalCost(String(basePrice));
+                            setTotalCost(String(cardTotalCost));
                             if (lodging.gearSecurityNote) setParkingSpecs(lodging.gearSecurityNote);
                           }}
                           className="text-[11px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
                         >
-                          {isSelected ? "✓ Selected in Form" : "Select details"}
+                          {isSelected ? "✓ Selected in Import Form" : "Fill details below ↓"}
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setSelectedPropertyForCheckout(lodging)}
-                          className="text-xs font-black px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white cursor-pointer shadow-xs flex items-center gap-1.5 transition-all"
+                        <a
+                          href={getOutboundHotelUrl(lodging)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-black px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs hover:shadow-emerald-600/20 flex items-center gap-1.5 transition-all shrink-0"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-                          <span>Instant Book Room</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
+                          <span>Book on {getProviderDisplayName(lodging)} ↗</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
                       </div>
                     </div>
                   );
@@ -994,265 +983,184 @@ Parking Details: Pull-through trailer parking spaces available on ground level.`
             </div>
           )}
 
-          {/* 2. Fallback "Instant Confirmation Paste" Reader */}
-          <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-slate-50 border-2 border-amber-500/30 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm" id="confirmation-email-parser-container">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-amber-200/80">
-              <div className="space-y-0.5">
-                <h4 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
-                  <Clipboard className="w-4 h-4 text-amber-600" />
-                  <span>Instant Confirmation Email / Text Reader</span>
+          {/* 2. Streamlined Itinerary Import */}
+          <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 sm:p-6 space-y-5" id="itinerary-import-section">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-emerald-600 shrink-0" />
+                <h4 className="text-sm sm:text-base font-black text-slate-900">
+                  Already booked your room? Enter your details below to save them to your master tour itinerary.
                 </h4>
-                <p className="text-xs text-slate-600">
-                  Paste your confirmation email from Booking.com, Hotels.com, Airbnb, or any motel to automatically extract all reservation fields.
-                </p>
               </div>
-
-              {/* Sample loader buttons */}
-              <div className="flex items-center gap-1.5 flex-wrap self-start sm:self-auto">
-                <span className="text-[10px] font-bold text-slate-400">Test Samples:</span>
-                <button
-                  type="button"
-                  onClick={() => handleLoadSample("booking")}
-                  className="text-[10px] font-black px-2 py-0.5 rounded bg-white border border-amber-200 text-amber-800 hover:bg-amber-100 cursor-pointer transition-colors"
-                >
-                  Booking.com
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadSample("motel6")}
-                  className="text-[10px] font-black px-2 py-0.5 rounded bg-white border border-amber-200 text-amber-800 hover:bg-amber-100 cursor-pointer transition-colors"
-                >
-                  Motel 6
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadSample("hotels")}
-                  className="text-[10px] font-black px-2 py-0.5 rounded bg-white border border-amber-200 text-amber-800 hover:bg-amber-100 cursor-pointer transition-colors"
-                >
-                  Hotels.com
-                </button>
-              </div>
+              <p className="text-xs text-slate-500">
+                Paste your confirmation email snippet or enter your details manually. These save straight to your tour route data in Supabase.
+              </p>
             </div>
 
-            {/* Paste Textarea */}
-            <div className="relative">
-              <textarea
-                rows={3}
-                value={pastedEmailSnippet}
-                onChange={(e) => setPastedEmailSnippet(e.target.value)}
-                placeholder="Paste booking confirmation snippet here... (e.g. 'Confirmation Number: HTL-891823, Motel 6 Portland Central, Total Paid: $89.50, Check-in: Nov 14, Free van parking confirmed')"
-                className="w-full p-3 bg-white border border-amber-300 rounded-xl text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 shadow-2xs"
-              />
-              {pastedEmailSnippet && (
-                <button
-                  type="button"
-                  onClick={() => setPastedEmailSnippet("")}
-                  className="absolute right-2.5 top-2.5 text-[10px] font-bold text-slate-400 hover:text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded cursor-pointer"
-                >
-                  Clear
-                </button>
+            {/* Instant Confirmation Email / Text Reader */}
+            <div className="bg-white p-4 rounded-xl border border-amber-300 space-y-3 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <Clipboard className="w-4 h-4 text-amber-600" />
+                  <span>Instant Confirmation Email / Text Reader</span>
+                </span>
+                
+                {/* Sample loader buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap self-start sm:self-auto">
+                  <span className="text-[10px] font-bold text-slate-400">Test Samples:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleLoadSample("booking")}
+                    className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-50 border border-amber-200 text-amber-800 hover:bg-amber-100 cursor-pointer transition-colors"
+                  >
+                    Booking.com
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLoadSample("motel6")}
+                    className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-50 border border-amber-200 text-amber-800 hover:bg-amber-100 cursor-pointer transition-colors"
+                  >
+                    Motel 6
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLoadSample("hotels")}
+                    className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-50 border border-amber-200 text-amber-800 hover:bg-amber-100 cursor-pointer transition-colors"
+                  >
+                    Hotels.com
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative">
+                <textarea
+                  rows={2}
+                  value={pastedEmailSnippet}
+                  onChange={(e) => setPastedEmailSnippet(e.target.value)}
+                  placeholder="Paste booking confirmation snippet from Booking.com, Hotels.com, Airbnb, or motel email to auto-extract fields..."
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                />
+                {pastedEmailSnippet && (
+                  <button
+                    type="button"
+                    onClick={() => setPastedEmailSnippet("")}
+                    className="absolute right-2.5 top-2.5 text-[10px] font-bold text-slate-400 hover:text-slate-700 bg-white px-1.5 py-0.5 rounded border border-slate-200 cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {parsedPreview && (parsedPreview.hotelName || parsedPreview.confirmationNumber || parsedPreview.totalCost) && (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Fields auto-extracted below from confirmation snippet!</span>
+                </div>
               )}
             </div>
 
-            {/* Parsed Result Preview Banner */}
-            {parsedPreview && (parsedPreview.hotelName || parsedPreview.confirmationNumber || parsedPreview.totalCost) ? (
-              <div className="bg-white p-4 rounded-xl border border-emerald-300 shadow-xs space-y-3 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase text-emerald-800 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>✓ Successfully Parsed Reservation Details</span>
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400">Ready for 1-Click Itinerary Import</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
-                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Hotel Name</span>
-                    <span className="font-black text-slate-900 truncate block">{parsedPreview.hotelName || "Detected Hotel"}</span>
-                  </div>
-
-                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Confirmation #</span>
-                    <span className="font-mono font-black text-indigo-700 block">{parsedPreview.confirmationNumber || "Detected Code"}</span>
-                  </div>
-
-                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Total Cost</span>
-                    <span className="font-black text-emerald-700 block">${parsedPreview.totalCost || totalCost}</span>
-                  </div>
-
-                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Trailer Clearance</span>
-                    <span className="font-bold text-slate-700 text-[11px] truncate block">
-                      {parsedPreview.parkingNotes || "14ft Clearance Verified"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 1-Click Import Button */}
-                <div className="flex justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={handleCommitParsedSnippet}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Check className="w-4 h-4 stroke-[3]" />
-                    <span>✓ Import &amp; Lock Into Tour Itinerary Now</span>
-                  </button>
+            {/* Clean Entry Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              
+              {/* Hotel Name */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                  Hotel Name *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={propertyName}
+                    onChange={(e) => setPropertyName(e.target.value)}
+                    placeholder="e.g. Motel 6 Central"
+                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
+                  />
+                  <Hotel className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/80 p-3.5 rounded-xl border border-amber-200/80 text-xs">
-                <div className="flex items-center gap-2 text-slate-600">
-                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>
-                    Paste any email or text snippet above to extract hotel name, confirmation code, and parking details for 1-click importing.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleLoadSample("booking")}
-                  className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shrink-0 cursor-pointer shadow-2xs transition-all flex items-center gap-1.5"
-                >
-                  <Clipboard className="w-3.5 h-3.5" />
-                  <span>Load Sample Receipt</span>
-                </button>
-              </div>
-            )}
 
-          </div>
-
-          {/* 3. Manual Fine-Tuning & Direct Commit Accordion */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
-            <button
-              type="button"
-              onClick={() => setShowManualEditor(!showManualEditor)}
-              className="w-full flex items-center justify-between text-left cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-indigo-600" />
-                <span className="text-xs font-black uppercase tracking-wider text-slate-800">
-                  Manual Reservation Fields &amp; Fine-Tuning
-                </span>
-                <span className="text-[10px] font-bold text-slate-400">
-                  (Hotel Name: {propertyName} • Conf: {confirmationNumber} • ${totalCost})
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1 text-xs text-indigo-600 font-bold">
-                <span>{showManualEditor ? "Collapse" : "Edit Details"}</span>
-                {showManualEditor ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </div>
-            </button>
-
-            {showManualEditor && (
-              <div className="pt-3 border-t border-slate-100 space-y-4 animate-in fade-in duration-150">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  
-                  {/* Hotel Property Name */}
-                  <div className="sm:col-span-2 space-y-1">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
-                      Hotel / Accommodation Name *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={propertyName}
-                        onChange={(e) => setPropertyName(e.target.value)}
-                        placeholder="e.g. Motel 6 Portland Central"
-                        className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
-                      />
-                      <Hotel className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Confirmation Number / Booking ID */}
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 flex items-center justify-between">
-                      <span>Confirmation # *</span>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmationNumber(`GLZ-${Math.floor(100000 + Math.random() * 900000)}`)}
-                        className="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer"
-                      >
-                        Auto-Gen
-                      </button>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={confirmationNumber}
-                        onChange={(e) => setConfirmationNumber(e.target.value)}
-                        placeholder="e.g. CONF-8924192"
-                        className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
-                      />
-                      <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Total Stay Cost ($) */}
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
-                      Total Cost ($) *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={totalCost}
-                        onChange={(e) => setTotalCost(e.target.value)}
-                        placeholder="e.g. 85 or 120"
-                        className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
-                      />
-                      <DollarSign className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Parking Specifications */}
-                  <div className="sm:col-span-2 space-y-1">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
-                      Van &amp; Trailer Parking Clearance *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={parkingSpecs}
-                        onChange={(e) => setParkingSpecs(e.target.value)}
-                        placeholder="e.g. Ground lot with 14ft clearance, pull-through trailer parking"
-                        className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
-                      />
-                      <Car className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Room Notes */}
-                  <div className="sm:col-span-3 space-y-1">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
-                      Crew Notes &amp; Late Check-In
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={roomNotes}
-                      onChange={(e) => setRoomNotes(e.target.value)}
-                      placeholder="e.g. Late arrival after load-out. 2 double beds."
-                      className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-600"
-                    />
-                  </div>
-
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleManualSaveAndImport}
-                    disabled={isSubmitting || !propertyName}
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    <Check className="w-4 h-4 stroke-[3]" />
-                    <span>Save &amp; Commit Reservation</span>
-                  </button>
+              {/* Confirmed Reservation # */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                  Confirmed Reservation # *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={confirmationNumber}
+                    onChange={(e) => setConfirmationNumber(e.target.value)}
+                    placeholder="e.g. CONF-8924192"
+                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
+                  />
+                  <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
                 </div>
               </div>
-            )}
+
+              {/* Cost ($) */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                  Cost ($) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={totalCost}
+                    onChange={(e) => setTotalCost(e.target.value)}
+                    placeholder="e.g. 85 or 120"
+                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
+                  />
+                  <DollarSign className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Trailer Parking Notes */}
+              <div className="sm:col-span-2 lg:col-span-3 space-y-1">
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                  Trailer Parking Notes *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={parkingSpecs}
+                    onChange={(e) => setParkingSpecs(e.target.value)}
+                    placeholder="e.g. Ground lot with 14ft clearance, lighted rear parking under spotlight"
+                    className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
+                  />
+                  <Car className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Crew Notes & Late Check-In */}
+              <div className="sm:col-span-2 lg:col-span-3 space-y-1">
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                  Crew Notes &amp; Late Check-In (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={roomNotes}
+                  onChange={(e) => setRoomNotes(e.target.value)}
+                  placeholder="e.g. Late arrival after load-out. 2 double beds reserved."
+                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+
+            </div>
+
+            {/* Commit Button */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <span className="text-[11px] text-slate-500">
+                Saves directly into your tour route_data in Supabase.
+              </span>
+              <button
+                type="button"
+                onClick={handleManualSaveAndImport}
+                disabled={isSubmitting || !propertyName.trim()}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>Save Reservation to Master Tour Itinerary</span>
+              </button>
+            </div>
           </div>
 
         </div>

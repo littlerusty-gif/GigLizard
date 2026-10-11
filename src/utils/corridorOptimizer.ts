@@ -249,17 +249,37 @@ export function calculateCorridorStops(
 
     const stopDate = new Date(start.getTime() + i * 24 * 3600 * 1000).toISOString().split("T")[0];
 
-    // Find suggested venues for this city
-    const matchedVenues = MUSIC_VENUES.filter(v => 
-      v.city.toLowerCase().includes(current.city.toLowerCase()) || 
-      current.city.toLowerCase().includes(v.city.toLowerCase())
-    );
+    // Find suggested venues for this city with strict state/province matching
+    const matchedVenues = MUSIC_VENUES.filter(v => {
+      const cityMatches = v.city.toLowerCase() === current.city.toLowerCase() ||
+        v.city.toLowerCase().includes(current.city.toLowerCase()) || 
+        current.city.toLowerCase().includes(v.city.toLowerCase());
+      if (!cityMatches) return false;
+
+      if (current.state) {
+        const curState = current.state.toUpperCase();
+        if (curState === "BC") {
+          return v.state?.toUpperCase() === "BC" || v.country?.toUpperCase() === "CA" || v.address?.includes("BC");
+        }
+        if (curState === "WA") {
+          return (v.state?.toUpperCase() === "WA" || v.address?.includes(", WA")) && 
+                 v.state?.toUpperCase() !== "BC" && 
+                 !v.address?.includes("BC");
+        }
+        if (v.state) {
+          return v.state.toUpperCase() === curState;
+        }
+      }
+      return true;
+    });
 
     const suggestedVenues: TourVenueStop[] = matchedVenues.length > 0
-      ? matchedVenues.slice(0, 4).map(v => ({
+      ? matchedVenues.slice(0, 6).map(v => ({
           id: v.id,
           name: v.name,
           city: v.city,
+          state: v.state || current.state,
+          country: v.country || (current.state === "BC" ? "CA" : "US"),
           address: v.address,
           capacity: v.capacity,
           genres: v.genres,

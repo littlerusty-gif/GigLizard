@@ -849,21 +849,30 @@ export async function deleteTourFromDatabase(tourId: string): Promise<boolean> {
 /**
  * Queries venues for a specific city from public.venues in Supabase.
  */
-export async function fetchVenuesFromDatabaseForCity(cityName: string): Promise<Venue[]> {
+export async function fetchVenuesFromDatabaseForCity(cityName: string, stateName?: string): Promise<Venue[]> {
   const cleanCity = cityName.trim();
   if (!cleanCity) return [];
 
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("venues")
       .select("*")
       .ilike("city", `%${cleanCity}%`);
+
+    if (stateName && stateName.trim()) {
+      const cleanState = stateName.trim();
+      query = query.or(`state.ilike.%${cleanState}%,state_province.ilike.%${cleanState}%`);
+    }
+
+    const { data, error } = await query;
 
     if (!error && data && Array.isArray(data)) {
       return data.map((v: any) => ({
         id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
         name: v.name || "Live Venue",
         city: v.city || cleanCity,
+        state: v.state || v.state_province || stateName,
+        country: v.country || (stateName?.toUpperCase() === "BC" ? "CA" : "US"),
         address: v.address || `${cleanCity}, ${v.state || ""}`.trim(),
         capacity: Number(v.capacity) || 150,
         genres: Array.isArray(v.genres_accepted) 

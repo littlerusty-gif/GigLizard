@@ -4,6 +4,8 @@ export interface Venue {
   capacity: number;
   address: string;
   city: string;
+  state?: string;
+  country?: string;
   genres: string[];
   contactEmail: string;
   contactPhone: string;
@@ -112,6 +114,8 @@ export interface TourVenueStop {
   id?: string;
   name: string;
   city: string;
+  state?: string;
+  country?: string;
   address?: string;
   capacity?: number;
   genres?: string[];
@@ -141,6 +145,8 @@ export interface TourSelectedVenue {
   name: string;
   address?: string;
   city?: string;
+  state?: string;
+  country?: string;
   contactEmail?: string;
   contactPhone?: string;
   capacity?: number;

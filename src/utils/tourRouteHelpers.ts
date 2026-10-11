@@ -44,10 +44,15 @@ export const calculateTourFinancials = (stops: TourStop[]) => {
     // Lodging
     if (stop.selectedLodging) {
       confirmedLodgingCount++;
-      const costRaw = String(stop.selectedLodging.cost || "");
+      const costRaw = String(stop.selectedLodging.cost || "").replace(/[$,\s]/g, "");
       const match = costRaw.match(/\d+(\.\d+)?/);
       if (match) {
-        totalLodgingCost += parseFloat(match[0]);
+        let parsed = parseFloat(match[0]);
+        if (parsed > 1000) {
+          const firstTwo = parseInt(String(Math.round(parsed)).slice(0, 2), 10);
+          parsed = firstTwo >= 50 && firstTwo <= 250 ? firstTwo : 95;
+        }
+        totalLodgingCost += parsed;
       } else {
         totalLodgingCost += 85; // reasonable fallback
       }
@@ -156,16 +161,37 @@ export const generateFallbackPlan = (
   })();
   const allVenues = [...MUSIC_VENUES, ...customVenues];
 
-  const findVenuesForCity = (cityName: string): TourVenueStop[] => {
-    const matched = allVenues.filter(v => 
-      v.city.toLowerCase().includes(cityName.toLowerCase()) || 
-      cityName.toLowerCase().includes(v.city.toLowerCase())
-    );
+  const findVenuesForCity = (cityName: string, stateName?: string): TourVenueStop[] => {
+    const matched = allVenues.filter(v => {
+      const cityMatches = v.city.toLowerCase() === cityName.toLowerCase() ||
+        v.city.toLowerCase().includes(cityName.toLowerCase()) || 
+        cityName.toLowerCase().includes(v.city.toLowerCase());
+      if (!cityMatches) return false;
+
+      if (stateName) {
+        const curState = stateName.toUpperCase();
+        if (curState === "BC") {
+          return v.state?.toUpperCase() === "BC" || v.country?.toUpperCase() === "CA" || v.address?.includes("BC");
+        }
+        if (curState === "WA") {
+          return (v.state?.toUpperCase() === "WA" || v.address?.includes(", WA")) && 
+                 v.state?.toUpperCase() !== "BC" && 
+                 !v.address?.includes("BC");
+        }
+        if (v.state) {
+          return v.state.toUpperCase() === curState;
+        }
+      }
+      return true;
+    });
+
     if (matched.length > 0) {
       return matched.map(v => ({
         id: v.id,
         name: v.name,
         city: v.city,
+        state: v.state || stateName,
+        country: v.country || (stateName === "BC" ? "CA" : "US"),
         address: v.address,
         capacity: v.capacity,
         genres: v.genres,
@@ -181,7 +207,8 @@ export const generateFallbackPlan = (
       {
         name: `${cityName} Music Hall & Stage`,
         city: cityName,
-        address: `Downtown ${cityName}`,
+        state: stateName,
+        address: `Downtown ${cityName}${stateName ? `, ${stateName}` : ""}`,
         capacity: 180,
         genres: ["Live Music", "Indie Rock", "Punk"],
         contactEmail: `booking@${cityName.toLowerCase().replace(/[^a-z0-9]/g, "")}stage.com`,
