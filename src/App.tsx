@@ -1021,12 +1021,12 @@ export default function GigLizardApp() {
           <div className="relative flex items-center justify-center">
             {/* Subtle emerald pulsing glow perimeter halo */}
             <div 
-              className="absolute -inset-2 rounded-full bg-radial from-emerald-500/40 via-emerald-600/15 to-transparent blur-xl animate-pulse" 
+              className="absolute -inset-3 md:-inset-4 rounded-full bg-radial from-emerald-500/45 via-emerald-600/20 to-transparent blur-xl md:blur-2xl animate-pulse" 
               aria-hidden="true" 
             />
             
-            {/* Inner circle container (~260px on mobile, ~340px on desktop) */}
-            <div className="relative w-[260px] h-[260px] md:w-[340px] md:h-[340px] rounded-full overflow-hidden shadow-[0_0_35px_rgba(16,185,129,0.45),0_0_70px_rgba(5,150,105,0.22)] border-2 border-emerald-500/65 bg-[#121212] flex items-center justify-center">
+            {/* Inner circle container (mobile: w-[85vw] max-w-[360px] aspect-square; desktop: md:w-[500px] md:max-w-[500px] md:h-[500px] aspect-square) */}
+            <div className="relative w-[85vw] max-w-[360px] md:w-[500px] md:max-w-[500px] md:h-[500px] aspect-square rounded-full overflow-hidden shadow-[0_0_45px_rgba(16,185,129,0.5),0_0_90px_rgba(5,150,105,0.25)] border-2 border-emerald-500/70 bg-[#121212] flex items-center justify-center">
               <img 
                 src="/icon-512.png" 
                 alt="GigLizard: The Ultimate Live Music Stage Director" 
@@ -1065,7 +1065,7 @@ export default function GigLizardApp() {
               <img
                 src={gigLizardLogo || "/giglizard_logo.png"}
                 alt="GigLizard"
-                className="h-13 sm:h-16 md:h-22 lg:h-28 xl:h-32 max-w-[180px] sm:max-w-[230px] md:max-w-[340px] lg:max-w-[420px] w-auto object-contain transition-transform group-hover:scale-102"
+                className="h-16 sm:h-20 md:h-24 lg:h-30 xl:h-36 max-w-[220px] sm:max-w-[260px] md:max-w-[380px] lg:max-w-[460px] w-auto object-contain flex-shrink-0 transition-transform group-hover:scale-102"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   if (e.currentTarget.src !== window.location.origin + "/giglizard_logo.png") {
