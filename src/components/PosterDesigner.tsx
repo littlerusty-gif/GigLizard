@@ -3,9 +3,9 @@ import { PosterConfig, SloganProposal, UserAccount } from "../types";
 import { 
   Sparkles, Image, RefreshCw, Layers, CheckSquare, Wine, UtensilsCrossed, 
   Calendar, DollarSign, MapPin, Eye, Wand2, Check, Download, Printer, 
-  ArrowLeft, Users, Save, Type, Palette, FileText, ExternalLink, Flame, CheckCircle2
+  ArrowLeft, Users, Save, Type, Palette, FileText, ExternalLink, Flame, CheckCircle2, AlertCircle
 } from "lucide-react";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
 // Helper to resolve font family classes for poster title
@@ -25,407 +25,409 @@ const getFontFamilyClass = (fontStyle?: string) => {
   }
 };
 
-// Maps theme presets and dynamic color swatch selections into cohesive visual elements
-const getThemeClasses = (themeId: string, colorId: string = "default") => {
-  const isDefault = colorId === "default";
-  
+// Standard Safe HEX Fallback Palettes:
+// Backgrounds: '#0a0a0a', '#18181b', '#27272a', '#ffffff'
+// Accents: Emerald '#10b981', Amber '#f59e0b', Crimson '#ef4444', Cyan '#06b6d4', Violet '#8b5cf6'
+// Typography: '#ffffff', '#e4e4e7', '#a1a1aa', '#111827'
+
+export interface ThemeStylesResult {
+  frameStyle: React.CSSProperties;
+  taglineStyle: React.CSSProperties;
+  bandNameStyle: React.CSSProperties;
+  venueNameStyle: React.CSSProperties;
+  dateBadgeStyle: React.CSSProperties;
+  timeBadgeStyle: React.CSSProperties;
+  graphicStyle: React.CSSProperties;
+  sloganStyle: React.CSSProperties;
+  supportingActsStyle: React.CSSProperties;
+
+  frameClasses: string;
+  taglineClasses: string;
+  bandNameClasses: string;
+  venueNameClasses: string;
+  dateBadgeClasses: string;
+  timeBadgeClasses: string;
+  graphicClasses: string;
+  sloganClasses: string;
+  supportingActsClasses: string;
+
+  // Legacy string properties for seamless compatibility
+  frame: string;
+  tagline: string;
+  bandName: string;
+  venueName: string;
+  dateBadge: string;
+  timeBadge: string;
+  graphicColor: string;
+  sloganColor: string;
+}
+
+const buildThemeStyle = (
+  palette: {
+    bg: string;
+    border: string;
+    text: string;
+    accent: string;
+    sub: string;
+    badgeBg: string;
+    badgeBorder?: string;
+    badgeText?: string;
+  },
+  classes: {
+    frameClasses?: string;
+    taglineClasses?: string;
+    bandNameClasses?: string;
+    venueNameClasses?: string;
+    dateBadgeClasses?: string;
+    timeBadgeClasses?: string;
+    supportingActsClasses?: string;
+  } = {}
+): ThemeStylesResult => {
+  const frameClasses = classes.frameClasses || "font-sans tracking-tight";
+  const taglineClasses = classes.taglineClasses || "tracking-widest";
+  const bandNameClasses = classes.bandNameClasses || "text-4xl uppercase font-black";
+  const venueNameClasses = classes.venueNameClasses || "font-sans uppercase font-bold tracking-wide";
+  const dateBadgeClasses = classes.dateBadgeClasses || "font-bold font-mono";
+  const timeBadgeClasses = classes.timeBadgeClasses || "font-semibold";
+  const supportingActsClasses = classes.supportingActsClasses || "font-mono font-bold";
+
+  return {
+    frameStyle: {
+      backgroundColor: palette.bg,
+      borderColor: palette.border,
+      color: palette.text
+    },
+    taglineStyle: {
+      color: palette.accent
+    },
+    bandNameStyle: {
+      color: palette.text
+    },
+    venueNameStyle: {
+      color: palette.sub
+    },
+    dateBadgeStyle: {
+      backgroundColor: palette.badgeBg,
+      borderColor: palette.badgeBorder || palette.border,
+      color: palette.badgeText || palette.text
+    },
+    timeBadgeStyle: {
+      backgroundColor: palette.badgeBg,
+      borderColor: palette.badgeBorder || palette.border,
+      color: palette.sub
+    },
+    graphicStyle: {
+      color: palette.accent
+    },
+    sloganStyle: {
+      color: palette.accent
+    },
+    supportingActsStyle: {
+      backgroundColor: palette.badgeBg,
+      borderColor: palette.border,
+      color: palette.accent
+    },
+
+    frameClasses,
+    taglineClasses,
+    bandNameClasses,
+    venueNameClasses,
+    dateBadgeClasses,
+    timeBadgeClasses,
+    graphicClasses: "",
+    sloganClasses: "",
+    supportingActsClasses,
+
+    // Legacy fallbacks
+    frame: frameClasses,
+    tagline: taglineClasses,
+    bandName: bandNameClasses,
+    venueName: venueNameClasses,
+    dateBadge: dateBadgeClasses,
+    timeBadge: timeBadgeClasses,
+    graphicColor: "",
+    sloganColor: ""
+  };
+};
+
+// Maps theme presets and dynamic color swatch selections into strictly web-safe HEX and sRGB elements
+const getThemeClasses = (themeId: string, colorId: string = "default"): ThemeStylesResult => {
   switch (themeId) {
     case "heavy-grunge": {
-      if (isDefault) {
-        return {
-          frame: "bg-red-950 text-orange-200 border-2 border-red-900 font-sans tracking-tighter",
-          tagline: "text-orange-500",
-          bandName: "text-red-100",
-          venueName: "text-orange-300",
-          dateBadge: "bg-red-900/40 text-rose-100",
-          timeBadge: "bg-orange-950/40 text-orange-400",
-          graphicColor: "text-orange-500",
-          sloganColor: "text-orange-500"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-red-950 text-red-200 border-2 border-red-900 font-sans tracking-tighter", tagline: "text-red-500", bandName: "text-red-100", venue: "text-red-300", date: "bg-red-900/40 text-red-100", time: "bg-red-950/40 text-red-400" },
-        blue:   { frame: "bg-slate-950 text-sky-200 border-2 border-sky-900 font-sans tracking-tighter", tagline: "text-sky-550", bandName: "text-sky-100", venue: "text-sky-300", date: "bg-sky-900/40 text-sky-100", time: "bg-sky-950/40 text-sky-400" },
-        green:  { frame: "bg-stone-950 text-emerald-250 border-2 border-emerald-900 font-sans tracking-tighter", tagline: "text-emerald-500", bandName: "text-emerald-100", venue: "text-emerald-300", date: "bg-emerald-900/40 text-emerald-100", time: "bg-stone-950/40 text-emerald-400" },
-        purple: { frame: "bg-[#180824] text-purple-205 border-2 border-purple-900 font-sans tracking-tighter", tagline: "text-purple-500", bandName: "text-purple-100", venue: "text-purple-305", date: "bg-purple-900/40 text-purple-100", time: "bg-[#250836]/40 text-purple-400" },
-        amber:  { frame: "bg-stone-950 text-amber-205 border-2 border-amber-900 font-sans tracking-tighter", tagline: "text-amber-500", bandName: "text-amber-100", venue: "text-amber-305", date: "bg-amber-900/40 text-amber-100", time: "bg-stone-950/40 text-amber-400" },
-        pink:   { frame: "bg-pink-950 text-pink-205 border-2 border-pink-900 font-sans tracking-tighter", tagline: "text-pink-500", bandName: "text-pink-100", venue: "text-pink-305", date: "bg-pink-900/40 text-pink-100", time: "bg-pink-950/40 text-pink-400" },
-        black:  { frame: "bg-neutral-950 text-zinc-300 border-2 border-zinc-800 font-sans tracking-tighter", tagline: "text-zinc-500", bandName: "text-zinc-100", venue: "text-zinc-400", date: "bg-zinc-900/40 text-zinc-100", time: "bg-neutral-950/40 text-zinc-450" }
+        default: { bg: "#1a0505", border: "#7f1d1d", text: "#fee2e2", accent: "#f97316", sub: "#fca5a5", badgeBg: "#2d0a0a" },
+        red:     { bg: "#1a0505", border: "#7f1d1d", text: "#fee2e2", accent: "#ef4444", sub: "#fca5a5", badgeBg: "#2d0a0a" },
+        blue:    { bg: "#030f24", border: "#0369a1", text: "#e0f2fe", accent: "#38bdf8", sub: "#7dd3fc", badgeBg: "#072147" },
+        green:   { bg: "#021a0d", border: "#047857", text: "#d1fae5", accent: "#10b981", sub: "#6ee7b7", badgeBg: "#04361c" },
+        purple:  { bg: "#180824", border: "#6b21a8", text: "#f3e8ff", accent: "#a855f7", sub: "#d8b4fe", badgeBg: "#2c0f42" },
+        amber:   { bg: "#1c1103", border: "#b45309", text: "#fef3c7", accent: "#f59e0b", sub: "#fcd34d", badgeBg: "#382206" },
+        pink:    { bg: "#210414", border: "#be185d", text: "#fce7f3", accent: "#ec4899", sub: "#f472b6", badgeBg: "#420928" },
+        black:   { bg: "#0a0a0a", border: "#27272a", text: "#ffffff", accent: "#a1a1aa", sub: "#e4e4e7", badgeBg: "#18181b" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: sel.frame,
-        tagline: sel.tagline,
-        bandName: `text-4xl uppercase font-black ${sel.bandName}`,
-        venueName: sel.venue,
-        dateBadge: sel.date,
-        timeBadge: sel.time,
-        graphicColor: sel.tagline,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-sans tracking-tighter border-2",
+        taglineClasses: "uppercase font-bold tracking-widest",
+        bandNameClasses: "text-4xl uppercase font-black tracking-tight",
+        venueNameClasses: "font-sans uppercase font-bold tracking-wide",
+        dateBadgeClasses: "font-mono font-bold border",
+        timeBadgeClasses: "border"
+      });
     }
 
     case "classic-rock": {
-      if (isDefault) {
-        return {
-          frame: "bg-[#14100c] text-amber-100 font-serif border-4 border-amber-600/70 shadow-2xl tracking-normal",
-          tagline: "text-amber-400 font-sans uppercase font-bold tracking-widest",
-          bandName: "text-amber-200 font-black tracking-tight",
-          venueName: "text-amber-100 font-serif uppercase tracking-widest",
-          dateBadge: "bg-amber-900/60 border border-amber-600 text-amber-200 font-bold",
-          timeBadge: "bg-stone-900 text-amber-300 border border-amber-800/40",
-          graphicColor: "text-amber-500",
-          sloganColor: "text-amber-400"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-[#1a0a0a] text-red-100 font-serif border-4 border-red-700", tagline: "text-red-400", bandName: "text-red-200", venue: "text-red-100", date: "bg-red-950 border-red-700 text-red-200", time: "bg-black text-red-300" },
-        blue:   { frame: "bg-[#0a121a] text-sky-100 font-serif border-4 border-sky-700", tagline: "text-sky-400", bandName: "text-sky-200", venue: "text-sky-100", date: "bg-sky-950 border-sky-700 text-sky-200", time: "bg-black text-sky-300" },
-        green:  { frame: "bg-[#0a180e] text-emerald-100 font-serif border-4 border-emerald-700", tagline: "text-emerald-400", bandName: "text-emerald-200", venue: "text-emerald-100", date: "bg-emerald-950 border-emerald-700 text-emerald-200", time: "bg-black text-emerald-300" },
-        purple: { frame: "bg-[#160a1f] text-purple-100 font-serif border-4 border-purple-700", tagline: "text-purple-400", bandName: "text-purple-200", venue: "text-purple-100", date: "bg-purple-950 border-purple-700 text-purple-200", time: "bg-black text-purple-300" },
-        amber:  { frame: "bg-[#1c1208] text-amber-100 font-serif border-4 border-amber-600", tagline: "text-amber-400", bandName: "text-amber-200", venue: "text-amber-100", date: "bg-amber-950 border-amber-600 text-amber-200", time: "bg-black text-amber-300" },
-        pink:   { frame: "bg-[#1f0a17] text-pink-100 font-serif border-4 border-pink-700", tagline: "text-pink-400", bandName: "text-pink-200", venue: "text-pink-100", date: "bg-pink-950 border-pink-700 text-pink-200", time: "bg-black text-pink-300" },
-        black:  { frame: "bg-[#0d0d0d] text-zinc-100 font-serif border-4 border-zinc-700", tagline: "text-zinc-400", bandName: "text-zinc-200", venue: "text-zinc-100", date: "bg-zinc-900 border-zinc-700 text-zinc-200", time: "bg-black text-zinc-300" }
+        default: { bg: "#14100c", border: "#d97706", text: "#fef3c7", accent: "#f59e0b", sub: "#fde68a", badgeBg: "#291807" },
+        red:     { bg: "#1a0a0a", border: "#b91c1c", text: "#fee2e2", accent: "#ef4444", sub: "#fca5a5", badgeBg: "#2d0f0f" },
+        blue:    { bg: "#0a121a", border: "#0369a1", text: "#e0f2fe", accent: "#0ea5e9", sub: "#7dd3fc", badgeBg: "#0f1f2d" },
+        green:   { bg: "#0a180e", border: "#047857", text: "#d1fae5", accent: "#10b981", sub: "#6ee7b7", badgeBg: "#0e2a18" },
+        purple:  { bg: "#160a1f", border: "#6b21a8", text: "#f3e8ff", accent: "#a855f7", sub: "#d8b4fe", badgeBg: "#271237" },
+        amber:   { bg: "#1c1208", border: "#d97706", text: "#fef3c7", accent: "#f59e0b", sub: "#fde68a", badgeBg: "#331e0b" },
+        pink:    { bg: "#1f0a17", border: "#be185d", text: "#fce7f3", accent: "#ec4899", sub: "#f472b6", badgeBg: "#381229" },
+        black:   { bg: "#0d0d0d", border: "#3f3f46", text: "#f4f4f5", accent: "#a1a1aa", sub: "#e4e4e7", badgeBg: "#18181b" }
       };
-      const sel = map[colorId] || map.amber;
-      return {
-        frame: sel.frame,
-        tagline: sel.tagline,
-        bandName: `text-4xl uppercase font-black ${sel.bandName}`,
-        venueName: sel.venue,
-        dateBadge: sel.date,
-        timeBadge: sel.time,
-        graphicColor: sel.tagline,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-serif border-4 shadow-2xl tracking-normal",
+        taglineClasses: "font-sans uppercase font-bold tracking-widest",
+        bandNameClasses: "text-4xl uppercase font-black tracking-tight",
+        venueNameClasses: "font-serif uppercase tracking-widest font-bold",
+        dateBadgeClasses: "font-serif font-bold border",
+        timeBadgeClasses: "border"
+      });
     }
 
     case "retro-neon": {
-      if (isDefault) {
-        return {
-          frame: "bg-slate-950 text-pink-400 font-mono border-2 border-pink-500",
-          tagline: "text-cyan-400 animate-pulse",
-          bandName: "text-4xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-indigo-400 font-black",
-          venueName: "text-pink-400 font-extrabold",
-          dateBadge: "bg-slate-900 border border-indigo-500 text-cyan-305",
-          timeBadge: "bg-slate-905 text-pink-300 border border-slate-800",
-          graphicColor: "text-pink-400",
-          sloganColor: "text-cyan-400"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-neutral-950 text-red-400 font-mono border-2 border-red-500", tagline: "text-orange-400", grad: "from-red-500 to-orange-450", venue: "text-red-405", date: "border-red-500 text-orange-300", time: "text-red-300 border-slate-800" },
-        blue:   { frame: "bg-slate-950 text-sky-455 font-mono border-2 border-sky-505", tagline: "text-teal-300", grad: "from-sky-500 to-teal-400", venue: "text-sky-450", date: "border-sky-500 text-teal-300", time: "text-sky-300 border-slate-800" },
-        green:  { frame: "bg-black text-emerald-400 font-mono border-2 border-emerald-500", tagline: "text-yellow-405", grad: "from-emerald-500 to-yellow-400", venue: "text-emerald-400", date: "border-emerald-500 text-yellow-300", time: "text-emerald-300 border-slate-800" },
-        purple: { frame: "bg-[#180824] text-purple-400 font-mono border-2 border-purple-500", tagline: "text-pink-400", grad: "from-purple-505 to-pink-400", venue: "text-purple-400", date: "border-purple-505 text-pink-300", time: "text-purple-300 border-slate-800" },
-        amber:  { frame: "bg-stone-950 text-amber-500 font-mono border-2 border-amber-500", tagline: "text-yellow-300", grad: "from-amber-505 to-yellow-300", venue: "text-amber-500", date: "border-amber-500 text-yellow-101", time: "text-amber-300 border-slate-800" },
-        pink:   { frame: "bg-[#0c0514] text-pink-500 font-mono border-2 border-pink-500", tagline: "text-purple-305", grad: "from-pink-500 to-indigo-400", venue: "text-pink-505", date: "border-pink-505 text-pink-310", time: "text-pink-303 border-slate-800" },
-        black:  { frame: "bg-neutral-950 text-zinc-400 font-mono border-2 border-zinc-650", tagline: "text-neutral-300", grad: "from-zinc-405 to-neutral-200", venue: "text-zinc-400", date: "border-zinc-500 text-zinc-300", time: "text-zinc-300 border-slate-800" }
+        default: { bg: "#090414", border: "#ec4899", text: "#ffffff", accent: "#38bdf8", sub: "#f43f5e", badgeBg: "#15072e" },
+        red:     { bg: "#0d0408", border: "#ef4444", text: "#ffffff", accent: "#f97316", sub: "#ef4444", badgeBg: "#210812" },
+        blue:    { bg: "#030c1c", border: "#06b6d4", text: "#ffffff", accent: "#38bdf8", sub: "#06b6d4", badgeBg: "#071936" },
+        green:   { bg: "#02140d", border: "#10b981", text: "#ffffff", accent: "#34d399", sub: "#10b981", badgeBg: "#052618" },
+        purple:  { bg: "#180824", border: "#a855f7", text: "#ffffff", accent: "#e879f9", sub: "#c084fc", badgeBg: "#280e3d" },
+        amber:   { bg: "#140c03", border: "#f59e0b", text: "#ffffff", accent: "#fde047", sub: "#f59e0b", badgeBg: "#2a1705" },
+        pink:    { bg: "#170312", border: "#ec4899", text: "#ffffff", accent: "#f472b6", sub: "#ec4899", badgeBg: "#300726" },
+        black:   { bg: "#09090b", border: "#71717a", text: "#ffffff", accent: "#d4d4d8", sub: "#a1a1aa", badgeBg: "#18181b" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: sel.frame,
-        tagline: `${sel.tagline} animate-pulse`,
-        bandName: `text-transparent bg-clip-text bg-gradient-to-r ${sel.grad} font-black`,
-        venueName: sel.venue,
-        dateBadge: `bg-slate-900 border ${sel.date}`,
-        timeBadge: `bg-slate-950/55 ${sel.time}`,
-        graphicColor: sel.venue,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-mono border-2",
+        taglineClasses: "animate-pulse tracking-widest font-bold",
+        bandNameClasses: "text-4xl font-black tracking-tight",
+        venueNameClasses: "font-extrabold tracking-wide uppercase",
+        dateBadgeClasses: "border font-mono",
+        timeBadgeClasses: "border font-mono"
+      });
     }
 
     case "indie-minimal": {
-      if (isDefault) {
-        return {
-          frame: "bg-slate-50 text-slate-900 border-2 border-slate-205",
-          tagline: "text-slate-400 font-mono",
-          bandName: "text-slate-800",
-          venueName: "text-slate-900",
-          dateBadge: "bg-slate-100 text-slate-800",
-          timeBadge: "bg-slate-200/50 text-slate-755",
-          graphicColor: "bg-slate-900 text-white",
-          sloganColor: "text-slate-400"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-red-50 text-red-950 border-2 border-red-200", tagline: "text-red-400", band: "text-red-900", badge: "bg-red-100 text-red-900" },
-        blue:   { frame: "bg-sky-50 text-sky-950 border-2 border-sky-200", tagline: "text-sky-500", band: "text-sky-900", badge: "bg-sky-100 text-sky-900" },
-        green:  { frame: "bg-emerald-50 text-emerald-950 border-2 border-emerald-200", tagline: "text-emerald-500", band: "text-emerald-900", badge: "bg-emerald-100 text-emerald-900" },
-        purple: { frame: "bg-purple-50 text-purple-950 border-2 border-purple-200", tagline: "text-purple-400", band: "text-purple-900", badge: "bg-purple-100 text-purple-950" },
-        amber:  { frame: "bg-amber-50 text-amber-955 border-2 border-amber-200", tagline: "text-amber-600", band: "text-amber-900", badge: "bg-amber-100 text-amber-955" },
-        pink:   { frame: "bg-pink-50 text-pink-955 border-2 border-pink-200", tagline: "text-pink-500", band: "text-pink-900", badge: "bg-pink-100 text-pink-955" },
-        black:  { frame: "bg-zinc-50 text-zinc-950 border-2 border-zinc-200", tagline: "text-zinc-500", band: "text-zinc-900", badge: "bg-zinc-150 text-zinc-805" }
+        default: { bg: "#ffffff", border: "#e4e4e7", text: "#111827", accent: "#10b981", sub: "#71717a", badgeBg: "#f4f4f5" },
+        red:     { bg: "#fef2f2", border: "#fecaca", text: "#7f1d1d", accent: "#b91c1c", sub: "#991b1b", badgeBg: "#fee2e2" },
+        blue:    { bg: "#f0f9ff", border: "#bae6fd", text: "#0c4a6e", accent: "#0284c7", sub: "#0369a1", badgeBg: "#e0f2fe" },
+        green:   { bg: "#f0fdf4", border: "#bbf7d0", text: "#064e3b", accent: "#059669", sub: "#047857", badgeBg: "#dcfce7" },
+        purple:  { bg: "#faf5ff", border: "#e9d5ff", text: "#581c87", accent: "#7c3aed", sub: "#6b21a8", badgeBg: "#f3e8ff" },
+        amber:   { bg: "#fffbeb", border: "#fde68a", text: "#78350f", accent: "#d97706", sub: "#b45309", badgeBg: "#fef3c7" },
+        pink:    { bg: "#fdf2f8", border: "#fbcfe8", text: "#831843", accent: "#db2777", sub: "#be185d", badgeBg: "#fce7f3" },
+        black:   { bg: "#fafafa", border: "#e4e4e7", text: "#18181b", accent: "#3f3f46", sub: "#52525b", badgeBg: "#f4f4f5" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: sel.frame,
-        tagline: `${sel.tagline} font-mono`,
-        bandName: `${sel.band}`,
-        venueName: sel.band,
-        dateBadge: `${sel.badge}`,
-        timeBadge: "bg-slate-200/50 text-slate-700",
-        graphicColor: `bg-slate-900 text-white`,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "border-2",
+        taglineClasses: "font-mono text-xs uppercase",
+        bandNameClasses: "font-bold text-4xl",
+        venueNameClasses: "font-semibold tracking-wide",
+        dateBadgeClasses: "rounded font-mono",
+        timeBadgeClasses: "rounded-full font-mono"
+      });
     }
 
     case "folk-acoustic": {
-      if (isDefault) {
-        return {
-          frame: "bg-[#fdfaf2] text-amber-955 font-serif border-4 border-double border-amber-800",
-          tagline: "text-amber-800 font-semibold italic",
-          bandName: "text-amber-955",
-          venueName: "text-amber-900 block font-bold",
-          dateBadge: "border border-amber-800 text-amber-900",
-          timeBadge: "bg-amber-100 text-amber-850",
-          graphicColor: "text-amber-800",
-          sloganColor: "text-amber-800"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-[#fff5f5] text-red-955 font-serif border-4 border-double border-red-800", tagline: "text-red-800", band: "text-red-955", venue: "text-red-900", date: "border-red-800 text-red-900", time: "bg-red-100 text-red-850" },
-        blue:   { frame: "bg-[#f0f9ff] text-sky-955 font-serif border-4 border-double border-sky-800", tagline: "text-sky-800", band: "text-sky-955", venue: "text-sky-900", date: "border-sky-800 text-sky-900", time: "bg-sky-100 text-sky-850" },
-        green:  { frame: "bg-[#f0fdf4] text-emerald-955 font-serif border-4 border-double border-emerald-800", tagline: "text-emerald-800", band: "text-emerald-955", venue: "text-emerald-900", date: "border-emerald-800 text-emerald-900", time: "bg-emerald-100 text-emerald-850" },
-        purple: { frame: "bg-[#faf5ff] text-purple-955 font-serif border-4 border-double border-purple-800", tagline: "text-purple-800", band: "text-purple-955", venue: "text-purple-900", date: "border-purple-800 text-purple-900", time: "bg-purple-100 text-purple-850" },
-        amber:  { frame: "bg-[#fffaf0] text-amber-955 font-serif border-4 border-double border-amber-800", tagline: "text-amber-800", band: "text-amber-955", venue: "text-amber-900", date: "border-amber-800 text-amber-900", time: "bg-amber-100 text-amber-850" },
-        pink:   { frame: "bg-[#fff5f7] text-pink-955 font-serif border-4 border-double border-pink-800", tagline: "text-pink-800", band: "text-pink-955", venue: "text-pink-900", date: "border-pink-800 text-pink-900", time: "bg-pink-100 text-pink-850" },
-        black:  { frame: "bg-[#fafafa] text-zinc-950 font-serif border-4 border-double border-zinc-800", tagline: "text-zinc-650", band: "text-zinc-950", venue: "text-zinc-900", date: "border-zinc-800 text-zinc-800", time: "bg-zinc-200 text-zinc-800" }
+        default: { bg: "#fdfaf2", border: "#78350f", text: "#451a03", accent: "#92400e", sub: "#78350f", badgeBg: "#fef3c7" },
+        red:     { bg: "#fff5f5", border: "#991b1b", text: "#450a0a", accent: "#b91c1c", sub: "#991b1b", badgeBg: "#fee2e2" },
+        blue:    { bg: "#f0f9ff", border: "#075985", text: "#082f49", accent: "#0369a1", sub: "#0284c7", badgeBg: "#e0f2fe" },
+        green:   { bg: "#f0fdf4", border: "#065f46", text: "#022c22", accent: "#047857", sub: "#059669", badgeBg: "#dcfce7" },
+        purple:  { bg: "#faf5ff", border: "#6b21a8", text: "#3b0764", accent: "#7e22ce", sub: "#6b21a8", badgeBg: "#f3e8ff" },
+        amber:   { bg: "#fffaf0", border: "#92400e", text: "#451a03", accent: "#b45309", sub: "#78350f", badgeBg: "#fef3c7" },
+        pink:    { bg: "#fff5f7", border: "#9d174d", text: "#500724", accent: "#be185d", sub: "#831843", badgeBg: "#fce7f3" },
+        black:   { bg: "#f4f4f5", border: "#27272a", text: "#09090b", accent: "#3f3f46", sub: "#52525b", badgeBg: "#e4e4e7" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: sel.frame,
-        tagline: `${sel.tagline} font-semibold italic`,
-        bandName: `${sel.band}`,
-        venueName: `${sel.venue} block font-bold`,
-        dateBadge: sel.date,
-        timeBadge: sel.time,
-        graphicColor: sel.tagline,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-serif border-4 border-double",
+        taglineClasses: "font-semibold italic",
+        bandNameClasses: "font-serif font-bold text-4xl",
+        venueNameClasses: "font-serif font-bold block",
+        dateBadgeClasses: "border font-serif",
+        timeBadgeClasses: "rounded font-serif"
+      });
     }
 
     case "psychedelic-acid": {
-      if (isDefault) {
-        return {
-          frame: "bg-[#180824] text-[#facc15] font-serif border-2 border-[#86198f]",
-          tagline: "text-[#f59e0b] italic font-black",
-          bandName: "text-[#ca8a04]",
-          venueName: "text-purple-305 font-sans font-bold",
-          dateBadge: "bg-slate-900/40 text-[#facc15]",
-          timeBadge: "bg-[#31024e] text-purple-200",
-          graphicColor: "text-[#facc15]",
-          sloganColor: "text-[#f59e0b]"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-[#250808] text-red-400 font-serif border-2 border-red-800", tagline: "text-[#ff6b6b] italic font-black", band: "text-red-500", venue: "text-red-200" },
-        blue:   { frame: "bg-[#02182c] text-sky-450 font-serif border-2 border-sky-800", tagline: "text-cyan-300 italic font-black", band: "text-sky-500", venue: "text-sky-200" },
-        green:  { frame: "bg-[#042416] text-emerald-400 font-serif border-2 border-emerald-800", tagline: "text-emerald-305 italic font-black", band: "text-emerald-500", venue: "text-emerald-200" },
-        purple: { frame: "bg-[#180824] text-purple-355 font-serif border-2 border-purple-800", tagline: "text-pink-400 italic font-black", band: "text-purple-505", venue: "text-purple-200" },
-        amber:  { frame: "bg-[#221002] text-amber-400 font-serif border-2 border-amber-800", tagline: "text-yellow-400 italic font-black", band: "text-[#d97706]", venue: "text-amber-250" },
-        pink:   { frame: "bg-[#250012] text-pink-400 font-serif border-2 border-pink-800", tagline: "text-yellow-300 italic font-black", band: "text-pink-500", venue: "text-pink-200" },
-        black:  { frame: "bg-black text-zinc-300 font-serif border-2 border-zinc-800", tagline: "text-zinc-400 italic font-black", band: "text-zinc-100", venue: "text-zinc-300" }
+        default: { bg: "#180824", border: "#86198f", text: "#ca8a04", accent: "#facc15", sub: "#c084fc", badgeBg: "#2c0f42" },
+        red:     { bg: "#250808", border: "#991b1b", text: "#ef4444", accent: "#f87171", sub: "#fca5a5", badgeBg: "#381010" },
+        blue:    { bg: "#02182c", border: "#0369a1", text: "#38bdf8", accent: "#06b6d4", sub: "#7dd3fc", badgeBg: "#05284a" },
+        green:   { bg: "#042416", border: "#047857", text: "#34d399", accent: "#10b981", sub: "#6ee7b7", badgeBg: "#093823" },
+        purple:  { bg: "#180824", border: "#7e22ce", text: "#e879f9", accent: "#c084fc", sub: "#f0abfc", badgeBg: "#2c0f42" },
+        amber:   { bg: "#221002", border: "#b45309", text: "#fbbf24", accent: "#f59e0b", sub: "#fde047", badgeBg: "#3b1c04" },
+        pink:    { bg: "#250012", border: "#be185d", text: "#f472b6", accent: "#ec4899", sub: "#fbcfe8", badgeBg: "#420422" },
+        black:   { bg: "#0a0a0a", border: "#3f3f46", text: "#e4e4e7", accent: "#a1a1aa", sub: "#d4d4d8", badgeBg: "#18181b" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: sel.frame,
-        tagline: sel.tagline,
-        bandName: `${sel.band}`,
-        venueName: sel.venue,
-        dateBadge: `bg-slate-900/40 ${sel.band}`,
-        timeBadge: `bg-black/50 ${sel.venue}`,
-        graphicColor: sel.band,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-serif border-2",
+        taglineClasses: "italic font-black",
+        bandNameClasses: "font-black text-4xl tracking-tight",
+        venueNameClasses: "font-sans font-bold",
+        dateBadgeClasses: "border",
+        timeBadgeClasses: "border"
+      });
     }
 
     case "metal-hellfire": {
-      if (isDefault) {
-        return {
-          frame: "bg-[#090504] text-red-500 font-sans tracking-widest uppercase border-2 border-red-950",
-          tagline: "text-orange-500 tracking-widest",
-          bandName: "text-white",
-          venueName: "text-red-500 font-sans tracking-wide font-black",
-          dateBadge: "bg-red-950/40 text-red-500 border border-red-900/50",
-          timeBadge: "bg-stone-900 text-gray-400",
-          graphicColor: "text-red-800",
-          sloganColor: "text-orange-500"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-black text-red-600 border-2 border-red-950", tagline: "text-red-500", venue: "text-red-800" },
-        blue:   { frame: "bg-black text-sky-600 border-2 border-sky-950", tagline: "text-sky-500", venue: "text-sky-800" },
-        green:  { frame: "bg-black text-emerald-600 border-2 border-[#15803d]", tagline: "text-emerald-500", venue: "text-emerald-805" },
-        purple: { frame: "bg-black text-purple-600 border-2 border-[#7e22ce]", tagline: "text-purple-500", venue: "text-purple-800" },
-        amber:  { frame: "bg-black text-amber-600 border-2 border-[#b45309]", tagline: "text-amber-500", venue: "text-amber-800" },
-        pink:   { frame: "bg-black text-pink-600 border-2 border-[#be185d]", tagline: "text-pink-500", venue: "text-pink-800" },
-        black:  { frame: "bg-black text-zinc-500 border-2 border-[#3f3f46]", tagline: "text-zinc-400", venue: "text-zinc-650" }
+        default: { bg: "#090504", border: "#7f1d1d", text: "#ffffff", accent: "#ef4444", sub: "#f87171", badgeBg: "#1f0a0a" },
+        red:     { bg: "#090504", border: "#7f1d1d", text: "#ffffff", accent: "#ef4444", sub: "#f87171", badgeBg: "#1f0a0a" },
+        blue:    { bg: "#030914", border: "#0c4a6e", text: "#ffffff", accent: "#0284c7", sub: "#38bdf8", badgeBg: "#061a33" },
+        green:   { bg: "#021208", border: "#064e3b", text: "#ffffff", accent: "#059669", sub: "#34d399", badgeBg: "#042610" },
+        purple:  { bg: "#0d0317", border: "#581c87", text: "#ffffff", accent: "#7e22ce", sub: "#c084fc", badgeBg: "#1e0833" },
+        amber:   { bg: "#120902", border: "#78350f", text: "#ffffff", accent: "#d97706", sub: "#fbbf24", badgeBg: "#291506" },
+        pink:    { bg: "#14020d", border: "#831843", text: "#ffffff", accent: "#db2777", sub: "#f472b6", badgeBg: "#2d061f" },
+        black:   { bg: "#050505", border: "#27272a", text: "#ffffff", accent: "#71717a", sub: "#a1a1aa", badgeBg: "#18181b" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: `${sel.frame} font-sans tracking-widest uppercase`,
-        tagline: `${sel.tagline} tracking-widest`,
-        bandName: "text-white",
-        venueName: `${sel.tagline} font-sans tracking-wide font-black`,
-        dateBadge: "bg-[#0a0a0a] text-white border border-stone-800",
-        timeBadge: "bg-stone-900 text-gray-400",
-        graphicColor: sel.venue,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-sans tracking-widest uppercase border-2",
+        taglineClasses: "tracking-widest font-bold",
+        bandNameClasses: "font-black text-4xl",
+        venueNameClasses: "font-sans tracking-wide font-black",
+        dateBadgeClasses: "border",
+        timeBadgeClasses: "border"
+      });
     }
 
     case "pop-bubblegum": {
-      if (isDefault) {
-        return {
-          frame: "bg-[#fdf2f8] text-[#db2777] font-sans border-2 border-dashed border-[#f472b6]",
-          tagline: "text-[#ec4899] font-bold",
-          bandName: "text-[#db2777]",
-          venueName: "text-[#f472b6] font-extrabold",
-          dateBadge: "bg-[#fbcfe8] text-[#db2777]",
-          timeBadge: "bg-pink-100 text-[#ec4899]",
-          graphicColor: "text-pink-400",
-          sloganColor: "text-[#ec4899]"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-red-50 text-red-650 border-2 border-dashed border-red-300", tagline: "text-red-500", band: "text-red-700", venue: "text-red-400", badge: "bg-red-100 text-red-800", time: "bg-red-50 text-red-600" },
-        blue:   { frame: "bg-sky-50 text-sky-655 border-2 border-dashed border-sky-300", tagline: "text-sky-500", band: "text-sky-700", venue: "text-sky-400", badge: "bg-sky-100 text-sky-800", time: "bg-sky-55 text-sky-600" },
-        green:  { frame: "bg-[#f0fdf4] text-emerald-650 border-2 border-dashed border-emerald-300", tagline: "text-emerald-500", band: "text-emerald-700", venue: "text-emerald-420", badge: "bg-emerald-100 text-emerald-800", time: "bg-emerald-50 text-emerald-600" },
-        purple: { frame: "bg-[#faf5ff] text-purple-650 border-2 border-dashed border-purple-300", tagline: "text-purple-500", band: "text-purple-700", venue: "text-purple-420", badge: "bg-purple-100 text-purple-800", time: "bg-purple-50 text-purple-600" },
-        amber:  { frame: "bg-amber-50 text-amber-655 border-2 border-dashed border-amber-300", tagline: "text-amber-500", band: "text-amber-700", venue: "text-amber-400", badge: "bg-amber-100 text-amber-800", time: "bg-amber-55 text-amber-600" },
-        pink:   { frame: "bg-pink-50 text-pink-655 border-2 border-dashed border-pink-300", tagline: "text-pink-500", band: "text-pink-700", venue: "text-pink-400", badge: "bg-pink-101 text-pink-850", time: "bg-pink-50 text-pink-600" },
-        black:  { frame: "bg-zinc-50 text-zinc-655 border-2 border-dashed border-zinc-300", tagline: "text-zinc-550", band: "text-zinc-700", venue: "text-zinc-400", badge: "bg-zinc-150 text-zinc-800", time: "bg-zinc-100 text-zinc-600" }
+        default: { bg: "#fdf2f8", border: "#f472b6", text: "#db2777", accent: "#ec4899", sub: "#f472b6", badgeBg: "#fbcfe8" },
+        red:     { bg: "#fef2f2", border: "#fca5a5", text: "#b91c1c", accent: "#ef4444", sub: "#f87171", badgeBg: "#fee2e2" },
+        blue:    { bg: "#f0f9ff", border: "#7dd3fc", text: "#0369a1", accent: "#0284c7", sub: "#38bdf8", badgeBg: "#e0f2fe" },
+        green:   { bg: "#f0fdf4", border: "#86efac", text: "#047857", accent: "#10b981", sub: "#34d399", badgeBg: "#dcfce7" },
+        purple:  { bg: "#faf5ff", border: "#d8b4fe", text: "#6b21a8", accent: "#8b5cf6", sub: "#c084fc", badgeBg: "#f3e8ff" },
+        amber:   { bg: "#fffbeb", border: "#fcd34d", text: "#b45309", accent: "#f59e0b", sub: "#fbbf24", badgeBg: "#fef3c7" },
+        pink:    { bg: "#fdf2f8", border: "#f472b6", text: "#db2777", accent: "#ec4899", sub: "#f472b6", badgeBg: "#fbcfe8" },
+        black:   { bg: "#fafafa", border: "#d4d4d8", text: "#18181b", accent: "#3f3f46", sub: "#71717a", badgeBg: "#f4f4f5" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: `${sel.frame} font-sans`,
-        tagline: `${sel.tagline} font-bold`,
-        bandName: `${sel.band}`,
-        venueName: `${sel.venue} font-extrabold`,
-        dateBadge: sel.badge,
-        timeBadge: sel.time,
-        graphicColor: sel.venue,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-sans border-2 border-dashed",
+        taglineClasses: "font-bold",
+        bandNameClasses: "font-black text-4xl",
+        venueNameClasses: "font-extrabold uppercase",
+        dateBadgeClasses: "rounded",
+        timeBadgeClasses: "rounded-full"
+      });
     }
 
     case "jazz-vanguard": {
-      if (isDefault) {
-        return {
-          frame: "bg-[#020617] text-amber-300 font-serif border border-yellow-950",
-          tagline: "text-[#facc15]/80 tracking-widest italic",
-          bandName: "text-white",
-          venueName: "text-amber-250 tracking-widest font-serif font-black",
-          dateBadge: "bg-amber-955/50 text-amber-300 border border-amber-900/30",
-          timeBadge: "bg-[#111827] text-amber-205",
-          graphicColor: "text-amber-500",
-          sloganColor: "text-[#facc15]/80"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-[#0b0202] text-red-300 border border-red-955", tagline: "text-red-400/80", venue: "text-red-250", badge: "bg-red-950/50 text-red-300 border border-red-900/30", time: "bg-stone-900 text-red-200" },
-        blue:   { frame: "bg-[#010b14] text-sky-300 border border-sky-955", tagline: "text-sky-400/80", venue: "text-sky-250", badge: "bg-sky-950/50 text-sky-300 border-sky-900/30", time: "bg-stone-900 text-sky-200" },
-        green:  { frame: "bg-[#020c08] text-[#10b981] border border-emerald-955", tagline: "text-emerald-400/80", venue: "text-emerald-250", badge: "bg-emerald-950/50 text-emerald-300 border border-emerald-900/30", time: "bg-stone-900 text-emerald-200" },
-        purple: { frame: "bg-[#0a020f] text-purple-305 border border-purple-955", tagline: "text-purple-400/80", venue: "text-purple-250", badge: "bg-purple-955/50 text-purple-305 border border-purple-900/30", time: "bg-stone-900 text-purple-200" },
-        amber:  { frame: "bg-[#0e0701] text-amber-305 border border-amber-955", tagline: "text-amber-400/80", venue: "text-amber-250", badge: "bg-amber-955/50 text-amber-305 border border-amber-900/30", time: "bg-stone-900 text-amber-200" },
-        pink:   { frame: "bg-[#0e0108] text-pink-305 border border-pink-955", tagline: "text-pink-404/80", venue: "text-pink-250", badge: "bg-pink-955/50 text-pink-305 border border-pink-900/30", time: "bg-[#111827] text-pink-200" },
-        black:  { frame: "bg-black text-zinc-350 border border-zinc-900", tagline: "text-zinc-400/80", venue: "text-zinc-305", badge: "bg-zinc-900/50 text-zinc-300 border border-zinc-800/30", time: "bg-[#111827] text-zinc-200" }
+        default: { bg: "#020617", border: "#78350f", text: "#fef3c7", accent: "#f59e0b", sub: "#fbbf24", badgeBg: "#1c1208" },
+        red:     { bg: "#0b0202", border: "#7f1d1d", text: "#fee2e2", accent: "#ef4444", sub: "#f87171", badgeBg: "#1e0808" },
+        blue:    { bg: "#010b14", border: "#0c4a6e", text: "#e0f2fe", accent: "#0284c7", sub: "#38bdf8", badgeBg: "#061b2e" },
+        green:   { bg: "#020c08", border: "#064e3b", text: "#d1fae5", accent: "#10b981", sub: "#34d399", badgeBg: "#041f12" },
+        purple:  { bg: "#0a020f", border: "#581c87", text: "#f3e8ff", accent: "#a855f7", sub: "#c084fc", badgeBg: "#1a0526" },
+        amber:   { bg: "#0e0701", border: "#78350f", text: "#fef3c7", accent: "#f59e0b", sub: "#fbbf24", badgeBg: "#241103" },
+        pink:    { bg: "#0e0108", border: "#831843", text: "#fce7f3", accent: "#ec4899", sub: "#f472b6", badgeBg: "#240416" },
+        black:   { bg: "#030303", border: "#27272a", text: "#f4f4f5", accent: "#a1a1aa", sub: "#d4d4d8", badgeBg: "#18181b" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: `${sel.frame} font-serif`,
-        tagline: `${sel.tagline} tracking-widest italic`,
-        bandName: "text-white",
-        venueName: `${sel.venue} tracking-widest font-serif font-black`,
-        dateBadge: sel.badge,
-        timeBadge: sel.time,
-        graphicColor: sel.venue,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-serif border",
+        taglineClasses: "tracking-widest italic",
+        bandNameClasses: "font-serif font-black text-4xl",
+        venueNameClasses: "tracking-widest font-serif font-black",
+        dateBadgeClasses: "border font-serif",
+        timeBadgeClasses: "border font-serif"
+      });
     }
 
     case "dubstep-laser": {
-      if (isDefault) {
-        return {
-          frame: "bg-black text-[#10b981] font-mono border-2 border-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.35)]",
-          tagline: "text-[#34d399] tracking-widest font-mono font-bold",
-          bandName: "text-[#10b981]",
-          venueName: "text-[#10b981] font-bold tracking-wider",
-          dateBadge: "bg-black border border-[#10b981] text-[#10b981]",
-          timeBadge: "bg-black text-[#5dfbc5] border border-[#10b981]/50",
-          graphicColor: "text-[#10b981]",
-          sloganColor: "text-[#34d399]"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { frame: "bg-black text-red-500 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.35)]", tagline: "text-red-400", date: "border-red-500 text-red-500", time: "text-red-300 border-red-500/50" },
-        blue:   { frame: "bg-black text-sky-500 border-sky-505 shadow-[0_0_15px_rgba(56,189,248,0.35)]", tagline: "text-sky-400", date: "border-sky-500 text-sky-500", time: "text-sky-300 border-sky-500/50" },
-        green:  { frame: "bg-black text-emerald-500 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.35)]", tagline: "text-emerald-400", date: "border-emerald-500 text-emerald-500", time: "text-emerald-300 border-emerald-500/50" },
-        purple: { frame: "bg-black text-purple-500 border-purple-550 shadow-[0_0_15px_rgba(168,85,247,0.35)]", tagline: "text-purple-400", date: "border-purple-500 text-purple-500", time: "text-purple-300 border-purple-500/50" },
-        amber:  { frame: "bg-black text-amber-500 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.35)]", tagline: "text-amber-400", date: "border-amber-500 text-amber-500", time: "text-amber-300 border-amber-500/50" },
-        pink:   { frame: "bg-black text-pink-500 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.35)]", tagline: "text-pink-400", date: "border-pink-500 text-pink-500", time: "text-pink-300 border-pink-500/50" },
-        black:  { frame: "bg-black text-zinc-400 border-zinc-600 shadow-[0_0_15px_rgba(160,160,160,0.15)]", tagline: "text-zinc-300", date: "border-zinc-500 text-zinc-400", time: "text-zinc-300 border-zinc-500/50" }
+        default: { bg: "#000000", border: "#10b981", text: "#10b981", accent: "#34d399", sub: "#10b981", badgeBg: "#052618" },
+        red:     { bg: "#000000", border: "#ef4444", text: "#ef4444", accent: "#f87171", sub: "#ef4444", badgeBg: "#2d0a0a" },
+        blue:    { bg: "#000000", border: "#06b6d4", text: "#06b6d4", accent: "#38bdf8", sub: "#06b6d4", badgeBg: "#072147" },
+        green:   { bg: "#000000", border: "#10b981", text: "#10b981", accent: "#34d399", sub: "#10b981", badgeBg: "#052618" },
+        purple:  { bg: "#000000", border: "#a855f7", text: "#a855f7", accent: "#c084fc", sub: "#a855f7", badgeBg: "#280e3d" },
+        amber:   { bg: "#000000", border: "#f59e0b", text: "#f59e0b", accent: "#fbbf24", sub: "#f59e0b", badgeBg: "#2a1705" },
+        pink:    { bg: "#000000", border: "#ec4899", text: "#ec4899", accent: "#f472b6", sub: "#ec4899", badgeBg: "#300726" },
+        black:   { bg: "#000000", border: "#52525b", text: "#d4d4d8", accent: "#a1a1aa", sub: "#71717a", badgeBg: "#18181b" }
       };
-      const sel = map[colorId] || map.red;
-      return {
-        frame: `${sel.frame} font-mono border-2`,
-        tagline: `${sel.tagline} tracking-widest font-mono font-bold`,
-        bandName: `${sel.tagline}`,
-        venueName: `${sel.tagline} font-bold tracking-wider`,
-        dateBadge: `bg-black border ${sel.date}`,
-        timeBadge: `bg-black ${sel.time}`,
-        graphicColor: sel.tagline,
-        sloganColor: sel.tagline
-      };
+      const p = map[colorId] || map.default;
+      return buildThemeStyle(p, {
+        frameClasses: "font-mono border-2",
+        taglineClasses: "tracking-widest font-mono font-bold",
+        bandNameClasses: "font-mono font-bold text-4xl",
+        venueNameClasses: "font-mono font-bold tracking-wider",
+        dateBadgeClasses: "border font-mono",
+        timeBadgeClasses: "border font-mono"
+      });
     }
 
     case "punk-diy": {
-      if (isDefault) {
-        return {
-          frame: "bg-white text-black font-mono border-4 border-black",
-          tagline: "text-black bg-yellow-300 font-black p-0.5 tracking-tighter uppercase self-center w-fit mx-auto",
-          bandName: "bg-black text-white px-1",
-          venueName: "text-black bg-white border-2 border-black inline-block px-2 py-0.5 font-bold uppercase transform rotate-1",
-          dateBadge: "bg-yellow-300 text-black border-2 border-black font-black",
-          timeBadge: "bg-black text-white px-2 py-0.5 rounded-none font-black",
-          graphicColor: "text-black",
-          sloganColor: "text-black"
-        };
-      }
       const map: Record<string, any> = {
-        red:    { bg: "bg-red-400", tagline: "text-white bg-red-800", date: "bg-red-800 text-white" },
-        blue:   { bg: "bg-sky-305", tagline: "text-white bg-sky-800", date: "bg-sky-800 text-white" },
-        green:  { bg: "bg-emerald-300", tagline: "text-white bg-emerald-800", date: "bg-emerald-800 text-white" },
-        purple: { bg: "bg-purple-305", tagline: "text-white bg-purple-800", date: "bg-purple-800 text-white" },
-        amber:  { bg: "bg-amber-300", tagline: "text-white bg-amber-800", date: "bg-amber-800 text-white" },
-        pink:   { bg: "bg-pink-300", tagline: "text-white bg-pink-805", date: "bg-pink-800 text-white" },
-        black:  { bg: "bg-zinc-200", tagline: "text-white bg-black", date: "bg-black text-white" }
+        default: { bg: "#ffffff", border: "#000000", text: "#000000", accent: "#facc15", sub: "#000000", badgeBg: "#facc15" },
+        red:     { bg: "#fee2e2", border: "#000000", text: "#000000", accent: "#ef4444", sub: "#000000", badgeBg: "#f87171" },
+        blue:    { bg: "#e0f2fe", border: "#000000", text: "#000000", accent: "#0284c7", sub: "#000000", badgeBg: "#38bdf8" },
+        green:   { bg: "#dcfce7", border: "#000000", text: "#000000", accent: "#10b981", sub: "#000000", badgeBg: "#34d399" },
+        purple:  { bg: "#f3e8ff", border: "#000000", text: "#000000", accent: "#7e22ce", sub: "#000000", badgeBg: "#c084fc" },
+        amber:   { bg: "#fef3c7", border: "#000000", text: "#000000", accent: "#f59e0b", sub: "#000000", badgeBg: "#fbbf24" },
+        pink:    { bg: "#fce7f3", border: "#000000", text: "#000000", accent: "#db2777", sub: "#000000", badgeBg: "#f472b6" },
+        black:   { bg: "#e4e4e7", border: "#000000", text: "#000000", accent: "#18181b", sub: "#000000", badgeBg: "#ffffff" }
       };
-      const sel = map[colorId] || map.red;
+      const p = map[colorId] || map.default;
       return {
-        frame: `${sel.bg} text-black font-mono border-4 border-black`,
-        tagline: `${sel.tagline} font-black p-0.5 tracking-tighter uppercase self-center w-fit mx-auto`,
-        bandName: "bg-black text-white px-1",
-        venueName: "text-black bg-white border-2 border-black inline-block px-2 py-0.5 font-bold uppercase transform rotate-1",
-        dateBadge: `${sel.date} border-2 border-black font-black`,
-        timeBadge: "bg-black text-white px-2 py-0.5 rounded-none font-black",
-        graphicColor: "text-black",
-        sloganColor: "text-black"
+        frameStyle: { backgroundColor: p.bg, borderColor: "#000000", color: "#000000" },
+        taglineStyle: { backgroundColor: p.accent, color: "#000000" },
+        bandNameStyle: { backgroundColor: "#000000", color: "#ffffff" },
+        venueNameStyle: { backgroundColor: "#ffffff", color: "#000000", borderColor: "#000000" },
+        dateBadgeStyle: { backgroundColor: p.badgeBg, borderColor: "#000000", color: "#000000" },
+        timeBadgeStyle: { backgroundColor: "#000000", color: "#ffffff" },
+        graphicStyle: { color: "#000000" },
+        sloganStyle: { color: "#000000" },
+        supportingActsStyle: { backgroundColor: "#000000", color: p.accent, borderColor: "#000000" },
+
+        frameClasses: "font-mono border-4",
+        taglineClasses: "font-black p-0.5 tracking-tighter uppercase self-center w-fit mx-auto",
+        bandNameClasses: "px-1 font-black text-4xl",
+        venueNameClasses: "border-2 inline-block px-2 py-0.5 font-bold uppercase transform rotate-1",
+        dateBadgeClasses: "border-2 font-black",
+        timeBadgeClasses: "px-2 py-0.5 rounded-none font-black",
+        graphicClasses: "",
+        sloganClasses: "",
+        supportingActsClasses: "font-mono font-black transform -rotate-1 border-2 border-black",
+
+        frame: "font-mono border-4",
+        tagline: "font-black p-0.5 tracking-tighter uppercase self-center w-fit mx-auto",
+        bandName: "px-1 font-black text-4xl",
+        venueName: "border-2 inline-block px-2 py-0.5 font-bold uppercase transform rotate-1",
+        dateBadge: "border-2 font-black",
+        timeBadge: "px-2 py-0.5 rounded-none font-black",
+        graphicColor: "",
+        sloganColor: ""
       };
     }
 
-    default:
-      return {
-        frame: "bg-slate-50 text-slate-900 border-2 border-slate-205",
-        tagline: "text-slate-400 font-mono",
-        bandName: "text-slate-800",
-        venueName: "text-slate-900",
-        dateBadge: "bg-slate-100 text-slate-800",
-        timeBadge: "bg-slate-200/50 text-slate-705",
-        graphicColor: "text-slate-500",
-        sloganColor: "text-slate-500"
+    default: {
+      const defaultPalette = {
+        bg: "#0a0a0a",
+        border: "#27272a",
+        text: "#ffffff",
+        accent: "#10b981",
+        sub: "#a1a1aa",
+        badgeBg: "#18181b"
       };
+      return buildThemeStyle(defaultPalette);
+    }
   }
 };
 
@@ -440,7 +442,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
   const [slogans, setSlogans] = useState<SloganProposal[]>([]);
   const [isGeneratingSlogans, setIsGeneratingSlogans] = useState(false);
   const [appliedSloganIdx, setAppliedSloganIdx] = useState<number | null>(null);
-  const [saveToast, setSaveToast] = useState<{ show: boolean; message: string } | null>(null);
+  const [saveToast, setSaveToast] = useState<{ show: boolean; message: string; isError?: boolean } | null>(null);
 
   // 1. User Band Name Default: check linked band record or profile
   useEffect(() => {
@@ -464,19 +466,17 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
   const handleSavePoster = () => {
     try {
       localStorage.setItem("user_saved_poster_v1", JSON.stringify(config));
-      setSaveToast({ show: true, message: "✓ Concert poster design saved!" });
+      setSaveToast({ show: true, message: "✓ Concert poster design saved!", isError: false });
       setTimeout(() => setSaveToast(null), 3000);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setSaveToast({ show: true, message: `Save error: ${e?.message || e}`, isError: true });
     }
   };
 
-  // High-Resolution Export & Download state
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [isExportingFlyer, setIsExportingFlyer] = useState(false);
-  const [selectedPdfSize, setSelectedPdfSize] = useState<"11x17" | "12x18" | "4.25x5.5">("11x17");
-  const [selectedFlyerRatio, setSelectedFlyerRatio] = useState<"poster" | "handbill">("poster");
-  const [selectedFlyerFormat, setSelectedFlyerFormat] = useState<"png" | "jpg">("png");
+  // Dedicated High-Resolution Export State (Single Consolidated Export Bar)
+  const [selectedFormat, setSelectedFormat] = useState<"11x17" | "12x18" | "4.25x5.5" | "png">("11x17");
+  const [isExporting, setIsExporting] = useState(false);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
   // Helper to safely capture concert poster canvas with font safety, asset fallback, and strict try/catch/finally
@@ -493,193 +493,284 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
       console.warn("Font readiness check warning:", fontErr);
     }
 
-    const html2canvasOptions = {
-      useCORS: true,
-      allowTaint: false,
-      scale: 2, // crisp 300 DPI equivalent
-      logging: false,
-      ignoreElements: (element: Element) => element.classList?.contains("no-export") || false
-    };
-
+    // Temporarily strip any mix-blend-mode, backdrop-filter, or filter: drop-shadow() styles on the real DOM
+    // These trigger iframe canvas security crashes or taint errors in sandboxed environments
+    const sanitizedNodes: { el: HTMLElement; mixBlend: string; backdrop: string; filter: string }[] = [];
     try {
-      return await html2canvas(element, html2canvasOptions);
-    } catch (primaryErr) {
-      console.warn("Primary html2canvas capture failed, falling back to local text/vector capture:", primaryErr);
-      setSaveToast({ show: true, message: "⚠️ Asset loading issue; rendering clean vectors and typography..." });
+      const allDomElements = [element, ...Array.from(element.querySelectorAll("*"))] as HTMLElement[];
+      allDomElements.forEach((el) => {
+        if (!el || !el.style) return;
+        const comp = window.getComputedStyle(el);
+        const hasMix = comp.mixBlendMode && comp.mixBlendMode !== "normal";
+        const hasBackdrop = (comp as any).backdropFilter && (comp as any).backdropFilter !== "none";
+        const hasDropShadow = comp.filter && comp.filter.includes("drop-shadow");
 
-      // Fallback: render with safe timeouts and ensure any failed external assets are ignored
-      return await html2canvas(element, {
-        ...html2canvasOptions,
-        imageTimeout: 1500,
-        onclone: (clonedDoc) => {
-          const frame = clonedDoc.getElementById("concert-poster-frame");
-          if (frame) {
-            const imgs = frame.querySelectorAll("img");
-            imgs.forEach((img) => {
-              if (!img.complete || img.naturalWidth === 0) {
-                img.classList.add("no-export");
-                img.style.display = "none";
-              }
-            });
+        if (hasMix || hasBackdrop || hasDropShadow || el.style.mixBlendMode || (el.style as any).backdropFilter) {
+          sanitizedNodes.push({
+            el,
+            mixBlend: el.style.mixBlendMode,
+            backdrop: (el.style as any).backdropFilter || "",
+            filter: el.style.filter
+          });
+          el.style.mixBlendMode = "normal";
+          (el.style as any).backdropFilter = "none";
+          (el.style as any).webkitBackdropFilter = "none";
+          if (el.style.filter) {
+            el.style.filter = el.style.filter.replace(/drop-shadow\([^)]*\)/gi, "").trim();
           }
         }
       });
+
+      const html2canvasOptions = {
+        useCORS: true,
+        allowTaint: false,
+        scale: 2, // crisp 300 DPI equivalent
+        logging: false,
+        foreignObjectRendering: false,
+        backgroundColor: null,
+        ignoreElements: (el: Element) => el.classList?.contains("no-export") || false,
+        onclone: (clonedDoc: Document) => {
+          const clonedPoster = (clonedDoc.getElementById("poster-canvas-preview") || clonedDoc.getElementById("concert-poster-frame")) as HTMLElement | null;
+          if (!clonedPoster) return;
+
+          // 1. Copy computed layout styles to cloned elements before removing stylesheets
+          try {
+            const srcEls = [element, ...Array.from(element.querySelectorAll("*"))] as HTMLElement[];
+            const dstEls = [clonedPoster, ...Array.from(clonedPoster.querySelectorAll("*"))] as HTMLElement[];
+            for (let i = 0; i < srcEls.length && i < dstEls.length; i++) {
+              const src = srcEls[i];
+              const dst = dstEls[i];
+              if (src && dst) {
+                const srcStyle = window.getComputedStyle(src);
+                dst.style.display = srcStyle.display;
+                dst.style.flexDirection = srcStyle.flexDirection;
+                dst.style.justifyContent = srcStyle.justifyContent;
+                dst.style.alignItems = srcStyle.alignItems;
+                dst.style.flexWrap = srcStyle.flexWrap;
+                dst.style.width = `${src.offsetWidth}px`;
+                if (src.offsetHeight && !dst.style.height) {
+                  dst.style.minHeight = `${src.offsetHeight}px`;
+                }
+                dst.style.padding = srcStyle.padding;
+                dst.style.margin = srcStyle.margin;
+                dst.style.textAlign = srcStyle.textAlign;
+                dst.style.borderRadius = srcStyle.borderRadius;
+                dst.style.fontSize = srcStyle.fontSize;
+                dst.style.fontWeight = srcStyle.fontWeight;
+                dst.style.fontFamily = srcStyle.fontFamily;
+                dst.style.letterSpacing = srcStyle.letterSpacing;
+                dst.style.lineHeight = srcStyle.lineHeight;
+                dst.style.textTransform = srcStyle.textTransform;
+                dst.style.position = srcStyle.position;
+                dst.style.overflow = srcStyle.overflow;
+                if (srcStyle.position === 'absolute') {
+                  dst.style.top = srcStyle.top;
+                  dst.style.left = srcStyle.left;
+                  dst.style.right = srcStyle.right;
+                  dst.style.bottom = srcStyle.bottom;
+                }
+              }
+            }
+          } catch (layoutErr) {
+            console.warn("Layout copy notice:", layoutErr);
+          }
+
+          // 2. Strip all <style> blocks and stylesheet links from the cloned document to eliminate external oklch rules
+          try {
+            clonedDoc.querySelectorAll('style, link[rel="stylesheet"]').forEach((s) => s.remove());
+          } catch (sheetErr) {
+            console.warn("Style stripping notice:", sheetErr);
+          }
+
+          // 3. Pre-Rasterization Sanitizer: Recursively traverse the cloned poster node
+          const convertToHexOrRgb = (el: HTMLElement) => {
+            if (!el) return;
+            try {
+              const computed = window.getComputedStyle(el);
+              // If backgroundColor or color contains 'oklch' or 'lab', override with standard HEX
+              if (el.style) {
+                if (!el.style.backgroundColor || el.style.backgroundColor.includes("oklch") || (computed && computed.backgroundColor && computed.backgroundColor.includes("oklch"))) {
+                  el.style.backgroundColor = el.style.backgroundColor && !el.style.backgroundColor.includes("oklch") ? el.style.backgroundColor : "#121212";
+                }
+                if (!el.style.color || el.style.color.includes("oklch") || (computed && computed.color && computed.color.includes("oklch"))) {
+                  el.style.color = el.style.color && !el.style.color.includes("oklch") ? el.style.color : "#ffffff";
+                }
+                if (!el.style.borderColor || el.style.borderColor.includes("oklch") || (computed && computed.borderColor && computed.borderColor.includes("oklch"))) {
+                  el.style.borderColor = el.style.borderColor && !el.style.borderColor.includes("oklch") ? el.style.borderColor : "#27272a";
+                }
+                el.style.mixBlendMode = "normal";
+                (el.style as any).backdropFilter = "none";
+                (el.style as any).webkitBackdropFilter = "none";
+                if (el.style.filter && el.style.filter.includes("drop-shadow")) {
+                  el.style.filter = "none";
+                }
+              }
+            } catch {
+              // ignore
+            }
+            Array.from(el.children).forEach((child) => convertToHexOrRgb(child as HTMLElement));
+          };
+
+          convertToHexOrRgb(clonedPoster);
+
+          // 4. Hide uncompleted images
+          const imgs = clonedPoster.querySelectorAll("img");
+          imgs.forEach((img) => {
+            if (!img.complete || img.naturalWidth === 0) {
+              img.classList.add("no-export");
+              img.style.display = "none";
+            }
+          });
+        }
+      };
+
+      try {
+        return await html2canvas(element, html2canvasOptions);
+      } catch (primaryErr) {
+        console.warn("Primary html2canvas capture failed, attempting safe offscreen retry:", primaryErr);
+        return await html2canvas(element, {
+          ...html2canvasOptions,
+          imageTimeout: 1500
+        });
+      }
+    } finally {
+      // Restore original styles on real DOM
+      sanitizedNodes.forEach(({ el, mixBlend, backdrop, filter }) => {
+        el.style.mixBlendMode = mixBlend;
+        (el.style as any).backdropFilter = backdrop;
+        (el.style as any).webkitBackdropFilter = backdrop;
+        el.style.filter = filter;
+      });
     }
   };
 
-  // 1. Download Print-Ready Poster / Handbill (PDF) - 300 DPI CMYK bleed-ready standard specs (11x17, 12x18, and 4.25x5.5)
-  const handleDownloadPrintReadyPdf = async (sizeOverride?: "11x17" | "12x18" | "4.25x5.5") => {
-    const size = sizeOverride || selectedPdfSize;
-    const element = document.getElementById("concert-poster-frame");
+  // Primary Action Handler: Consolidated Download for Poster PDF & Web Flyer PNG
+  const handleDownloadPosterOrFlyer = async () => {
+    const element = document.getElementById("poster-canvas-preview") || document.getElementById("concert-poster-frame");
     if (!element) {
-      alert("Poster preview canvas not found!");
+      setSaveToast({
+        show: true,
+        message: "Download failed: Poster canvas element (#poster-canvas-preview) not found",
+        isError: true
+      });
       return;
     }
-    setIsExportingPdf(true);
-    setExportNotice(`Rendering ${size === "4.25x5.5" ? "4.25\" × 5.5\" Handbill" : size} 300 DPI bleed-ready PDF...`);
+
+    setIsExporting(true);
+    setExportNotice(
+      selectedFormat === "png"
+        ? "Rendering Web Flyer PNG..."
+        : `Rendering ${selectedFormat === "4.25x5.5" ? "4.25\" × 5.5\" Handbill" : selectedFormat} PDF (300 DPI)...`
+    );
+
     try {
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 100));
       const canvas = await captureConcertPosterCanvas(element);
-      
-      const widthInches = size === "12x18" ? 12 : size === "4.25x5.5" ? 4.25 : 11;
-      const heightInches = size === "12x18" ? 18 : size === "4.25x5.5" ? 5.5 : 17;
-      
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "in",
-        format: [widthInches, heightInches]
-      });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.98);
+      const headlineBandName = (config.bandName || "gig").trim();
+      const sanitizedName = headlineBandName.replace(/\s+/g, "_");
 
-      // Fit image into the page
-      // For 4.25 x 5.5 handbill, calculate cover scaling to ensure proper bleed margins without distorting aspect ratio
-      if (size === "4.25x5.5") {
-        const targetRatio = widthInches / heightInches;
-        const imgRatio = canvas.width / canvas.height;
-        let drawW = widthInches;
-        let drawH = heightInches;
-        let offsetX = 0;
-        let offsetY = 0;
+      if (selectedFormat === "png") {
+        // Direct browser delivery for Web Flyer PNG via canvas.toBlob + URL.createObjectURL
+        await new Promise<void>((resolve, reject) => {
+          if (!canvas.toBlob) {
+            try {
+              const dataUrl = canvas.toDataURL("image/png");
+              const link = document.createElement("a");
+              link.download = `${sanitizedName}_flyer.png`;
+              link.href = dataUrl;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              resolve();
+            } catch (fallbackErr) {
+              reject(fallbackErr);
+            }
+            return;
+          }
 
-        if (imgRatio < targetRatio) {
-          // Poster is taller than 4.25:5.5 -> scale to match width, center vertically for bleed
-          drawW = widthInches;
-          drawH = widthInches / imgRatio;
-          offsetY = (heightInches - drawH) / 2;
-        } else {
-          // Poster is wider than 4.25:5.5 -> scale to match height, center horizontally for bleed
-          drawH = heightInches;
-          drawW = heightInches * imgRatio;
-          offsetX = (widthInches - drawW) / 2;
-        }
-        pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH, undefined, "FAST");
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error("Unable to generate image blob from poster canvas"));
+              return;
+            }
+            try {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.download = `${sanitizedName}_flyer.png`;
+              link.href = url;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => URL.revokeObjectURL(url), 2000);
+              resolve();
+            } catch (clickErr) {
+              reject(clickErr);
+            }
+          }, "image/png");
+        });
       } else {
-        pdf.addImage(imgData, "JPEG", 0, 0, widthInches, heightInches, undefined, "FAST");
+        // Direct browser delivery for PDF downloads (11x17, 12x18, 4.25x5.5)
+        let width = 11;
+        let height = 17;
+        if (selectedFormat === "12x18") {
+          width = 12;
+          height = 18;
+        } else if (selectedFormat === "4.25x5.5") {
+          width = 4.25;
+          height = 5.5;
+        }
+
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "in",
+          format: [width, height]
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        pdf.addImage(imgData, "JPEG", 0, 0, width, height, undefined, "FAST");
+
+        const pdfFileName = `${sanitizedName}_poster.pdf`;
+        pdf.save(pdfFileName);
       }
 
-      const isHandbill = size === "4.25x5.5";
-      pdf.setProperties({
-        title: `${config.bandName || "Concert"} - ${isHandbill ? "4.25x5.5 Handbill" : size + " Poster"} Bleed-Ready (300 DPI)`,
-        subject: "Print-Ready Concert Poster & Handbill - 300 DPI CMYK Bleed-Ready Specs",
-        author: "GigLizard Stage Director",
-        keywords: "concert poster, 11x17, 12x18, 4.25x5.5, handbill, quarter sheet, bleed ready, 300 dpi, fireball printing"
-      });
-
-      const headlineBandName = (config.bandName || "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
-
-      const pdfFileName = `${headlineBandName || "gig"}-poster-${size}.pdf`;
-      pdf.save(pdfFileName);
-      
-      // Green toast confirmation once file stream begins
+      // Visual Feedback: Green toast confirmation once file stream begins
       setExportNotice("✓ Poster downloaded successfully");
-      setSaveToast({ show: true, message: "✓ Poster downloaded successfully" });
+      setSaveToast({
+        show: true,
+        message: "✓ Poster downloaded successfully",
+        isError: false
+      });
       setTimeout(() => {
         setExportNotice(null);
         setSaveToast(null);
       }, 4000);
     } catch (err: any) {
-      console.error("Could not generate PDF:", err);
-      setSaveToast({ show: true, message: "⚠️ Could not generate PDF. Please try Web Flyer PNG/JPG or local print." });
+      console.error("Could not generate poster export:", err);
+      const technicalReason = err?.message || err?.toString?.() || "Rasterization or export error";
+      setSaveToast({
+        show: true,
+        message: `Download failed: ${technicalReason}`,
+        isError: true
+      });
       setExportNotice(null);
+      setTimeout(() => {
+        setSaveToast(null);
+      }, 6000);
     } finally {
-      setIsExportingPdf(false);
+      setIsExporting(false);
     }
   };
 
-  // 2. Download Web Flyer (PNG/JPG) - High-res RGB for Instagram, Facebook, and promo posts, with 4.25:5.5 handbill preset
-  const handleDownloadWebFlyer = async (formatOverride?: "png" | "jpg", ratioOverride?: "poster" | "handbill") => {
-    const format = formatOverride || selectedFlyerFormat;
-    const ratio = ratioOverride || selectedFlyerRatio;
-    const element = document.getElementById("concert-poster-frame");
-    if (!element) {
-      alert("Poster preview frame not found!");
-      return;
-    }
-    setIsExportingFlyer(true);
-    setExportNotice(`Generating ${ratio === "handbill" ? "4.25:5.5 Handbill" : "web flyer"} (${format.toUpperCase()})...`);
-    try {
-      await new Promise(r => setTimeout(r, 100));
-      const canvas = await captureConcertPosterCanvas(element);
+  // Aliases for compatibility
+  const handleDownloadPrintReadyPdf = async (size?: "11x17" | "12x18" | "4.25x5.5") => {
+    if (size) setSelectedFormat(size);
+    return handleDownloadPosterOrFlyer();
+  };
 
-      let finalCanvas = canvas;
-      if (ratio === "handbill") {
-        // Quarter-sheet flyer: 4.25" × 5.5" at 300 DPI = 1275 × 1650 px
-        const targetW = 1275;
-        const targetH = 1650;
-        const handbillCanvas = document.createElement("canvas");
-        handbillCanvas.width = targetW;
-        handbillCanvas.height = targetH;
-        const hCtx = handbillCanvas.getContext("2d");
-        if (hCtx) {
-          // Fill background tone to match theme
-          hCtx.fillStyle = config.themeId.includes("minimal") || config.themeId.includes("diy") ? "#ffffff" : "#0d0d12";
-          hCtx.fillRect(0, 0, targetW, targetH);
-
-          // Cover and center the poster image to 4.25:5.5 handbill ratio
-          const scale = Math.max(targetW / canvas.width, targetH / canvas.height);
-          const drawW = canvas.width * scale;
-          const drawH = canvas.height * scale;
-          const drawX = (targetW - drawW) / 2;
-          const drawY = (targetH - drawH) / 2;
-
-          hCtx.drawImage(canvas, drawX, drawY, drawW, drawH);
-          finalCanvas = handbillCanvas;
-        }
-      }
-
-      const headlineBandName = (config.bandName || "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
-
-      // Reliable programmatic anchor download helper
-      const link = document.createElement("a");
-      link.download = `${headlineBandName || "gig"}-flyer.${format === "jpg" ? "jpg" : "png"}`;
-      link.href = finalCanvas.toDataURL(format === "jpg" ? "image/jpeg" : "image/png", 0.95);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Green toast confirmation once file stream begins
-      setExportNotice("✓ Poster downloaded successfully");
-      setSaveToast({ show: true, message: "✓ Poster downloaded successfully" });
-      setTimeout(() => {
-        setExportNotice(null);
-        setSaveToast(null);
-      }, 4000);
-    } catch (err: any) {
-      console.error("Could not capture flyer:", err);
-      setSaveToast({ show: true, message: "⚠️ Could not generate flyer. Try PDF export or Local Print." });
-      setExportNotice(null);
-    } finally {
-      setIsExportingFlyer(false);
-    }
+  const handleDownloadWebFlyer = async () => {
+    setSelectedFormat("png");
+    return handleDownloadPosterOrFlyer();
   };
 
   const c = getThemeClasses(config.themeId, config.colorId || "default");
@@ -846,7 +937,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
               <Layers className="w-4 h-4 text-indigo-500" />
               Concert Poster Designer
             </h3>
-            {saveToast && (
+            {saveToast && !saveToast.isError && (
               <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 animate-fade-in flex items-center gap-1">
                 <Check className="w-3 h-3 text-emerald-600" />
                 {saveToast.message}
@@ -1194,201 +1285,18 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
             </div>
           </div>
 
-          {/* STEP 4: FINAL ACTIONS (HIGH-RESOLUTION DOWNLOADS & PRINT FULFILLMENT) */}
+          {/* STEP 4: PHYSICAL PRINT FULFILLMENT & DESIGN BACKUP */}
           <div className="space-y-4 border-t border-gray-100 pt-4" id="step-4-final-actions-section">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center font-bold">4</span>
-                Download & Print Fulfillment
+                Physical Print Fulfillment & Save
               </span>
-              {exportNotice && (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 animate-fade-in flex items-center gap-1">
-                  <Check className="w-3 h-3 text-emerald-600" />
-                  {exportNotice}
-                </span>
-              )}
             </div>
 
-            {/* High-Resolution Download Buttons for bands/venues */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" id="high-res-download-actions">
-              {/* Action 1: Download Print-Ready Poster (PDF) */}
-              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex flex-col justify-between space-y-2.5">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <FileText className="w-4 h-4 text-emerald-600" />
-                      Download Print-Ready Poster (PDF)
-                    </span>
-                    <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
-                      300 DPI Bleed
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1 leading-snug">
-                    300 DPI CMYK bleed-ready standard specs: 11x17, 12x18, and 4.25x5.5 quarter-sheet handbills.
-                  </p>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                    <span className="text-slate-500 font-bold">Size:</span>
-                    <button
-                      type="button"
-                      id="btn-pdf-size-11x17"
-                      onClick={() => setSelectedPdfSize("11x17")}
-                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
-                        selectedPdfSize === "11x17"
-                          ? "bg-emerald-600 text-white shadow-xs"
-                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      11" × 17" Tabloid
-                    </button>
-                    <button
-                      type="button"
-                      id="btn-pdf-size-12x18"
-                      onClick={() => setSelectedPdfSize("12x18")}
-                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
-                        selectedPdfSize === "12x18"
-                          ? "bg-emerald-600 text-white shadow-xs"
-                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      12" × 18" Full Bleed
-                    </button>
-                    <button
-                      type="button"
-                      id="btn-pdf-size-4.25x5.5"
-                      onClick={() => setSelectedPdfSize("4.25x5.5")}
-                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
-                        selectedPdfSize === "4.25x5.5"
-                          ? "bg-emerald-600 text-white shadow-xs"
-                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      4.25" × 5.5" Handbill (Quarter Sheet)
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    id="btn-poster-download-pdf"
-                    onClick={() => handleDownloadPrintReadyPdf()}
-                    disabled={isExportingPdf || isExportingFlyer}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    {isExportingPdf ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Rendering {selectedPdfSize === "4.25x5.5" ? "4.25\" × 5.5\" Handbill" : selectedPdfSize} (300 DPI)...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download Print-Ready {selectedPdfSize === "4.25x5.5" ? "Handbill" : "Poster"} (PDF)</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Action 2: Download Web Flyer (PNG/JPG) */}
-              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex flex-col justify-between space-y-2.5">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <Image className="w-4 h-4 text-indigo-600" />
-                      Download Web Flyer (PNG/JPG)
-                    </span>
-                    <span className="text-[9px] font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
-                      High-Res RGB
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1 leading-snug">
-                    High-res RGB for Instagram, Facebook, and promo posts.
-                  </p>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  {/* Aspect Ratio / Preset Selector */}
-                  <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                    <span className="text-slate-500 font-bold">Preset:</span>
-                    <button
-                      type="button"
-                      id="btn-flyer-ratio-poster"
-                      onClick={() => setSelectedFlyerRatio("poster")}
-                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
-                        selectedFlyerRatio === "poster"
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      Poster (Original)
-                    </button>
-                    <button
-                      type="button"
-                      id="btn-flyer-ratio-handbill"
-                      onClick={() => setSelectedFlyerRatio("handbill")}
-                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
-                        selectedFlyerRatio === "handbill"
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      4.25:5.5 Handbill (Quarter Sheet)
-                    </button>
-                  </div>
-
-                  {/* Format Selector */}
-                  <div className="flex items-center gap-1.5 text-[10px]">
-                    <span className="text-slate-500 font-bold">Format:</span>
-                    <button
-                      type="button"
-                      id="btn-flyer-format-png"
-                      onClick={() => setSelectedFlyerFormat("png")}
-                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
-                        selectedFlyerFormat === "png"
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      PNG Lossless
-                    </button>
-                    <button
-                      type="button"
-                      id="btn-flyer-format-jpg"
-                      onClick={() => setSelectedFlyerFormat("jpg")}
-                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
-                        selectedFlyerFormat === "jpg"
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      JPG Social Post
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    id="btn-poster-download-web-flyer"
-                    onClick={() => handleDownloadWebFlyer()}
-                    disabled={isExportingPdf || isExportingFlyer}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    {isExportingFlyer ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Rendering {selectedFlyerRatio === "handbill" ? "4.25:5.5 Handbill" : selectedFlyerFormat.toUpperCase()}...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download {selectedFlyerRatio === "handbill" ? '4.25" × 5.5" Handbill' : "Web Flyer"} ({selectedFlyerFormat.toUpperCase()})</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <p className="text-[11px] text-slate-500 leading-snug">
+              To download digital files (11x17, 12x18, handbill PDF, or web flyer PNG), use the dedicated <strong className="text-slate-800 font-semibold">Export & Download Action Bar</strong> directly above the Live Poster Preview below.
+            </p>
 
             {/* Utility Actions: Save Design & Local Print */}
             <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
@@ -1412,7 +1320,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
               </button>
             </div>
 
-            {/* Fireball Printing Recommendation Card beneath download actions */}
+            {/* Fireball Printing Recommendation Card beneath utility actions */}
             <div className="pt-2">
               {renderFireballCard()}
             </div>
@@ -1421,105 +1329,173 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
         </div>
       </div>
 
-      {/* SECTION 3 (Bottom): Live Poster Preview Canvas, Print Specs, and Action Buttons */}
+      {/* SECTION 3 (Bottom): Dedicated Download Action Bar & Live Poster Preview Canvas */}
       <div className="w-full flex flex-col items-center justify-between space-y-6 pt-2" id="poster-rendering-panel">
         
-        {/* Live Canvas Toolbar */}
-        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center w-full gap-3 bg-slate-900 text-white rounded-xl p-3.5 border border-slate-800" id="rendering-header-row">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Eye className="w-4 h-4 text-indigo-400" />
-              Live Concert Poster Preview
-            </span>
-            <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-slate-700">
-              300 DPI Bleed-Ready
-            </span>
+        {/* Single Dedicated Download Action Bar directly above Live Poster Preview */}
+        <div 
+          id="poster-download-control-bar" 
+          className="w-full bg-slate-900 text-white rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xl space-y-3.5"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-1.5">
+                <Eye className="w-4 h-4 text-indigo-400" />
+                Live Concert Poster Preview
+              </span>
+              <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-slate-700">
+                300 DPI Bleed-Ready
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {exportNotice && (
+                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-700/50 flex items-center gap-1.5 animate-fade-in">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  {exportNotice}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Open browser print dialog"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Local Print</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 justify-end items-center">
-            {/* Quick PDF Download Button */}
+          {/* Format Selector & Primary Action Button */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-1">
+            {/* Format Selector: [11x17 Tabloid PDF] | [12x18 Full Bleed PDF] | [4.25x5.5 Handbill PDF] | [Web Flyer PNG] */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2" id="export-format-selector">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
+                Format:
+              </span>
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  id="btn-format-11x17"
+                  onClick={() => setSelectedFormat("11x17")}
+                  className={`px-3 py-2 rounded-xl font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                    selectedFormat === "11x17"
+                      ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40"
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80"
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span>11x17 Tabloid PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-format-12x18"
+                  onClick={() => setSelectedFormat("12x18")}
+                  className={`px-3 py-2 rounded-xl font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                    selectedFormat === "12x18"
+                      ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40"
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80"
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span>12x18 Full Bleed PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-format-4.25x5.5"
+                  onClick={() => setSelectedFormat("4.25x5.5")}
+                  className={`px-3 py-2 rounded-xl font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                    selectedFormat === "4.25x5.5"
+                      ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40"
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80"
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span>4.25x5.5 Handbill PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-format-png"
+                  onClick={() => setSelectedFormat("png")}
+                  className={`px-3 py-2 rounded-xl font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                    selectedFormat === "png"
+                      ? "bg-indigo-600 text-white shadow-md ring-2 ring-indigo-400/40"
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80"
+                  }`}
+                >
+                  <Image className="w-3.5 h-3.5 shrink-0" />
+                  <span>Web Flyer PNG</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Primary Action Button: "Download Poster / Flyer" */}
             <button
               type="button"
-              id="btn-quick-download-pdf"
-              onClick={() => handleDownloadPrintReadyPdf()}
-              disabled={isExportingPdf || isExportingFlyer}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
-              title="Download 300 DPI CMYK bleed-ready PDF (11x17, 12x18, or 4.25x5.5)"
+              id="btn-download-poster-primary"
+              onClick={handleDownloadPosterOrFlyer}
+              disabled={isExporting}
+              className="w-full lg:w-auto min-w-[220px] bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 text-slate-950 font-black text-sm py-2.5 px-6 rounded-xl shadow-lg transition-all transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
-              {isExportingPdf ? (
+              {isExporting ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Rendering PDF...</span>
+                  <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                  <span>Generating {selectedFormat === "png" ? "Web Flyer PNG" : "Print PDF"}...</span>
                 </>
               ) : (
                 <>
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Download PDF ({selectedPdfSize === "4.25x5.5" ? "4.25x5.5 Handbill" : selectedPdfSize})</span>
+                  <Download className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                  <span>Download Poster / Flyer</span>
                 </>
               )}
-            </button>
-
-            {/* Quick Web Flyer Download Button */}
-            <button
-              type="button"
-              id="btn-quick-download-flyer"
-              onClick={() => handleDownloadWebFlyer()}
-              disabled={isExportingPdf || isExportingFlyer}
-              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
-              title="Download high-resolution RGB flyer for Instagram, Facebook, and handbill sharing"
-            >
-              {isExportingFlyer ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Rendering Flyer...</span>
-                </>
-              ) : (
-                <>
-                  <Image className="w-3.5 h-3.5" />
-                  <span>{selectedFlyerRatio === "handbill" ? "4.25:5.5 Handbill" : "Web Flyer"} ({selectedFlyerFormat.toUpperCase()})</span>
-                </>
-              )}
-            </button>
-
-            {/* Local Print */}
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Local Print</span>
             </button>
           </div>
         </div>
 
         {/* Live CSS styled templates based on themeId */}
         <div 
-            id="concert-poster-frame"
-            className={`w-[320px] sm:w-[350px] min-h-[490px] border border-gray-950 rounded-2xl shadow-2xl overflow-hidden p-6 flex flex-col justify-between text-center relative transition-all ${c.frame}`}
-            style={{
-              transformStyle: "preserve-3d"
-            }}
-          >
+          id="poster-canvas-preview"
+          data-testid="concert-poster-frame"
+          className={`w-[320px] sm:w-[350px] min-h-[490px] border rounded-2xl shadow-2xl overflow-hidden p-6 flex flex-col justify-between text-center relative transition-all ${c.frameClasses}`}
+          style={{
+            ...c.frameStyle,
+            transformStyle: "preserve-3d"
+          }}
+        >
             {/* Theme overlay designs */}
             {/* 1. GRUNGE OVERLAY */}
             {config.themeId === "heavy-grunge" && (
-              <div className="absolute inset-0 bg-radial-gradient from-red-900/10 to-black/80 pointer-events-none border-4 border-red-900 m-2 rounded-xl" id="grunge-borders">
-                <div className="absolute inset-0 opacity-15 mix-blend-overlay" style={{ backgroundImage: "repeating-linear-gradient(45deg, #000, #000 10px, #ff4c4c 10px, #ff4c4c 20px)" }} />
+              <div 
+                className="absolute inset-0 pointer-events-none border-4 m-2 rounded-xl" 
+                id="grunge-borders"
+                style={{ borderColor: "#7f1d1d" }}
+              >
+                <div 
+                  className="absolute inset-0 opacity-15" 
+                  style={{ backgroundImage: "repeating-linear-gradient(45deg, #000000, #000000 10px, #ef4444 10px, #ef4444 20px)" }} 
+                />
               </div>
             )}
 
             {/* 2. SYNTHWAVE LINES */}
             {config.themeId === "retro-neon" && (
               <div className="absolute inset-0 pointer-events-none flex flex-col justify-end" id="synth-decorations">
-                <div className="absolute top-6 right-6 w-12 h-12 rounded-full bg-gradient-to-b from-pink-500 to-yellow-400 opacity-60 filter blur-xs" />
-                {/* Retro sun line background representation */}
-                <div className="h-28 bg-gradient-to-t from-pink-500/20 to-transparent flex flex-col justify-between py-1 opacity-60">
-                  <div className="border-b border-pink-500/30 w-full" />
-                  <div className="border-b border-pink-500/25 w-full" />
-                  <div className="border-b border-pink-500/20 w-full" />
-                  <div className="border-b border-pink-500/10 w-full" />
-                  <div className="border-b border-pink-500/5 w-full" />
+                <div 
+                  className="absolute top-6 right-6 w-12 h-12 rounded-full opacity-60" 
+                  style={{ backgroundImage: "linear-gradient(to bottom, #ec4899, #f59e0b)" }}
+                />
+                <div 
+                  className="h-28 flex flex-col justify-between py-1 opacity-60"
+                  style={{ backgroundImage: "linear-gradient(to top, rgba(236,72,153,0.2), transparent)" }}
+                >
+                  <div className="w-full" style={{ borderBottom: "1px solid rgba(236,72,153,0.3)" }} />
+                  <div className="w-full" style={{ borderBottom: "1px solid rgba(236,72,153,0.25)" }} />
+                  <div className="w-full" style={{ borderBottom: "1px solid rgba(236,72,153,0.2)" }} />
+                  <div className="w-full" style={{ borderBottom: "1px solid rgba(236,72,153,0.1)" }} />
                 </div>
               </div>
             )}
@@ -1527,36 +1503,40 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
             {/* 3. MINIMAL CIRCLES */}
             {config.themeId === "indie-minimal" && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40 animate-pulse" id="indie-decorations">
-                <div className="w-56 h-56 rounded-full border border-slate-205 flex items-center justify-center">
-                  <div className="w-40 h-40 rounded-full border border-slate-200/40" />
+                <div className="w-56 h-56 rounded-full border flex items-center justify-center" style={{ borderColor: "#e4e4e7" }}>
+                  <div className="w-40 h-40 rounded-full border" style={{ borderColor: "#d4d4d8" }} />
                 </div>
               </div>
             )}
 
             {/* 4. COZY FOLK LEAF ACCENTS */}
             {config.themeId === "folk-acoustic" && (
-              <div className="absolute inset-0 border-double border-4 border-amber-800/15 m-3 rounded-lg flex items-center justify-between pointer-events-none p-4" id="folk-decorations">
-                <div className="text-xl text-amber-900/15 font-serif select-none">🎕</div>
-                <div className="text-xl text-amber-900/15 font-serif select-none mt-auto ml-auto">🎕</div>
+              <div 
+                className="absolute inset-0 border-double border-4 m-3 rounded-lg flex items-center justify-between pointer-events-none p-4" 
+                id="folk-decorations"
+                style={{ borderColor: "#78350f" }}
+              >
+                <div className="text-xl font-serif select-none" style={{ color: "rgba(120,53,15,0.2)" }}>🎕</div>
+                <div className="text-xl font-serif select-none mt-auto ml-auto" style={{ color: "rgba(120,53,15,0.2)" }}>🎕</div>
               </div>
             )}
 
             {/* 5. PSYCHEDELIC ACID SPIN */}
             {config.themeId === "psychedelic-acid" && (
               <div className="absolute inset-0 pointer-events-none overflow-hidden" id="psychedelic-decorations">
-                <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full bg-purple-700/35 filter blur-xl animate-pulse" />
-                <div className="absolute -bottom-10 -right-10 w-36 h-36 rounded-full bg-pink-700/30 filter blur-xl animate-pulse" />
+                <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full opacity-30" style={{ backgroundColor: "#7e22ce" }} />
+                <div className="absolute -bottom-10 -right-10 w-36 h-36 rounded-full opacity-30" style={{ backgroundColor: "#ec4899" }} />
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle, #f59e0b 2px, transparent 1px)", backgroundSize: "16px 16px" }} />
               </div>
             )}
 
             {/* 6. HELLFIRE SLASH */}
             {config.themeId === "metal-hellfire" && (
-              <div className="absolute inset-0 pointer-events-none border border-red-500/20 m-1.5" id="metal-decorations">
-                <div className="absolute top-0 bottom-0 left-4 w-[1px] bg-red-800/20" />
-                <div className="absolute top-0 bottom-0 right-4 w-[1px] bg-red-800/20" />
-                <div className="absolute top-4 left-0 right-0 h-[1px] bg-red-800/20" />
-                <div className="absolute bottom-4 left-0 right-0 h-[1px] bg-red-800/20" />
+              <div className="absolute inset-0 pointer-events-none border m-1.5" id="metal-decorations" style={{ borderColor: "rgba(185,28,28,0.2)" }}>
+                <div className="absolute top-0 bottom-0 left-4 w-[1px]" style={{ backgroundColor: "rgba(185,28,28,0.2)" }} />
+                <div className="absolute top-0 bottom-0 right-4 w-[1px]" style={{ backgroundColor: "rgba(185,28,28,0.2)" }} />
+                <div className="absolute top-4 left-0 right-0 h-[1px]" style={{ backgroundColor: "rgba(185,28,28,0.2)" }} />
+                <div className="absolute bottom-4 left-0 right-0 h-[1px]" style={{ backgroundColor: "rgba(185,28,28,0.2)" }} />
               </div>
             )}
 
@@ -1564,26 +1544,26 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
             {config.themeId === "pop-bubblegum" && (
               <div className="absolute inset-0 pointer-events-none" id="pop-decorations">
                 <div className="absolute inset-0 opacity-5" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 15px, #ec4899 15px, #ec4899 30px)" }} />
-                <div className="absolute top-4 right-4 text-xs text-pink-305/40 select-none">☁️</div>
-                <div className="absolute bottom-4 left-4 text-xs text-pink-305/40 select-none">🍭</div>
+                <div className="absolute top-4 right-4 text-xs select-none" style={{ color: "#f472b6" }}>☁️</div>
+                <div className="absolute bottom-4 left-4 text-xs select-none" style={{ color: "#f472b6" }}>🍭</div>
               </div>
             )}
 
             {/* 8. JAZZ VANGUARD GOLD FLOURISH */}
             {config.themeId === "jazz-vanguard" && (
-              <div className="absolute inset-0 pointer-events-none border border-amber-600/30 m-3" id="jazz-decorations">
-                <div className="absolute top-2 left-2 text-[8px] text-amber-600/40 select-none font-sans font-bold">MIDNIGHT SESSION</div>
-                <div className="absolute bottom-2 right-2 text-[8px] text-amber-600/40 select-none font-serif">VANGUARD CLUB</div>
+              <div className="absolute inset-0 pointer-events-none border m-3" id="jazz-decorations" style={{ borderColor: "rgba(217,119,6,0.3)" }}>
+                <div className="absolute top-2 left-2 text-[8px] select-none font-sans font-bold" style={{ color: "rgba(217,119,6,0.5)" }}>MIDNIGHT SESSION</div>
+                <div className="absolute bottom-2 right-2 text-[8px] select-none font-serif" style={{ color: "rgba(217,119,6,0.5)" }}>VANGUARD CLUB</div>
               </div>
             )}
 
             {/* 9. RAVE MATRIX GRID */}
             {config.themeId === "dubstep-laser" && (
               <div className="absolute inset-0 pointer-events-none overflow-hidden" id="laser-decorations">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#10b981] opacity-75 shadow-[0_0_8px_#10b981]" />
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#10b981] opacity-75 shadow-[0_0_8px_#10b981]" />
+                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ backgroundColor: "#10b981" }} />
+                <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ backgroundColor: "#10b981" }} />
                 <div className="absolute inset-0 opacity-10" style={{
-                  backgroundImage: "linear-gradient(rgba(16,185,129,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.15) 1px, transparent 1px)",
+                  backgroundImage: "linear-gradient(#10b981 1px, transparent 1px), linear-gradient(90deg, #10b981 1px, transparent 1px)",
                   backgroundSize: "20px 20px"
                 }} />
               </div>
@@ -1591,50 +1571,51 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
 
             {/* 10. PUNK DIY PHOTOCOPY */}
             {config.themeId === "punk-diy" && (
-              <div className="absolute inset-0 pointer-events-none border-t-[12px] border-b-[12px] border-black flex flex-col justify-between" id="punk-decorations">
-                <div className="absolute inset-x-2 top-4 h-[2px] bg-black translate-y-1 rotate-1" />
-                <div className="absolute inset-x-2 bottom-4 h-[2px] bg-black -translate-y-1 -rotate-2" />
+              <div className="absolute inset-0 pointer-events-none border-t-[12px] border-b-[12px] flex flex-col justify-between" id="punk-decorations" style={{ borderColor: "#000000" }}>
+                <div className="absolute inset-x-2 top-4 h-[2px] translate-y-1 rotate-1" style={{ backgroundColor: "#000000" }} />
+                <div className="absolute inset-x-2 bottom-4 h-[2px] -translate-y-1 -rotate-2" style={{ backgroundColor: "#000000" }} />
               </div>
             )}
 
             {/* 11. CLASSIC ROCK 70S BORDER */}
             {config.themeId === "classic-rock" && (
-              <div className="absolute inset-0 pointer-events-none border-2 border-amber-500/25 m-2 rounded-xl flex flex-col justify-between" id="classic-rock-decorations">
-                <div className="absolute top-2 left-3 right-3 border-b border-amber-500/30" />
-                <div className="absolute bottom-2 left-3 right-3 border-t border-amber-500/30" />
-                <div className="absolute top-3 left-3 text-amber-500/40 text-[10px]">★</div>
-                <div className="absolute top-3 right-3 text-amber-500/40 text-[10px]">★</div>
-                <div className="absolute bottom-3 left-3 text-amber-500/40 text-[10px]">★</div>
-                <div className="absolute bottom-3 right-3 text-amber-500/40 text-[10px]">★</div>
+              <div className="absolute inset-0 pointer-events-none border-2 m-2 rounded-xl flex flex-col justify-between" id="classic-rock-decorations" style={{ borderColor: "rgba(245,158,11,0.25)" }}>
+                <div className="absolute top-2 left-3 right-3 border-b" style={{ borderColor: "rgba(245,158,11,0.3)" }} />
+                <div className="absolute bottom-2 left-3 right-3 border-t" style={{ borderColor: "rgba(245,158,11,0.3)" }} />
+                <div className="absolute top-3 left-3 text-[10px]" style={{ color: "rgba(245,158,11,0.4)" }}>★</div>
+                <div className="absolute top-3 right-3 text-[10px]" style={{ color: "rgba(245,158,11,0.4)" }}>★</div>
+                <div className="absolute bottom-3 left-3 text-[10px]" style={{ color: "rgba(245,158,11,0.4)" }}>★</div>
+                <div className="absolute bottom-3 right-3 text-[10px]" style={{ color: "rgba(245,158,11,0.4)" }}>★</div>
               </div>
             )}
 
             {/* Top details card info */}
             <div className="space-y-3 pt-4 z-10" id="poster-layout-top">
               {/* Supporting Tagline / Tour subtitle */}
-              <h5 className={`text-[10px] uppercase font-black tracking-widest ${c.tagline}`} id="poster-tagline-preview">
+              <h5 
+                className={`text-[10px] uppercase font-black tracking-widest ${c.taglineClasses}`} 
+                style={c.taglineStyle}
+                id="poster-tagline-preview"
+              >
                 {config.secondaryText || "LIVE ON STAGE · ONE NIGHT ONLY"}
               </h5>
 
               {/* Main Headline band title */}
-              <h1 className={`leading-none font-bold select-all tracking-tighter ${c.bandName} ${getFontFamilyClass(config.fontStyle)} ${!config.bandName ? 'opacity-40 italic' : ''}`} id="poster-band-preview">
+              <h1 
+                className={`leading-none font-bold select-all tracking-tighter ${c.bandNameClasses} ${getFontFamilyClass(config.fontStyle)} ${!config.bandName ? 'opacity-40 italic' : ''}`} 
+                style={c.bandNameStyle}
+                id="poster-band-preview"
+              >
                 {config.bandName || "The Midnight Echoes"}
               </h1>
 
               {/* Supporting Acts / Openers appearing under the headlining act */}
               {config.supportingActs && (
                 <div className="pt-1" id="poster-supporting-acts-preview">
-                  <div className={`inline-block px-3 py-1 text-xs md:text-sm font-black uppercase tracking-wider ${
-                    config.themeId === "punk-diy"
-                      ? "bg-black text-yellow-300 font-mono transform -rotate-1 border border-black"
-                      : config.themeId === "metal-hellfire"
-                      ? "text-red-400 font-sans tracking-widest border-t border-b border-red-950/80 py-1"
-                      : config.themeId === "retro-neon"
-                      ? "text-cyan-300 font-mono border-b border-pink-500/50"
-                      : config.themeId === "indie-minimal"
-                      ? "text-slate-600 font-mono tracking-widest text-[11px]"
-                      : `${c.tagline} opacity-95`
-                  }`}>
+                  <div 
+                    className={`inline-block px-3 py-1 text-xs md:text-sm uppercase tracking-wider ${c.supportingActsClasses}`}
+                    style={c.supportingActsStyle}
+                  >
                     {config.supportingActs}
                   </div>
                 </div>
@@ -1645,70 +1626,76 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
             <div className="space-y-3 py-4 z-10" id="poster-layout-mid">
               {/* Custom stylized circle graphic representation if Indie */}
               {config.themeId === "indie-minimal" && (
-                <div className="w-10 h-10 rounded-full bg-slate-900 text-white mx-auto flex items-center justify-center text-xs font-mono mb-4" id="indie-mid-graphic">
+                <div className="w-10 h-10 rounded-full mx-auto flex items-center justify-center text-xs font-mono mb-4" style={{ backgroundColor: "#18181b", color: "#ffffff" }} id="indie-mid-graphic">
                   L-S
                 </div>
               )}
 
               {/* Custom vector icons if Folk */}
               {config.themeId === "folk-acoustic" && (
-                <div className="text-amber-800 text-lg my-1 select-none" id="folk-mid-graphic">
+                <div className="text-lg my-1 select-none" style={{ color: "#78350f" }} id="folk-mid-graphic">
                   ❀ ─── ❀ ─── ❀
                 </div>
               )}
 
               {/* Psychedelic */}
               {config.themeId === "psychedelic-acid" && (
-                <div className="text-purple-400 text-xl my-1 select-none animate-bounce" id="psych-mid-graphic">
+                <div className="text-xl my-1 select-none animate-bounce" style={{ color: "#c084fc" }} id="psych-mid-graphic">
                   ☯ 🌀 ☯
                 </div>
               )}
 
               {/* Metal */}
               {config.themeId === "metal-hellfire" && (
-                <div className="text-red-700 text-xl my-1 select-none font-bold tracking-widest" id="metal-mid-graphic">
+                <div className="text-xl my-1 select-none font-bold tracking-widest" style={{ color: "#b91c1c" }} id="metal-mid-graphic">
                   ☠ 🜏 ☠
                 </div>
               )}
 
               {/* Pop */}
               {config.themeId === "pop-bubblegum" && (
-                <div className="text-pink-400 text-base my-1 select-none" id="pop-mid-graphic">
+                <div className="text-base my-1 select-none" style={{ color: "#ec4899" }} id="pop-mid-graphic">
                   ★ ★ ★ ★ ★
                 </div>
               )}
 
               {/* Jazz */}
               {config.themeId === "jazz-vanguard" && (
-                <div className="text-amber-500 text-base my-1 select-none tracking-widest font-serif font-light" id="jazz-mid-graphic">
+                <div className="text-base my-1 select-none tracking-widest font-serif font-light" style={{ color: "#f59e0b" }} id="jazz-mid-graphic">
                   ◆ ─── ♫ ─── ◆
                 </div>
               )}
 
               {/* Dubstep */}
               {config.themeId === "dubstep-laser" && (
-                <div className="text-[#10b981] text-xs font-mono my-1 select-none" id="synth-mid-graphic">
+                <div className="text-xs font-mono my-1 select-none" style={{ color: "#10b981" }} id="synth-mid-graphic">
                   [ SIGNAL DETECTED_ ]
                 </div>
               )}
 
               {/* Punk */}
               {config.themeId === "punk-diy" && (
-                <div className="text-black text-xl font-mono my-2 select-none font-black" id="punk-mid-graphic">
+                <div className="text-xl font-mono my-2 select-none font-black" style={{ color: "#000000" }} id="punk-mid-graphic">
                   ⚡ ☠ ⚡
                 </div>
               )}
 
               <div className="space-y-1" id="venue-text-previews">
-                <h2 className={`text-base font-bold uppercase tracking-wide ${c.venueName} ${!config.venueName ? 'opacity-40 italic' : ''}`} id="poster-venue-name-preview">
+                <h2 
+                  className={`text-base font-bold uppercase tracking-wide ${c.venueNameClasses} ${!config.venueName ? 'opacity-40 italic' : ''}`} 
+                  style={c.venueNameStyle}
+                  id="poster-venue-name-preview"
+                >
                   {config.venueName || "The Crystal Ballroom · Portland, OR"}
                 </h2>
 
                 {config.venueAddress && (
-                  <p className={`text-[10px] font-medium flex items-center justify-center gap-1 leading-normal ${
-                    config.themeId === "punk-diy" ? "text-black font-black" : "text-gray-500"
-                  }`} id="poster-venue-addr-preview">
-                    <MapPin className="w-3 h-3 text-rose-500 flex-shrink-0" />
+                  <p 
+                    className="text-[10px] font-medium flex items-center justify-center gap-1 leading-normal" 
+                    style={{ color: config.themeId === "punk-diy" ? "#000000" : "#a1a1aa" }}
+                    id="poster-venue-addr-preview"
+                  >
+                    <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: "#ef4444" }} />
                     {config.venueAddress}
                   </p>
                 )}
@@ -1716,16 +1703,24 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
             </div>
 
             {/* Bottom detail footer tags (Time, entry fees, limits, snacks icons) */}
-            <div className="border-t pt-4 space-y-4 z-10" id="poster-layout-bottom" style={{ borderColor: "rgba(100,100,100,0.15)" }}>
+            <div className="border-t pt-4 space-y-4 z-10" id="poster-layout-bottom" style={{ borderColor: config.themeId === "punk-diy" ? "#000000" : "#27272a" }}>
               {/* Date and time badges */}
               <div className="flex justify-center items-center gap-3 text-xs flex-wrap" id="footer-badges-preview">
-                <span className={`px-2.5 py-1 rounded font-bold font-mono tracking-tight flex items-center gap-1.5 ${c.dateBadge} ${!config.dateStr ? 'opacity-40' : ''}`} id="poster-date-preview">
-                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                <span 
+                  className={`px-2.5 py-1 rounded font-bold font-mono tracking-tight flex items-center gap-1.5 border ${c.dateBadgeClasses} ${!config.dateStr ? 'opacity-40' : ''}`} 
+                  style={c.dateBadgeStyle}
+                  id="poster-date-preview"
+                >
+                  <Calendar className="w-3.5 h-3.5" style={{ color: "#a1a1aa" }} />
                   {config.dateStr || "Friday, Nov 14 · Doors 7:00 PM / Show 8:00 PM"}
                 </span>
 
                 {config.timeStr && (
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${c.timeBadge}`} id="poster-time-preview">
+                  <span 
+                    className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${c.timeBadgeClasses}`} 
+                    style={c.timeBadgeStyle}
+                    id="poster-time-preview"
+                  >
                     {config.timeStr}
                   </span>
                 )}
@@ -1733,34 +1728,47 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
 
               {/* Pricing and Entrance Limit badges row */}
               <div className="flex items-center justify-center gap-3 text-[10px] font-bold" id="pricing-age-preview">
-                <span className={`flex items-center gap-0.5 ${config.themeId === "punk-diy" ? "text-black font-black font-mono border-b border-black" : "text-slate-500"} ${!config.priceStr ? 'opacity-40' : ''}`} id="poster-price-label">
-                  <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                <span 
+                  className={`flex items-center gap-0.5 ${!config.priceStr ? 'opacity-40' : ''}`} 
+                  style={{ color: config.themeId === "punk-diy" ? "#000000" : "#a1a1aa" }}
+                  id="poster-price-label"
+                >
+                  <DollarSign className="w-3.5 h-3.5" style={{ color: "#10b981" }} />
                   {config.priceStr || "$15 Advance / $20 Door · 21+ · Tickets at link"}
                 </span>
 
-                <span className={`px-2 py-0.5 text-[9px] uppercase font-black rounded-sm tracking-wider ${
-                  config.themeId === "heavy-grunge" ? "bg-stone-800 text-orange-200" : ""
-                } ${
-                  config.themeId === "punk-diy" ? "bg-black text-white font-black" : "bg-slate-900 text-white"
-                }`} id="poster-age-badge">
+                <span 
+                  className="px-2 py-0.5 text-[9px] uppercase font-black rounded-sm tracking-wider" 
+                  style={{
+                    backgroundColor: config.themeId === "punk-diy" ? "#000000" : "#18181b",
+                    color: "#ffffff"
+                  }}
+                  id="poster-age-badge"
+                >
                   {config.allAges}
                 </span>
               </div>
 
               {/* Custom food / beverages ICON indications if toggled */}
               {(config.amenities.servesFood || config.amenities.servesAlcohol || config.amenities.merchArea) && (
-                <div className={`rounded-lg p-2 flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-wider mx-auto max-w-[240px] ${
-                  config.themeId === "punk-diy" ? "bg-slate-100 border-2 border-black text-black" : "bg-slate-900/10 text-slate-700"
-                }`} id="poster-amenities-pills">
+                <div 
+                  className="rounded-lg p-2 flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-wider mx-auto max-w-[240px] border" 
+                  style={{
+                    backgroundColor: config.themeId === "punk-diy" ? "#f4f4f5" : "#18181b",
+                    borderColor: config.themeId === "punk-diy" ? "#000000" : "#27272a",
+                    color: config.themeId === "punk-diy" ? "#000000" : "#e4e4e7"
+                  }}
+                  id="poster-amenities-pills"
+                >
                   {config.amenities.servesFood && (
                     <span className="flex items-center gap-1" id="pill-preview-food">
-                      <UtensilsCrossed className="w-3.5 h-3.5 text-indigo-600" />
+                      <UtensilsCrossed className="w-3.5 h-3.5" style={{ color: "#06b6d4" }} />
                       Food
                     </span>
                   )}
                   {config.amenities.servesAlcohol && (
                     <span className="flex items-center gap-1" id="pill-preview-alcohol">
-                      <Wine className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                      <Wine className="w-3.5 h-3.5 animate-pulse" style={{ color: "#ef4444" }} />
                       Drinks
                     </span>
                   )}
@@ -1774,7 +1782,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
 
               {/* Extra safety info labels at the very bottom */}
               {config.extraDetails && (
-                <p className="text-[9px] text-gray-400 font-medium tracking-tight italic" id="poster-notes-preview">
+                <p className="text-[9px] font-medium tracking-tight italic" style={{ color: "#71717a" }} id="poster-notes-preview">
                   *{config.extraDetails}
                 </p>
               )}
@@ -1789,8 +1797,16 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
 
         {/* Floating Download / Save Confirmation Toast */}
         {saveToast?.show && (
-          <div className="fixed bottom-6 right-6 z-50 bg-emerald-700 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-2xl border border-emerald-600 flex items-center gap-2 animate-fade-in pointer-events-none">
-            <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
+          <div className={`fixed bottom-6 right-6 z-50 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-2xl border flex items-center gap-2 animate-fade-in pointer-events-none ${
+            saveToast.isError
+              ? "bg-red-700 border-red-600 text-red-50"
+              : "bg-emerald-700 border-emerald-600 text-emerald-50"
+          }`}>
+            {saveToast.isError ? (
+              <AlertCircle className="w-4 h-4 text-red-200 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
+            )}
             <span>{saveToast.message}</span>
           </div>
         )}

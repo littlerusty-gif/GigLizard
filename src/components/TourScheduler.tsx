@@ -89,7 +89,8 @@ import {
   Shield,
   Phone,
   User,
-  Clipboard
+  Clipboard,
+  Pencil
 } from "lucide-react";
 
 /**
@@ -269,6 +270,14 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   const [customLodgingInputs, setCustomLodgingInputs] = useState<
     Record<number, { name: string; confirmationNumber: string; cost: string; notes: string }>
   >({});
+
+  // Step 2 Edit Tour Stop State (City Switching & Real-Time Itinerary Recalculation)
+  const [editingStopIndex, setEditingStopIndex] = useState<number | null>(null);
+  const [editStopCity, setEditStopCity] = useState("");
+  const [editStopState, setEditStopState] = useState("");
+  const [editStopDate, setEditStopDate] = useState("");
+  const [editStopNotes, setEditStopNotes] = useState("");
+  const [editStopRoutingPriority, setEditStopRoutingPriority] = useState("");
 
   // Step 4 City-by-City lodging navigation & confirmation snippets
   const [activeLodgingIndex, setActiveLodgingIndex] = useState(0);
@@ -767,6 +776,94 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     setTotalDistanceMiles(recalculated.totalDistanceMiles);
     setTotalDriveTime(recalculated.totalDriveTime);
     setNewWaypointInput("");
+  };
+
+  // Step 2: Edit Tour Stop methods (City switching, date adjustment & route recalculation)
+  const handleOpenEditStop = (index: number) => {
+    const target = stops[index];
+    if (!target) return;
+    setEditingStopIndex(index);
+    setEditStopCity(target.city);
+    setEditStopState(target.state || "WA");
+    setEditStopDate(target.date || "");
+    setEditStopNotes(target.customNotes || target.localSceneNotes || "");
+    setEditStopRoutingPriority(target.routeHighlight || "Essential Tour Stop (Anchor Market)");
+  };
+
+  const handleCancelEditStop = () => {
+    setEditingStopIndex(null);
+    setEditStopCity("");
+    setEditStopState("");
+    setEditStopDate("");
+    setEditStopNotes("");
+    setEditStopRoutingPriority("");
+  };
+
+  const handleSaveEditStop = (index: number) => {
+    if (index < 0 || index >= stops.length) return;
+    const trimmedCity = editStopCity.trim();
+    if (!trimmedCity) {
+      triggerToast("Please enter a valid city name.", "info");
+      return;
+    }
+    const trimmedState = editStopState.trim().toUpperCase() || "WA";
+    const oldStop = stops[index];
+    const cityOrStateChanged =
+      oldStop.city.trim().toLowerCase() !== trimmedCity.toLowerCase() ||
+      oldStop.state.trim().toLowerCase() !== trimmedState.toLowerCase();
+
+    const updatedStops = [...stops];
+    const updatedStop: TourStop = {
+      ...oldStop,
+      city: trimmedCity,
+      state: trimmedState,
+      stopName: `Stop: ${trimmedCity}`,
+      date: editStopDate || oldStop.date,
+      customNotes: editStopNotes,
+      localSceneNotes: editStopNotes || oldStop.localSceneNotes,
+      routeHighlight: editStopRoutingPriority || oldStop.routeHighlight
+    };
+
+    if (cityOrStateChanged) {
+      // Reset or re-query recommended venues and lodging options for that newly chosen city
+      updatedStop.selectedVenue = undefined;
+      updatedStop.selectedLodging = undefined;
+      updatedStop.suggestedVenues = [];
+      updatedStop.lodgingOptions = findLodgingForCity(trimmedCity, trimmedState);
+
+      // Invalidate existing venue cache for the new key to force re-query
+      const newCacheKey = `${trimmedCity}_${trimmedState}`;
+      setCityVenuesMap(prev => {
+        const copy = { ...prev };
+        delete copy[newCacheKey];
+        delete copy[trimmedCity];
+        return copy;
+      });
+
+      // Eagerly pre-query venues for the newly chosen city
+      loadVenuesForStageCity(trimmedCity, trimmedState);
+    }
+
+    updatedStops[index] = updatedStop;
+
+    // Recalculate transit mileage, drive time, and van gas budget for all route legs
+    const recal = recalculateStopsMetrics(updatedStops, startDate);
+    setStops(recal.updatedStops);
+    setTotalDistanceMiles(recal.totalDistanceMiles);
+    setTotalDriveTime(recal.totalDriveTime);
+
+    // Sync tour origin or destination if the terminal stops were edited
+    if (index === 0) {
+      setOriginCity(`${trimmedCity}, ${trimmedState}`);
+    } else if (index === updatedStops.length - 1) {
+      setDestinationCity(`${trimmedCity}, ${trimmedState}`);
+    }
+
+    setEditingStopIndex(null);
+    triggerToast(
+      `✓ Stop #${index + 1} updated to ${trimmedCity}, ${trimmedState}. Route and itinerary recalculated!`,
+      "success"
+    );
   };
 
   // Step 2 -> Step 3: Advance to City-by-City stage setup
@@ -2720,10 +2817,196 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                   </div>
 
                   <div className="space-y-2.5">
+                    {/* Native autocomplete suggestions for standard corridor cities */}
+                    <datalist id="known-corridor-cities-list">
+                      {KNOWN_CORRIDOR_CITIES.map((c) => (
+                        <option key={c.label} value={`${c.city}, ${c.state}`}>
+                          {c.label} • {c.tier}
+                        </option>
+                      ))}
+                    </datalist>
+
                     {stops.map((stop, idx) => {
                       const isOrigin = idx === 0;
                       const isDestination = idx === stops.length - 1;
                       const isFatigued = stop.distanceMilesFromPrev > 260; // > 4.5 hours drive
+                      const isEditing = editingStopIndex === idx;
+
+                      if (isEditing) {
+                        return (
+                          <div
+                            key={stop.id || idx}
+                            className="p-5 rounded-2xl bg-indigo-50/70 border-2 border-indigo-500 shadow-md space-y-4 transition-all animate-in fade-in"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200 pb-3">
+                              <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                  {idx + 1}
+                                </span>
+                                <div>
+                                  <h4 className="font-black text-indigo-950 text-sm flex items-center gap-1.5">
+                                    <Pencil className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span>Edit Tour Stop #{idx + 1} — {stop.city}, {stop.state}</span>
+                                  </h4>
+                                  <p className="text-[11px] text-indigo-700">
+                                    Update city, adjust show date, or modify routing priority. Transit metrics &amp; itinerary recalculate instantly.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                {isOrigin ? "Tour Kickoff" : isDestination ? "Tour Finale" : `Day ${idx + 1} Waypoint`}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {/* City & State Input */}
+                              <div className="space-y-1.5 sm:col-span-2">
+                                <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                                  <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>City &amp; State / Region</span>
+                                </label>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    list="known-corridor-cities-list"
+                                    value={editStopCity}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      if (val.includes(",")) {
+                                        const [c, s] = val.split(",").map(p => p.trim());
+                                        setEditStopCity(c);
+                                        if (s) setEditStopState(s);
+                                      } else {
+                                        setEditStopCity(val);
+                                      }
+                                    }}
+                                    placeholder="Enter city (e.g. Portland, Seattle, Eugene, Bend, Boise)"
+                                    className="flex-1 px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-semibold text-slate-900 shadow-2xs"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={editStopState}
+                                    onChange={(e) => setEditStopState(e.target.value.toUpperCase())}
+                                    placeholder="State"
+                                    maxLength={4}
+                                    className="w-24 px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-bold text-slate-900 uppercase text-center shadow-2xs"
+                                  />
+                                </div>
+
+                                {/* Quick Corridor City Switcher Badges */}
+                                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                  <span className="text-[11px] font-bold text-slate-500">Quick Corridor Suggestions:</span>
+                                  {[
+                                    "Portland, OR", 
+                                    "Seattle, WA", 
+                                    "Eugene, OR", 
+                                    "Bend, OR", 
+                                    "Olympia, WA", 
+                                    "Tacoma, WA", 
+                                    "Spokane, WA", 
+                                    "Boise, ID", 
+                                    "San Francisco, CA"
+                                  ].map((quickCity) => {
+                                    const [qC, qS] = quickCity.split(", ");
+                                    const isCurrent = editStopCity.toLowerCase() === qC.toLowerCase() && editStopState.toUpperCase() === qS.toUpperCase();
+                                    return (
+                                      <button
+                                        key={quickCity}
+                                        type="button"
+                                        onClick={() => {
+                                          setEditStopCity(qC);
+                                          setEditStopState(qS);
+                                        }}
+                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
+                                          isCurrent
+                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
+                                            : "bg-white hover:bg-indigo-100 text-slate-700 hover:text-indigo-900 border-slate-200"
+                                        }`}
+                                      >
+                                        {quickCity}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Performance Date Picker */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Performance Date</span>
+                                </label>
+                                <input
+                                  type="date"
+                                  value={editStopDate}
+                                  onChange={(e) => setEditStopDate(e.target.value)}
+                                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-semibold text-slate-900 shadow-2xs"
+                                />
+                                <span className="text-[11px] text-slate-500 block">
+                                  Shifting show dates updates run-of-show &amp; hotel reservations.
+                                </span>
+                              </div>
+
+                              {/* Routing Priority / Highlight */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                                  <Compass className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Routing Priority / Category</span>
+                                </label>
+                                <select
+                                  value={editStopRoutingPriority}
+                                  onChange={(e) => setEditStopRoutingPriority(e.target.value)}
+                                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-semibold text-slate-900 shadow-2xs"
+                                >
+                                  <option value="Essential Tour Stop (Anchor Market)">Essential Tour Stop (Anchor Market)</option>
+                                  <option value="High Priority Weekend Draw">High Priority Weekend Draw</option>
+                                  <option value="Corridor Connector / Midweek Showcase">Corridor Connector / Midweek Showcase</option>
+                                  <option value="DIY / Community Underplay">DIY / Community Underplay</option>
+                                  <option value="Homecoming Wrap-up Show">Homecoming Wrap-up Show</option>
+                                  <option value="Rest Day &amp; Van Maintenance">Rest Day &amp; Van Maintenance</option>
+                                </select>
+                                <span className="text-[11px] text-slate-500 block">
+                                  Affects scheduling tags and band itinerary priority.
+                                </span>
+                              </div>
+
+                              {/* Notes / Routing details */}
+                              <div className="space-y-1.5 sm:col-span-2">
+                                <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                                  <Info className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Scene Notes &amp; Routing Priorities</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editStopNotes}
+                                  onChange={(e) => setEditStopNotes(e.target.value)}
+                                  placeholder="e.g. Load-in at 5:00 PM, strong local radio station support, merchandise booth setup"
+                                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium text-slate-900 shadow-2xs"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-indigo-200">
+                              <button
+                                type="button"
+                                onClick={handleCancelEditStop}
+                                className="px-4 py-2 text-xs font-black text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition-all cursor-pointer shadow-2xs"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveEditStop(idx)}
+                                className="px-5 py-2 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5 active:scale-98"
+                              >
+                                <Check className="w-4 h-4 stroke-[3]" />
+                                <span>Save Changes</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
 
                       return (
                         <div
@@ -2774,22 +3057,15 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
                           {/* Stop Actions */}
                           <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-auto">
-                            {/* Lodging Action */}
+                            {/* Edit Tour Stop Action Button */}
                             <button
                               type="button"
-                              onClick={() => handleOpenBookingModal(idx)}
-                              className={`text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
-                                stop.selectedLodging?.name 
-                                  ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200" 
-                                  : "bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200"
-                              }`}
-                              title={stop.selectedLodging?.name ? "Update lodging reservation details" : "Find lodging options and save reservation"}
+                              onClick={() => handleOpenEditStop(idx)}
+                              className="text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 shadow-2xs hover:border-indigo-300"
+                              title={`Edit tour stop details for ${stop.city}, ${stop.state}`}
                             >
-                              <Hotel className={`w-3.5 h-3.5 ${stop.selectedLodging?.name ? "text-emerald-600" : "text-amber-600"}`} />
-                              <span className="truncate max-w-[140px] sm:max-w-[200px]">
-                                {stop.selectedLodging?.name ? `Confirmed: ${stop.selectedLodging.name}` : "Find Lodging"}
-                              </span>
-                              {stop.selectedLodging?.name && <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />}
+                              <Pencil className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Edit Tour Stop</span>
                             </button>
 
                             <button

@@ -7,7 +7,7 @@ import {
   Image as ImageIcon, Eye, Phone, Mail, MapPin, Calendar, Clock,
   Volume2, ShieldCheck, Zap, Radio, Layers
 } from "lucide-react";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 import { 
   saveBandStagePlotToDatabase, 
