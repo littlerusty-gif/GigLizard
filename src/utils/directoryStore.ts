@@ -174,7 +174,7 @@ export function getMergedVenuesList(additionalVenues?: Venue[]): Venue[] {
   const result: Venue[] = [];
 
   for (const v of allRaw) {
-    if (!v || !v.name) continue;
+    if (!v || !v.name || (v as any).isPrivate || (v as any).venueType === "house_show") continue;
 
     const idKey = v.id?.toLowerCase();
     const nameKey = v.name.trim().toLowerCase();

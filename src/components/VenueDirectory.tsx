@@ -150,7 +150,9 @@ export default function VenueDirectory({
         userVenueList = [userVenueObj];
       }
 
-      const rawMerged = [...userVenueList, ...supabaseVenues, ...customList, ...MUSIC_VENUES];
+      const rawMerged = [...userVenueList, ...supabaseVenues, ...customList, ...MUSIC_VENUES].filter(
+        v => !(v as any).isPrivate && (v as any).venueType !== "house_show"
+      );
       const deletedIds = new Set(getOwnerDeletedVenueIds());
       const ownerEdits = getOwnerVenueEdits();
 

@@ -147,16 +147,29 @@ export interface TourSelectedVenue {
   city?: string;
   state?: string;
   country?: string;
+  contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  techContact?: string; // sound tech / advance contact
   capacity?: number;
   loadInTime?: string;
   soundcheckTime?: string;
   doorsTime?: string;
   setTime?: string;
   ticketPrice?: string;
+  bookingStatus?: "unconfirmed" | "penciled" | "confirmed";
+  doorGuarantee?: string; // e.g. "$500 guarantee"
+  doorSplitPercentage?: string; // e.g. "80% of door"
+  dealNotes?: string;
   notes?: string;
   website?: string;
+  venueType?: "public_venue" | "house_show";
+  isPrivate?: boolean;
+  soundSpecs?: string;
+  suggestedDonation?: string;
+  loadInNotes?: string;
+  hostName?: string;
+  hostPhone?: string;
 }
 
 export interface TourSelectedLodging {
@@ -170,6 +183,8 @@ export interface TourSelectedLodging {
   checkOutTime?: string;
   gearSecurityNote?: string;
   bookingUrl?: string;
+  isBooked?: boolean;
+  bookingPlatform?: "Expedia" | "Booking.com" | "KOA" | "Direct" | string;
   notes?: string;
 }
 

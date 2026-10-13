@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { PosterConfig, SloganProposal, UserAccount } from "../types";
 import { 
   Sparkles, Image, RefreshCw, Layers, CheckSquare, Wine, UtensilsCrossed, 
-  Calendar, DollarSign, MapPin, Eye, Wand2, Check, Download, Truck, Printer, 
-  CreditCard, ShoppingBag, ArrowLeft, Users, Save, Type, Palette
+  Calendar, DollarSign, MapPin, Eye, Wand2, Check, Download, Printer, 
+  ArrowLeft, Users, Save, Type, Palette, FileText, ExternalLink, Flame, CheckCircle2
 } from "lucide-react";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 // Helper to resolve font family classes for poster title
 const getFontFamilyClass = (fontStyle?: string) => {
@@ -470,138 +471,177 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
     }
   };
 
-  // Download & Print Order state managers
-  const [panelTab, setPanelTab] = useState<"preview" | "order">("preview");
-  const [isDownloading, setIsDownloading] = useState(false);
-  
-  // Supported print items config (all 3 options with 1/8" bleed spec details)
-  const [printItems, setPrintItems] = useState<{ [key in "4.25x5.5" | "8.5x11" | "11x17"]: { selected: boolean; qty: number } }>({
-    "4.25x5.5": { selected: false, qty: 100 },
-    "8.5x11": { selected: false, qty: 100 },
-    "11x17": { selected: true, qty: 100 },
-  });
-  const [checkoutStep, setCheckoutStep] = useState<"select" | "checkout">("select");
-  const [shippingOption, setShippingOption] = useState<"ground" | "express2day" | "overnight">("ground");
-  
-  const [shippingAddress, setShippingAddress] = useState({
-    name: "",
-    street: "",
-    city: "Seattle",
-    state: "WA",
-    zip: "98121",
-    phone: "206-555-0199"
-  });
-  
-  const [paymentCard, setPaymentCard] = useState({
-    number: "4111 2222 3333 4444",
-    expiry: "12/28",
-    cvv: "123"
-  });
+  // High-Resolution Export & Download state
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingFlyer, setIsExportingFlyer] = useState(false);
+  const [selectedPdfSize, setSelectedPdfSize] = useState<"11x17" | "12x18" | "4.25x5.5">("11x17");
+  const [selectedFlyerRatio, setSelectedFlyerRatio] = useState<"poster" | "handbill">("poster");
+  const [selectedFlyerFormat, setSelectedFlyerFormat] = useState<"png" | "jpg">("png");
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
 
-  const [paymentMethod, setPaymentMethod] = useState<"paypal" | "card">("paypal");
-  const [paypalUserEmail, setPaypalUserEmail] = useState("");
+  // 1. Download Print-Ready Poster / Handbill (PDF) - 300 DPI CMYK bleed-ready standard specs (11x17, 12x18, and 4.25x5.5)
+  const handleDownloadPrintReadyPdf = async (sizeOverride?: "11x17" | "12x18" | "4.25x5.5") => {
+    const size = sizeOverride || selectedPdfSize;
+    const element = document.getElementById("concert-poster-frame");
+    if (!element) {
+      alert("Poster preview canvas not found!");
+      return;
+    }
+    setIsExportingPdf(true);
+    setExportNotice(`Rendering ${size === "4.25x5.5" ? "4.25\" × 5.5\" Handbill" : size} 300 DPI bleed-ready PDF...`);
+    try {
+      await new Promise(r => setTimeout(r, 100));
+      const canvas = await html2canvas(element, {
+        scale: 3, // 300 DPI equivalent print rasterization
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        logging: false
+      });
+      const imgData = canvas.toDataURL("image/png");
+      
+      const widthInches = size === "12x18" ? 12 : size === "4.25x5.5" ? 4.25 : 11;
+      const heightInches = size === "12x18" ? 18 : size === "4.25x5.5" ? 5.5 : 17;
+      
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "in",
+        format: [widthInches, heightInches]
+      });
 
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [orderResult, setOrderResult] = useState<any>(null);
-  const [orderError, setOrderError] = useState("");
+      // Fit image into the page
+      // For 4.25 x 5.5 handbill, calculate cover scaling to ensure proper bleed margins without distorting aspect ratio
+      if (size === "4.25x5.5") {
+        const targetRatio = widthInches / heightInches;
+        const imgRatio = canvas.width / canvas.height;
+        let drawW = widthInches;
+        let drawH = heightInches;
+        let offsetX = 0;
+        let offsetY = 0;
 
-  const getRateForSize = (sz: "4.25x5.5" | "8.5x11" | "11x17") => {
-    return sz === "4.25x5.5" ? 0.15 : sz === "8.5x11" ? 0.25 : 0.40;
+        if (imgRatio < targetRatio) {
+          // Poster is taller than 4.25:5.5 -> scale to match width, center vertically for bleed
+          drawW = widthInches;
+          drawH = widthInches / imgRatio;
+          offsetY = (heightInches - drawH) / 2;
+        } else {
+          // Poster is wider than 4.25:5.5 -> scale to match height, center horizontally for bleed
+          drawH = heightInches;
+          drawW = heightInches * imgRatio;
+          offsetX = (widthInches - drawW) / 2;
+        }
+        pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH, undefined, "FAST");
+      } else {
+        pdf.addImage(imgData, "PNG", 0, 0, widthInches, heightInches, undefined, "FAST");
+      }
+
+      const isHandbill = size === "4.25x5.5";
+      pdf.setProperties({
+        title: `${config.bandName || "Concert"} - ${isHandbill ? "4.25x5.5 Handbill" : size + " Poster"} Bleed-Ready (300 DPI)`,
+        subject: "Print-Ready Concert Poster & Handbill - 300 DPI CMYK Bleed-Ready Specs",
+        author: "GigLizard Stage Director",
+        keywords: "concert poster, 11x17, 12x18, 4.25x5.5, handbill, quarter sheet, bleed ready, 300 dpi, fireball printing"
+      });
+
+      const bandSlug = (config.bandName || "concert-poster")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-") || "concert";
+      pdf.save(`${bandSlug}-${isHandbill ? "4.25x5.5-handbill" : size + "-poster"}-300dpi-print-ready.pdf`);
+      
+      setExportNotice(`✓ Downloaded ${isHandbill ? "4.25\" × 5.5\" Handbill" : size} Print-Ready (PDF)!`);
+      setTimeout(() => setExportNotice(null), 4000);
+    } catch (err: any) {
+      console.error("Could not generate PDF:", err);
+      alert("Could not generate high-resolution PDF. Please try Web Flyer PNG/JPG or browser Local Print.");
+      setExportNotice(null);
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
-  // derived calculations for actively selected items
-  const activeItemsList = (Object.entries(printItems) as Array<["4.25x5.5" | "8.5x11" | "11x17", { selected: boolean; qty: number }]>)
-    .filter(([_, data]) => data.selected)
-    .map(([sz, data]) => ({
-      size: sz,
-      quantity: data.qty,
-      rate: getRateForSize(sz),
-      total: data.qty * getRateForSize(sz)
-    }));
-
-  const rawPrintBaseCost = activeItemsList.reduce((acc, item) => acc + item.total, 0);
-  const currentShippingCost = shippingOption === "ground" ? 9.50 : shippingOption === "express2day" ? 18.00 : 32.00;
-  const currentSubtotal = rawPrintBaseCost + currentShippingCost;
-  const currentHandlingFee = rawPrintBaseCost > 0 ? Math.max(4.95, currentSubtotal * 0.10) : 0;
-  const currentTotalRetailValue = rawPrintBaseCost > 0 ? currentSubtotal + currentHandlingFee : 0;
-
-  const downloadPosterAsImage = async () => {
+  // 2. Download Web Flyer (PNG/JPG) - High-res RGB for Instagram, Facebook, and promo posts, with 4.25:5.5 handbill preset
+  const handleDownloadWebFlyer = async (formatOverride?: "png" | "jpg", ratioOverride?: "poster" | "handbill") => {
+    const format = formatOverride || selectedFlyerFormat;
+    const ratio = ratioOverride || selectedFlyerRatio;
     const element = document.getElementById("concert-poster-frame");
     if (!element) {
       alert("Poster preview frame not found!");
       return;
     }
-    setIsDownloading(true);
+    setIsExportingFlyer(true);
+    setExportNotice(`Generating ${ratio === "handbill" ? "4.25:5.5 Handbill" : "web flyer"} (${format.toUpperCase()})...`);
     try {
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 100));
       const canvas = await html2canvas(element, {
-        scale: 2, // 2x high resolution rendering representation
+        scale: 3, // High-res RGB rendering for Instagram, Facebook, and promo posts
         useCORS: true,
         allowTaint: true,
-        backgroundColor: null
-      });
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `${config.bandName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") || "concert"}-poster.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err: any) {
-      console.error("Could not capture poster canvas:", err);
-      alert("Could not generate PNG image download. Use 'Local Print' or standard print features instead.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const handlePlacePrintOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setOrderError("");
-    setOrderResult(null);
-
-    if (activeItemsList.length === 0) {
-      setOrderError("Please select at least one size option for printing.");
-      return;
-    }
-
-    if (!shippingAddress.name.trim() || !shippingAddress.street.trim() || !shippingAddress.city.trim() || !shippingAddress.state.trim() || !shippingAddress.zip.trim()) {
-      setOrderError("Please fully complete your shipping details.");
-      return;
-    }
-
-    setIsPlacingOrder(true);
-    try {
-      const response = await fetch("/api/print/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          posterData: {
-            bandName: config.bandName,
-            venueName: config.venueName,
-            dateStr: config.dateStr,
-            themeId: config.themeId
-          },
-          items: activeItemsList.map(item => ({
-            size: item.size,
-            quantity: item.quantity
-          })),
-          shippingAddress: shippingAddress,
-          shippingOption: shippingOption,
-          paymentMethod: paymentMethod,
-          paypalUserEmail: paymentMethod === "paypal" ? paypalUserEmail : undefined
-        })
+        backgroundColor: null,
+        logging: false
       });
 
-      if (!response.ok) {
-        throw new Error("Print server returned error status " + response.status);
+      const bandSlug = (config.bandName || "concert-poster")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-") || "concert";
+
+      let finalCanvas = canvas;
+      if (ratio === "handbill") {
+        // Quarter-sheet flyer: 4.25" × 5.5" at 300 DPI = 1275 × 1650 px
+        const targetW = 1275;
+        const targetH = 1650;
+        const handbillCanvas = document.createElement("canvas");
+        handbillCanvas.width = targetW;
+        handbillCanvas.height = targetH;
+        const hCtx = handbillCanvas.getContext("2d");
+        if (hCtx) {
+          // Fill background tone to match theme
+          hCtx.fillStyle = config.themeId.includes("minimal") || config.themeId.includes("diy") ? "#ffffff" : "#0d0d12";
+          hCtx.fillRect(0, 0, targetW, targetH);
+
+          // Cover and center the poster image to 4.25:5.5 handbill ratio
+          const scale = Math.max(targetW / canvas.width, targetH / canvas.height);
+          const drawW = canvas.width * scale;
+          const drawH = canvas.height * scale;
+          const drawX = (targetW - drawW) / 2;
+          const drawY = (targetH - drawH) / 2;
+
+          hCtx.drawImage(canvas, drawX, drawY, drawW, drawH);
+          finalCanvas = handbillCanvas;
+        }
       }
 
-      const result = await response.json();
-      setOrderResult(result);
+      let dataUrl: string;
+      if (format === "jpg") {
+        const jpgCanvas = document.createElement("canvas");
+        jpgCanvas.width = finalCanvas.width;
+        jpgCanvas.height = finalCanvas.height;
+        const ctx = jpgCanvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, jpgCanvas.width, jpgCanvas.height);
+          ctx.drawImage(finalCanvas, 0, 0);
+        }
+        dataUrl = jpgCanvas.toDataURL("image/jpeg", 0.95);
+      } else {
+        dataUrl = finalCanvas.toDataURL("image/png");
+      }
+
+      const link = document.createElement("a");
+      const filenameSuffix = ratio === "handbill" ? "4.25x5.5-handbill" : "web-flyer";
+      link.download = `${bandSlug}-${filenameSuffix}-${format.toLowerCase()}.${format}`;
+      link.href = dataUrl;
+      link.click();
+
+      setExportNotice(`✓ Downloaded ${ratio === "handbill" ? "4.25\" × 5.5\" Handbill" : "High-Res Web Flyer"} (${format.toUpperCase()})!`);
+      setTimeout(() => setExportNotice(null), 4000);
     } catch (err: any) {
-      console.error("Failed to place printing order:", err);
-      setOrderError(err.message || "Print queue connection timed out.");
+      console.error("Could not capture flyer:", err);
+      alert("Could not generate flyer download. Try Local Print or PDF export.");
+      setExportNotice(null);
     } finally {
-      setIsPlacingOrder(false);
+      setIsExportingFlyer(false);
     }
   };
 
@@ -705,6 +745,59 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
     setAppliedSloganIdx(idx);
     setTimeout(() => setAppliedSloganIdx(null), 2000);
   };
+
+  // Fireball Printing Recommendation Card
+  const renderFireballCard = () => (
+    <div 
+      id="fireball-printing-recommendation" 
+      className="w-full bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-950 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3.5 relative overflow-hidden text-left"
+    >
+      <div className="absolute -top-12 -right-12 w-36 h-36 bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-500/20 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-400 flex items-center justify-center shadow-md shrink-0">
+            <Flame className="w-5 h-5 text-white fill-white" />
+          </div>
+          <div>
+            <span className="text-[10px] uppercase font-black tracking-widest text-amber-400 block">
+              Order Physical Gig Posters
+            </span>
+            <h4 className="text-sm sm:text-base font-black text-white tracking-tight">
+              Print Physical Flyers with Fireball Printing
+            </h4>
+          </div>
+        </div>
+
+        <a
+          href="https://fireballprinting.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          id="btn-fireball-printing-link"
+          className="inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shrink-0 cursor-pointer"
+        >
+          <span>Order on Fireball Printing</span>
+          <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
+        </a>
+      </div>
+
+      <p className="text-xs text-slate-300 leading-relaxed">
+        We recommend Fireball Printing for fast, indie-friendly, high-quality band flyer and concert poster printing. Download your print-ready file above, then upload it directly on their site.
+      </p>
+
+      {/* Quick specs checklist */}
+      <div className="bg-slate-950/70 border border-amber-500/25 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-[11px]">
+        <div className="flex items-center gap-2 text-amber-200 font-semibold">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>Recommended formats: 11x17 or 12x18 tabloid posters, or 4.25x5.5 quarter-sheet handbills (300 DPI).</span>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium shrink-0">
+          <span className="px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-mono">100lb Gloss / Cardstock</span>
+          <span className="px-2 py-0.5 rounded bg-slate-800 text-emerald-300 font-mono">Fast Shipping</span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex flex-col space-y-8 animate-fade-in w-full max-w-5xl mx-auto" id="poster-designer-panel">
@@ -1064,75 +1157,227 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
             </div>
           </div>
 
-          {/* STEP 4: FINAL ACTIONS (DOWNLOAD, SAVE, ORDER PRINTS) */}
-          <div className="space-y-3 border-t border-gray-100 pt-4" id="step-4-final-actions-section">
-            <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center font-bold">4</span>
-              Final Actions
-            </span>
+          {/* STEP 4: FINAL ACTIONS (HIGH-RESOLUTION DOWNLOADS & PRINT FULFILLMENT) */}
+          <div className="space-y-4 border-t border-gray-100 pt-4" id="step-4-final-actions-section">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center font-bold">4</span>
+                Download & Print Fulfillment
+              </span>
+              {exportNotice && (
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 animate-fade-in flex items-center gap-1">
+                  <Check className="w-3 h-3 text-emerald-600" />
+                  {exportNotice}
+                </span>
+              )}
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" id="final-actions-grid">
-              {/* Action 1: Download PNG */}
-              <button
-                type="button"
-                id="btn-poster-download-png"
-                onClick={downloadPosterAsImage}
-                disabled={isDownloading}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                {isDownloading ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Rendering...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download PNG</span>
-                  </>
-                )}
-              </button>
+            {/* High-Resolution Download Buttons for bands/venues */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" id="high-res-download-actions">
+              {/* Action 1: Download Print-Ready Poster (PDF) */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex flex-col justify-between space-y-2.5">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-emerald-600" />
+                      Download Print-Ready Poster (PDF)
+                    </span>
+                    <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                      300 DPI Bleed
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1 leading-snug">
+                    300 DPI CMYK bleed-ready standard specs: 11x17, 12x18, and 4.25x5.5 quarter-sheet handbills.
+                  </p>
+                </div>
 
-              {/* Action 2: Save Poster */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                    <span className="text-slate-500 font-bold">Size:</span>
+                    <button
+                      type="button"
+                      id="btn-pdf-size-11x17"
+                      onClick={() => setSelectedPdfSize("11x17")}
+                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
+                        selectedPdfSize === "11x17"
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      11" × 17" Tabloid
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-pdf-size-12x18"
+                      onClick={() => setSelectedPdfSize("12x18")}
+                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
+                        selectedPdfSize === "12x18"
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      12" × 18" Full Bleed
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-pdf-size-4.25x5.5"
+                      onClick={() => setSelectedPdfSize("4.25x5.5")}
+                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
+                        selectedPdfSize === "4.25x5.5"
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      4.25" × 5.5" Handbill (Quarter Sheet)
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    id="btn-poster-download-pdf"
+                    onClick={() => handleDownloadPrintReadyPdf()}
+                    disabled={isExportingPdf}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isExportingPdf ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Rendering {selectedPdfSize === "4.25x5.5" ? "4.25\" × 5.5\" Handbill" : selectedPdfSize} (300 DPI)...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Print-Ready {selectedPdfSize === "4.25x5.5" ? "Handbill" : "Poster"} (PDF)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Action 2: Download Web Flyer (PNG/JPG) */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex flex-col justify-between space-y-2.5">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <Image className="w-4 h-4 text-indigo-600" />
+                      Download Web Flyer (PNG/JPG)
+                    </span>
+                    <span className="text-[9px] font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
+                      High-Res RGB
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1 leading-snug">
+                    High-res RGB for Instagram, Facebook, and promo posts.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  {/* Aspect Ratio / Preset Selector */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                    <span className="text-slate-500 font-bold">Preset:</span>
+                    <button
+                      type="button"
+                      id="btn-flyer-ratio-poster"
+                      onClick={() => setSelectedFlyerRatio("poster")}
+                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
+                        selectedFlyerRatio === "poster"
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      Poster (Original)
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-flyer-ratio-handbill"
+                      onClick={() => setSelectedFlyerRatio("handbill")}
+                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
+                        selectedFlyerRatio === "handbill"
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      4.25:5.5 Handbill (Quarter Sheet)
+                    </button>
+                  </div>
+
+                  {/* Format Selector */}
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <span className="text-slate-500 font-bold">Format:</span>
+                    <button
+                      type="button"
+                      id="btn-flyer-format-png"
+                      onClick={() => setSelectedFlyerFormat("png")}
+                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
+                        selectedFlyerFormat === "png"
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      PNG Lossless
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-flyer-format-jpg"
+                      onClick={() => setSelectedFlyerFormat("jpg")}
+                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition-all ${
+                        selectedFlyerFormat === "jpg"
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      JPG Social Post
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    id="btn-poster-download-web-flyer"
+                    onClick={() => handleDownloadWebFlyer()}
+                    disabled={isExportingFlyer}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isExportingFlyer ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Rendering {selectedFlyerRatio === "handbill" ? "4.25:5.5 Handbill" : selectedFlyerFormat.toUpperCase()}...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download {selectedFlyerRatio === "handbill" ? '4.25" × 5.5" Handbill' : "Web Flyer"} ({selectedFlyerFormat.toUpperCase()})</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Utility Actions: Save Design & Local Print */}
+            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
               <button
                 type="button"
                 id="btn-poster-save"
                 onClick={handleSavePoster}
-                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2 px-3.5 rounded-lg shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5 text-indigo-300" />
-                <span>Save Poster</span>
+                <span>Save Poster Design</span>
               </button>
 
-              {/* Action 3: Order Prints */}
-              <button
-                type="button"
-                id="btn-poster-order-prints"
-                onClick={() => {
-                  setPanelTab("order");
-                  setShippingAddress(prev => ({
-                    ...prev,
-                    name: prev.name || config.bandName || "",
-                    street: prev.street || config.venueAddress || ""
-                  }));
-                }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Truck className="w-3.5 h-3.5" />
-                <span>Order Prints</span>
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                className="text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Local Print / Print Dialog</span>
               </button>
-              <span className="text-[10px] text-slate-400">High-Res 300 DPI Export</span>
+            </div>
+
+            {/* Fireball Printing Recommendation Card beneath download actions */}
+            <div className="pt-2">
+              {renderFireballCard()}
             </div>
           </div>
 
@@ -1142,687 +1387,77 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
       {/* SECTION 3 (Bottom): Live Poster Preview Canvas, Print Specs, and Action Buttons */}
       <div className="w-full flex flex-col items-center justify-between space-y-6 pt-2" id="poster-rendering-panel">
         
-        {/* Unified Tab selector for direct downloading and print ordering */}
+        {/* Live Canvas Toolbar */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center w-full gap-3 bg-slate-900 text-white rounded-xl p-3.5 border border-slate-800" id="rendering-header-row">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPanelTab("preview")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                panelTab === "preview" 
-                  ? "bg-indigo-600 text-white" 
-                  : "bg-slate-800 text-slate-400 hover:text-white"
-              }`}
-            >
-              🎨 Layout Preview
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPanelTab("order");
-                // Autofill recipient and street details from poster states
-                setShippingAddress(prev => ({
-                  ...prev,
-                  name: prev.name || config.bandName || "",
-                  street: prev.street || config.venueAddress || ""
-                }));
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                panelTab === "order" 
-                  ? "bg-emerald-600 text-white font-extrabold shadow-sm" 
-                  : "bg-slate-800 text-slate-400 hover:text-white"
-              }`}
-            >
-              <Truck className="w-3.5 h-3.5 text-emerald-400" />
-              Order Prints
-            </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Eye className="w-4 h-4 text-indigo-400" />
+              Live Concert Poster Preview
+            </span>
+            <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-slate-700">
+              300 DPI Bleed-Ready
+            </span>
           </div>
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex flex-wrap gap-2 justify-end items-center">
+            {/* Quick PDF Download Button */}
             <button
               type="button"
-              onClick={downloadPosterAsImage}
-              disabled={isDownloading}
-              className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-bold py-1.5 px-3.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+              id="btn-quick-download-pdf"
+              onClick={() => handleDownloadPrintReadyPdf()}
+              disabled={isExportingPdf}
+              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              title="Download 300 DPI CMYK bleed-ready PDF (11x17, 12x18, or 4.25x5.5)"
             >
-              {isDownloading ? (
+              {isExportingPdf ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Generating PNG...
+                  <span>Rendering PDF...</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-3.5 h-3.5 text-indigo-400" />
-                  Download PNG
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Download PDF ({selectedPdfSize === "4.25x5.5" ? "4.25x5.5 Handbill" : selectedPdfSize})</span>
                 </>
               )}
             </button>
 
+            {/* Quick Web Flyer Download Button */}
+            <button
+              type="button"
+              id="btn-quick-download-flyer"
+              onClick={() => handleDownloadWebFlyer()}
+              disabled={isExportingFlyer}
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              title="Download high-resolution RGB flyer for Instagram, Facebook, and handbill sharing"
+            >
+              {isExportingFlyer ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Rendering Flyer...</span>
+                </>
+              ) : (
+                <>
+                  <Image className="w-3.5 h-3.5" />
+                  <span>{selectedFlyerRatio === "handbill" ? "4.25:5.5 Handbill" : "Web Flyer"} ({selectedFlyerFormat.toUpperCase()})</span>
+                </>
+              )}
+            </button>
+
+            {/* Local Print */}
             <button
               type="button"
               onClick={() => window.print()}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-350 hover:text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
-              Local Print
+              <span>Local Print</span>
             </button>
           </div>
         </div>
 
-        {panelTab === "order" ? (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 w-full items-start" id="printing-grid-split">
-            {/* Left side: Mini view of their poster */}
-            <div className="md:col-span-5 flex flex-col items-center p-2 bg-slate-950/20 rounded-2xl border border-slate-100 max-h-[500px] overflow-hidden" id="mini-preview-wrap">
-              <span className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-2">Live print-preview</span>
-              <div className="scale-65 sm:scale-75 origin-top -mb-32">
-                {/* Embedded copy of the poster element for visual validation during ordering */}
-                <div 
-                  id="concert-poster-frame-mini"
-                  className={`w-[320px] min-h-[490px] border border-gray-950 rounded-2xl shadow-xl p-6 flex flex-col justify-between text-center relative ${c.frame}`}
-                >
-                  <div className="space-y-2 pt-4 z-10">
-                    <h5 className={`text-[10px] uppercase font-black tracking-widest ${c.tagline}`}>
-                      {config.secondaryText || "LIVE ON STAGE · ONE NIGHT ONLY"}
-                    </h5>
-                    <h1 className={`leading-none font-bold select-all tracking-tighter ${c.bandName} ${getFontFamilyClass(config.fontStyle)} ${!config.bandName ? 'opacity-40 italic' : ''}`}>
-                      {config.bandName || "The Midnight Echoes"}
-                    </h1>
-                    {config.supportingActs && (
-                      <div className="pt-0.5">
-                        <span className={`text-[9.5px] uppercase font-bold tracking-wider opacity-90 inline-block px-2 py-0.5 rounded-sm ${c.tagline}`}>
-                          {config.supportingActs}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-3 py-4 z-10">
-                    <h2 className={`text-sm font-bold uppercase tracking-wide ${c.venueName} ${!config.venueName ? 'opacity-40 italic' : ''}`}>
-                      {config.venueName || "The Crystal Ballroom · Portland, OR"}
-                    </h2>
-                    {config.venueAddress && (
-                      <p className="text-[9px] text-gray-500 flex items-center justify-center gap-1">
-                        <MapPin className="w-3 h-3 text-rose-500" />
-                        {config.venueAddress}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="border-t pt-4 space-y-4 z-10" style={{ borderColor: "rgba(100,100,100,0.15)" }}>
-                    <div className="flex justify-center items-center gap-3 text-xs">
-                      <span className={`px-2.5 py-1 rounded font-bold font-mono tracking-tight flex items-center gap-1 ${c.dateBadge} ${!config.dateStr ? 'opacity-40' : ''}`}>
-                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        {config.dateStr || "Friday, Nov 14 · Doors 7:00 PM / Show 8:00 PM"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right side: Print Order Details & Checkout */}
-            <div className="md:col-span-7 w-full bg-slate-900 text-white rounded-2xl border border-slate-800 p-5 space-y-4 text-left shadow-xl" id="printing-order-wizard">
-              <div className="border-b border-slate-800 pb-2 flex justify-between items-center">
-                <div>
-                  <h4 className="text-xs font-black uppercase text-indigo-400 tracking-wider flex items-center gap-1.5">
-                    <Printer className="w-4 h-4 text-indigo-400" />
-                    {checkoutStep === "select" ? "Add Sizes to Order" : "Checkout"}
-                  </h4>
-                  <p className="text-[10px] text-gray-400">
-                    {checkoutStep === "select" 
-                      ? "Choose from 3 flyer/poster dimensions. 1/8\" print bleed is included." 
-                      : "Confirm quantities, adjust print sizes, and set delivery address."}
-                  </p>
-                </div>
-                {checkoutStep === "checkout" && (
-                  <button 
-                    type="button" 
-                    onClick={() => { setCheckoutStep("select"); setOrderResult(null); }}
-                    className="text-[10px] bg-slate-800 hover:bg-slate-705 font-bold px-2.5 py-1 rounded-lg text-indigo-300 transition-all cursor-pointer"
-                  >
-                    ← Back to Sizes
-                  </button>
-                )}
-              </div>
-
-              {checkoutStep === "select" ? (
-                <div className="space-y-4">
-                  <span className="block text-[10px] uppercase font-black tracking-wider text-slate-400 font-mono">
-                    Step 1: Select Print Sizes & Quantities
-                  </span>
-                  
-                  <div className="space-y-3">
-                    {/* Item 1: 4.25x5.5 */}
-                    <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={printItems["4.25x5.5"].selected}
-                          onChange={(e) => setPrintItems({
-                            ...printItems,
-                            "4.25x5.5": { ...printItems["4.25x5.5"], selected: e.target.checked }
-                          })}
-                          className="w-4 h-4 text-indigo-600 border-slate-800 rounded focus:ring-indigo-500 bg-slate-900 focus:ring-2 cursor-pointer"
-                        />
-                        <div>
-                          <p className="text-xs font-bold text-white">4.25" x 5.5" Handbill Flyer</p>
-                          <p className="text-[10px] text-slate-400">Needs 1/8" bleed (4.5" x 5.75" template)</p>
-                          <p className="text-[10px] font-mono text-emerald-400">$0.15 per flyer copy</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] uppercase font-bold text-slate-550">Qty:</span>
-                        <select
-                          value={printItems["4.25x5.5"].qty}
-                          onChange={(e) => setPrintItems({
-                            ...printItems,
-                            "4.25x5.5": { ...printItems["4.25x5.5"], qty: Number(e.target.value) }
-                          })}
-                          disabled={!printItems["4.25x5.5"].selected}
-                          className="text-xs p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-white disabled:opacity-40"
-                        >
-                          <option value="25">25</option>
-                          <option value="50">50</option>
-                          <option value="100">100</option>
-                          <option value="250">250</option>
-                          <option value="500">500</option>
-                          <option value="1000">1000</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Item 2: 8.5x11 */}
-                    <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={printItems["8.5x11"].selected}
-                          onChange={(e) => setPrintItems({
-                            ...printItems,
-                            "8.5x11": { ...printItems["8.5x11"], selected: e.target.checked }
-                          })}
-                          className="w-4 h-4 text-indigo-600 border-slate-800 rounded focus:ring-indigo-500 bg-slate-900 focus:ring-2 cursor-pointer"
-                        />
-                        <div>
-                          <p className="text-xs font-bold text-white">8.5" x 11" Letter Poster</p>
-                          <p className="text-[10px] text-slate-400">Needs 1/8" bleed (8.75" x 11.25" template)</p>
-                          <p className="text-[10px] font-mono text-emerald-400">$0.25 per poster copy</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] uppercase font-bold text-slate-550">Qty:</span>
-                        <select
-                          value={printItems["8.5x11"].qty}
-                          onChange={(e) => setPrintItems({
-                            ...printItems,
-                            "8.5x11": { ...printItems["8.5x11"], qty: Number(e.target.value) }
-                          })}
-                          disabled={!printItems["8.5x11"].selected}
-                          className="text-xs p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-white disabled:opacity-40"
-                        >
-                          <option value="25">25</option>
-                          <option value="50">50</option>
-                          <option value="100">100</option>
-                          <option value="250">250</option>
-                          <option value="500">500</option>
-                          <option value="1000">1000</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Item 3: 11x17 */}
-                    <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={printItems["11x17"].selected}
-                          onChange={(e) => setPrintItems({
-                            ...printItems,
-                            "11x17": { ...printItems["11x17"], selected: e.target.checked }
-                          })}
-                          className="w-4 h-4 text-indigo-600 border-slate-800 rounded focus:ring-indigo-500 bg-slate-900 focus:ring-2 cursor-pointer"
-                        />
-                        <div>
-                          <p className="text-xs font-bold text-white">11" x 17" Concert Flyer</p>
-                          <p className="text-[10px] text-slate-400">Needs 1/8" bleed (11.25" x 17.25" template)</p>
-                          <p className="text-[10px] font-mono text-emerald-400">$0.40 per flyer copy</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] uppercase font-bold text-slate-550">Qty:</span>
-                        <select
-                          value={printItems["11x17"].qty}
-                          onChange={(e) => setPrintItems({
-                            ...printItems,
-                            "11x17": { ...printItems["11x17"], qty: Number(e.target.value) }
-                          })}
-                          disabled={!printItems["11x17"].selected}
-                          className="text-xs p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-white disabled:opacity-40"
-                        >
-                          <option value="25">25</option>
-                          <option value="50">50</option>
-                          <option value="100">100</option>
-                          <option value="250">250</option>
-                          <option value="500">500</option>
-                          <option value="1000">1000</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={activeItemsList.length === 0}
-                    onClick={() => { setCheckoutStep("checkout"); setOrderError(""); }}
-                    className="w-full bg-indigo-600 hover:bg-indigo-550 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer flex items-center justify-center gap-1.5 shadow-lg transition-colors mt-2"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    Proceed to Checkout ({activeItemsList.length} Selected)
-                  </button>
-                  
-                  {activeItemsList.length === 0 && (
-                    <p className="text-[10px] text-rose-400 text-center font-bold">
-                      Select at least one print format checkbox above to checkout.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <form onSubmit={handlePlacePrintOrder} className="space-y-3.5">
-                  {/* Step 2: Checkout with adjustable quantities */}
-                  <div>
-                    <label className="block text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-1.5">
-                      Selected quantities (Adjust below)
-                    </label>
-                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                      {activeItemsList.map((item) => (
-                        <div key={item.size} className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between text-xs">
-                          <div>
-                            <span className="font-bold text-white">
-                              {item.size === "4.25x5.5" 
-                                ? '4.25" x 5.5" Flyer' 
-                                : item.size === "8.5x11" 
-                                ? '8.5" x 11" Letter Poster' 
-                                : '11" x 17" Concert Flyer'}
-                            </span>
-                            <span className="block text-[9px] text-slate-500">Needs 1/8" print bleed specs</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-mono text-emerald-400">Total: ${(item.quantity * item.rate).toFixed(2)}</span>
-                            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const list = [25, 50, 100, 250, 500, 1000];
-                                  const idx = list.indexOf(item.quantity);
-                                  const nextVal = idx > 0 ? list[idx - 1] : 25;
-                                  setPrintItems({
-                                    ...printItems,
-                                    [item.size]: { ...printItems[item.size], qty: nextVal }
-                                  });
-                                }}
-                                className="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-800 text-[10px] font-bold cursor-pointer"
-                              >
-                                -
-                              </button>
-                              <span className="px-2 font-mono text-white text-[10px] min-w-8 text-center">{item.quantity}</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const list = [25, 50, 100, 250, 500, 1000];
-                                  const idx = list.indexOf(item.quantity);
-                                  const nextVal = idx < list.length - 1 ? list[idx + 1] : 1000;
-                                  setPrintItems({
-                                    ...printItems,
-                                    [item.size]: { ...printItems[item.size], qty: nextVal }
-                                  });
-                                }}
-                                className="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-800 text-[10px] font-bold cursor-pointer"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Row: Shipping carrier speeds */}
-                  <div>
-                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                      Shipping Speed
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShippingOption("ground")}
-                        className={`p-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer text-center ${
-                          shippingOption === "ground"
-                            ? "bg-indigo-600/35 border-indigo-550 text-indigo-300"
-                            : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        Standard ($9.50)
-                        <span className="block text-[8px] font-normal text-slate-500">5-7 days</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShippingOption("express2day")}
-                        className={`p-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer text-center ${
-                          shippingOption === "express2day"
-                            ? "bg-indigo-600/35 border-indigo-550 text-indigo-300"
-                            : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        Express ($18.00)
-                        <span className="block text-[8px] font-normal text-slate-500">3 days</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShippingOption("overnight")}
-                        className={`p-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer text-center ${
-                          shippingOption === "overnight"
-                            ? "bg-indigo-600/35 border-indigo-550 text-indigo-300"
-                            : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        Overnight ($32.00)
-                        <span className="block text-[8px] font-normal text-slate-500">1-2 days</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Delivery destination address */}
-                  <div className="space-y-1.5 p-3 px-3.5 bg-slate-950/50 rounded-xl border border-slate-800/80">
-                    <span className="block text-[9px] font-extrabold uppercase text-indigo-300 tracking-wider">
-                      📍 Delivery Address Details:
-                    </span>
-                    
-                    <input
-                      type="text"
-                      placeholder="Recipient Full Name / Organization"
-                      value={shippingAddress.name}
-                      onChange={(e) => setShippingAddress({...shippingAddress, name: e.target.value})}
-                      className="w-full text-xs p-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:border-indigo-550 focus:outline-none"
-                      required
-                    />
-
-                    <input
-                      type="text"
-                      placeholder="Street Address"
-                      value={shippingAddress.street}
-                      onChange={(e) => setShippingAddress({...shippingAddress, street: e.target.value})}
-                      className="w-full text-xs p-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:border-indigo-550 focus:outline-none"
-                      required
-                    />
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <input
-                        type="text"
-                        placeholder="City"
-                        value={shippingAddress.city}
-                        onChange={(e) => setShippingAddress({...shippingAddress, city: e.target.value})}
-                        className="text-xs p-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:border-indigo-550 focus:outline-none"
-                        required
-                      />
-                      <input
-                        type="text"
-                        placeholder="State"
-                        value={shippingAddress.state}
-                        onChange={(e) => setShippingAddress({...shippingAddress, state: e.target.value})}
-                        className="text-xs p-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:border-indigo-550 focus:outline-none"
-                        required
-                      />
-                      <input
-                        type="text"
-                        placeholder="ZIP"
-                        value={shippingAddress.zip}
-                        onChange={(e) => setShippingAddress({...shippingAddress, zip: e.target.value})}
-                        className="text-xs p-2 bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:border-indigo-550 focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Print Pricing breakdown including Handling Fee */}
-                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1 text-xs" id="pricing-summary">
-                    <div className="space-y-1 pb-1.5 border-b border-slate-800/80">
-                      {activeItemsList.map(item => (
-                        <div key={item.size} className="flex justify-between text-slate-400 text-[11px]">
-                          <span>
-                            {item.size === "4.25x5.5" 
-                              ? '4.25"x5.5" Flyer' 
-                              : item.size === "8.5x11" 
-                              ? '8.5"x11" Letter Poster' 
-                              : '11"x17" Concert Flyer'} ({item.quantity}x @ ${item.rate.toFixed(2)}):
-                          </span>
-                          <span className="font-mono">${item.total.toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-between text-slate-400">
-                      <span>Shipping charge:</span>
-                      <span className="font-mono">${currentShippingCost.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-slate-400 pb-1.5 border-b border-slate-800/80">
-                      <span>Handling Fee:</span>
-                      <span className="font-mono">${currentHandlingFee.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-white font-black text-sm pt-1.5">
-                      <span>Total Price:</span>
-                      <span className="font-mono text-emerald-400">
-                        ${currentTotalRetailValue.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Payment Method Selector */}
-                  <div className="space-y-2">
-                    <label className="block text-[9px] font-black uppercase text-slate-500 tracking-wider">
-                      Select Payment Method (Fees route directly to Developer):
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("paypal")}
-                        className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                          paymentMethod === "paypal"
-                            ? "bg-amber-500/10 border-amber-500 text-amber-200"
-                            : "bg-slate-955 border-slate-800 text-slate-400 hover:bg-slate-900"
-                        }`}
-                      >
-                        <span className="text-[9px] bg-amber-400 text-slate-950 px-1 rounded-sm font-black italic">PayPal</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("card")}
-                        className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                          paymentMethod === "card"
-                            ? "bg-indigo-600/30 border-indigo-550 text-indigo-200"
-                            : "bg-slate-955 border-slate-800 text-slate-400 hover:bg-slate-900"
-                        }`}
-                      >
-                        <CreditCard className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Credit Card</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* PayPal Interactive Block */}
-                  {paymentMethod === "paypal" && (
-                    <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2 text-xs">
-                      <div className="space-y-1">
-                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Your PayPal Email Address:</label>
-                        <input
-                          type="email"
-                          required
-                          placeholder="e.g. buyer@example.com"
-                          value={paypalUserEmail}
-                          onChange={(e) => setPaypalUserEmail(e.target.value)}
-                          className="w-full text-xs p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-medium placeholder-slate-705 focus:border-amber-500 focus:outline-none"
-                        />
-                        {paypalUserEmail && !paypalUserEmail.includes("@") && (
-                          <span className="text-[9px] text-amber-500 font-bold block">Enter a valid email address to enable PayPal checkout.</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Simulated credit card checkout entry */}
-                  {paymentMethod === "card" && (
-                    <div className="space-y-1.5 p-3 px-3.5 bg-slate-950/40 rounded-xl border border-slate-800/60">
-                      <span className="block text-[9px] font-extrabold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                        <CreditCard className="w-3.5 h-3.5 text-indigo-450 animate-pulse" />
-                        Mock credit card details (Simulated)
-                      </span>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Card Number"
-                          value={paymentCard.number}
-                          onChange={(e) => setPaymentCard({...paymentCard, number: e.target.value})}
-                          className="flex-1 text-xs p-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-605 focus:border-indigo-550 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          placeholder="MM/YY"
-                          value={paymentCard.expiry}
-                          onChange={(e) => setPaymentCard({...paymentCard, expiry: e.target.value})}
-                          className="w-16 text-xs p-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-605 focus:border-indigo-550 focus:outline-none text-center"
-                        />
-                        <input
-                          type="password"
-                          placeholder="CVV"
-                          value={paymentCard.cvv}
-                          onChange={(e) => setPaymentCard({...paymentCard, cvv: e.target.value})}
-                          className="w-12 text-xs p-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono placeholder-slate-605 focus:border-indigo-550 focus:outline-none text-center"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {orderError && (
-                    <div className="p-2.5 bg-rose-950/40 border border-rose-900 text-rose-300 rounded-lg text-[10px] font-bold">
-                      ⚠️ {orderError}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isPlacingOrder || (paymentMethod === "paypal" && !paypalUserEmail.includes("@"))}
-                    className={`w-full font-black py-2.5 rounded-xl text-xs cursor-pointer flex items-center justify-center gap-1.5 shadow-lg transition-colors ${
-                      paymentMethod === "paypal"
-                        ? "bg-amber-500 hover:bg-amber-600 focus:ring-amber-400 text-slate-950 font-black font-sans"
-                        : "bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white"
-                    }`}
-                  >
-                    {isPlacingOrder ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Queuing order in printing system...
-                      </>
-                    ) : paymentMethod === "paypal" ? (
-                      <>
-                        <span>PayPal Checkout (${currentTotalRetailValue.toFixed(2)})</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-4 h-4" />
-                        Place Print Order (${currentTotalRetailValue.toFixed(2)})
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
-
-              {/* Order invoice result details */}
-              {orderResult && (
-                <div className="p-4 bg-emerald-950/20 border-2 border-emerald-500 rounded-xl space-y-2 mt-4 text-emerald-100" id="printing-success-invoice">
-                  <div className="flex items-center gap-2 pb-1 border-b border-emerald-900/60">
-                    <span className="p-1 bg-emerald-500 text-slate-950 rounded-full font-bold">✓</span>
-                    <div>
-                      <h5 className="text-xs font-black uppercase text-emerald-300">Print Order Placed successfully!</h5>
-                      <p className="text-[9px] text-emerald-400">Order registered in the custom printing queue</p>
-                    </div>
-                  </div>
-
-                  <div className="text-[10px] space-y-1">
-                    <div className="flex justify-between">
-                      <span>Order Reference ID:</span>
-                      <strong className="font-mono text-white">{orderResult.orderId}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Carrier Tracking Number:</span>
-                      <strong className="font-mono text-indigo-300">{orderResult.trackingNumber}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Print Status:</span>
-                      <strong className="text-yellow-400 font-extrabold">{orderResult.status}</strong>
-                    </div>
-                    <div className="flex justify-between pb-1 border-b border-emerald-900/40">
-                      <span>Estimated Standard Arrival:</span>
-                      <strong className="text-white">{orderResult.estimatedDelivery}</strong>
-                    </div>
-                    
-                    {/* Itemized list of orders in success coupon */}
-                    {orderResult.itemsOrdered && (
-                      <div className="space-y-1 py-1 pb-1.5 border-b border-emerald-900/40">
-                        <span className="block text-[8px] uppercase tracking-wide text-emerald-400">Items Ordered:</span>
-                        {orderResult.itemsOrdered.map((it: any, i: number) => (
-                          <div key={i} className="flex justify-between text-emerald-100">
-                            <span>{it.size} ({it.quantity}x):</span>
-                            <span>${it.total?.toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {orderResult.billingBreakdown?.handlingFee !== undefined && (
-                      <div className="flex justify-between">
-                        <span>Handling Fee:</span>
-                        <strong className="text-white">${orderResult.billingBreakdown.handlingFee.toFixed(2)}</strong>
-                      </div>
-                    )}
-                    <div className="flex justify-between pt-1 font-bold border-t border-emerald-900/30">
-                      <span>Total Charge:</span>
-                      <strong className="text-white">${orderResult.billingBreakdown?.totalRetail?.toFixed(2)}</strong>
-                    </div>
-
-                    {orderResult.billingBreakdown?.handlingFee !== undefined && (
-                      <div className="p-2.5 bg-indigo-500/10 border border-indigo-550/20 rounded-lg text-[9px] text-indigo-200 mt-2 space-y-1">
-                        <div className="flex justify-between font-bold">
-                          <span>Handling Fee Routing:</span>
-                          <span className="text-amber-400">PayPal Route Active</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Recipient Address:</span>
-                          <strong className="text-white font-mono">littlerusty@gmail.com</strong>
-                        </div>
-                        {orderResult.billingBreakdown?.paymentMethod === "paypal" && orderResult.billingBreakdown?.paypalUserEmail && (
-                          <div className="flex justify-between text-[8px] text-indigo-300">
-                            <span>Authorizer PayPal:</span>
-                            <span className="font-mono">{orderResult.billingBreakdown.paypalUserEmail}</span>
-                          </div>
-                        )}
-                        <p className="text-[8.5px] italic text-indigo-300 leading-normal pt-1 border-t border-indigo-500/20">
-                          {orderResult.billingBreakdown?.paymentMethod === "paypal"
-                            ? "Handling fees and printing costs have been successfully transferred to the master developer PayPal recipient."
-                            : `The standard order handling fee ($${orderResult.billingBreakdown.handlingFee.toFixed(2)}) has been securely routed to the developer's registered PayPal (littlerusty@gmail.com).`}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="text-[8.5px] italic text-emerald-405 leading-relaxed pt-1 select-all">
-                    💡 Simulated purchase complete. Your order and PayPal routing details have been recorded on the local service ledger!
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Live CSS styled templates based on themeId */
-          <div 
+        {/* Live CSS styled templates based on themeId */}
+        <div 
             id="concert-poster-frame"
             className={`w-[320px] sm:w-[350px] min-h-[490px] border border-gray-950 rounded-2xl shadow-2xl overflow-hidden p-6 flex flex-col justify-between text-center relative transition-all ${c.frame}`}
             style={{
@@ -2108,8 +1743,12 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
               )}
             </div>
           </div>
-        )}
+
+          {/* Fireball Printing Recommendation Card beneath poster preview canvas */}
+          <div className="w-full max-w-xl mx-auto pt-4" id="canvas-fireball-section">
+            {renderFireballCard()}
+          </div>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

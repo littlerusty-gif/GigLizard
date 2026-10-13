@@ -22,7 +22,11 @@ import {
   recalculateStopsMetrics, 
   KNOWN_CORRIDOR_CITIES,
   CorridorCity,
-  formatDriveTime
+  formatDriveTime,
+  detectDuplicateReturnStops,
+  diversifyTourRoute,
+  DuplicateReturnAnalysis,
+  RouteDiversificationResult
 } from "../utils/corridorOptimizer";
 import { 
   supabase,
@@ -34,6 +38,8 @@ import {
 } from "../lib/supabase";
 import { TourPrintModal } from "./TourPrintModal";
 import { TourLodgingModal, parseNightlyRate, parseBookingConfirmationSnippet, calculateStayCost } from "./TourLodgingModal";
+import { generateLodgingDeepLinks, getTourStopLodgingDates } from "../utils/lodgingAffiliateLinks";
+import { runTourReadinessAudit, TourReadinessReport } from "../utils/tourAuditEngine";
 import { TourMap } from "./TourMap";
 import { 
   MapPin, 
@@ -75,7 +81,12 @@ import {
   Sliders,
   Car,
   Receipt,
-  BedDouble
+  Mail,
+  Send,
+  ShieldAlert,
+  Lock,
+  Globe,
+  Shield
 } from "lucide-react";
 
 /**
@@ -212,11 +223,49 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   const [vehicleMpg, setVehicleMpg] = useState(14);
   const [isRoundTripLoop, setIsRoundTripLoop] = useState(false);
 
-  // Step 3 City-by-City stage navigation
+  // Return Leg Diversification (Loop / Alternate Cities) state
+  const [isReturnDiversified, setIsReturnDiversified] = useState(true);
+  const [originalUndiversifiedStops, setOriginalUndiversifiedStops] = useState<TourStop[]>([]);
+  const [replacedLoopPairs, setReplacedLoopPairs] = useState<
+    Array<{ originalCity: string; newCity: string; newState: string; highway: string; highlight: string }>
+  >([]);
+
+  // Detect duplicate return stops on out-and-back routes
+  const duplicateReturnAnalysis = useMemo<DuplicateReturnAnalysis>(() => {
+    return detectDuplicateReturnStops(stops);
+  }, [stops]);
+
+  // Step 3 City-by-City stage & lodging navigation
   const [activeStageIndex, setActiveStageIndex] = useState(0);
   const [cityVenuesMap, setCityVenuesMap] = useState<Record<string, Venue[]>>({});
   const [isLoadingVenues, setIsLoadingVenues] = useState(false);
   const [customVenueMode, setCustomVenueMode] = useState<Record<string, boolean>>({});
+  const [customStageType, setCustomStageType] = useState<Record<string, "house_show" | "public_venue">>({});
+  const [customStageInputs, setCustomStageInputs] = useState<
+    Record<string, {
+      hostName?: string;
+      address?: string;
+      hostPhone?: string;
+      loadInNotes?: string;
+      suggestedDonation?: string;
+      name?: string;
+      contactName?: string;
+      contactPhone?: string;
+      contactEmail?: string;
+      capacity?: string;
+      soundSpecs?: string;
+    }>
+  >({});
+  const [isSubmittingCustomStage, setIsSubmittingCustomStage] = useState(false);
+
+  // Step 3 Interstitial Lodging Prompt & Inline Lodging Module per stop
+  const [interstitialLodgingPromptStop, setInterstitialLodgingPromptStop] = useState<number | null>(null);
+  const [inlineLodgingStopIndex, setInlineLodgingStopIndex] = useState<number | null>(null);
+  const [skippedLodgingMap, setSkippedLodgingMap] = useState<Record<number, boolean>>({});
+  const [lodgingCategoryFilter, setLodgingCategoryFilter] = useState<"all" | "hotels" | "campgrounds" | "free">("all");
+  const [customLodgingInputs, setCustomLodgingInputs] = useState<
+    Record<number, { name: string; confirmationNumber: string; cost: string; notes: string }>
+  >({});
 
   // Step 4 City-by-City lodging navigation & confirmation snippets
   const [activeLodgingIndex, setActiveLodgingIndex] = useState(0);
@@ -225,6 +274,18 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   // In-app lodging booking modal state
   const [bookingModalStopIndex, setBookingModalStopIndex] = useState<number | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+
+  // Email Itinerary Modal State
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [recipientEmailsInput, setRecipientEmailsInput] = useState("");
+  const [emailNotesInput, setEmailNotesInput] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailDispatchResult, setEmailDispatchResult] = useState<{ success: boolean; count: number; recipients: string[] } | null>(null);
+
+  // Live Tour Readiness Pre-Flight Audit
+  const tourAuditReport: TourReadinessReport = useMemo(() => {
+    return runTourReadinessAudit(stops);
+  }, [stops]);
 
   // References to keep event listeners always pointing to latest state
   const wizardStepRef = useRef(wizardStep);
@@ -590,15 +651,54 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
       const fullChain = [...generatedStops, ...returnStops, homeStop];
       const recal = recalculateStopsMetrics(fullChain, startDate);
-      setStops(recal.updatedStops);
-      setTotalDistanceMiles(recal.totalDistanceMiles);
-      setTotalDriveTime(recal.totalDriveTime);
+      setOriginalUndiversifiedStops(recal.updatedStops);
+
+      if (isReturnDiversified) {
+        const divRes = diversifyTourRoute(recal.updatedStops, startDate);
+        setStops(divRes.updatedStops);
+        setReplacedLoopPairs(divRes.replacedPairs);
+        setTotalDistanceMiles(divRes.totalDistanceMiles);
+        setTotalDriveTime(divRes.totalDriveTime);
+      } else {
+        setStops(recal.updatedStops);
+        setReplacedLoopPairs([]);
+        setTotalDistanceMiles(recal.totalDistanceMiles);
+        setTotalDriveTime(recal.totalDriveTime);
+      }
     } else {
       setStops(res.stops);
+      setOriginalUndiversifiedStops([]);
+      setReplacedLoopPairs([]);
       setTotalDistanceMiles(res.totalDistanceMiles);
       setTotalDriveTime(res.totalDriveTime);
     }
     setWizardStep(2);
+  };
+
+  // Step 2: Toggle Diversify Return Route (Loop / Alternate Cities)
+  const handleToggleReturnDiversification = (shouldDiversify: boolean) => {
+    setIsReturnDiversified(shouldDiversify);
+    if (shouldDiversify) {
+      const baseStops = originalUndiversifiedStops.length > 0 ? originalUndiversifiedStops : stops;
+      if (originalUndiversifiedStops.length === 0) {
+        setOriginalUndiversifiedStops(stops);
+      }
+      const divRes = diversifyTourRoute(baseStops, startDate);
+      setStops(divRes.updatedStops);
+      setReplacedLoopPairs(divRes.replacedPairs);
+      setTotalDistanceMiles(divRes.totalDistanceMiles);
+      setTotalDriveTime(divRes.totalDriveTime);
+      triggerToast(`✓ Diversified ${divRes.replacedPairs.length} return stops into circular loop!`, "success");
+    } else {
+      if (originalUndiversifiedStops.length > 0) {
+        const recal = recalculateStopsMetrics(originalUndiversifiedStops, startDate);
+        setStops(recal.updatedStops);
+        setReplacedLoopPairs([]);
+        setTotalDistanceMiles(recal.totalDistanceMiles);
+        setTotalDriveTime(recal.totalDriveTime);
+        triggerToast("Reverted to direct return corridor stops.", "info");
+      }
+    }
   };
 
   // Step 2 Stop manipulations
@@ -786,7 +886,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     }
   };
 
-  // Select venue for current stop
+  // Select venue for current stop (1-click from directory)
   const handleSelectVenueForStop = (stopIdx: number, venue: Venue) => {
     setStops(prev => {
       const copy = [...prev];
@@ -805,14 +905,229 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           doorsTime: target.selectedVenue?.doorsTime || "7:30 PM",
           setTime: target.selectedVenue?.setTime || "9:00 PM",
           ticketPrice: target.selectedVenue?.ticketPrice || "$12 Adv / $15 Door",
+          bookingStatus: target.selectedVenue?.bookingStatus || "confirmed",
+          doorGuarantee: target.selectedVenue?.doorGuarantee || "$350 Guarantee",
+          doorSplitPercentage: target.selectedVenue?.doorSplitPercentage || "80% Door Split",
           website: venue.website
         };
       }
       return copy;
     });
+
+    // Immediately prompt for lodging in this city!
+    setInterstitialLodgingPromptStop(stopIdx);
+    setInlineLodgingStopIndex(null);
   };
 
-  // Update schedule times for current stop
+  // Confirm custom stage (house show or commercial venue) with privacy shield
+  const handleConfirmCustomStage = async (stopIdx: number) => {
+    const cur = stops[stopIdx];
+    if (!cur) return;
+
+    const stopKey = cur.id || String(stopIdx);
+    const selectedType = customStageType[stopKey] || "commercial";
+    const inputs = customStageInputs[stopKey] || {};
+
+    if (selectedType === "house_show") {
+      if (!inputs.hostName?.trim()) {
+        alert("Please provide a Host Name or DIY Space Name (e.g. 'Sarah's Basement' or 'The Treehouse').");
+        return;
+      }
+      if (!inputs.address?.trim()) {
+        alert("Please provide the residential street address for your band's private tour sheet.");
+        return;
+      }
+    } else {
+      if (!inputs.name?.trim()) {
+        alert("Please provide a commercial venue or club name.");
+        return;
+      }
+    }
+
+    setIsSubmittingCustomStage(true);
+    try {
+      const payload = {
+        venueType: selectedType,
+        tourId: tourId || undefined,
+        stopIndex: stopIdx,
+        city: cur.city,
+        state: cur.state,
+        ...(selectedType === "house_show" ? {
+          hostName: inputs.hostName?.trim(),
+          address: inputs.address?.trim(),
+          hostPhone: inputs.hostPhone?.trim(),
+          loadInNotes: inputs.loadInNotes?.trim(),
+          suggestedDonation: inputs.suggestedDonation?.trim()
+        } : {
+          name: inputs.name?.trim(),
+          address: inputs.address?.trim(),
+          contactName: inputs.contactName?.trim(),
+          contactPhone: inputs.contactPhone?.trim(),
+          contactEmail: inputs.contactEmail?.trim(),
+          capacity: inputs.capacity?.trim(),
+          soundSpecs: inputs.soundSpecs?.trim()
+        })
+      };
+
+      const res = await fetch("/api/venues/community-add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to add stage");
+      }
+
+      const venueObj = data.venue;
+      setStops(prev => {
+        const copy = [...prev];
+        if (copy[stopIdx]) {
+          copy[stopIdx].selectedVenue = {
+            ...venueObj,
+            bookingStatus: "confirmed"
+          };
+        }
+        return copy;
+      });
+
+      setCustomVenueMode(prev => ({ ...prev, [cur.id]: false }));
+      triggerToast(
+        data.message || (selectedType === "house_show" 
+          ? "🔒 Private House Show saved to tour sheet" 
+          : "🌐 Commercial Venue added to global directory"),
+        "success"
+      );
+      setInterstitialLodgingPromptStop(stopIdx);
+      setInlineLodgingStopIndex(null);
+    } catch (err: any) {
+      console.warn("Fallback adding custom stage:", err);
+      const isHouse = selectedType === "house_show";
+      const fallbackVenue: TourSelectedVenue = {
+        id: `custom-stage-${Date.now()}`,
+        name: isHouse ? (inputs.hostName?.trim() || "Private House Show / DIY Space") : (inputs.name?.trim() || "Commercial Venue"),
+        address: inputs.address?.trim() || `${cur.city}, ${cur.state}`,
+        city: cur.city,
+        state: cur.state,
+        contactName: isHouse ? inputs.hostName?.trim() : inputs.contactName?.trim(),
+        contactPhone: isHouse ? inputs.hostPhone?.trim() : inputs.contactPhone?.trim(),
+        contactEmail: !isHouse ? inputs.contactEmail?.trim() : undefined,
+        hostName: isHouse ? inputs.hostName?.trim() : undefined,
+        hostPhone: isHouse ? inputs.hostPhone?.trim() : undefined,
+        notes: inputs.loadInNotes?.trim(),
+        loadInNotes: inputs.loadInNotes?.trim(),
+        ticketPrice: inputs.suggestedDonation?.trim(),
+        suggestedDonation: inputs.suggestedDonation?.trim(),
+        soundSpecs: inputs.soundSpecs?.trim(),
+        capacity: inputs.capacity ? Number(inputs.capacity) : undefined,
+        venueType: selectedType,
+        isPrivate: isHouse,
+        bookingStatus: "confirmed"
+      };
+
+      setStops(prev => {
+        const copy = [...prev];
+        if (copy[stopIdx]) {
+          copy[stopIdx].selectedVenue = fallbackVenue;
+        }
+        return copy;
+      });
+
+      setCustomVenueMode(prev => ({ ...prev, [cur.id]: false }));
+      triggerToast(isHouse ? "🔒 Private house show saved to tour sheet" : "Stage saved to tour sheet", "success");
+      setInterstitialLodgingPromptStop(stopIdx);
+      setInlineLodgingStopIndex(null);
+    } finally {
+      setIsSubmittingCustomStage(false);
+    }
+  };
+
+  // Step 3 Interstitial Option B: "No, Continue Without Lodging"
+  const handleSkipLodgingForStop = (stopIdx: number) => {
+    setSkippedLodgingMap(prev => ({ ...prev, [stopIdx]: true }));
+    setInterstitialLodgingPromptStop(null);
+    setInlineLodgingStopIndex(null);
+    handleClearLodgingForStop(stopIdx);
+
+    const cityName = stops[stopIdx]?.city || "stop";
+    triggerToast(`Skipped lodging for ${cityName}`, "info");
+
+    // Flow Progression: loop to next stop, ending in Step 5: Review & Finalize
+    if (stopIdx < stops.length - 1) {
+      const nextIdx = stopIdx + 1;
+      setActiveStageIndex(nextIdx);
+      if (stops[nextIdx]) {
+        loadVenuesForStageCity(stops[nextIdx].city, stops[nextIdx].state);
+      }
+    } else {
+      setWizardStep(5);
+      triggerToast("✓ All stops configured! Reviewing complete tour itinerary.", "success");
+    }
+  };
+
+  // Step 3 Interstitial Option A: "Yes, Find Lodging"
+  const handleOpenInlineLodging = (stopIdx: number) => {
+    setInterstitialLodgingPromptStop(null);
+    setInlineLodgingStopIndex(stopIdx);
+  };
+
+  // Lock in chosen lodging and advance to next city or Step 5
+  const handleLockInLodgingAndAdvance = (stopIdx: number, lodgingOption?: TourLodgingOption) => {
+    if (lodgingOption) {
+      handleSelectLodgingForStop(stopIdx, lodgingOption);
+    }
+
+    setSkippedLodgingMap(prev => ({ ...prev, [stopIdx]: false }));
+    setInterstitialLodgingPromptStop(null);
+    setInlineLodgingStopIndex(null);
+
+    const cityName = stops[stopIdx]?.city || "stop";
+    triggerToast(`✓ Lodging locked for ${cityName}!`, "success");
+
+    // Flow Progression: loop to next stop, ending in Step 5: Review & Finalize
+    if (stopIdx < stops.length - 1) {
+      const nextIdx = stopIdx + 1;
+      setActiveStageIndex(nextIdx);
+      if (stops[nextIdx]) {
+        loadVenuesForStageCity(stops[nextIdx].city, stops[nextIdx].state);
+      }
+    } else {
+      setWizardStep(5);
+      triggerToast("✓ All tour stops configured! Reviewing complete itinerary.", "success");
+    }
+  };
+
+  // Save custom lodging entry for stop
+  const handleSaveCustomLodgingForStop = (stopIdx: number) => {
+    const custom = customLodgingInputs[stopIdx];
+    if (!custom?.name?.trim()) {
+      alert("Please provide at least an accommodation or hotel name.");
+      return;
+    }
+
+    setStops(prev => {
+      const copy = [...prev];
+      const target = copy[stopIdx];
+      if (target) {
+        target.selectedLodging = {
+          name: custom.name.trim(),
+          confirmationNumber: custom.confirmationNumber?.trim() || "",
+          cost: parseFloat(custom.cost) || 85,
+          gearSecurityNote: custom.notes?.trim() || "Band parking confirmed",
+          notes: custom.notes?.trim() || "Self-booked accommodation",
+          address: `${target.city}, ${target.state}`,
+          type: "Band-Friendly Hotel"
+        };
+        target.lodgingNotes = custom.notes?.trim() || "Band parking confirmed";
+      }
+      return copy;
+    });
+
+    handleLockInLodgingAndAdvance(stopIdx);
+  };
+
+  // Update schedule times, contacts, and payout deal terms for stop venue
   const handleUpdateSchedule = (stopIdx: number, field: keyof TourSelectedVenue, value: string) => {
     setStops(prev => {
       const copy = [...prev];
@@ -823,11 +1138,41 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
             name: `${target.city} Stage`,
             city: target.city,
             address: `${target.city}, ${target.state}`,
+            bookingStatus: "unconfirmed",
             [field]: value
           };
         } else {
           target.selectedVenue[field] = value as any;
         }
+      }
+      return copy;
+    });
+  };
+
+  // Toggle venue booking status: unconfirmed -> penciled -> confirmed -> unconfirmed
+  const handleToggleVenueStatus = (stopIdx: number, explicitStatus?: "unconfirmed" | "penciled" | "confirmed") => {
+    setStops(prev => {
+      const copy = [...prev];
+      const target = copy[stopIdx];
+      if (target) {
+        const curStatus = target.selectedVenue?.bookingStatus || (target.selectedVenue?.name ? "unconfirmed" : "unconfirmed");
+        let nextStatus: "unconfirmed" | "penciled" | "confirmed" = explicitStatus || (
+          curStatus === "unconfirmed" ? "penciled" : curStatus === "penciled" ? "confirmed" : "unconfirmed"
+        );
+
+        if (!target.selectedVenue) {
+          target.selectedVenue = {
+            name: `${target.city} Stage`,
+            city: target.city,
+            address: `${target.city}, ${target.state}`,
+            bookingStatus: nextStatus
+          };
+        } else {
+          target.selectedVenue.bookingStatus = nextStatus;
+        }
+
+        const label = nextStatus === "confirmed" ? "✓ Confirmed & Booked" : nextStatus === "penciled" ? "Penciled In (Hold)" : "Unconfirmed Lead";
+        triggerToast(`${target.city} Stage: ${label}`, "success");
       }
       return copy;
     });
@@ -858,10 +1203,10 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     });
   };
 
-  // Update direct lodging fields (hotel name, confirmation number, budget, notes) in stop's route_data
+  // Update direct lodging fields (hotel name, confirmation number, budget, notes, booked state) in stop's route_data
   const handleUpdateLodgingField = (
     stopIdx: number,
-    field: "name" | "confirmationNumber" | "cost" | "notes" | "address" | "type",
+    field: "name" | "confirmationNumber" | "cost" | "notes" | "address" | "type" | "isBooked" | "bookingPlatform" | "bookingUrl",
     value: any
   ) => {
     setStops(prev => {
@@ -881,6 +1226,29 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
         if (field === "notes") {
           target.lodgingNotes = value;
         }
+      }
+      return copy;
+    });
+  };
+
+  // Toggle "Mark as Booked" across tour stops
+  const handleToggleLodgingBooked = (stopIdx: number) => {
+    setStops(prev => {
+      const copy = [...prev];
+      const target = copy[stopIdx];
+      if (target) {
+        const existing = target.selectedLodging || {
+          name: `Lodging in ${target.city}`,
+          cost: 85,
+          notes: "Band overnight accommodation"
+        };
+        const nextBooked = !existing.isBooked;
+        target.selectedLodging = {
+          ...existing,
+          isBooked: nextBooked,
+          confirmationNumber: nextBooked && !existing.confirmationNumber ? `EXP-${Date.now().toString().slice(-6)}` : existing.confirmationNumber
+        };
+        triggerToast(nextBooked ? `✓ Marked ${target.city} lodging as Booked!` : `Marked ${target.city} lodging as Pending`, "success");
       }
       return copy;
     });
@@ -974,6 +1342,61 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     setBookingModalStopIndex(null);
   };
 
+  // Dispatch Master Tour Itinerary via Email to Band & Crew
+  const handleSendEmailItinerary = async () => {
+    if (!recipientEmailsInput.trim()) {
+      alert("Please provide at least one recipient email address.");
+      return;
+    }
+
+    const recipients = recipientEmailsInput
+      .split(/[,;\n]/)
+      .map(r => r.trim())
+      .filter(r => r.length > 0 && r.includes("@"));
+
+    if (recipients.length === 0) {
+      alert("Please provide valid email addresses containing an '@' sign.");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    setEmailDispatchResult(null);
+
+    try {
+      const payload = {
+        recipients,
+        tourTitle: tourTitle.trim() || `${originCity} to ${destinationCity} Tour`,
+        bandName: bandProfile?.name || "Touring Band",
+        tourPlan: currentTourPlan,
+        notes: emailNotesInput.trim()
+      };
+
+      const res = await fetch("/api/tour/email-itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to dispatch email itinerary.");
+      }
+
+      setEmailDispatchResult({
+        success: true,
+        count: recipients.length,
+        recipients
+      });
+      triggerToast(`✓ Master Itinerary dispatched to ${recipients.length} recipients!`, "success");
+    } catch (err: any) {
+      console.error("Failed to email itinerary:", err);
+      alert(`Could not send email itinerary: ${err.message || err}`);
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   // Listen for partner booking window postMessage event (from embedded iframe or widget callback)
   useEffect(() => {
     const handleBookingWidgetMessage = (event: MessageEvent) => {
@@ -1036,13 +1459,15 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     if (activeStageIndex < stops.length - 1) {
       const nextIdx = activeStageIndex + 1;
       setActiveStageIndex(nextIdx);
+      setInterstitialLodgingPromptStop(null);
+      setInlineLodgingStopIndex(null);
       if (stops[nextIdx]) {
         loadVenuesForStageCity(stops[nextIdx].city, stops[nextIdx].state);
       }
     } else {
-      // Finished all cities -> proceed to Step 4 (Lodging)
-      setActiveLodgingIndex(0);
-      setWizardStep(4);
+      // Flow Progression: Finished all stops -> advance to Step 5: Review & Finalize Tour
+      setWizardStep(5);
+      triggerToast("✓ All stops configured! Reviewing final tour itinerary.", "success");
     }
   };
 
@@ -1050,6 +1475,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     if (activeStageIndex > 0) {
       const prevIdx = activeStageIndex - 1;
       setActiveStageIndex(prevIdx);
+      setInterstitialLodgingPromptStop(null);
+      setInlineLodgingStopIndex(null);
       if (stops[prevIdx]) {
         loadVenuesForStageCity(stops[prevIdx].city, stops[prevIdx].state);
       }
@@ -1935,33 +2362,60 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                 </div>
 
                 {/* Round-Trip Loop Toggle */}
-                <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-5 flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
-                        <RefreshCw className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Book Tour on Way Back Home (Round-Trip Loop)</span>
-                      </span>
-                      {isRoundTripLoop && (
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-600 text-white">
-                          Enabled
+                <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                          <RefreshCw className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Book Tour on Way Back Home (Round-Trip Loop)</span>
                         </span>
-                      )}
+                        {isRoundTripLoop && (
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-600 text-white">
+                            Enabled
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-indigo-800/80 max-w-xl">
+                        Automatically generate reverse routing stops returning to your starting city, turning your tour into a complete round-trip loop.
+                      </p>
                     </div>
-                    <p className="text-xs text-indigo-800/80 max-w-xl">
-                      Automatically generate reverse routing stops returning to your starting city, turning your tour into a complete round-trip loop.
-                    </p>
+
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={isRoundTripLoop}
+                        onChange={(e) => setIsRoundTripLoop(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
                   </div>
 
-                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={isRoundTripLoop}
-                      onChange={(e) => setIsRoundTripLoop(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
+                  {/* Diversify Return Route sub-toggle */}
+                  {isRoundTripLoop && (
+                    <div className="pt-3 border-t border-indigo-200/60 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+                          <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Diversify Return Route (Loop / Alternate Cities)</span>
+                        </span>
+                        <p className="text-[11px] text-indigo-800/80">
+                          Replaces duplicate cities on the return trip with adjacent, viable secondary music markets along parallel highways (e.g. Bend, Hood River, Yakima, Wenatchee, Everett).
+                        </p>
+                      </div>
+
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={isReturnDiversified}
+                          onChange={(e) => setIsReturnDiversified(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2054,6 +2508,110 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Loop Route / Return Leg Diversification Card */}
+                {(duplicateReturnAnalysis.isOutAndBack || isRoundTripLoop || duplicateReturnAnalysis.hasDuplicates || replacedLoopPairs.length > 0) && (
+                  <div className="bg-gradient-to-br from-indigo-50/90 via-slate-50 to-emerald-50/70 border-2 border-indigo-200 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs" id="loop-route-diversification-card">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-indigo-100">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <RotateCcw className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <h4 className="text-sm font-black text-slate-900 tracking-tight">
+                            Loop Route / Return Leg Diversification
+                          </h4>
+                          {isReturnDiversified && replacedLoopPairs.length > 0 ? (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              ✓ Diversified Circular Loop Active
+                            </span>
+                          ) : duplicateReturnAnalysis.hasDuplicates ? (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              <span>{duplicateReturnAnalysis.duplicateCount} Duplicate Cities Detected</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                              Circular Routing
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-600 max-w-2xl">
+                          Replaces duplicate corridor stops on the return leg with adjacent, viable secondary music markets along parallel highways and byways (e.g. Bend, Hood River, Yakima, Wenatchee, Everett).
+                        </p>
+                      </div>
+
+                      {/* Diversify Toggle */}
+                      <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-white/80 p-2 rounded-2xl border border-indigo-200/80 shadow-xs">
+                        <span className="text-xs font-black text-slate-800">
+                          Diversify Return Route
+                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isReturnDiversified}
+                            onChange={(e) => handleToggleReturnDiversification(e.target.checked)}
+                            className="sr-only peer"
+                            id="toggle-diversify-return-route"
+                          />
+                          <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Diversified Replacement Details */}
+                    {isReturnDiversified && replacedLoopPairs.length > 0 ? (
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-black text-slate-700 uppercase tracking-wider text-[11px]">
+                            Parallel Highway Music Markets ({replacedLoopPairs.length} Alternative Stops)
+                          </span>
+                          <span className="text-slate-500 text-[11px]">Zero redundant backtracking</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                          {replacedLoopPairs.map((pair, pIdx) => (
+                            <div
+                              key={pIdx}
+                              className="p-3 bg-white rounded-xl border border-indigo-100 shadow-2xs flex items-center justify-between gap-3 text-xs"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="line-through text-slate-400 font-bold">{pair.originalCity}</span>
+                                <ArrowRight className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                <span className="font-black text-emerald-800">{pair.newCity}, {pair.newState}</span>
+                              </div>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                {pair.highway}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="text-[11px] text-slate-500 pt-1 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Driving logistics, van gas budget, and OpenStreetMap Leaflet waypoints automatically updated for this genuine circular touring loop.</span>
+                        </div>
+                      </div>
+                    ) : duplicateReturnAnalysis.hasDuplicates ? (
+                      <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="space-y-1">
+                          <div className="font-black text-amber-900 flex items-center gap-1.5">
+                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>Repeating Cities on Return Leg: {duplicateReturnAnalysis.duplicateCities.join(" → ")}</span>
+                          </div>
+                          <p className="text-amber-800/80 text-[11px]">
+                            Playing the same cities twice on the way back may dilute ticket sales. Turn on return diversification to route through adjacent secondary markets along parallel corridors!
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleReturnDiversification(true)}
+                          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shrink-0 cursor-pointer transition-colors shadow-xs"
+                        >
+                          Diversify Route Now
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
 
                 {/* Stops Manager List */}
                 <div className="space-y-3">
@@ -2263,30 +2821,50 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
               {/* Active Stop Card */}
               {(() => {
                 const currentStop = stops[activeStageIndex];
-                const availableVenues = cityVenuesMap[`${currentStop.city}_${currentStop.state}`] || cityVenuesMap[currentStop.city] || [];
+                const rawVenues = cityVenuesMap[`${currentStop.city}_${currentStop.state}`] || cityVenuesMap[currentStop.city] || [];
+                const availableVenues = rawVenues.length > 0 ? rawVenues : (currentStop.suggestedVenues || []);
                 const isCustomMode = customVenueMode[currentStop.id];
+                const hasSelectedVenue = Boolean(currentStop.selectedVenue?.name);
+                const isLodgingResolved = Boolean(currentStop.selectedLodging?.name) || Boolean(skippedLodgingMap[activeStageIndex]);
+                const showInterstitialPrompt = hasSelectedVenue && !isLodgingResolved && inlineLodgingStopIndex !== activeStageIndex;
+                const showInlineLodging = inlineLodgingStopIndex === activeStageIndex;
+
+                const stopLodgingOptions = (currentStop.lodgingOptions && currentStop.lodgingOptions.length > 0)
+                  ? currentStop.lodgingOptions
+                  : findLodgingForCity(currentStop.city, currentStop.state);
+
+                const filteredLodgingOptions = stopLodgingOptions.filter(l => {
+                  if (lodgingCategoryFilter === "hotels") return l.type.toLowerCase().includes("hotel") || l.type.toLowerCase().includes("motel") || l.type.toLowerCase().includes("inn");
+                  if (lodgingCategoryFilter === "campgrounds") return l.type.toLowerCase().includes("van") || l.type.toLowerCase().includes("rv") || l.type.toLowerCase().includes("camp") || l.type.toLowerCase().includes("koa");
+                  if (lodgingCategoryFilter === "free") return l.type.toLowerCase().includes("van") || l.type.toLowerCase().includes("parking") || l.estPricePerNight.includes("$0") || l.estPricePerNight.includes("Free");
+                  return true;
+                });
 
                 return (
                   <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8">
                     
-                    {/* City Stepper Pill Navigation */}
+                    {/* City Stepper Navigation */}
                     <div className="space-y-3 pb-6 border-b border-slate-100">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="space-y-0.5">
                           <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
-                            Step 3 • Choose Stages &amp; Performance Venues
+                            Step 3 • Stop-by-Stop Stages &amp; Lodging Selection
                           </span>
-                          <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                            Stop {activeStageIndex + 1} of {stops.length}: {currentStop.city}, {currentStop.state}
+                          <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                            <span>Stop {activeStageIndex + 1} of {stops.length}:</span>
+                            <span className="text-indigo-600">{currentStop.city}, {currentStop.state}</span>
                           </h3>
+                          <p className="text-xs text-slate-500">
+                            {currentStop.localSceneNotes || "Select a vetted live music venue, then configure overnight lodging accommodations."}
+                          </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
                           <button
                             type="button"
                             onClick={handleStagePrev}
                             disabled={activeStageIndex === 0}
-                            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
                           >
                             <ChevronLeft className="w-3.5 h-3.5" />
                             <span>Previous City</span>
@@ -2294,18 +2872,20 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                           <button
                             type="button"
                             onClick={handleStageNext}
-                            className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-1 cursor-pointer"
+                            className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-1 cursor-pointer transition-colors"
                           >
-                            <span>{activeStageIndex === stops.length - 1 ? "Proceed to Lodging (Step 4)" : "Next City"}</span>
+                            <span>{activeStageIndex === stops.length - 1 ? "Review Tour (Step 5)" : "Next City"}</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
 
-                      {/* Horizontal City Tabs */}
+                      {/* Horizontal City Stepper Tabs */}
                       <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2">
                         {stops.map((s, idx) => {
-                          const isDone = Boolean(s.selectedVenue);
+                          const stopVenueDone = Boolean(s.selectedVenue?.name);
+                          const stopLodgingDone = Boolean(s.selectedLodging?.name) || Boolean(skippedLodgingMap[idx]);
+                          const isFullyDone = stopVenueDone && stopLodgingDone;
                           const isActive = idx === activeStageIndex;
 
                           return (
@@ -2314,113 +2894,520 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                               type="button"
                               onClick={() => {
                                 setActiveStageIndex(idx);
+                                setInterstitialLodgingPromptStop(null);
+                                setInlineLodgingStopIndex(null);
                                 loadVenuesForStageCity(s.city, s.state);
                               }}
                               className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 cursor-pointer transition-all ${
                                 isActive 
-                                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-black" 
-                                  : isDone
+                                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-black" 
+                                  : isFullyDone
                                   ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                                  : stopVenueDone
+                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
                                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                               }`}
                             >
                               <span>{idx + 1}. {s.city}</span>
-                              {isDone && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                              {isFullyDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                              {!isFullyDone && stopVenueDone && <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>}
                             </button>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Section 1: Venue Selection from public.venues */}
-                    <div className="space-y-4">
+                    {/* Section 1: Venue Selection */}
+                    <div className="space-y-4" id="stop-venue-selection-section">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           <h4 className="text-base font-black text-slate-900 flex items-center gap-2">
                             <Building className="w-4 h-4 text-indigo-600" />
-                            <span>Select Performance Stage in {currentStop.city}</span>
+                            <span>1. Select Live Music Venue in {currentStop.city}</span>
                           </h4>
                           <p className="text-xs text-slate-500">
-                            Loaded from public.venues and local verified room directories.
+                            Vetted live music stages matching your tour genre and room capacity.
                           </p>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setCustomVenueMode(prev => ({ ...prev, [currentStop.id]: !isCustomMode }))}
-                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer self-start sm:self-auto"
-                        >
-                          {isCustomMode ? "← Choose from Directory" : "+ Enter Custom / Unlisted Venue"}
-                        </button>
+                        {hasSelectedVenue && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStops(prev => {
+                                const copy = [...prev];
+                                if (copy[activeStageIndex]) {
+                                  copy[activeStageIndex].selectedVenue = undefined;
+                                }
+                                return copy;
+                              });
+                              setInterstitialLodgingPromptStop(null);
+                              setInlineLodgingStopIndex(null);
+                            }}
+                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer self-start sm:self-auto"
+                          >
+                            ← Change / Reselect Venue
+                          </button>
+                        )}
                       </div>
 
-                      {/* Custom Venue Input Form */}
-                      {isCustomMode ? (
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-                          <span className="text-xs font-black uppercase text-slate-700 block">
-                            Custom Venue / Independent Space Details
-                          </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <input
-                              type="text"
-                              placeholder="Venue Name *"
-                              value={currentStop.selectedVenue?.name || ""}
-                              onChange={(e) => handleUpdateSchedule(activeStageIndex, "name", e.target.value)}
-                              className="p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Street Address"
-                              value={currentStop.selectedVenue?.address || ""}
-                              onChange={(e) => handleUpdateSchedule(activeStageIndex, "address", e.target.value)}
-                              className="p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Contact Booking Email"
-                              value={currentStop.selectedVenue?.contactEmail || ""}
-                              onChange={(e) => handleUpdateSchedule(activeStageIndex, "contactEmail", e.target.value)}
-                              className="p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Capacity (e.g. 150)"
-                              value={currentStop.selectedVenue?.capacity || ""}
-                              onChange={(e) => handleUpdateSchedule(activeStageIndex, "capacity", e.target.value)}
-                              className="p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
-                            />
+                      {/* If venue is already selected, display confirmation card */}
+                      {hasSelectedVenue && !isCustomMode ? (() => {
+                        const v = currentStop.selectedVenue;
+                        const vStatus = v?.bookingStatus || "confirmed";
+
+                        return (
+                          <div className="p-5 rounded-2xl bg-slate-50 border-2 border-indigo-300 shadow-sm space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h5 className="font-black text-slate-900 text-lg">{v?.name}</h5>
+                                  {(v?.isPrivate || v?.venueType === "house_show") && (
+                                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300 flex items-center gap-1">
+                                      <Lock className="w-2.5 h-2.5 stroke-[2.5]" />
+                                      <span>Private House Show / DIY Space</span>
+                                    </span>
+                                  )}
+                                  <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                                    vStatus === "confirmed"
+                                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                      : vStatus === "penciled"
+                                      ? "bg-amber-100 text-amber-800 border border-amber-300"
+                                      : "bg-slate-200 text-slate-700 border border-slate-300"
+                                  }`}>
+                                    {vStatus === "confirmed" && <Check className="w-3 h-3 stroke-[3]" />}
+                                    {vStatus === "confirmed" ? "✓ Confirmed & Booked" : vStatus === "penciled" ? "Penciled In (Hold)" : "Unconfirmed Lead"}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                  <span>
+                                    📍 {v?.address || `${currentStop.city}, ${currentStop.state}`}
+                                    {(v?.isPrivate || v?.venueType === "house_show") && (
+                                      <strong className="text-purple-700 ml-1">(Private Residential Address)</strong>
+                                    )}
+                                  </span>
+                                  {v?.capacity && <span>👥 Cap: {v.capacity}</span>}
+                                  {v?.contactPhone && <span>📞 {(v?.isPrivate || v?.venueType === "house_show") ? "Host Cell: " : ""}{v.contactPhone}</span>}
+                                  {v?.contactEmail && <span>✉️ {v.contactEmail}</span>}
+                                </div>
+                                {(v?.loadInNotes || (v?.isPrivate && v?.notes)) && (
+                                  <div className="text-[11px] text-purple-950 bg-purple-50 p-2.5 rounded-xl border border-purple-200">
+                                    🔒 <strong>Door / Load-In Notes:</strong> {v.loadInNotes || v.notes}
+                                  </div>
+                                )}
+                                {v?.suggestedDonation && (
+                                  <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 w-fit">
+                                    🎟️ Suggested Donation: {v.suggestedDonation}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Manual Booking Status Toggle */}
+                              <div className="flex items-center gap-1.5 self-start sm:self-auto bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleVenueStatus(activeStageIndex, "unconfirmed")}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
+                                    vStatus === "unconfirmed" ? "bg-slate-800 text-white font-black" : "text-slate-600 hover:text-slate-900"
+                                  }`}
+                                >
+                                  Unconfirmed / Lead
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleVenueStatus(activeStageIndex, "penciled")}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
+                                    vStatus === "penciled" ? "bg-amber-500 text-white font-black" : "text-slate-600 hover:text-slate-900"
+                                  }`}
+                                >
+                                  Penciled In
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleVenueStatus(activeStageIndex, "confirmed")}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
+                                    vStatus === "confirmed" ? "bg-emerald-600 text-white font-black" : "text-slate-600 hover:text-slate-900"
+                                  }`}
+                                >
+                                  ✓ Confirmed &amp; Booked
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Run of Show Times & Door Payout Terms */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                              <div>
+                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-0.5">Load-In Time</label>
+                                <input
+                                  type="text"
+                                  value={v?.loadInTime || "5:00 PM"}
+                                  onChange={(e) => handleUpdateSchedule(activeStageIndex, "loadInTime", e.target.value)}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
+                                  placeholder="5:00 PM"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-0.5">Soundcheck</label>
+                                <input
+                                  type="text"
+                                  value={v?.soundcheckTime || "6:30 PM"}
+                                  onChange={(e) => handleUpdateSchedule(activeStageIndex, "soundcheckTime", e.target.value)}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
+                                  placeholder="6:30 PM"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-0.5">Set Time</label>
+                                <input
+                                  type="text"
+                                  value={v?.setTime || "9:00 PM"}
+                                  onChange={(e) => handleUpdateSchedule(activeStageIndex, "setTime", e.target.value)}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
+                                  placeholder="9:00 PM"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-0.5">Door Terms ($ / %)</label>
+                                <input
+                                  type="text"
+                                  value={v?.doorGuarantee || "$350 Guarantee (80% Door)"}
+                                  onChange={(e) => handleUpdateSchedule(activeStageIndex, "doorGuarantee", e.target.value)}
+                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
+                                  placeholder="$350 or 80% Door"
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        /* Directory Venues List */
+                        );
+                      })() : (
+                        /* Directory Venues List or Custom Mode */
                         <div className="space-y-3">
-                          {isLoadingVenues ? (
-                            <div className="p-8 text-center text-xs text-slate-400">
-                              Querying verified stages in {currentStop.city}...
-                            </div>
-                          ) : availableVenues.length === 0 ? (
-                            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
-                              <span className="text-xs text-slate-600 block font-bold">
-                                No pre-seeded directory venues found for {currentStop.city}.
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setCustomVenueMode(prev => ({ ...prev, [currentStop.id]: true }))}
-                                className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold cursor-pointer"
-                              >
-                                Enter Custom Venue Name
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                              Available Live Stages ({availableVenues.length})
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setCustomVenueMode(prev => ({ ...prev, [currentStop.id]: !isCustomMode }))}
+                              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
+                            >
+                              {isCustomMode ? "← Choose from Directory" : "+ Add Custom Stage (Commercial or House Show)"}
+                            </button>
+                          </div>
+
+                          {isCustomMode ? (() => {
+                            const stopKey = currentStop.id || String(activeStageIndex);
+                            const selectedType = customStageType[stopKey] || "commercial";
+                            const isHouseShow = selectedType === "house_show";
+                            const inputs = customStageInputs[stopKey] || {};
+
+                            const updateInput = (field: string, val: string) => {
+                              setCustomStageInputs(prev => ({
+                                ...prev,
+                                [stopKey]: {
+                                  ...(prev[stopKey] || {}),
+                                  [field]: val
+                                }
+                              }));
+                            };
+
+                            return (
+                              <div className="bg-slate-50 p-5 sm:p-6 rounded-3xl border-2 border-indigo-200/90 shadow-sm space-y-5 animate-in fade-in duration-200">
+                                <div>
+                                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                    <span>Add Custom Stage for {currentStop.city}, {currentStop.state}</span>
+                                  </h4>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    Select the venue classification to control public directory listing vs. private tour privacy.
+                                  </p>
+                                </div>
+
+                                {/* 1. Classification Toggle */}
+                                <div className="p-1.5 bg-slate-200/80 rounded-2xl flex flex-col sm:flex-row gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCustomStageType(prev => ({ ...prev, [stopKey]: "public_venue" }))}
+                                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                      !isHouseShow
+                                        ? "bg-white text-indigo-950 shadow-md ring-1 ring-slate-300"
+                                        : "text-slate-600 hover:text-slate-900"
+                                    }`}
+                                  >
+                                    <Globe className="w-4 h-4 text-indigo-600" />
+                                    <span>Commercial / Public Music Venue</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setCustomStageType(prev => ({ ...prev, [stopKey]: "house_show" }))}
+                                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                      isHouseShow
+                                        ? "bg-purple-700 text-white shadow-md shadow-purple-900/30"
+                                        : "text-slate-600 hover:text-slate-900"
+                                    }`}
+                                  >
+                                    <Lock className="w-4 h-4 text-purple-200" />
+                                    <span>Private House Show / DIY Space</span>
+                                  </button>
+                                </div>
+
+                                {/* 2. Explicit Privacy Shield or Public Directory Notice Badge */}
+                                {isHouseShow ? (
+                                  <div className="p-4 rounded-2xl bg-purple-50 border-2 border-purple-300 flex items-start gap-3.5 text-xs text-purple-950 shadow-xs">
+                                    <div className="p-2 rounded-xl bg-purple-600 text-white shrink-0 mt-0.5">
+                                      <Shield className="w-4 h-4 stroke-[2.5]" />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="font-black text-purple-950 text-xs uppercase tracking-wider block">
+                                        🔒 Private / Anonymous Privacy Shield
+                                      </span>
+                                      <p className="text-xs text-purple-900 leading-relaxed font-semibold">
+                                        🔒 Private / Anonymous: This residential address &amp; contact will ONLY appear on your band&apos;s private tour sheet and will NEVER be published to other users or search engines.
+                                      </p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="p-4 rounded-2xl bg-blue-50 border-2 border-blue-300 flex items-start gap-3.5 text-xs text-blue-950 shadow-xs">
+                                    <div className="p-2 rounded-xl bg-blue-600 text-white shrink-0 mt-0.5">
+                                      <Globe className="w-4 h-4 stroke-[2.5]" />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="font-black text-blue-950 text-xs uppercase tracking-wider block">
+                                        🌐 Public Directory
+                                      </span>
+                                      <p className="text-xs text-blue-900 leading-relaxed font-semibold">
+                                        🌐 Public Directory: This verified commercial club/theater will be added to the global GigLizard venue directory for all touring bands.
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* 3. Conditional Input Fields */}
+                                {isHouseShow ? (
+                                  /* Private House Show Fields */
+                                  <div className="space-y-3.5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Host Name *
+                                        </label>
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. Sarah's Basement / The Treehouse"
+                                          value={inputs.hostName || ""}
+                                          onChange={(e) => updateInput("hostName", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Host Cell Phone *
+                                        </label>
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. 555-234-5678"
+                                          value={inputs.hostPhone || ""}
+                                          onChange={(e) => updateInput("hostPhone", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                        Full Address * (Residential / Confidential)
+                                      </label>
+                                      <input
+                                        type="text"
+                                        placeholder={`e.g. 1420 Maple Ave, Apt 2, ${currentStop.city}, ${currentStop.state}`}
+                                        value={inputs.address || ""}
+                                        onChange={(e) => updateInput("address", e.target.value)}
+                                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
+                                      />
+                                      <span className="text-[10px] text-purple-700 mt-1 block font-medium">
+                                        🔒 Stored securely only in your tour route data. Never rendered in public searches.
+                                      </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Door / Load-in Notes
+                                        </label>
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. Back alley load-in, quiet after 11 PM"
+                                          value={inputs.loadInNotes || ""}
+                                          onChange={(e) => updateInput("loadInNotes", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-600"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Suggested Donation / Door
+                                        </label>
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. $10 suggested donation at door, BYOB"
+                                          value={inputs.suggestedDonation || ""}
+                                          onChange={(e) => updateInput("suggestedDonation", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* Commercial Public Venue Fields */
+                                  <div className="space-y-3.5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Venue Name *
+                                        </label>
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. The Substation Club"
+                                          value={inputs.name || ""}
+                                          onChange={(e) => updateInput("name", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Room Capacity
+                                        </label>
+                                        <input
+                                          type="number"
+                                          placeholder="e.g. 250"
+                                          value={inputs.capacity || ""}
+                                          onChange={(e) => updateInput("capacity", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                        Address *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        placeholder={`e.g. 645 NW 45th St, ${currentStop.city}, ${currentStop.state}`}
+                                        value={inputs.address || ""}
+                                        onChange={(e) => updateInput("address", e.target.value)}
+                                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
+                                      />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Booking Contact
+                                        </label>
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. Alex Rivera"
+                                          value={inputs.contactName || ""}
+                                          onChange={(e) => updateInput("contactName", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-600"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Phone
+                                        </label>
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. 206-555-0199"
+                                          value={inputs.contactPhone || ""}
+                                          onChange={(e) => updateInput("contactPhone", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-600"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                          Booking Email
+                                        </label>
+                                        <input
+                                          type="email"
+                                          placeholder="e.g. booking@substation.com"
+                                          value={inputs.contactEmail || ""}
+                                          onChange={(e) => updateInput("contactEmail", e.target.value)}
+                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-600"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                                        PA / Sound Specs
+                                      </label>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. 32-channel digital desk, 4 monitor mixes, 2x18 subs"
+                                        value={inputs.soundSpecs || ""}
+                                        onChange={(e) => updateInput("soundSpecs", e.target.value)}
+                                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-600"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Action Controls */}
+                                <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCustomVenueMode(prev => ({ ...prev, [currentStop.id]: false }))}
+                                    className="text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer order-2 sm:order-1"
+                                  >
+                                    ← Cancel &amp; Choose from Directory
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleConfirmCustomStage(activeStageIndex)}
+                                    disabled={isSubmittingCustomStage}
+                                    className={`w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-black text-white shadow-md cursor-pointer transition-all flex items-center justify-center gap-2 order-1 sm:order-2 ${
+                                      isHouseShow
+                                        ? "bg-purple-700 hover:bg-purple-800 shadow-purple-900/30"
+                                        : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30"
+                                    }`}
+                                  >
+                                    {isSubmittingCustomStage ? (
+                                      <>
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                        <span>Saving Stage...</span>
+                                      </>
+                                    ) : isHouseShow ? (
+                                      <>
+                                        <Lock className="w-3.5 h-3.5" />
+                                        <span>🔒 Save Private House Show to Tour Sheet</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Globe className="w-3.5 h-3.5" />
+                                        <span>🌐 Publish Commercial Venue &amp; Attach to Tour</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })() : (
+                            /* Vetted Venues Grid with 1-click selection */
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                               {availableVenues.map((v) => {
                                 const isSelected = currentStop.selectedVenue?.name === v.name;
 
                                 return (
                                   <div
-                                    key={v.id}
-                                    onClick={() => handleSelectVenueForStop(activeStageIndex, v)}
-                                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                                    key={v.id || v.name}
+                                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
                                       isSelected 
                                         ? "bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/30 shadow-md" 
                                         : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-xs"
@@ -2442,7 +3429,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                         )}
                                         {v.hasLighting && (
                                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                                            Lighting
+                                            Stage Lights
                                           </span>
                                         )}
                                         {v.genres?.slice(0, 2).map((g) => (
@@ -2453,12 +3440,30 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                       </div>
                                     </div>
 
-                                    <div className="pt-2 flex items-center justify-between text-xs font-black">
-                                      <span className={isSelected ? "text-indigo-700" : "text-slate-500"}>
-                                        {isSelected ? "✓ Selected Stage" : "Click to Select"}
-                                      </span>
+                                    <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSelectVenueForStop(activeStageIndex, v)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                                          isSelected
+                                            ? "bg-indigo-600 text-white shadow-xs"
+                                            : "bg-slate-900 hover:bg-indigo-600 text-white"
+                                        }`}
+                                      >
+                                        {isSelected ? (
+                                          <>
+                                            <Check className="w-3.5 h-3.5" />
+                                            <span>Stage Selected</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <span>Select This Stage / Venue</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                          </>
+                                        )}
+                                      </button>
                                       {v.contactEmail && (
-                                        <span className="text-[10px] text-slate-400 font-mono truncate max-w-[140px]">
+                                        <span className="text-[10px] text-slate-400 font-mono truncate max-w-[120px]">
                                           {v.contactEmail}
                                         </span>
                                       )}
@@ -2472,7 +3477,414 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                       )}
                     </div>
 
-                    {/* Section 2: Show Schedule Times */}
+                    {/* Section 2: Interstitial Accommodation Prompt per Stop */}
+                    {showInterstitialPrompt && (() => {
+                      const lodgingDates = getTourStopLodgingDates(currentStop.date);
+                      const cityLinks = generateLodgingDeepLinks({
+                        city: currentStop.city,
+                        state: currentStop.state,
+                        checkInDate: lodgingDates.checkIn,
+                        checkOutDate: lodgingDates.checkOut,
+                        guests: 4
+                      });
+
+                      return (
+                        <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white rounded-3xl p-6 sm:p-8 border border-indigo-500/40 shadow-xl space-y-5 animate-in fade-in duration-200" id="interstitial-lodging-prompt">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                  ✓ Stage Locked: {currentStop.selectedVenue?.name}
+                                </span>
+                                <span className="text-xs text-indigo-300">• Stop {activeStageIndex + 1} of {stops.length}</span>
+                              </div>
+                              <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                                Do you need lodging accommodations in {currentStop.city}?
+                              </h4>
+                              <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+                                Show night: <strong>{formatReadableDate(currentStop.date || lodgingDates.checkIn)}</strong> (Check-out: {formatReadableDate(lodgingDates.checkOut)}). Find band-friendly hotels with trailer/van parking, KOA &amp; RV campgrounds, or proceed without lodging.
+                              </p>
+                            </div>
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-800/50 border border-indigo-700/50 flex items-center justify-center shrink-0 hidden sm:flex">
+                              <Hotel className="w-6 h-6 text-indigo-300" />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                            {/* Option A */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenInlineLodging(activeStageIndex)}
+                              className="p-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black flex items-center justify-between gap-3 shadow-lg shadow-emerald-600/30 cursor-pointer transition-all active:scale-98"
+                              id={`btn-lodging-yes-${activeStageIndex}`}
+                            >
+                              <div className="flex items-center gap-3 text-left">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-700/60 flex items-center justify-center shrink-0">
+                                  <Hotel className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                  <div className="font-black text-sm">Option A: Yes, Find Lodging</div>
+                                  <div className="text-[11px] text-emerald-100 font-normal">Hotels, KOA/RV sites, secure parking</div>
+                                </div>
+                              </div>
+                              <ChevronRight className="w-5 h-5 shrink-0" />
+                            </button>
+
+                            {/* Option B */}
+                            <button
+                              type="button"
+                              onClick={() => handleSkipLodgingForStop(activeStageIndex)}
+                              className="p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 font-black flex items-center justify-between gap-3 border border-slate-700 cursor-pointer transition-all active:scale-98"
+                              id={`btn-lodging-no-${activeStageIndex}`}
+                            >
+                              <div className="flex items-center gap-3 text-left">
+                                <div className="w-10 h-10 rounded-xl bg-slate-700/60 flex items-center justify-center shrink-0">
+                                  <ArrowRight className="w-5 h-5 text-slate-300" />
+                                </div>
+                                <div>
+                                  <div className="font-black text-sm">Option B: No, Continue Without Lodging</div>
+                                  <div className="text-[11px] text-slate-400 font-normal">Skip accommodation and advance immediately</div>
+                                </div>
+                              </div>
+                              <ChevronRight className="w-5 h-5 shrink-0" />
+                            </button>
+                          </div>
+
+                          {/* Quick OTA Deep-Link Strip */}
+                          <div className="pt-2 border-t border-indigo-800/60 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                            <span className="text-[11px] text-slate-300 font-bold flex items-center gap-1.5">
+                              <span>Instant OTA Deep-Links ({lodgingDates.checkIn} → {lodgingDates.checkOut}):</span>
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={cityLinks.expediaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 shadow-xs transition-colors"
+                              >
+                                <span>Reserve on Expedia (Pre-Filled Dates)</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <a
+                                href={cityLinks.bookingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 border border-slate-700 transition-colors"
+                              >
+                                <span>Booking.com</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <a
+                                href={cityLinks.koaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 border border-slate-700 transition-colors"
+                              >
+                                <span>KOA Campgrounds</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Section 3: Inline Lodging Module (Opened via Option A) */}
+                    {showInlineLodging && (() => {
+                      const lodgingDates = getTourStopLodgingDates(currentStop.date);
+                      const cityLinks = generateLodgingDeepLinks({
+                        city: currentStop.city,
+                        state: currentStop.state,
+                        checkInDate: lodgingDates.checkIn,
+                        checkOutDate: lodgingDates.checkOut,
+                        guests: 4
+                      });
+
+                      return (
+                        <div className="bg-slate-50 p-6 sm:p-8 rounded-3xl border-2 border-indigo-200 space-y-6 animate-in fade-in duration-200" id="stop-lodging-module">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                            <div className="space-y-0.5">
+                              <span className="text-xs font-black uppercase tracking-wider text-emerald-700">
+                                Overnight Accommodations
+                              </span>
+                              <h4 className="text-xl font-black text-slate-900 tracking-tight">
+                                Band Lodging &amp; Campgrounds in {currentStop.city}
+                              </h4>
+                              <p className="text-xs text-slate-500">
+                                Check-in: <strong>{formatReadableDate(lodgingDates.checkIn)}</strong> → Check-out: <strong>{formatReadableDate(lodgingDates.checkOut)}</strong>. Pre-filtered for trailer parking and gear safety.
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={cityLinks.expediaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-xs transition-colors"
+                              >
+                                <span>Reserve on Expedia (Pre-Filled Dates)</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => handleSkipLodgingForStop(activeStageIndex)}
+                                className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-300 cursor-pointer"
+                              >
+                                Skip Lodging for this City
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Category Filter Pills */}
+                          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                            <button
+                              type="button"
+                              onClick={() => setLodgingCategoryFilter("all")}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                                lodgingCategoryFilter === "all" ? "bg-indigo-600 text-white font-black" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                              }`}
+                            >
+                              All Accommodations
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLodgingCategoryFilter("hotels")}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                                lodgingCategoryFilter === "hotels" ? "bg-indigo-600 text-white font-black" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                              }`}
+                            >
+                              🏨 Band-Friendly Hotels &amp; Motels
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLodgingCategoryFilter("campgrounds")}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                                lodgingCategoryFilter === "campgrounds" ? "bg-indigo-600 text-white font-black" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                              }`}
+                            >
+                              🏕 KOA &amp; RV Campgrounds
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLodgingCategoryFilter("free")}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                                lodgingCategoryFilter === "free" ? "bg-indigo-600 text-white font-black" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                              }`}
+                            >
+                              🚐 Free Overnight Van Parking
+                            </button>
+                          </div>
+
+                          {/* Curated Lodging Options Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            {filteredLodgingOptions.map((lodge) => {
+                              const isSelected = currentStop.selectedLodging?.name === lodge.name;
+                              const lodgeLinks = generateLodgingDeepLinks({
+                                city: currentStop.city,
+                                state: currentStop.state,
+                                checkInDate: lodgingDates.checkIn,
+                                checkOutDate: lodgingDates.checkOut,
+                                guests: 4,
+                                lodgingName: lodge.name,
+                                lodgingType: lodge.type
+                              });
+
+                              return (
+                                <div
+                                  key={lodge.id || lodge.name}
+                                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
+                                    isSelected 
+                                      ? "bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-600/30 shadow-md" 
+                                      : "bg-white border-slate-200 hover:border-slate-300"
+                                  }`}
+                                >
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h5 className="font-black text-slate-900 text-sm">{lodge.name}</h5>
+                                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                        {lodge.estPricePerNight}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] text-indigo-700 font-bold">{lodge.type}</div>
+                                    <div className="text-xs text-slate-500">{lodge.address}</div>
+
+                                    {/* Gear Security & Parking Note */}
+                                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 space-y-1">
+                                      <span className="font-bold text-slate-900 block flex items-center gap-1">
+                                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>Parking &amp; Trailer Security:</span>
+                                      </span>
+                                      <p className="text-slate-600">{lodge.gearSecurityNote}</p>
+                                    </div>
+
+                                    {/* Amenities */}
+                                    {lodge.amenities && lodge.amenities.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 pt-1">
+                                        {lodge.amenities.map((am) => (
+                                          <span key={am} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                                            {am}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleLockInLodgingAndAdvance(activeStageIndex, lodge)}
+                                        className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all ${
+                                          isSelected
+                                            ? "bg-emerald-600 text-white shadow-xs"
+                                            : "bg-slate-900 hover:bg-emerald-600 text-white"
+                                        }`}
+                                      >
+                                        <Check className="w-3.5 h-3.5" />
+                                        <span>Select &amp; Advance →</span>
+                                      </button>
+
+                                      <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 cursor-pointer select-none">
+                                        <input
+                                          type="checkbox"
+                                          checked={Boolean(currentStop.selectedLodging?.name === lodge.name && currentStop.selectedLodging?.isBooked)}
+                                          onChange={() => {
+                                            if (currentStop.selectedLodging?.name !== lodge.name) {
+                                              handleSelectLodgingForStop(activeStageIndex, lodge);
+                                            }
+                                            handleToggleLodgingBooked(activeStageIndex);
+                                          }}
+                                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                        />
+                                        <span>Mark as Booked</span>
+                                      </label>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <a
+                                        href={lodgeLinks.expediaUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black flex items-center gap-1 shadow-xs transition-colors"
+                                        title="Reserve on Expedia with pre-filled gig dates"
+                                      >
+                                        <span>Expedia</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                      <a
+                                        href={lodgeLinks.bookingUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                        title="Search on Booking.com"
+                                      >
+                                        <span>Booking.com</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                        {/* Custom Lodging Booking Form Fallback */}
+                        <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
+                          <span className="text-xs font-black uppercase text-slate-700 block">
+                            Or Add Custom / Already Booked Lodging Reservation
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                            <input
+                              type="text"
+                              placeholder="Hotel / RV Campground Name *"
+                              value={customLodgingInputs[activeStageIndex]?.name || ""}
+                              onChange={(e) => setCustomLodgingInputs(prev => ({
+                                ...prev,
+                                [activeStageIndex]: { ...prev[activeStageIndex], name: e.target.value }
+                              }))}
+                              className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Confirmation #"
+                              value={customLodgingInputs[activeStageIndex]?.confirmationNumber || ""}
+                              onChange={(e) => setCustomLodgingInputs(prev => ({
+                                ...prev,
+                                [activeStageIndex]: { ...prev[activeStageIndex], confirmationNumber: e.target.value }
+                              }))}
+                              className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white"
+                            />
+                            <input
+                              type="number"
+                              placeholder="Nightly Cost ($)"
+                              value={customLodgingInputs[activeStageIndex]?.cost || ""}
+                              onChange={(e) => setCustomLodgingInputs(prev => ({
+                                ...prev,
+                                [activeStageIndex]: { ...prev[activeStageIndex], cost: e.target.value }
+                              }))}
+                              className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveCustomLodgingForStop(activeStageIndex)}
+                              className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black cursor-pointer shadow-xs"
+                            >
+                              Save Reservation &amp; Advance →
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                    {/* Confirmed Lodging Display if already booked */}
+                    {currentStop.selectedLodging?.name && !showInlineLodging && (
+                      <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Hotel className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="font-black text-emerald-900 text-sm">
+                              Confirmed Lodging: {currentStop.selectedLodging.name}
+                            </span>
+                            {currentStop.selectedLodging.cost && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">
+                                ${currentStop.selectedLodging.cost} / night
+                              </span>
+                            )}
+                          </div>
+                          {currentStop.selectedLodging.gearSecurityNote && (
+                            <p className="text-emerald-800 text-[11px]">{currentStop.selectedLodging.gearSecurityNote}</p>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenInlineLodging(activeStageIndex)}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 cursor-pointer self-start sm:self-auto shrink-0"
+                        >
+                          Change Lodging
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Skipped Lodging Display */}
+                    {skippedLodgingMap[activeStageIndex] && !currentStop.selectedLodging?.name && !showInlineLodging && (
+                      <div className="p-3.5 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-between gap-3 text-xs text-slate-600">
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4 text-slate-500 shrink-0" />
+                          <span>No lodging needed in {currentStop.city} (crashing with friends or driving through).</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenInlineLodging(activeStageIndex)}
+                          className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-bold text-[11px] border border-slate-300 cursor-pointer shrink-0"
+                        >
+                          Add Lodging
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Section 4: Show Schedule Times */}
                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
                       <div className="flex items-center justify-between">
                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
@@ -2550,7 +3962,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                       </div>
                     </div>
 
-                    {/* Section 3: Custom City / Stage Notes */}
+                    {/* Section 5: Custom City / Stage Notes */}
                     <div className="space-y-1.5">
                       <label className="block text-xs font-black text-slate-800 uppercase tracking-wider">
                         City &amp; Technical Notes (Optional)
@@ -2592,7 +4004,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                             onClick={handleStagePrev}
                             className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
                           >
-                            Previous City Stage
+                            Previous City Stop
                           </button>
                         )}
 
@@ -2604,8 +4016,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                         >
                           <span>
                             {activeStageIndex === stops.length - 1 
-                              ? "Proceed to Book Hotels & Lodging (Step 4) →" 
-                              : "Next City Stage →"}
+                              ? "Review & Finalize Tour (Step 5) →" 
+                              : "Next City Stop →"}
                           </span>
                         </button>
                       </div>
@@ -2658,6 +4070,62 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                           <p className="text-xs text-slate-500">
                             Show Night: <strong className="text-slate-800">{currentStop.date || formattedCheckIn}</strong> • Check-In: <strong className="text-slate-800">{formattedCheckIn}</strong> → Check-Out: <strong className="text-slate-800">{formattedCheckOut}</strong>
                           </p>
+
+                          {/* Stop Venue Booking Status Badge & Quick Toggle */}
+                          {(() => {
+                            const v = currentStop.selectedVenue;
+                            const vStatus = v?.bookingStatus || (v?.name ? "unconfirmed" : "unconfirmed");
+                            const hasVenue = Boolean(v?.name);
+
+                            return (
+                              <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Venue:</span>
+                                <span className="text-xs font-black text-slate-900">{v?.name || "Unbooked / Missing Venue"}</span>
+                                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                                  !hasVenue 
+                                    ? "bg-rose-100 text-rose-800 border border-rose-300"
+                                    : vStatus === "confirmed"
+                                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                    : vStatus === "penciled"
+                                    ? "bg-amber-100 text-amber-800 border border-amber-300"
+                                    : "bg-slate-200 text-slate-700 border border-slate-300"
+                                }`}>
+                                  {vStatus === "confirmed" && hasVenue && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                  {!hasVenue ? "Unbooked / Missing Venue" : vStatus === "confirmed" ? "✓ Venue Confirmed" : vStatus === "penciled" ? "Penciled In" : "Unconfirmed Lead"}
+                                </span>
+
+                                <div className="inline-flex rounded-lg bg-white p-0.5 border border-slate-200 text-[10px]">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleVenueStatus(activeLodgingIndex, "unconfirmed")}
+                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                                      vStatus === "unconfirmed" && hasVenue ? "bg-slate-800 text-white" : "text-slate-600 hover:text-slate-900"
+                                    }`}
+                                  >
+                                    Lead
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleVenueStatus(activeLodgingIndex, "penciled")}
+                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                                      vStatus === "penciled" ? "bg-amber-500 text-white" : "text-slate-600 hover:text-slate-900"
+                                    }`}
+                                  >
+                                    Penciled
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleVenueStatus(activeLodgingIndex, "confirmed")}
+                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                                      vStatus === "confirmed" ? "bg-emerald-600 text-white" : "text-slate-600 hover:text-slate-900"
+                                    }`}
+                                  >
+                                    ✓ Confirmed
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -2724,80 +4192,107 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                     </div>
 
                     {/* Direct Outbound Provider Buttons */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                        <ExternalLink className="w-4 h-4 text-emerald-600" />
-                        <span>Book with Direct Providers for {currentStop.city}</span>
-                      </h4>
+                    {(() => {
+                      const lodgingDates = getTourStopLodgingDates(currentStop.date || checkIn);
+                      const cityLinks = generateLodgingDeepLinks({
+                        city: currentStop.city,
+                        state: currentStop.state,
+                        checkInDate: lodgingDates.checkIn,
+                        checkOutDate: lodgingDates.checkOut,
+                        guests: 4
+                      });
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                        {/* Hotels.com */}
-                        <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-black text-slate-900 text-sm">Hotels.com</span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Low Rates</span>
-                            </div>
-                            <p className="text-[11px] text-slate-500">
-                              Pre-filtered with check-in on {formattedCheckIn} &amp; checkout on {formattedCheckOut}.
-                            </p>
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                              <ExternalLink className="w-4 h-4 text-emerald-600" />
+                              <span>Live OTA Deep-Links for {currentStop.city} ({lodgingDates.checkIn} → {lodgingDates.checkOut})</span>
+                            </h4>
+                            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-slate-200 transition-colors w-fit">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(currentStop.selectedLodging?.isBooked)}
+                                onChange={() => handleToggleLodgingBooked(activeLodgingIndex)}
+                                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                              />
+                              <span>Mark {currentStop.city} Room as Booked</span>
+                            </label>
                           </div>
-                          <a
-                            href={hotelsDotComUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs hover:shadow-emerald-600/20 transition-all cursor-pointer"
-                          >
-                            <span>Book on Hotels.com ↗</span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
 
-                        {/* Booking.com */}
-                        <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-black text-slate-900 text-sm">Booking.com</span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Free Parking</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                            {/* Expedia Deep Link */}
+                            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-white border-2 border-amber-300 hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between space-y-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-black text-slate-900 text-sm flex items-center gap-1.5">
+                                    <Hotel className="w-4 h-4 text-amber-600" />
+                                    <span>Expedia</span>
+                                  </span>
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-200 text-amber-950">Official Partner</span>
+                                </div>
+                                <p className="text-[11px] text-slate-600">
+                                  Gig night: <strong>{formatReadableDate(lodgingDates.checkIn)}</strong> → <strong>{formatReadableDate(lodgingDates.checkOut)}</strong>. Pre-filled dates &amp; 4 band guests.
+                                </p>
+                              </div>
+                              <a
+                                href={cityLinks.expediaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                              >
+                                <span>Reserve on Expedia (Pre-Filled Dates) ↗</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
                             </div>
-                            <p className="text-[11px] text-slate-500">
-                              Auto-filtered for on-site parking to safeguard tour vans and equipment trailers.
-                            </p>
-                          </div>
-                          <a
-                            href={bookingDotComUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs hover:shadow-emerald-600/20 transition-all cursor-pointer"
-                          >
-                            <span>Book on Booking.com ↗</span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
 
-                        {/* Google Hotels */}
-                        <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-black text-slate-900 text-sm">Google Hotels</span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Van &amp; Trailer</span>
+                            {/* Booking.com */}
+                            <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-indigo-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-black text-slate-900 text-sm">Booking.com</span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Free Parking Filter</span>
+                                </div>
+                                <p className="text-[11px] text-slate-500">
+                                  Pre-filtered for on-site vehicle parking to safeguard tour vans and gear trailers.
+                                </p>
+                              </div>
+                              <a
+                                href={cityLinks.bookingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                              >
+                                <span>Book on Booking.com ↗</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
                             </div>
-                            <p className="text-[11px] text-slate-500">
-                              Satellite map views of motel lots, outdoor van parking, and exterior room access.
-                            </p>
+
+                            {/* KOA & Campgrounds */}
+                            <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-black text-slate-900 text-sm">KOA / Van Camping</span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">RV / Van Sites</span>
+                                </div>
+                                <p className="text-[11px] text-slate-500">
+                                  Tour van campsites, pull-through RV spaces, and 24/7 security near {currentStop.city}.
+                                </p>
+                              </div>
+                              <a
+                                href={cityLinks.koaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                              >
+                                <span>Search KOA Campgrounds ↗</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
                           </div>
-                          <a
-                            href={googleHotelsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs hover:shadow-emerald-600/20 transition-all cursor-pointer"
-                          >
-                            <span>Book on Google Hotels ↗</span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
 
                     {/* Vetted Band-Friendly Hotels for this Stop */}
                     {currentStop.lodgingOptions && currentStop.lodgingOptions.length > 0 && (
@@ -2811,28 +4306,26 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                           {currentStop.lodgingOptions.map((opt, i) => {
                             const nightlyRate = parseNightlyRate(opt.estPricePerNight);
                             const totalCost = calculateStayCost(nightlyRate, 1);
-                            const fullCity = currentStop.state ? `${currentStop.city}, ${currentStop.state}` : currentStop.city;
-                            const nameLower = opt.name.toLowerCase();
-                            let providerUrl = opt.bookingSearchUrl || `https://www.google.com/travel/hotels/${encodeURIComponent(currentStop.city)}?q=${encodeURIComponent(`${opt.name} ${fullCity}`)}&dates=${checkIn},${checkOut}`;
-                            if (nameLower.includes("motel 6")) {
-                              providerUrl = `https://www.motel6.com/en/home/reservations.html#/search?destination=${encodeURIComponent(currentStop.city)}&checkin=${checkIn}&checkout=${checkOut}`;
-                            } else if (nameLower.includes("red roof")) {
-                              providerUrl = `https://www.redroof.com/search?q=${encodeURIComponent(fullCity)}&checkin=${checkIn}&checkout=${checkOut}`;
-                            } else if (nameLower.includes("best western")) {
-                              providerUrl = `https://www.bestwestern.com/en_US/book/hotels-in-${encodeURIComponent(currentStop.city.toLowerCase().replace(/\s+/g, "-"))}.html?destination=${encodeURIComponent(fullCity)}&checkIn=${checkIn}&checkOut=${checkOut}`;
-                            } else if (nameLower.includes("super 8") || nameLower.includes("wyndham")) {
-                              providerUrl = `https://www.wyndhamhotels.com/super-8?destination=${encodeURIComponent(fullCity)}&checkin_date=${checkIn}&checkout_date=${checkOut}`;
-                            } else if (opt.bookingSearchUrl && opt.bookingSearchUrl.startsWith("http")) {
-                              if (opt.bookingSearchUrl.includes("google.com/travel/hotels") && !opt.bookingSearchUrl.includes("dates=")) {
-                                providerUrl = `${opt.bookingSearchUrl}?dates=${checkIn},${checkOut}`;
-                              }
-                            }
-                            const providerName = opt.name.includes("Motel 6") ? "Motel 6" : opt.name.includes("Best Western") ? "Best Western" : opt.name.includes("Red Roof") ? "Red Roof Inn" : opt.name.includes("Super 8") ? "Super 8" : opt.name.includes("Hotel Leo") ? "Hotel Leo" : opt.name.includes("Belltown") ? "The Belltown Inn" : opt.name;
+                            const optDates = getTourStopLodgingDates(currentStop.date || checkIn);
+                            const optLinks = generateLodgingDeepLinks({
+                              city: currentStop.city,
+                              state: currentStop.state,
+                              checkInDate: optDates.checkIn,
+                              checkOutDate: optDates.checkOut,
+                              guests: 4,
+                              lodgingName: opt.name,
+                              lodgingType: opt.type
+                            });
+                            const isOptBooked = Boolean(currentStop.selectedLodging?.name === opt.name && currentStop.selectedLodging?.isBooked);
 
                             return (
                               <div
                                 key={opt.name || i}
-                                className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 shadow-xs flex flex-col justify-between space-y-3"
+                                className={`p-4 rounded-2xl border transition-all shadow-xs flex flex-col justify-between space-y-3 ${
+                                  isOptBooked
+                                    ? "border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20"
+                                    : "border-slate-200 bg-white hover:border-slate-300"
+                                }`}
                               >
                                 <div className="space-y-1.5">
                                   <div className="flex items-start justify-between gap-2">
@@ -2858,24 +4351,44 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                   )}
                                 </div>
 
-                                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSelectLodgingForStop(activeLodgingIndex, opt)}
-                                    className="text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
-                                  >
-                                    Fill details below ↓
-                                  </button>
+                                <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSelectLodgingForStop(activeLodgingIndex, opt)}
+                                      className="text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                                    >
+                                      Fill details below ↓
+                                    </button>
 
-                                  <a
-                                    href={providerUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1 shadow-xs hover:shadow-emerald-600/20 transition-all cursor-pointer shrink-0"
-                                  >
-                                    <span>Book on {providerName} ↗</span>
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                  </a>
+                                    <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 cursor-pointer select-none">
+                                      <input
+                                        type="checkbox"
+                                        checked={isOptBooked}
+                                        onChange={() => {
+                                          if (currentStop.selectedLodging?.name !== opt.name) {
+                                            handleSelectLodgingForStop(activeLodgingIndex, opt);
+                                          }
+                                          handleToggleLodgingBooked(activeLodgingIndex);
+                                        }}
+                                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                      />
+                                      <span>Booked</span>
+                                    </label>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5">
+                                    <a
+                                      href={optLinks.expediaUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer shrink-0"
+                                      title="Reserve this property directly on Expedia with pre-filled dates"
+                                    >
+                                      <span>Reserve on Expedia ↗</span>
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -3133,12 +4646,22 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
                     <button
                       type="button"
+                      onClick={() => setShowEmailModal(true)}
+                      className="px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-2 shadow-md hover:shadow-indigo-600/30 cursor-pointer transition-all active:scale-98"
+                      id="btn-open-email-itinerary"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Email Itinerary to Band &amp; Crew</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => setShowPrintModal(true)}
                       className="px-4 py-3 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-black flex items-center gap-2 shadow-sm cursor-pointer transition-colors"
                       id="btn-open-print-modal"
                     >
                       <Printer className="w-3.5 h-3.5" />
-                      <span>Print Itinerary Sheet</span>
+                      <span>Print Sheet</span>
                     </button>
                   </div>
                 </div>
@@ -3184,6 +4707,100 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                       <span>{financials.confirmedVenuesCount} / {stops.length}</span>
                     </div>
                   </div>
+                </div>
+
+                {/* Pre-Tour Flawless Execution Audit Engine Banner */}
+                <div className={`p-5 sm:p-6 rounded-3xl border-2 space-y-4 ${
+                  tourAuditReport.criticalIssuesCount > 0 
+                    ? "bg-rose-50/70 border-rose-300"
+                    : tourAuditReport.warningIssuesCount > 0
+                    ? "bg-amber-50/70 border-amber-300"
+                    : "bg-emerald-50/70 border-emerald-300"
+                }`} id="tour-readiness-audit-card">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <ShieldAlert className={`w-5 h-5 ${
+                          tourAuditReport.criticalIssuesCount > 0 ? "text-rose-600" : tourAuditReport.warningIssuesCount > 0 ? "text-amber-600" : "text-emerald-600"
+                        }`} />
+                        <h4 className="text-base font-black text-slate-900 tracking-tight">
+                          Pre-Tour Flawless Execution Audit
+                        </h4>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                          tourAuditReport.criticalIssuesCount > 0 
+                            ? "bg-rose-100 text-rose-800"
+                            : tourAuditReport.warningIssuesCount > 0
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}>
+                          {tourAuditReport.rating}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 font-medium">
+                        {tourAuditReport.summaryText}
+                      </p>
+                    </div>
+
+                    {/* Live Score Gauge */}
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-2xl font-black text-slate-900 leading-none">
+                          {tourAuditReport.score}%
+                        </div>
+                        <div className="text-[10px] font-black uppercase text-slate-500">Readiness Score</div>
+                      </div>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm text-white shadow-xs ${
+                        tourAuditReport.score >= 85 ? "bg-emerald-600" : tourAuditReport.score >= 60 ? "bg-amber-500" : "bg-rose-600"
+                      }`}>
+                        {tourAuditReport.score}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Audit Issues List with 1-click jumps */}
+                  {tourAuditReport.issues.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                      {tourAuditReport.issues.map((iss) => (
+                        <div
+                          key={iss.id}
+                          className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex items-start justify-between gap-3 text-xs"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${
+                                iss.severity === "critical" ? "bg-rose-600" : iss.severity === "warning" ? "bg-amber-500" : "bg-blue-500"
+                              }`} />
+                              <span className="text-[11px] font-black">{iss.title}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 leading-tight">
+                              {iss.message}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (iss.actionStep === 3) {
+                                setActiveStageIndex(iss.stopIndex);
+                                setWizardStep(3);
+                              } else if (iss.actionStep === 4) {
+                                setActiveLodgingIndex(iss.stopIndex);
+                                setWizardStep(4);
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[11px] shrink-0 border border-indigo-200 cursor-pointer transition-colors"
+                          >
+                            {iss.actionLabel} →
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-emerald-100/60 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Zero roadblocks detected. All venues confirmed, driving transit safe, and overnight accommodations locked.</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Full Interactive Leaflet Route Map */}
@@ -3262,21 +4879,76 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
                         {/* Venue details */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1.5">
-                            <span className="text-[10px] font-black uppercase text-indigo-700 block">
-                              🏢 Confirmed Stage &amp; Venue
-                            </span>
-                            <div className="font-black text-slate-900 text-sm">
-                              {stop.selectedVenue?.name || "Pending Stage Confirmation"}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-black uppercase text-indigo-700 block">
+                                🏢 Live Music Stage &amp; Booking
+                              </span>
+                              {(() => {
+                                const vStat = stop.selectedVenue?.bookingStatus || (stop.selectedVenue?.name ? "unconfirmed" : "unconfirmed");
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleVenueStatus(i)}
+                                    className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition-colors ${
+                                      vStat === "confirmed"
+                                        ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
+                                        : vStat === "penciled"
+                                        ? "bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300"
+                                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300"
+                                    }`}
+                                    title="Click to toggle status: Unconfirmed -> Penciled -> Confirmed"
+                                  >
+                                    {vStat === "confirmed" && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                    <span>{vStat === "confirmed" ? "✓ Confirmed & Booked" : vStat === "penciled" ? "Penciled In" : "Unconfirmed Lead"}</span>
+                                  </button>
+                                );
+                              })()}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="font-black text-slate-900 text-sm">
+                                {stop.selectedVenue?.name || "Pending Stage Confirmation"}
+                              </div>
+                              {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") && (
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1">
+                                  <Lock className="w-2.5 h-2.5 stroke-[2.5]" />
+                                  <span>Private House Show</span>
+                                </span>
+                              )}
                             </div>
                             {stop.selectedVenue?.address && (
-                              <div className="text-slate-500">{stop.selectedVenue.address}</div>
+                              <div className="text-slate-500 text-[11px]">
+                                📍 {stop.selectedVenue.address}
+                                {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") && (
+                                  <span className="text-purple-600 font-bold ml-1.5">(Confidential Address)</span>
+                                )}
+                              </div>
                             )}
-                            <div className="text-[11px] text-slate-600 pt-1 flex flex-wrap gap-2">
+                            <div className="text-[11px] text-slate-600 pt-0.5 flex flex-wrap gap-x-3 gap-y-1">
                               <span>Load-in: <strong>{stop.selectedVenue?.loadInTime || "5:00 PM"}</strong></span>
                               <span>Soundcheck: <strong>{stop.selectedVenue?.soundcheckTime || "6:30 PM"}</strong></span>
                               <span>Set: <strong>{stop.selectedVenue?.setTime || "9:00 PM"}</strong></span>
                             </div>
+                            {(stop.selectedVenue?.loadInNotes || (stop.selectedVenue?.isPrivate && stop.selectedVenue?.notes)) && (
+                              <div className="text-[11px] text-purple-950 bg-purple-50 p-2 rounded-lg border border-purple-200">
+                                🚪 <strong>Door / Load-In:</strong> {stop.selectedVenue.loadInNotes || stop.selectedVenue.notes}
+                              </div>
+                            )}
+                            {stop.selectedVenue?.suggestedDonation && (
+                              <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded w-fit">
+                                🎟️ Suggested Door/Donation: {stop.selectedVenue.suggestedDonation}
+                              </div>
+                            )}
+                            {(stop.selectedVenue?.doorGuarantee || stop.selectedVenue?.doorSplitPercentage) && !stop.selectedVenue?.suggestedDonation && (
+                              <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded w-fit">
+                                💰 Deal: {stop.selectedVenue.doorGuarantee || ""} {stop.selectedVenue.doorSplitPercentage ? `(${stop.selectedVenue.doorSplitPercentage})` : ""}
+                              </div>
+                            )}
+                            {(stop.selectedVenue?.contactName || stop.selectedVenue?.contactPhone) && (
+                              <div className="text-[11px] text-slate-500">
+                                👤 {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") ? "Host" : "Contact"}: {stop.selectedVenue?.contactName || ""} {stop.selectedVenue?.contactPhone ? `(${stop.selectedVenue.contactPhone})` : ""}
+                              </div>
+                            )}
                             
                             {/* Action to design poster */}
                             {stop.selectedVenue && onSelectVenueForPoster && (
@@ -3345,6 +5017,142 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                   </div>
                 </div>
 
+                {/* Accommodations & Overnight Logistics Master Summary Table */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5" id="master-lodging-roster">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Hotel className="w-5 h-5 text-indigo-600" />
+                        <h4 className="text-lg font-black text-slate-900 tracking-tight">
+                          Accommodations &amp; Overnight Logistics Roster
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Master overnight schedule for all {stops.length} tour stops with live Expedia &amp; Booking.com pre-filled reservation links.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      {(() => {
+                        const bookedCount = stops.filter(s => Boolean(s.selectedLodging?.isBooked || s.selectedLodging?.confirmationNumber)).length;
+                        return (
+                          <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span>{bookedCount} of {stops.length} Stops Booked</span>
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px] font-black">
+                          <th className="pb-3 pr-3">Stop #</th>
+                          <th className="pb-3 pr-3">City &amp; State</th>
+                          <th className="pb-3 pr-3">Check-In / Out</th>
+                          <th className="pb-3 pr-3">Property / Lodging</th>
+                          <th className="pb-3 pr-3 text-center">Status</th>
+                          <th className="pb-3 text-right">Instant Booking</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {stops.map((st, sIdx) => {
+                          const dates = getTourStopLodgingDates(st.date);
+                          const isBooked = Boolean(st.selectedLodging?.isBooked || st.selectedLodging?.confirmationNumber);
+                          const propertyName = st.selectedLodging?.name || (st.lodgingOptions?.[0]?.name) || `Hotel in ${st.city}`;
+                          const links = generateLodgingDeepLinks({
+                            city: st.city,
+                            state: st.state,
+                            checkInDate: dates.checkIn,
+                            checkOutDate: dates.checkOut,
+                            guests: 4,
+                            lodgingName: st.selectedLodging?.name || st.lodgingOptions?.[0]?.name
+                          });
+
+                          return (
+                            <tr key={`roster-${st.id || sIdx}`} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3.5 pr-3 font-black text-slate-800">
+                                Stop {sIdx + 1}
+                              </td>
+                              <td className="py-3.5 pr-3 font-black text-slate-900">
+                                <div>{st.city}, {st.state}</div>
+                                <div className="text-[10px] font-normal text-slate-400">
+                                  {st.selectedVenue?.name || "Stage pending"}
+                                </div>
+                              </td>
+                              <td className="py-3.5 pr-3 text-slate-600">
+                                <div className="font-bold text-slate-800">{dates.checkIn}</div>
+                                <div className="text-[10px] text-slate-400">out: {dates.checkOut}</div>
+                              </td>
+                              <td className="py-3.5 pr-3">
+                                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                                  <Hotel className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span>{propertyName}</span>
+                                </div>
+                                {st.selectedLodging?.confirmationNumber && (
+                                  <div className="text-[10px] font-mono font-bold text-indigo-700">
+                                    Conf: {st.selectedLodging.confirmationNumber}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-3.5 pr-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleLodgingBooked(sIdx)}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black cursor-pointer transition-all ${
+                                    isBooked
+                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                      : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                  }`}
+                                  title="Click to toggle booked status"
+                                >
+                                  {isBooked ? (
+                                    <>
+                                      <Check className="w-3 h-3 stroke-[3]" />
+                                      <span>Booked</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Clock className="w-3 h-3" />
+                                      <span>Pending</span>
+                                    </>
+                                  )}
+                                </button>
+                              </td>
+                              <td className="py-3.5 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <a
+                                    href={links.expediaUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 shadow-2xs transition-colors shrink-0"
+                                    title="Open Expedia reservation with pre-filled gig dates"
+                                  >
+                                    <span>Expedia</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                  <a
+                                    href={links.bookingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] flex items-center gap-1 transition-colors shrink-0"
+                                    title="Open Booking.com"
+                                  >
+                                    <span>Booking</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
                 {/* Step 5 Navigation Controls */}
                 <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -3401,6 +5209,126 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           bandName={bandProfile?.name}
           onClose={() => setShowPrintModal(false)}
         />
+      )}
+
+      {/* Email Master Itinerary to Band & Crew Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    Email Master Itinerary
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Dispatch mobile-responsive HTML tour sheet with venue contacts and lodging confirmations.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setEmailDispatchResult(null);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center text-xs font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Email Form */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                  Recipient Email Addresses *
+                </label>
+                <textarea
+                  rows={3}
+                  value={recipientEmailsInput}
+                  onChange={(e) => setRecipientEmailsInput(e.target.value)}
+                  placeholder="bandmate@gmail.com, tourmanager@gmail.com, soundtech@audio.com"
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600"
+                />
+                <span className="text-[11px] text-slate-400 mt-1 block">
+                  Separate multiple band and crew email addresses with commas or newlines.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                  Crew Notes / Call Time Announcements (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={emailNotesInput}
+                  onChange={(e) => setEmailNotesInput(e.target.value)}
+                  placeholder="e.g. Van leaves Seattle rehearsal space at 9:00 AM sharp on Day 1. Bring earplugs and merch bin."
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+
+              {/* Itinerary Contents Summary */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1.5 text-slate-600">
+                <span className="font-bold text-slate-900 block flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Automated Itinerary Dossier Includes:</span>
+                </span>
+                <ul className="text-[11px] space-y-1 pl-4 list-disc text-slate-600">
+                  <li>Complete day-by-day transit route ({totalDistanceMiles} miles, gas estimates)</li>
+                  <li>Venue dossiers: direct contact phones, load-in, soundcheck &amp; set times</li>
+                  <li>Overnight lodging status with 1-click Expedia / Booking reservation links</li>
+                  <li>Master day-of-show emergency checklist &amp; settlement protocols</li>
+                </ul>
+              </div>
+
+              {emailDispatchResult?.success && (
+                <div className="p-3 bg-emerald-100 text-emerald-900 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <Check className="w-4 h-4 stroke-[3] text-emerald-700 shrink-0" />
+                  <span>Successfully dispatched tour itinerary to {emailDispatchResult.count} recipient(s)!</span>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setEmailDispatchResult(null);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendEmailItinerary}
+                disabled={isSendingEmail || !recipientEmailsInput.trim()}
+                className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-md hover:shadow-indigo-600/30 flex items-center gap-2 cursor-pointer transition-all"
+              >
+                {isSendingEmail ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Dispatching...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send Master Itinerary</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* In-App Lodging Booking & Auto-Sync Modal */}

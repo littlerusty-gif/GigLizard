@@ -24,12 +24,14 @@ export const KNOWN_CORRIDOR_CITIES: CorridorCity[] = [
   { city: "Salem", state: "OR", label: "Salem, OR", lat: 44.9429, lng: -123.0351, tier: "Connector", sceneHighlight: "Mid-valley bridge stop connecting northern and southern Oregon tours." },
   { city: "Corvallis", state: "OR", label: "Corvallis, OR", lat: 44.5646, lng: -123.2620, tier: "College Town", sceneHighlight: "OSU campus community, fertile ground for energetic touring openers." },
   { city: "Eugene", state: "OR", label: "Eugene, OR", lat: 44.0521, lng: -123.0868, tier: "Regional Stronghold", sceneHighlight: "Iconic university live music town with strong draw for indie & jam acts." },
-  { city: "Bend", state: "OR", label: "Bend, OR", lat: 44.0582, lng: -121.3153, tier: "Regional Stronghold", sceneHighlight: "Central Oregon craft beer & outdoor music scene with generous crowds." },
+  { city: "Bend", state: "OR", label: "Bend, OR", lat: 44.0582, lng: -121.3153, tier: "Regional Stronghold", sceneHighlight: "Central Oregon craft beer & outdoor music scene with generous crowds along US-97." },
+  { city: "Hood River", state: "OR", label: "Hood River, OR", lat: 45.7054, lng: -121.5215, tier: "Connector", sceneHighlight: "Columbia River Gorge craft beer, cider, and energetic indie music rooms along I-84." },
   { city: "Medford", state: "OR", label: "Medford, OR", lat: 42.3265, lng: -122.8756, tier: "Connector", sceneHighlight: "Rogue Valley tour anchor connecting Oregon into Northern California." },
   { city: "Ashland", state: "OR", label: "Ashland, OR", lat: 42.1946, lng: -122.7095, tier: "College Town", sceneHighlight: "Artistic mountain enclave with lively summer festivals and listening rooms." },
   { city: "Spokane", state: "WA", label: "Spokane, WA", lat: 47.6588, lng: -117.4260, tier: "Regional Stronghold", sceneHighlight: "Inland Northwest touring anchor connecting Washington to Idaho and Montana." },
-  { city: "Yakima", state: "WA", label: "Yakima, WA", lat: 46.6021, lng: -120.5059, tier: "Connector", sceneHighlight: "Central Washington agricultural valley hub along I-82." },
-  { city: "Wenatchee", state: "WA", label: "Wenatchee, WA", lat: 47.4235, lng: -120.3103, tier: "Connector", sceneHighlight: "Apple capital music rooms in the Cascade foothills." },
+  { city: "Yakima", state: "WA", label: "Yakima, WA", lat: 46.6021, lng: -120.5059, tier: "Connector", sceneHighlight: "Central Washington agricultural valley hub along I-82 and US-97." },
+  { city: "Ellensburg", state: "WA", label: "Ellensburg, WA", lat: 47.0006, lng: -120.5479, tier: "College Town", sceneHighlight: "Central Washington CWU college town connecting I-90 and US-97." },
+  { city: "Wenatchee", state: "WA", label: "Wenatchee, WA", lat: 47.4235, lng: -120.3103, tier: "Connector", sceneHighlight: "Apple capital music rooms in the Cascade foothills along US-97." },
   { city: "Boise", state: "ID", label: "Boise, ID", lat: 43.6150, lng: -116.2023, tier: "Regional Stronghold", sceneHighlight: "Treefort Music Fest capital, highly supportive community for touring bands." },
   { city: "Missoula", state: "MT", label: "Missoula, MT", lat: 46.8721, lng: -113.9940, tier: "College Town", sceneHighlight: "Rocky Mountain indie stronghold with dedicated college music fans." },
   { city: "Bozeman", state: "MT", label: "Bozeman, MT", lat: 45.6770, lng: -111.0429, tier: "College Town", sceneHighlight: "Bustling Montana mountain town with active student-driven live scene." },
@@ -382,5 +384,306 @@ export function recalculateStopsMetrics(stops: TourStop[], startDateStr?: string
     totalDistanceMiles,
     totalDriveTime: formatDriveTime(totalDistanceMiles),
     totalGasCost
+  };
+}
+
+export interface DuplicateReturnAnalysis {
+  isOutAndBack: boolean;
+  hasDuplicates: boolean;
+  duplicateCount: number;
+  duplicateCities: string[];
+  duplicateIndices: number[];
+  outboundCities: string[];
+  turnAroundIndex: number;
+}
+
+/**
+ * Detects duplicate stops along the return leg of an out-and-back route
+ */
+export function detectDuplicateReturnStops(stops: TourStop[]): DuplicateReturnAnalysis {
+  if (stops.length < 3) {
+    return {
+      isOutAndBack: false,
+      hasDuplicates: false,
+      duplicateCount: 0,
+      duplicateCities: [],
+      duplicateIndices: [],
+      outboundCities: [],
+      turnAroundIndex: 0
+    };
+  }
+
+  // Determine turnaround stop index:
+  let turnAroundIndex = -1;
+  for (let i = 0; i < stops.length; i++) {
+    const s = stops[i];
+    if (s.id?.toLowerCase().includes("return") || s.stopName?.toLowerCase().includes("return")) {
+      turnAroundIndex = Math.max(0, i - 1);
+      break;
+    }
+  }
+
+  const originCity = stops[0].city.toLowerCase().trim();
+  const finaleCity = stops[stops.length - 1].city.toLowerCase().trim();
+  const isOutAndBack = originCity === finaleCity || turnAroundIndex !== -1;
+
+  if (turnAroundIndex === -1) {
+    let maxDist = -1;
+    let maxIdx = 0;
+    const originCoord = findCityCoordinates(`${stops[0].city}, ${stops[0].state}`);
+    for (let i = 0; i < stops.length; i++) {
+      const c = findCityCoordinates(`${stops[i].city}, ${stops[i].state}`);
+      const dist = calculateGreatCircleDistanceMiles(originCoord.lat, originCoord.lng, c.lat, c.lng);
+      if (dist > maxDist) {
+        maxDist = dist;
+        maxIdx = i;
+      }
+    }
+    turnAroundIndex = maxIdx;
+  }
+
+  const outboundStops = stops.slice(0, turnAroundIndex + 1);
+  const outboundCities = outboundStops.map(s => s.city.trim());
+  const outboundCitySet = new Set(outboundCities.map(c => c.toLowerCase()));
+
+  // Examine stops after turnaround up to second-to-last (last stop is homecoming finale)
+  const duplicateIndices: number[] = [];
+  const duplicateCities: string[] = [];
+
+  for (let i = turnAroundIndex + 1; i < stops.length - 1; i++) {
+    const city = stops[i].city.toLowerCase().trim();
+    if (outboundCitySet.has(city)) {
+      duplicateIndices.push(i);
+      if (!duplicateCities.includes(stops[i].city)) {
+        duplicateCities.push(stops[i].city);
+      }
+    }
+  }
+
+  return {
+    isOutAndBack: isOutAndBack || duplicateIndices.length > 0,
+    hasDuplicates: duplicateIndices.length > 0,
+    duplicateCount: duplicateIndices.length,
+    duplicateCities,
+    duplicateIndices,
+    outboundCities,
+    turnAroundIndex
+  };
+}
+
+export interface RouteDiversificationResult {
+  updatedStops: TourStop[];
+  replacedPairs: Array<{
+    originalCity: string;
+    newCity: string;
+    newState: string;
+    highway: string;
+    highlight: string;
+  }>;
+  totalDistanceMiles: number;
+  totalDriveTime: string;
+  totalGasCost: number;
+}
+
+/**
+ * Automatically replaces duplicate corridor stops on the return trip
+ * with adjacent, viable secondary music markets along parallel highways/byways
+ * (e.g. Bend/US-97, Hood River/I-84, Yakima/I-82, Wenatchee, Everett).
+ */
+export function diversifyTourRoute(
+  stops: TourStop[],
+  startDateStr?: string
+): RouteDiversificationResult {
+  const analysis = detectDuplicateReturnStops(stops);
+  if (!analysis.hasDuplicates) {
+    const recal = recalculateStopsMetrics(stops, startDateStr);
+    return {
+      updatedStops: recal.updatedStops,
+      replacedPairs: [],
+      totalDistanceMiles: recal.totalDistanceMiles,
+      totalDriveTime: recal.totalDriveTime,
+      totalGasCost: recal.totalGasCost
+    };
+  }
+
+  // Set of all cities already preserved in the tour (outbound stops + non-duplicate return stops + finale)
+  const currentUsedCities = new Set<string>();
+  stops.forEach((s, idx) => {
+    if (!analysis.duplicateIndices.includes(idx)) {
+      currentUsedCities.add(s.city.toLowerCase().trim());
+    }
+  });
+
+  // Ordered candidate chains for parallel highway corridors
+  // 1. Cascadia / PNW Alternate Corridors (US-97, I-84, I-82, US-97):
+  const pnwCorridorCandidates = [
+    { city: "Bend", state: "OR", highway: "US-97 Central Oregon", highlight: "Craft beer and thriving outdoor music rooms" },
+    { city: "Hood River", state: "OR", highway: "I-84 Columbia Gorge", highlight: "Columbia River Gorge windsurfing & indie rock pubs" },
+    { city: "Yakima", state: "WA", highway: "I-82 / US-97 Central WA", highlight: "Central Washington agricultural valley live stages" },
+    { city: "Wenatchee", state: "WA", highway: "US-97 Cascade Foothills", highlight: "Apple capital music rooms in the Cascade foothills" },
+    { city: "Ellensburg", state: "WA", highway: "I-90 / US-97 College Town", highlight: "Central Washington university indie/punk circuit" },
+    { city: "Everett", state: "WA", highway: "US-2 / North Sound", highlight: "North Sound rock & metal corridor hub" },
+    { city: "Tacoma", state: "WA", highway: "Sound Corridor", highlight: "Grit City DIY scene & 6th Ave dive venues" },
+    { city: "Spokane", state: "WA", highway: "I-90 Inland NW", highlight: "Inland Northwest touring anchor" },
+    { city: "Ashland", state: "OR", highway: "Rogue Valley Byway", highlight: "Artistic mountain enclave listening rooms" }
+  ];
+
+  // 2. California Alternate Corridors (CA-99 / Central Valley & East Bay):
+  const caCorridorCandidates = [
+    { city: "Long Beach", state: "CA", highway: "SoCal Coastal/Inland", highlight: "Vibrant coastal indie & retro rooms" },
+    { city: "Bakersfield", state: "CA", highway: "CA-99 Valley", highlight: "Birthplace of the Bakersfield Sound" },
+    { city: "Fresno", state: "CA", highway: "CA-99 Central Valley", highlight: "Tower District underground and DIY shows" },
+    { city: "Oakland", state: "CA", highway: "East Bay Corridor", highlight: "Underground art and punk scene along Telegraph" },
+    { city: "Sacramento", state: "CA", highway: "Capital Highway", highlight: "Booming Midtown live music clubs" },
+    { city: "Chico", state: "CA", highway: "CA-99 North", highlight: "Rowdy and welcoming basement/club college circuit" },
+    { city: "Santa Cruz", state: "CA", highway: "Highway 1", highlight: "Legendary surf & skate punk haven" },
+    { city: "Redding", state: "CA", highway: "North I-5 Gateway", highlight: "Gateway stop connecting Northern California" }
+  ];
+
+  // 3. Mountain / Southwest Alternate:
+  const mountainCorridorCandidates = [
+    { city: "Tucson", state: "AZ", highway: "I-10 Desert", highlight: "Rich southwestern desert psych-rock enclave" },
+    { city: "Phoenix", state: "AZ", highway: "I-17 Corridor", highlight: "Valley of the Sun expansive downtown circuit" },
+    { city: "Salt Lake City", state: "UT", highway: "I-15 Crossroad", highlight: "Dedicated indie & hardcore fanbases" },
+    { city: "Reno", state: "NV", highway: "I-80 High Desert", highlight: "Active indie underground rooms" },
+    { city: "Boulder", state: "CO", highway: "US-36 Flatirons", highlight: "Student-driven live music rooms" },
+    { city: "Fort Collins", state: "CO", highway: "I-25 North", highlight: "Devoted Old Town music stages" },
+    { city: "Colorado Springs", state: "CO", highway: "I-25 South", highlight: "Pikes Peak corridor anchor" }
+  ];
+
+  // Determine dominant region from stops
+  const states = stops.map(s => s.state?.toUpperCase());
+  const isPNW = states.some(st => st === "WA" || st === "OR" || st === "BC");
+  const isCA = states.some(st => st === "CA");
+  const isMountain = states.some(st => st === "CO" || st === "AZ" || st === "UT" || st === "NV" || st === "NM");
+
+  const prioritizedCandidates = isPNW 
+    ? pnwCorridorCandidates 
+    : isCA 
+    ? caCorridorCandidates 
+    : isMountain 
+    ? mountainCorridorCandidates 
+    : [...pnwCorridorCandidates, ...caCorridorCandidates];
+
+  const updatedStops = [...stops];
+  const replacedPairs: Array<{
+    originalCity: string;
+    newCity: string;
+    newState: string;
+    highway: string;
+    highlight: string;
+  }> = [];
+
+  let candidatePtr = 0;
+
+  for (const dupIdx of analysis.duplicateIndices) {
+    const originalStop = stops[dupIdx];
+    const origCity = originalStop.city;
+
+    // Find the next available unvisited candidate
+    let chosenCandidate: { city: string; state: string; highway: string; highlight: string } | null = null;
+
+    while (candidatePtr < prioritizedCandidates.length) {
+      const cand = prioritizedCandidates[candidatePtr];
+      candidatePtr++;
+      if (!currentUsedCities.has(cand.city.toLowerCase().trim())) {
+        chosenCandidate = cand;
+        break;
+      }
+    }
+
+    // Fallback to any unvisited city in KNOWN_CORRIDOR_CITIES
+    if (!chosenCandidate) {
+      for (const kc of KNOWN_CORRIDOR_CITIES) {
+        if (!currentUsedCities.has(kc.city.toLowerCase().trim())) {
+          chosenCandidate = {
+            city: kc.city,
+            state: kc.state,
+            highway: `${kc.tier} Byway`,
+            highlight: kc.sceneHighlight
+          };
+          break;
+        }
+      }
+    }
+
+    if (chosenCandidate) {
+      currentUsedCities.add(chosenCandidate.city.toLowerCase().trim());
+
+      // Find suggested venues for replacement city
+      const matchedVenues = MUSIC_VENUES.filter(v => 
+        v.city.toLowerCase() === chosenCandidate!.city.toLowerCase() ||
+        v.city.toLowerCase().includes(chosenCandidate!.city.toLowerCase()) ||
+        chosenCandidate!.city.toLowerCase().includes(v.city.toLowerCase())
+      );
+
+      const suggestedVenues: TourVenueStop[] = matchedVenues.length > 0
+        ? matchedVenues.slice(0, 6).map(v => ({
+            id: v.id,
+            name: v.name,
+            city: v.city,
+            state: v.state || chosenCandidate!.state,
+            country: v.country || "US",
+            address: v.address,
+            capacity: v.capacity,
+            genres: v.genres,
+            contactEmail: v.contactEmail,
+            contactPhone: v.contactPhone,
+            hasPA: v.hasPA,
+            hasLighting: v.hasLighting,
+            description: v.description,
+            website: v.website
+          }))
+        : [
+            {
+              name: `${chosenCandidate.city} Live Stage & Hall`,
+              city: chosenCandidate.city,
+              state: chosenCandidate.state,
+              address: `Downtown ${chosenCandidate.city}, ${chosenCandidate.state}`,
+              capacity: 200,
+              genres: ["Indie Rock", "Live Music", "Punk"],
+              contactEmail: `booking@${chosenCandidate.city.toLowerCase().replace(/[^a-z0-9]/g, "")}live.com`,
+              contactPhone: "Inquire",
+              hasPA: true,
+              hasLighting: true,
+              description: `Centrally located live music venue in ${chosenCandidate.city}.`
+            }
+          ];
+
+      const lodgingOptions = findLodgingForCity(chosenCandidate.city, chosenCandidate.state);
+
+      updatedStops[dupIdx] = {
+        ...originalStop,
+        id: `return-loop-${chosenCandidate.city.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}-${dupIdx}`,
+        stopName: `Return Loop: ${chosenCandidate.city}`,
+        city: chosenCandidate.city,
+        state: chosenCandidate.state,
+        routeHighlight: `Diversified circular loop via ${chosenCandidate.city} (${chosenCandidate.highway}). Zero backtracking!`,
+        localSceneNotes: chosenCandidate.highlight,
+        lodgingNotes: lodgingOptions[0]?.gearSecurityNote || "Secure band parking available.",
+        lodgingOptions,
+        suggestedVenues,
+        selectedVenue: undefined,
+        selectedLodging: undefined
+      };
+
+      replacedPairs.push({
+        originalCity: origCity,
+        newCity: chosenCandidate.city,
+        newState: chosenCandidate.state,
+        highway: chosenCandidate.highway,
+        highlight: chosenCandidate.highlight
+      });
+    }
+  }
+
+  const recal = recalculateStopsMetrics(updatedStops, startDateStr);
+
+  return {
+    updatedStops: recal.updatedStops,
+    replacedPairs,
+    totalDistanceMiles: recal.totalDistanceMiles,
+    totalDriveTime: recal.totalDriveTime,
+    totalGasCost: recal.totalGasCost
   };
 }

@@ -253,21 +253,41 @@ export const TourPrintModal: React.FC<TourPrintModalProps> = ({ tourPlan, bandNa
                 {/* Venue & Schedule Column */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                   <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80">
-                    <span className="text-[10px] font-black uppercase text-indigo-700 tracking-wider flex items-center gap-1 mb-1">
-                      <Music className="w-3 h-3" />
-                      <span>Stage &amp; Performance</span>
-                    </span>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[10px] font-black uppercase text-indigo-700 tracking-wider flex items-center gap-1">
+                        <Music className="w-3 h-3" />
+                        <span>Stage &amp; Performance</span>
+                      </span>
+                      {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") && (
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                          🔒 Private House Show
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm font-extrabold text-slate-900">
                       {stop.selectedVenue?.name || (stop.suggestedVenues[0]?.name ? `${stop.suggestedVenues[0].name} (Suggested)` : "Pending Venue Selection")}
                     </p>
                     {stop.selectedVenue?.address && (
-                      <p className="text-slate-600 text-[11px] mt-0.5">{stop.selectedVenue.address}</p>
+                      <p className="text-slate-600 text-[11px] mt-0.5">
+                        {stop.selectedVenue.address}
+                        {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") && (
+                          <span className="text-purple-600 font-semibold ml-1.5">(Confidential Address)</span>
+                        )}
+                      </p>
                     )}
                     {stop.selectedVenue?.contactPhone && (
-                      <p className="text-slate-500 text-[11px] mt-0.5">Phone: {stop.selectedVenue.contactPhone}</p>
+                      <p className="text-slate-500 text-[11px] mt-0.5">
+                        {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") ? "Host Cell: " : "Phone: "}
+                        {stop.selectedVenue.contactPhone}
+                      </p>
                     )}
                     {stop.selectedVenue?.contactEmail && (
                       <p className="text-slate-500 text-[11px]">Email: {stop.selectedVenue.contactEmail}</p>
+                    )}
+                    {(stop.selectedVenue?.loadInNotes || stop.selectedVenue?.notes) && (
+                      <p className="text-slate-600 text-[11px] mt-0.5 italic">
+                        Door/Load-in: {stop.selectedVenue.loadInNotes || stop.selectedVenue.notes}
+                      </p>
                     )}
 
                     {/* Schedule times */}

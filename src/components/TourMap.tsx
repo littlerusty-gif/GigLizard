@@ -140,7 +140,7 @@ export const TourMap: React.FC<TourMapProps> = ({
   const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(activeStopIndex ?? 0);
-  const [mapStyle, setMapStyle] = useState<"standard" | "voyager" | "satellite">("voyager");
+  const [mapStyle, setMapStyle] = useState<"standard" | "topo" | "satellite">("standard");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isRoutingLoading, setIsRoutingLoading] = useState(false);
 
@@ -215,23 +215,23 @@ export const TourMap: React.FC<TourMapProps> = ({
 
     mapInstanceRef.current = map;
 
-    // Set initial tile layer (Free OpenStreetMap / CartoDB Voyager)
-    const getTileConfig = (style: "standard" | "voyager" | "satellite") => {
-      if (style === "standard") {
+    // Set initial tile layer (100% Free Public Tile Servers: OpenStreetMap, OpenTopoMap, Esri Satellite)
+    const getTileConfig = (style: "standard" | "topo" | "satellite") => {
+      if (style === "topo") {
         return {
-          url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+          attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
         };
       } else if (style === "satellite") {
         return {
           url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-          attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+          attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics'
         };
       } else {
-        // Voyager: Modern, elegant light aesthetic
+        // Standard OSM: Clean, free, unwatermarked OpenStreetMap
         return {
-          url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         };
       }
     };
@@ -265,15 +265,15 @@ export const TourMap: React.FC<TourMapProps> = ({
       mapInstanceRef.current.removeLayer(tileLayerRef.current);
     }
 
-    let url = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-    let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+    let url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+    let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-    if (mapStyle === "standard") {
-      url = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-      attribution = '&copy; OpenStreetMap contributors';
+    if (mapStyle === "topo") {
+      url = "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png";
+      attribution = 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>';
     } else if (mapStyle === "satellite") {
       url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-      attribution = '&copy; Esri World Imagery';
+      attribution = '&copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics';
     }
 
     tileLayerRef.current = L.tileLayer(url, {
@@ -558,23 +558,23 @@ export const TourMap: React.FC<TourMapProps> = ({
           <div className="inline-flex rounded-lg bg-slate-800 p-0.5 border border-slate-700 text-xs">
             <button
               type="button"
-              onClick={() => setMapStyle("voyager")}
-              className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-colors ${
-                mapStyle === "voyager" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-300 hover:text-white"
-              }`}
-              title="Clean high-contrast vector cartography"
-            >
-              Voyager
-            </button>
-            <button
-              type="button"
               onClick={() => setMapStyle("standard")}
               className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-colors ${
                 mapStyle === "standard" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-300 hover:text-white"
               }`}
-              title="Standard OpenStreetMap tiles"
+              title="Standard free OpenStreetMap tiles"
             >
               OSM
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyle("topo")}
+              className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-colors ${
+                mapStyle === "topo" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-300 hover:text-white"
+              }`}
+              title="Clean OpenTopoMap terrain and elevation contours"
+            >
+              Topo
             </button>
             <button
               type="button"
@@ -582,7 +582,7 @@ export const TourMap: React.FC<TourMapProps> = ({
               className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-colors ${
                 mapStyle === "satellite" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-300 hover:text-white"
               }`}
-              title="High-resolution aerial satellite imagery"
+              title="High-resolution Esri World Imagery satellite layer"
             >
               Satellite
             </button>

@@ -185,30 +185,240 @@ export const findLodgingForCity = (cityName: string, stateName: string): TourLod
     ];
   }
 
-  if (cityLower.includes("medford")) {
+  if (cityLower.includes("bend")) {
     return [
       {
-        id: "lodge-med-1",
-        name: "Rogue Regency Inn & Conference Center",
+        id: "lodge-bnd-1",
+        name: "McMenamins Old St. Francis School",
         type: "Band-Friendly Hotel",
-        city: "Medford",
-        address: "2300 Biddle Rd, Medford, OR",
-        estPricePerNight: "$92 - $115 / night",
-        distanceToVenues: "1.2 mi to downtown Medford live stages",
-        amenities: ["Oversized Van / Trailer Parking Lot", "Hot Breakfast Included", "Indoor Pool & Spa", "24/7 Desk"],
-        gearSecurityNote: "Very friendly to touring bands and crews with equipment trailers. Extra-large parking bays with perimeter lights.",
+        city: "Bend",
+        address: "700 NW Bond St, Bend, OR",
+        estPricePerNight: "$125 - $160 / night",
+        distanceToVenues: "0.2 mi to downtown Bend live stages & Volcanic Theatre Pub",
+        amenities: ["On-site Theater & Pub", "Soaking Pool", "Musician Atmosphere", "CCTV Parking"],
+        gearSecurityNote: "Beloved touring musician enclave in downtown Bend. Dedicated parking bays with 24/7 staff monitoring.",
         bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
       },
       {
-        id: "lodge-med-2",
-        name: "City Center Motel Medford",
+        id: "lodge-bnd-2",
+        name: "Bend KOA Journey & Van Camping",
+        type: "Van / RV Secure Parking",
+        city: "Bend",
+        address: "19230 Highway 97, Bend, OR",
+        estPricePerNight: "$42 / site",
+        distanceToVenues: "4.5 mi to downtown live rooms",
+        amenities: ["Pull-Through RV/Van Sites", "Clean Hot Showers", "Electric & Water Hookups", "Gated Security"],
+        gearSecurityNote: "Reliable KOA setup for touring vans and camper rigs with overnight security and full power for gear charging.",
+        bookingSearchUrl: `https://www.google.com/maps/search/rv+camping+${encodedCity}`
+      },
+      {
+        id: "lodge-bnd-3",
+        name: "Cascade Lodge Bend (Van-Friendly)",
         type: "Budget Motel / Inn",
-        city: "Medford",
-        address: "479 N Central Ave, Medford, OR",
-        estPricePerNight: "$65 - $80 / night",
-        distanceToVenues: "0.3 mi to Holly Theatre and local bars",
-        amenities: ["Ground-Floor Access", "Low Budget Friendly", "Quiet Courtyard Parking"],
-        gearSecurityNote: "Simple classic drive-up motel. Park your vehicle right in front of your entrance door.",
+        city: "Bend",
+        address: "515 SE 3rd St, Bend, OR",
+        estPricePerNight: "$75 - $95 / night",
+        distanceToVenues: "0.8 mi to downtown",
+        amenities: ["Ground-Floor Exterior Doors", "Spacious Van Spaces", "Free Morning Coffee"],
+        gearSecurityNote: "Classic drive-up motel along 3rd St; back your tour van right against your ground floor door.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      }
+    ];
+  }
+
+  if (cityLower.includes("hood river")) {
+    return [
+      {
+        id: "lodge-hdr-1",
+        name: "Hood River Hotel (Historic Downtown)",
+        type: "Band-Friendly Hotel",
+        city: "Hood River",
+        address: "102 Oak St, Hood River, OR",
+        estPricePerNight: "$119 - $149 / night",
+        distanceToVenues: "0.1 mi to Columbia River Gorge live rooms",
+        amenities: ["Historic Musician Vibe", "On-site Bistro & Lounge", "Central Location", "Elevator Access"],
+        gearSecurityNote: "Heart of downtown Hood River. Drop gear off in elevator-accessible rooms; secure parking available.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      },
+      {
+        id: "lodge-hdr-2",
+        name: "Columbia River Gorge / Cascade Locks KOA",
+        type: "Van / RV Secure Parking",
+        city: "Cascade Locks",
+        address: "Cascade Locks, OR (near Hood River)",
+        estPricePerNight: "$38 / site",
+        distanceToVenues: "15 min to Hood River stages",
+        amenities: ["Trailer & Camper Van Sites", "Hot Showers", "Laundry Facilities", "Night Patrol"],
+        gearSecurityNote: "Scenically located along the Gorge, quiet campground with locked gate at night for van security.",
+        bookingSearchUrl: `https://www.google.com/maps/search/koa+camping+${encodedCity}`
+      },
+      {
+        id: "lodge-hdr-3",
+        name: "Sunset Motel Hood River",
+        type: "Budget Motel / Inn",
+        city: "Hood River",
+        address: "2300 W Steuben St, Hood River, OR",
+        estPricePerNight: "$79 - $98 / night",
+        distanceToVenues: "1.2 mi to downtown",
+        amenities: ["Drive-Up Door Parking", "Gorge Mountain Views", "Trailer Friendly"],
+        gearSecurityNote: "Direct parking in front of units for visual line-of-sight overnight.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      }
+    ];
+  }
+
+  if (cityLower.includes("yakima")) {
+    return [
+      {
+        id: "lodge-yak-1",
+        name: "Hotel Maison (Yakima Downtown)",
+        type: "Band-Friendly Hotel",
+        city: "Yakima",
+        address: "321 E Yakima Ave, Yakima, WA",
+        estPricePerNight: "$110 - $135 / night",
+        distanceToVenues: "0.2 mi to Seasons Performance Hall & downtown clubs",
+        amenities: ["Boutique Historic Suites", "Gated Guest Parking", "Complimentary Breakfast", "24/7 Desk"],
+        gearSecurityNote: "Gated parking directly behind the property with security lighting. Central walking distance.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      },
+      {
+        id: "lodge-yak-2",
+        name: "Yakima Sportsman State Park Van Campground",
+        type: "Van / RV Secure Parking",
+        city: "Yakima",
+        address: "904 Keys Rd, Yakima, WA",
+        estPricePerNight: "$32 / site",
+        distanceToVenues: "3.5 mi east of downtown Yakima",
+        amenities: ["Ranger Station Patrol", "Power & Water Sites", "Clean Showers", "Night Gate"],
+        gearSecurityNote: "Peaceful riverside state park with ranger presence and gated overnight access.",
+        bookingSearchUrl: `https://www.google.com/maps/search/state+park+camping+${encodedCity}`
+      },
+      {
+        id: "lodge-yak-3",
+        name: "Oxford Suites Yakima (Riverfront)",
+        type: "Band-Friendly Hotel",
+        city: "Yakima",
+        address: "1701 E Yakima Ave, Yakima, WA",
+        estPricePerNight: "$98 - $125 / night",
+        distanceToVenues: "1.0 mi to live music circuit",
+        amenities: ["Large Van Parking Lot", "Hot Evening Reception", "High-Visibility Parking"],
+        gearSecurityNote: "Expansive front parking lot with high-intensity floodlights visible from front desk.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      }
+    ];
+  }
+
+  if (cityLower.includes("wenatchee")) {
+    return [
+      {
+        id: "lodge-wen-1",
+        name: "Coast Wenatchee Center Hotel",
+        type: "Band-Friendly Hotel",
+        city: "Wenatchee",
+        address: "201 N Wenatchee Ave, Wenatchee, WA",
+        estPricePerNight: "$105 - $130 / night",
+        distanceToVenues: "0.2 mi to Historic Numerica PAC & live stages",
+        amenities: ["Covered Garage & Surface Parking", "Indoor/Outdoor Pool", "Skybridge to PAC"],
+        gearSecurityNote: "Central downtown location with ample clearance for touring passenger vans.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      },
+      {
+        id: "lodge-wen-2",
+        name: "Wenatchee Confluence State Park Van Camp",
+        type: "Van / RV Secure Parking",
+        city: "Wenatchee",
+        address: "333 Olds Station Rd, Wenatchee, WA",
+        estPricePerNight: "$35 / site",
+        distanceToVenues: "2.5 mi from downtown",
+        amenities: ["Columbia River Frontage", "Full Hookup Sites", "Hot Showers", "Ranger Staff"],
+        gearSecurityNote: "State park camping with locked gates after 10 PM. Perfect for sleeping in van/RV.",
+        bookingSearchUrl: `https://www.google.com/maps/search/rv+campground+${encodedCity}`
+      }
+    ];
+  }
+
+  if (cityLower.includes("olympia")) {
+    return [
+      {
+        id: "lodge-oly-1",
+        name: "The Governor Hotel (Capitol Downtown)",
+        type: "Band-Friendly Hotel",
+        city: "Olympia",
+        address: "621 Capitol Way S, Olympia, WA",
+        estPricePerNight: "$105 - $135 / night",
+        distanceToVenues: "0.3 mi to Capitol Theater, Cryptatpa, & Brotherhood",
+        amenities: ["Downtown Waterfront Proximity", "Elevator Access", "Secure Night Desk"],
+        gearSecurityNote: "Right on Capitol Way; staff allows loading gear carts via elevator to guest rooms.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      },
+      {
+        id: "lodge-oly-2",
+        name: "Millersylvania State Park Secure Van Camp",
+        type: "Van / RV Secure Parking",
+        city: "Olympia",
+        address: "12245 Tilley Rd S, Olympia, WA",
+        estPricePerNight: "$35 / site",
+        distanceToVenues: "10 mi south of downtown Olympia",
+        amenities: ["Old-Growth Forest", "Hot Showers", "Gated Night Entry", "Deep Van Sites"],
+        gearSecurityNote: "Heavy forest canopy with gated ranger entrance overnight. Safe for trailer rigs.",
+        bookingSearchUrl: `https://www.google.com/maps/search/state+park+camping+${encodedCity}`
+      }
+    ];
+  }
+
+  if (cityLower.includes("salem")) {
+    return [
+      {
+        id: "lodge-slm-1",
+        name: "The Grand Hotel in Salem",
+        type: "Band-Friendly Hotel",
+        city: "Salem",
+        address: "201 Liberty St SE, Salem, OR",
+        estPricePerNight: "$129 - $155 / night",
+        distanceToVenues: "0.2 mi to Elsinore Theatre & downtown music rooms",
+        amenities: ["Attached Covered Garage", "Free Hot Breakfast", "24/7 Security Patrol"],
+        gearSecurityNote: "Garage with clearance for 15-passenger vans and on-site overnight security patrol.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      },
+      {
+        id: "lodge-slm-2",
+        name: "Salem RV Park & Van Campground",
+        type: "Van / RV Secure Parking",
+        city: "Salem",
+        address: "4490 Silverton Rd NE, Salem, OR",
+        estPricePerNight: "$40 / site",
+        distanceToVenues: "3.5 mi to downtown live venues",
+        amenities: ["Full Hookup Van Sites", "Restrooms & Showers", "Gated Overnight Entry"],
+        gearSecurityNote: "Fenced community with on-site manager and overnight security.",
+        bookingSearchUrl: `https://www.google.com/maps/search/rv+camping+${encodedCity}`
+      }
+    ];
+  }
+
+  if (cityLower.includes("everett")) {
+    return [
+      {
+        id: "lodge-evt-1",
+        name: "Hotel Indigo Everett Waterfront",
+        type: "Band-Friendly Hotel",
+        city: "Everett",
+        address: "1028 13th St, Everett, WA",
+        estPricePerNight: "$125 - $155 / night",
+        distanceToVenues: "0.8 mi to Historic Everett Theatre & downtown",
+        amenities: ["Waterfront Surface Parking", "Large Rooms", "24/7 Concierge"],
+        gearSecurityNote: "Spacious marina lot with excellent perimeter illumination and regular harbor security.",
+        bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
+      },
+      {
+        id: "lodge-evt-2",
+        name: "Travelodge by Wyndham Everett City Center",
+        type: "Budget Motel / Inn",
+        city: "Everett",
+        address: "3030 Broadway, Everett, WA",
+        estPricePerNight: "$72 - $89 / night",
+        distanceToVenues: "0.3 mi to downtown music rooms",
+        amenities: ["Ground-Floor Van Parking", "Exterior Unit Access", "Low Budget Friendly"],
+        gearSecurityNote: "Park directly in front of your ground-floor unit window.",
         bookingSearchUrl: `https://www.google.com/travel/hotels/${encodedCity}`
       }
     ];
