@@ -11,7 +11,7 @@ import {
   UserAccount
 } from "../types";
 import { MUSIC_VENUES } from "../data/venues";
-import { findLodgingForCity } from "../utils/tourLodgingData";
+import { findLodgingForCity, getCityHotelPhone } from "../utils/tourLodgingData";
 import { 
   buildDynamicGoogleMapsUrl, 
   calculateTourFinancials, 
@@ -86,7 +86,10 @@ import {
   ShieldAlert,
   Lock,
   Globe,
-  Shield
+  Shield,
+  Phone,
+  User,
+  Clipboard
 } from "lucide-react";
 
 /**
@@ -270,6 +273,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   // Step 4 City-by-City lodging navigation & confirmation snippets
   const [activeLodgingIndex, setActiveLodgingIndex] = useState(0);
   const [pastedConfirmationSnippet, setPastedConfirmationSnippet] = useState<Record<number, string>>({});
+  const [inlineHotelEditKey, setInlineHotelEditKey] = useState<string | null>(null);
 
   // In-app lodging booking modal state
   const [bookingModalStopIndex, setBookingModalStopIndex] = useState<number | null>(null);
@@ -889,29 +893,30 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   // Select venue for current stop (1-click from directory)
   const handleSelectVenueForStop = (stopIdx: number, venue: Venue) => {
     setStops(prev => {
-      const copy = [...prev];
-      const target = copy[stopIdx];
-      if (target) {
-        target.selectedVenue = {
-          id: venue.id,
-          name: venue.name,
-          city: venue.city,
-          address: venue.address || `${venue.city}, ${target.state}`,
-          contactEmail: venue.contactEmail,
-          contactPhone: venue.contactPhone,
-          capacity: venue.capacity,
-          loadInTime: target.selectedVenue?.loadInTime || "5:00 PM",
-          soundcheckTime: target.selectedVenue?.soundcheckTime || "6:30 PM",
-          doorsTime: target.selectedVenue?.doorsTime || "7:30 PM",
-          setTime: target.selectedVenue?.setTime || "9:00 PM",
-          ticketPrice: target.selectedVenue?.ticketPrice || "$12 Adv / $15 Door",
-          bookingStatus: target.selectedVenue?.bookingStatus || "confirmed",
-          doorGuarantee: target.selectedVenue?.doorGuarantee || "$350 Guarantee",
-          doorSplitPercentage: target.selectedVenue?.doorSplitPercentage || "80% Door Split",
-          website: venue.website
+      return prev.map((target, idx) => {
+        if (idx !== stopIdx) return target;
+        return {
+          ...target,
+          selectedVenue: {
+            id: venue.id,
+            name: venue.name,
+            city: venue.city,
+            address: venue.address || `${venue.city}, ${target.state}`,
+            contactEmail: venue.contactEmail,
+            contactPhone: venue.contactPhone,
+            capacity: venue.capacity,
+            loadInTime: target.selectedVenue?.loadInTime || "5:00 PM",
+            soundcheckTime: target.selectedVenue?.soundcheckTime || "6:30 PM",
+            doorsTime: target.selectedVenue?.doorsTime || "7:30 PM",
+            setTime: target.selectedVenue?.setTime || "9:00 PM",
+            ticketPrice: target.selectedVenue?.ticketPrice || "$12 Adv / $15 Door",
+            bookingStatus: target.selectedVenue?.bookingStatus || "confirmed",
+            doorGuarantee: target.selectedVenue?.doorGuarantee || "$350 Guarantee",
+            doorSplitPercentage: target.selectedVenue?.doorSplitPercentage || "80% Door Split",
+            website: venue.website
+          }
         };
-      }
-      return copy;
+      });
     });
 
     // Immediately prompt for lodging in this city!
@@ -1150,119 +1155,200 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
   };
 
   // Toggle venue booking status: unconfirmed -> penciled -> confirmed -> unconfirmed
+  // Strictly isolated to stopIdx - zero bleed-over to other stops
   const handleToggleVenueStatus = (stopIdx: number, explicitStatus?: "unconfirmed" | "penciled" | "confirmed") => {
+    let affectedCity = "";
+    let affectedLabel = "";
+    let affectedVenueName = "";
+
     setStops(prev => {
-      const copy = [...prev];
-      const target = copy[stopIdx];
-      if (target) {
-        const curStatus = target.selectedVenue?.bookingStatus || (target.selectedVenue?.name ? "unconfirmed" : "unconfirmed");
-        let nextStatus: "unconfirmed" | "penciled" | "confirmed" = explicitStatus || (
+      return prev.map((stop, idx) => {
+        if (idx !== stopIdx) {
+          // Strictly preserve other stops without modifying references
+          return stop;
+        }
+
+        const curStatus = stop.selectedVenue?.bookingStatus || (stop.selectedVenue?.name ? "unconfirmed" : "unconfirmed");
+        const nextStatus: "unconfirmed" | "penciled" | "confirmed" = explicitStatus || (
           curStatus === "unconfirmed" ? "penciled" : curStatus === "penciled" ? "confirmed" : "unconfirmed"
         );
 
-        if (!target.selectedVenue) {
-          target.selectedVenue = {
-            name: `${target.city} Stage`,
-            city: target.city,
-            address: `${target.city}, ${target.state}`,
-            bookingStatus: nextStatus
-          };
-        } else {
-          target.selectedVenue.bookingStatus = nextStatus;
-        }
+        affectedCity = stop.city;
+        affectedLabel = nextStatus === "confirmed" ? "✓ Confirmed & Booked" : nextStatus === "penciled" ? "Penciled In (Hold)" : "Unconfirmed Lead";
 
-        const label = nextStatus === "confirmed" ? "✓ Confirmed & Booked" : nextStatus === "penciled" ? "Penciled In (Hold)" : "Unconfirmed Lead";
-        triggerToast(`${target.city} Stage: ${label}`, "success");
-      }
-      return copy;
+        const currentVenue = stop.selectedVenue ? { ...stop.selectedVenue } : {
+          id: `venue-${Date.now()}-${stopIdx}`,
+          name: `${stop.city} Stage`,
+          city: stop.city,
+          address: `${stop.city}, ${stop.state}`
+        };
+
+        affectedVenueName = currentVenue.name || `${stop.city} Stage`;
+
+        return {
+          ...stop,
+          selectedVenue: {
+            ...currentVenue,
+            bookingStatus: nextStatus
+          }
+        };
+      });
     });
+
+    if (affectedCity) {
+      triggerToast(`Stop ${stopIdx + 1} (${affectedCity}): ${affectedVenueName} marked ${affectedLabel}`, "success");
+    }
   };
 
-  // Select lodging for current stop
-  const handleSelectLodgingForStop = (stopIdx: number, lodging: TourLodgingOption) => {
+  // Select lodging for current stop with auto-binding of property, address, phone, cost, and van security
+  const handleSelectLodgingForStop = (stopIdx: number, lodging: TourLodgingOption, markAsBooked = true) => {
+    let affectedCity = "";
+    let propertyName = "";
+
     setStops(prev => {
-      const copy = [...prev];
-      const target = copy[stopIdx];
-      if (target) {
-        target.selectedLodging = {
+      return prev.map((target, idx) => {
+        if (idx !== stopIdx) return target;
+        affectedCity = target.city;
+        propertyName = lodging.name;
+
+        const hotelPhone = lodging.phone || getCityHotelPhone(target.city, target.state);
+        const hotelAddress = lodging.address || `${target.city}, ${target.state}`;
+        const nightlyRate = parseNightlyRate(lodging.estPricePerNight);
+        const securityNote = lodging.gearSecurityNote || "Ground-level monitored van parking. Bring guitars and high-value gear into room.";
+        const confNum = target.selectedLodging?.confirmationNumber || (markAsBooked ? `CONF-${Date.now().toString().slice(-6)}` : "");
+
+        const updatedLodging: TourSelectedLodging = {
           id: lodging.id,
           name: lodging.name,
           type: lodging.type,
-          address: lodging.address,
-          cost: parseNightlyRate(lodging.estPricePerNight),
-          confirmationNumber: target.selectedLodging?.confirmationNumber || "",
-          gearSecurityNote: lodging.gearSecurityNote,
+          address: hotelAddress,
+          phone: hotelPhone,
+          cost: nightlyRate,
+          confirmationNumber: confNum,
+          gearSecurityNote: securityNote,
           bookingUrl: lodging.bookingSearchUrl,
-          notes: target.selectedLodging?.notes || lodging.gearSecurityNote || ""
+          notes: securityNote,
+          isBooked: markAsBooked
         };
-        if (!target.lodgingNotes && lodging.gearSecurityNote) {
-          target.lodgingNotes = lodging.gearSecurityNote;
-        }
-      }
-      return copy;
+
+        return {
+          ...target,
+          selectedLodging: updatedLodging,
+          lodgingNotes: securityNote
+        };
+      });
     });
+
+    if (affectedCity) {
+      triggerToast(
+        markAsBooked
+          ? `✓ ${propertyName} bound to ${affectedCity} itinerary (Booked & Confirmed)`
+          : `✓ ${propertyName} bound to ${affectedCity} itinerary`,
+        "success"
+      );
+    }
   };
 
-  // Update direct lodging fields (hotel name, confirmation number, budget, notes, booked state) in stop's route_data
+  // Update direct lodging fields (hotel name, confirmation number, budget, notes, address, phone, booked state) in stop's route_data
   const handleUpdateLodgingField = (
     stopIdx: number,
-    field: "name" | "confirmationNumber" | "cost" | "notes" | "address" | "type" | "isBooked" | "bookingPlatform" | "bookingUrl",
+    field: "name" | "confirmationNumber" | "cost" | "notes" | "address" | "phone" | "type" | "isBooked" | "bookingPlatform" | "bookingUrl",
     value: any
   ) => {
     setStops(prev => {
-      const copy = [...prev];
-      const target = copy[stopIdx];
-      if (target) {
-        const existing = target.selectedLodging || {
-          name: "",
+      return prev.map((target, idx) => {
+        if (idx !== stopIdx) return target;
+        const existing: TourSelectedLodging = target.selectedLodging || {
+          name: `Lodging in ${target.city}`,
           cost: 85,
           confirmationNumber: "",
-          notes: ""
+          notes: "Band overnight accommodation",
+          address: `${target.city}, ${target.state}`,
+          phone: getCityHotelPhone(target.city, target.state),
+          isBooked: false
         };
-        target.selectedLodging = {
+        const updated: TourSelectedLodging = {
           ...existing,
           [field]: value
         };
-        if (field === "notes") {
-          target.lodgingNotes = value;
-        }
-      }
-      return copy;
+        return {
+          ...target,
+          selectedLodging: updated,
+          ...(field === "notes" ? { lodgingNotes: value } : {})
+        };
+      });
     });
   };
 
-  // Toggle "Mark as Booked" across tour stops
-  const handleToggleLodgingBooked = (stopIdx: number) => {
+  // Toggle "Mark as Booked" across tour stops with auto-binding of property details
+  const handleToggleLodgingBooked = (stopIdx: number, forceState?: boolean) => {
+    let affectedCity = "";
+    let isNowBooked = false;
+    let propName = "";
+
     setStops(prev => {
-      const copy = [...prev];
-      const target = copy[stopIdx];
-      if (target) {
-        const existing = target.selectedLodging || {
-          name: `Lodging in ${target.city}`,
-          cost: 85,
-          notes: "Band overnight accommodation"
-        };
-        const nextBooked = !existing.isBooked;
-        target.selectedLodging = {
+      return prev.map((target, idx) => {
+        if (idx !== stopIdx) return target;
+        affectedCity = target.city;
+
+        const defaultOption = target.lodgingOptions?.[0];
+        const existing = target.selectedLodging;
+
+        const nextBooked = forceState !== undefined ? forceState : !(existing?.isBooked);
+        isNowBooked = nextBooked;
+
+        const name = existing?.name && !existing.name.startsWith("Lodging in ")
+          ? existing.name
+          : defaultOption?.name || `${target.city} Musician Suites & Inn`;
+        propName = name;
+
+        const address = existing?.address || defaultOption?.address || `${target.city}, ${target.state}`;
+        const phone = existing?.phone || defaultOption?.phone || getCityHotelPhone(target.city, target.state);
+        const cost = existing?.cost || (defaultOption ? parseNightlyRate(defaultOption.estPricePerNight) : 85);
+        const securityNote = existing?.gearSecurityNote || existing?.notes || defaultOption?.gearSecurityNote || "Ground-level monitored van parking. Bring high-value gear into room.";
+        const confNumber = existing?.confirmationNumber || (nextBooked ? `CONF-${Date.now().toString().slice(-6)}` : "");
+
+        const updatedLodging: TourSelectedLodging = {
           ...existing,
-          isBooked: nextBooked,
-          confirmationNumber: nextBooked && !existing.confirmationNumber ? `EXP-${Date.now().toString().slice(-6)}` : existing.confirmationNumber
+          name,
+          address,
+          phone,
+          cost,
+          confirmationNumber: confNumber,
+          gearSecurityNote: securityNote,
+          notes: securityNote,
+          isBooked: nextBooked
         };
-        triggerToast(nextBooked ? `✓ Marked ${target.city} lodging as Booked!` : `Marked ${target.city} lodging as Pending`, "success");
-      }
-      return copy;
+
+        return {
+          ...target,
+          selectedLodging: updatedLodging,
+          lodgingNotes: securityNote
+        };
+      });
     });
+
+    if (affectedCity) {
+      triggerToast(
+        isNowBooked
+          ? `✓ ${propName} marked Booked & Confirmed for ${affectedCity}!`
+          : `Marked ${affectedCity} lodging as Pending`,
+        "success"
+      );
+    }
   };
 
   // Clear lodging details for stop
   const handleClearLodgingForStop = (stopIdx: number) => {
     setStops(prev => {
-      const copy = [...prev];
-      if (copy[stopIdx]) {
-        copy[stopIdx].selectedLodging = undefined;
-        copy[stopIdx].lodgingNotes = "";
-      }
-      return copy;
+      return prev.map((target, idx) => {
+        if (idx !== stopIdx) return target;
+        return {
+          ...target,
+          selectedLodging: undefined,
+          lodgingNotes: ""
+        };
+      });
     });
   };
 
@@ -1276,6 +1362,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
       parkingNotes: string;
       notes: string;
       address?: string;
+      phone?: string;
       type?: string;
       checkIn: string;
       checkOut: string;
@@ -1284,20 +1371,30 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     let updatedStopsList: TourStop[] = [];
 
     setStops(prev => {
-      const copy = [...prev];
-      const target = copy[stopIdx];
-      if (target) {
-        target.selectedLodging = {
+      const copy = prev.map((target, idx) => {
+        if (idx !== stopIdx) return target;
+        const hotelPhone = reservation.phone || target.selectedLodging?.phone || getCityHotelPhone(target.city, target.state);
+        const hotelAddress = reservation.address || target.selectedLodging?.address || `${target.city}, ${target.state}`;
+        const securityNote = reservation.parkingNotes || reservation.notes || "Monitored van lot; bring instruments into room.";
+
+        const updatedLodging: TourSelectedLodging = {
           name: reservation.name,
           confirmationNumber: reservation.confirmationNumber,
           cost: reservation.cost,
-          gearSecurityNote: reservation.parkingNotes,
-          notes: reservation.notes,
-          address: reservation.address,
-          type: reservation.type || "Band-Friendly Hotel"
+          gearSecurityNote: securityNote,
+          notes: reservation.notes || securityNote,
+          address: hotelAddress,
+          phone: hotelPhone,
+          type: reservation.type || "Band-Friendly Hotel",
+          isBooked: true
         };
-        target.lodgingNotes = reservation.parkingNotes || reservation.notes;
-      }
+
+        return {
+          ...target,
+          selectedLodging: updatedLodging,
+          lodgingNotes: securityNote
+        };
+      });
       updatedStopsList = copy;
       return copy;
     });
@@ -4304,6 +4401,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                           {currentStop.lodgingOptions.map((opt, i) => {
+                            const optKey = opt.id || opt.name || String(i);
+                            const isEditingThisCard = inlineHotelEditKey === optKey;
                             const nightlyRate = parseNightlyRate(opt.estPricePerNight);
                             const totalCost = calculateStayCost(nightlyRate, 1);
                             const optDates = getTourStopLodgingDates(currentStop.date || checkIn);
@@ -4316,22 +4415,54 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                               lodgingName: opt.name,
                               lodgingType: opt.type
                             });
-                            const isOptBooked = Boolean(currentStop.selectedLodging?.name === opt.name && currentStop.selectedLodging?.isBooked);
+                            const isThisHotelSelected = currentStop.selectedLodging?.name === opt.name;
+                            const isOptBooked = Boolean(isThisHotelSelected && currentStop.selectedLodging?.isBooked);
+                            const phone = (isThisHotelSelected && currentStop.selectedLodging?.phone) || opt.phone || getCityHotelPhone(currentStop.city, currentStop.state);
+                            const address = (isThisHotelSelected && currentStop.selectedLodging?.address) || opt.address || `${currentStop.city}, ${currentStop.state}`;
 
                             return (
                               <div
-                                key={opt.name || i}
+                                key={optKey}
                                 className={`p-4 rounded-2xl border transition-all shadow-xs flex flex-col justify-between space-y-3 ${
                                   isOptBooked
-                                    ? "border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20"
+                                    ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20"
+                                    : isThisHotelSelected
+                                    ? "border-indigo-400 bg-indigo-50/40 ring-1 ring-indigo-400/30"
                                     : "border-slate-200 bg-white hover:border-slate-300"
                                 }`}
                               >
-                                <div className="space-y-1.5">
+                                <div className="space-y-2">
                                   <div className="flex items-start justify-between gap-2">
                                     <div>
-                                      <h5 className="font-black text-slate-900 text-sm">{opt.name}</h5>
-                                      <span className="text-xs text-slate-500">{opt.type} • {opt.address || currentStop.city}</span>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <h5 className="font-black text-slate-900 text-sm">{opt.name}</h5>
+                                        {isOptBooked ? (
+                                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                            <span>✓ BOOKED &amp; CONFIRMED</span>
+                                          </span>
+                                        ) : isThisHotelSelected ? (
+                                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                            Selected
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <span className="text-xs text-slate-500 block mt-0.5">
+                                        {opt.type} • {address}
+                                      </span>
+                                      {phone && (
+                                        <div className="text-[11px] mt-1 flex items-center gap-1">
+                                          <Phone className="w-3 h-3 text-indigo-500 shrink-0" />
+                                          <span className="text-slate-500">Front Desk:</span>
+                                          <a
+                                            href={`tel:${phone.replace(/[^\d+]/g, "")}`}
+                                            className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline"
+                                            title={`Call front desk at ${phone}`}
+                                          >
+                                            {phone}
+                                          </a>
+                                        </div>
+                                      )}
                                     </div>
                                     <div className="text-right shrink-0">
                                       <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
@@ -4349,32 +4480,194 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                       <span>{opt.gearSecurityNote}</span>
                                     </div>
                                   )}
+
+                                  {/* Quick Confirmation / Inline Hotel Details Row (User Request 2) */}
+                                  {isEditingThisCard && (
+                                    <div className="p-3 bg-white rounded-xl border border-indigo-200 shadow-2xs space-y-2 mt-2">
+                                      <div className="text-[11px] font-black uppercase text-indigo-900 flex items-center justify-between">
+                                        <span>Add / Edit Hotel Details for Itinerary</span>
+                                        <span className="text-[10px] text-slate-400 font-normal">Auto-saves to tour</span>
+                                      </div>
+
+                                      {/* Quick Paste Ingest Row */}
+                                      <div className="p-2 bg-indigo-50/70 rounded-lg border border-indigo-100 space-y-1">
+                                        <div className="flex items-center justify-between text-[10px] font-bold text-indigo-900">
+                                          <span className="flex items-center gap-1">
+                                            <Clipboard className="w-3 h-3 text-indigo-600" />
+                                            <span>Quick Paste Ingest (Confirmation Email / Text)</span>
+                                          </span>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          placeholder="Paste Expedia/Hotel receipt or confirmation email..."
+                                          className="w-full p-1.5 bg-white border border-slate-300 rounded-md text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                                          onChange={(e) => {
+                                            const text = e.target.value;
+                                            if (text.trim()) {
+                                              const parsed = parseBookingConfirmationSnippet(text);
+                                              if (parsed.confirmationNumber) {
+                                                handleUpdateLodgingField(activeLodgingIndex, "confirmationNumber", parsed.confirmationNumber);
+                                              }
+                                              if (parsed.hotelName) {
+                                                handleUpdateLodgingField(activeLodgingIndex, "name", parsed.hotelName);
+                                              }
+                                              if (parsed.totalCost) {
+                                                handleUpdateLodgingField(activeLodgingIndex, "cost", parsed.totalCost);
+                                              }
+                                              if (parsed.parkingNotes) {
+                                                handleUpdateLodgingField(activeLodgingIndex, "notes", parsed.parkingNotes);
+                                              }
+                                              handleUpdateLodgingField(activeLodgingIndex, "isBooked", true);
+                                              triggerToast("✓ Ingested confirmation details into itinerary!", "success");
+                                            }
+                                          }}
+                                        />
+                                      </div>
+
+                                      <div className="space-y-1.5">
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-slate-600 uppercase">Hotel / Motel Name</label>
+                                          <input
+                                            type="text"
+                                            value={isThisHotelSelected && currentStop.selectedLodging?.name ? currentStop.selectedLodging.name : opt.name}
+                                            onChange={(e) => {
+                                              if (!isThisHotelSelected) {
+                                                handleSelectLodgingForStop(activeLodgingIndex, opt, true);
+                                              }
+                                              handleUpdateLodgingField(activeLodgingIndex, "name", e.target.value);
+                                            }}
+                                            placeholder="Hotel Name"
+                                            className="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-slate-600 uppercase">Street Address</label>
+                                          <input
+                                            type="text"
+                                            value={(isThisHotelSelected && currentStop.selectedLodging?.address) || opt.address || `${currentStop.city}, ${currentStop.state}`}
+                                            onChange={(e) => {
+                                              if (!isThisHotelSelected) {
+                                                handleSelectLodgingForStop(activeLodgingIndex, opt, true);
+                                              }
+                                              handleUpdateLodgingField(activeLodgingIndex, "address", e.target.value);
+                                            }}
+                                            placeholder="Street Address"
+                                            className="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
+                                          />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Front Desk Phone</label>
+                                            <input
+                                              type="text"
+                                              value={(isThisHotelSelected && currentStop.selectedLodging?.phone) || phone}
+                                              onChange={(e) => {
+                                                if (!isThisHotelSelected) {
+                                                  handleSelectLodgingForStop(activeLodgingIndex, opt, true);
+                                                }
+                                                handleUpdateLodgingField(activeLodgingIndex, "phone", e.target.value);
+                                              }}
+                                              placeholder="(555) 000-0000"
+                                              className="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Confirmation / Res #</label>
+                                            <input
+                                              type="text"
+                                              value={(isThisHotelSelected && currentStop.selectedLodging?.confirmationNumber) || ""}
+                                              onChange={(e) => {
+                                                if (!isThisHotelSelected) {
+                                                  handleSelectLodgingForStop(activeLodgingIndex, opt, true);
+                                                }
+                                                handleUpdateLodgingField(activeLodgingIndex, "confirmationNumber", e.target.value);
+                                              }}
+                                              placeholder="e.g. CONF-89210"
+                                              className="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono font-bold text-indigo-700"
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between pt-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleSelectLodgingForStop(activeLodgingIndex, opt, true);
+                                            setInlineHotelEditKey(null);
+                                          }}
+                                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs inline-flex items-center gap-1 cursor-pointer"
+                                        >
+                                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                          <span>✓ Save Hotel to Itinerary</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setInlineHotelEditKey(null)}
+                                          className="text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-bold"
+                                        >
+                                          Close
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                                   <div className="flex items-center gap-2">
+                                    {!isThisHotelSelected ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          handleSelectLodgingForStop(activeLodgingIndex, opt, true);
+                                          setInlineHotelEditKey(optKey);
+                                        }}
+                                        className="px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-colors flex items-center gap-1 bg-indigo-600 text-white hover:bg-indigo-700 shadow-2xs"
+                                        title="Select this hotel and bind to itinerary as Booked & Confirmed"
+                                      >
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                        <span>Select &amp; Confirm</span>
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const nextBooked = !isOptBooked;
+                                          handleSelectLodgingForStop(activeLodgingIndex, opt, nextBooked);
+                                          if (nextBooked) {
+                                            setInlineHotelEditKey(optKey);
+                                          }
+                                        }}
+                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-colors flex items-center gap-1 ${
+                                          isOptBooked
+                                            ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs"
+                                            : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300"
+                                        }`}
+                                        title={isOptBooked ? "Click to mark pending" : "Click to mark as booked & confirmed"}
+                                      >
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                        <span>{isOptBooked ? "✓ Booked & Confirmed" : "Mark as Booked"}</span>
+                                      </button>
+                                    )}
+
                                     <button
                                       type="button"
-                                      onClick={() => handleSelectLodgingForStop(activeLodgingIndex, opt)}
-                                      className="text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
-                                    >
-                                      Fill details below ↓
-                                    </button>
-
-                                    <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 cursor-pointer select-none">
-                                      <input
-                                        type="checkbox"
-                                        checked={isOptBooked}
-                                        onChange={() => {
-                                          if (currentStop.selectedLodging?.name !== opt.name) {
-                                            handleSelectLodgingForStop(activeLodgingIndex, opt);
+                                      onClick={() => {
+                                        if (inlineHotelEditKey === optKey) {
+                                          setInlineHotelEditKey(null);
+                                        } else {
+                                          if (!isThisHotelSelected) {
+                                            handleSelectLodgingForStop(activeLodgingIndex, opt, true);
                                           }
-                                          handleToggleLodgingBooked(activeLodgingIndex);
-                                        }}
-                                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                                      />
-                                      <span>Booked</span>
-                                    </label>
+                                          setInlineHotelEditKey(optKey);
+                                        }
+                                      }}
+                                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
+                                    >
+                                      <span>{inlineHotelEditKey === optKey ? "Hide details ↑" : "Add Hotel Details ↓"}</span>
+                                    </button>
                                   </div>
 
                                   <div className="flex items-center gap-1.5">
@@ -4382,6 +4675,10 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                       href={optLinks.expediaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
+                                      onClick={() => {
+                                        handleSelectLodgingForStop(activeLodgingIndex, opt, true);
+                                        setInlineHotelEditKey(optKey);
+                                      }}
                                       className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer shrink-0"
                                       title="Reserve this property directly on Expedia with pre-filled dates"
                                     >
@@ -4455,7 +4752,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                         <div>
                           <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                            Hotel Name *
+                            Hotel / Motel Name *
                           </label>
                           <div className="relative">
                             <input
@@ -4471,7 +4768,39 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
                         <div>
                           <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                            Confirmed Reservation # *
+                            Street Address
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={currentStop.selectedLodging?.address || ""}
+                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "address", e.target.value)}
+                              placeholder={`e.g. 1024 Main St, ${currentStop.city}, ${currentStop.state}`}
+                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-emerald-600"
+                            />
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                            Front Desk Phone
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={currentStop.selectedLodging?.phone || ""}
+                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "phone", e.target.value)}
+                              placeholder="e.g. (555) 234-5678"
+                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-emerald-600"
+                            />
+                            <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                            Confirmed Reservation #
                           </label>
                           <div className="relative">
                             <input
@@ -4487,7 +4816,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
                         <div>
                           <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                            Cost ($) *
+                            Cost ($/night) *
                           </label>
                           <div className="relative">
                             <input
@@ -4530,6 +4859,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                               cost: lodging?.cost !== undefined ? lodging.cost : 85,
                               parkingNotes: lodging?.notes || currentStop.lodgingNotes || "Ground lot trailer clearance confirmed",
                               notes: lodging?.notes || "",
+                              address: lodging?.address || `${currentStop.city}, ${currentStop.state}`,
+                              phone: lodging?.phone || getCityHotelPhone(currentStop.city, currentStop.state),
                               checkIn,
                               checkOut
                             });
@@ -4757,43 +5088,178 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                     </div>
                   </div>
 
-                  {/* Audit Issues List with 1-click jumps */}
+                  {/* Audit Issues List with 1-click jumps & Inline Venue Contact Dossier */}
                   {tourAuditReport.issues.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
-                      {tourAuditReport.issues.map((iss) => (
-                        <div
-                          key={iss.id}
-                          className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex items-start justify-between gap-3 text-xs"
-                        >
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                              <span className={`w-2 h-2 rounded-full shrink-0 ${
-                                iss.severity === "critical" ? "bg-rose-600" : iss.severity === "warning" ? "bg-amber-500" : "bg-blue-500"
-                              }`} />
-                              <span className="text-[11px] font-black">{iss.title}</span>
-                            </div>
-                            <p className="text-[11px] text-slate-500 leading-tight">
-                              {iss.message}
-                            </p>
-                          </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
+                      {tourAuditReport.issues.map((iss) => {
+                        const targetStop = stops[iss.stopIndex];
+                        const venue = targetStop?.selectedVenue;
+                        const vStatus = targetStop?.venueStatus || (venue?.isPrivate ? "confirmed" : venue ? "penciled" : "unconfirmed");
+                        const isVenueIssue = (iss.category === "venue" || iss.category === "contact" || iss.category === "terms" || vStatus !== "confirmed") && iss.category !== "lodging";
+                        const isLodgingIssue = iss.category === "lodging";
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (iss.actionStep === 3) {
-                                setActiveStageIndex(iss.stopIndex);
-                                setWizardStep(3);
-                              } else if (iss.actionStep === 4) {
-                                setActiveLodgingIndex(iss.stopIndex);
-                                setWizardStep(4);
-                              }
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[11px] shrink-0 border border-indigo-200 cursor-pointer transition-colors"
+                        const phone = venue?.contactPhone || venue?.hostPhone;
+                        const email = venue?.contactEmail;
+                        const contactPerson = venue?.contactName || venue?.hostName;
+                        const isHouseShow = Boolean(venue?.isPrivate || venue?.venueType === "house_show");
+
+                        const mailSubject = encodeURIComponent(`Booking Inquiry: ${tourTitle || "Upcoming Tour"} - ${iss.stopCity} (${targetStop?.date || "Show Date"})`);
+                        const mailBody = encodeURIComponent(`Hi ${contactPerson || "Booking Team"},\n\nWe are routing our tour and would love to confirm a date with ${venue?.name || "your venue"} in ${iss.stopCity} on ${targetStop?.date || "our upcoming show date"}.\n\nPlease let us know your hold status, sound specs, and door settlement terms.\n\nTour: ${tourTitle || "Touring Artist"}\nCity: ${iss.stopCity}\nDate: ${targetStop?.date || ""}\n\nThank you!`);
+                        const mailtoHref = email ? `mailto:${email}?subject=${mailSubject}&body=${mailBody}` : undefined;
+                        const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined;
+
+                        return (
+                          <div
+                            key={iss.id}
+                            className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between gap-3 text-xs"
                           >
-                            {iss.actionLabel} →
-                          </button>
-                        </div>
-                      ))}
+                            <div className="space-y-2">
+                              {/* Header & Severity */}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                    iss.severity === "critical" ? "bg-rose-600" : iss.severity === "warning" ? "bg-amber-500" : "bg-blue-500"
+                                  }`} />
+                                  <span className="text-xs font-black">{iss.title}</span>
+                                </div>
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${
+                                  iss.severity === "critical" ? "bg-rose-100 text-rose-800 border border-rose-200" :
+                                  iss.severity === "warning" ? "bg-amber-100 text-amber-800 border border-amber-200" :
+                                  "bg-blue-100 text-blue-800 border border-blue-200"
+                                }`}>
+                                  {iss.severity}
+                                </span>
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 leading-tight">
+                                {iss.message}
+                              </p>
+
+                              {/* Inline Venue Contact Dossier for Unconfirmed/Pending Venues */}
+                              {isVenueIssue && (
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2 mt-1">
+                                  {/* Prominent Venue Name & Status */}
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1.5">
+                                      <Building className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                      <span className="font-black text-slate-900 text-xs">
+                                        {venue?.name || `No Venue Selected (${iss.stopCity})`}
+                                      </span>
+                                      {isHouseShow && (
+                                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-0.5">
+                                          <Lock className="w-2.5 h-2.5" />
+                                          <span>House Show</span>
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                      vStatus === "confirmed" ? "bg-emerald-100 text-emerald-800 border border-emerald-300" :
+                                      vStatus === "penciled" ? "bg-amber-100 text-amber-800 border border-amber-300" :
+                                      "bg-rose-100 text-rose-800 border border-rose-300"
+                                    }`}>
+                                      {vStatus === "confirmed" ? "✓ Confirmed" : vStatus === "penciled" ? "Penciled In" : "Unconfirmed Lead"}
+                                    </span>
+                                  </div>
+
+                                  {/* Primary Contact / Talent Buyer */}
+                                  {contactPerson && (
+                                    <div className="text-[11px] text-slate-700 flex items-center gap-1.5">
+                                      <User className="w-3 h-3 text-slate-400 shrink-0" />
+                                      <span>Talent Buyer / Host: <strong className="text-slate-900">{contactPerson}</strong></span>
+                                    </div>
+                                  )}
+
+                                  {/* Contact Links */}
+                                  {(phone || email) ? (
+                                    <div className="flex flex-wrap items-center gap-3 text-[11px]">
+                                      {phone && (
+                                        <a
+                                          href={telHref}
+                                          className="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline"
+                                          title={`Call ${venue?.name || "Venue"}`}
+                                        >
+                                          <Phone className="w-3 h-3 text-indigo-500" />
+                                          <span>{phone}</span>
+                                        </a>
+                                      )}
+                                      {email && (
+                                        <a
+                                          href={mailtoHref}
+                                          className="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline truncate max-w-[200px]"
+                                          title={`Email ${email}`}
+                                        >
+                                          <Mail className="w-3 h-3 text-indigo-500" />
+                                          <span className="truncate">{email}</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    venue?.name && (
+                                      <p className="text-[10px] text-slate-400 italic">
+                                        No direct booking contact phone/email on file.
+                                      </p>
+                                    )
+                                  )}
+
+                                  {/* Action Buttons Toolbar right inside that card */}
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-200">
+                                    {phone && (
+                                      <a
+                                        href={telHref}
+                                        className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-black text-[10px] uppercase border border-emerald-300 inline-flex items-center gap-1 transition-colors"
+                                      >
+                                        <Phone className="w-3 h-3" />
+                                        <span>Call Booking</span>
+                                      </a>
+                                    )}
+                                    {email && (
+                                      <a
+                                        href={mailtoHref}
+                                        className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-black text-[10px] uppercase border border-indigo-300 inline-flex items-center gap-1 transition-colors"
+                                      >
+                                        <Mail className="w-3 h-3" />
+                                        <span>Email Venue</span>
+                                      </a>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleVenueStatus(iss.stopIndex, "confirmed")}
+                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase shadow-2xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                      title={`Mark only Stop ${iss.stopIndex + 1} (${iss.stopCity}) as Confirmed & Booked`}
+                                    >
+                                      <Check className="w-3 h-3 stroke-[3]" />
+                                      <span>✓ Mark Only This Stop Booked</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Card Footer with stop indicator and 1-click jump button */}
+                            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
+                              <span className="text-[10px] font-bold text-slate-400">
+                                Stop {iss.stopIndex + 1} • {iss.stopCity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (iss.actionStep === 3) {
+                                    setActiveStageIndex(iss.stopIndex);
+                                    setWizardStep(3);
+                                  } else if (iss.actionStep === 4) {
+                                    setActiveLodgingIndex(iss.stopIndex);
+                                    setWizardStep(4);
+                                  }
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[11px] shrink-0 border border-indigo-200 cursor-pointer transition-colors"
+                              >
+                                {iss.actionLabel} →
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="p-3 bg-emerald-100/60 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2">
@@ -4965,28 +5431,74 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                             )}
                           </div>
 
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1.5">
-                            <span className="text-[10px] font-black uppercase text-slate-700 block">
-                              🛏️ Lodging &amp; Van Security
-                            </span>
-                            <div className="font-black text-slate-900">
-                              {stop.selectedLodging?.name || "Band-friendly accommodations"}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-black uppercase text-slate-700 block">
+                                🛏️ Lodging &amp; Van Security
+                              </span>
+                              {stop.selectedLodging?.isBooked || stop.selectedLodging?.confirmationNumber ? (
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 font-mono">
+                                  <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  <span>✓ BOOKED &amp; CONFIRMED</span>
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  <span>Pending Booking</span>
+                                </span>
+                              )}
                             </div>
-                            {stop.selectedLodging?.confirmationNumber && (
-                              <div className="text-[11px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded inline-block">
-                                Confirmation #: {stop.selectedLodging.confirmationNumber}
-                              </div>
-                            )}
-                            <div className="text-[11px] text-slate-600">
-                              Est. Cost: <strong>${parseNightlyRate(stop.selectedLodging?.cost || 85).toLocaleString()}/night</strong>
+
+                            {/* Property Name */}
+                            <div className="font-black text-slate-900 text-sm">
+                              {stop.selectedLodging?.name || (stop.lodgingOptions && stop.lodgingOptions[0]?.name) || `Hotel in ${stop.city}`}
                             </div>
-                            {(stop.selectedLodging?.notes || stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes) && (
-                              <div className="text-[11px] text-slate-500 italic">
-                                🔒 {stop.selectedLodging?.notes || stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes}
+
+                            {/* Street Address */}
+                            {(stop.selectedLodging?.address || stop.lodgingOptions?.[0]?.address) && (
+                              <div className="text-slate-600 text-[11px] flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span>{stop.selectedLodging?.address || stop.lodgingOptions?.[0]?.address}</span>
                               </div>
                             )}
 
-                            {/* Lodging Link and Confirmed Badge */}
+                            {/* Front Desk Phone */}
+                            {(stop.selectedLodging?.phone || stop.lodgingOptions?.[0]?.phone || getCityHotelPhone(stop.city, stop.state)) && (
+                              <div className="text-[11px] flex items-center gap-1">
+                                <Phone className="w-3 h-3 text-indigo-500 shrink-0" />
+                                <span className="text-slate-500">Front Desk:</span>
+                                <a
+                                  href={`tel:${(stop.selectedLodging?.phone || stop.lodgingOptions?.[0]?.phone || getCityHotelPhone(stop.city, stop.state)).replace(/[^\d+]/g, "")}`}
+                                  className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline"
+                                  title={`Call front desk`}
+                                >
+                                  {stop.selectedLodging?.phone || stop.lodgingOptions?.[0]?.phone || getCityHotelPhone(stop.city, stop.state)}
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Confirmation Number */}
+                            {stop.selectedLodging?.confirmationNumber && (
+                              <div className="text-[11px] font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded inline-block">
+                                Confirmation #: {stop.selectedLodging.confirmationNumber}
+                              </div>
+                            )}
+
+                            <div className="text-[11px] text-slate-600">
+                              Est. Cost: <strong>${parseNightlyRate(stop.selectedLodging?.cost || 85).toLocaleString()}/night</strong>
+                            </div>
+
+                            {/* Van & Gear Security Notes */}
+                            {(stop.selectedLodging?.gearSecurityNote || stop.selectedLodging?.notes || stop.lodgingNotes) && (
+                              <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200 flex items-start gap-1.5">
+                                <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                <span>
+                                  <strong>Van Security:</strong> {stop.selectedLodging?.gearSecurityNote || stop.selectedLodging?.notes || stop.lodgingNotes}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Lodging Action Toolbar */}
                             <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
                               <button
                                 type="button"
@@ -4994,15 +5506,30 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                 className="text-[11px] font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1 cursor-pointer transition-colors"
                               >
                                 <Hotel className="w-3.5 h-3.5 text-amber-600" />
-                                <span>{stop.selectedLodging?.name ? "Update Lodging →" : "Find Lodging →"}</span>
+                                <span>{stop.selectedLodging?.name ? "Update Lodging Details →" : "Find Lodging →"}</span>
                               </button>
 
-                              {stop.selectedLodging?.name && (
-                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                                  <Check className="w-3 h-3 stroke-[3]" />
-                                  <span>Booked &amp; Confirmed</span>
-                                </span>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleLodgingBooked(i)}
+                                className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg cursor-pointer transition-colors flex items-center gap-1 ${
+                                  stop.selectedLodging?.isBooked
+                                    ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300"
+                                    : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300"
+                                }`}
+                              >
+                                {stop.selectedLodging?.isBooked ? (
+                                  <>
+                                    <Check className="w-3 h-3 stroke-[3]" />
+                                    <span>Marked Booked</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="w-3 h-3" />
+                                    <span>Mark as Booked</span>
+                                  </>
+                                )}
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -5062,6 +5589,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                           const dates = getTourStopLodgingDates(st.date);
                           const isBooked = Boolean(st.selectedLodging?.isBooked || st.selectedLodging?.confirmationNumber);
                           const propertyName = st.selectedLodging?.name || (st.lodgingOptions?.[0]?.name) || `Hotel in ${st.city}`;
+                          const phone = st.selectedLodging?.phone || st.lodgingOptions?.[0]?.phone || getCityHotelPhone(st.city, st.state);
+                          const address = st.selectedLodging?.address || st.lodgingOptions?.[0]?.address || `${st.city}, ${st.state}`;
                           const links = generateLodgingDeepLinks({
                             city: st.city,
                             state: st.state,
@@ -5091,8 +5620,25 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                   <Hotel className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                   <span>{propertyName}</span>
                                 </div>
+                                {address && (
+                                  <div className="text-[10px] text-slate-500">
+                                    📍 {address}
+                                  </div>
+                                )}
+                                {phone && (
+                                  <div className="text-[10px]">
+                                    <a
+                                      href={`tel:${phone.replace(/[^\d+]/g, "")}`}
+                                      className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline inline-flex items-center gap-0.5"
+                                      title={`Call front desk at ${phone}`}
+                                    >
+                                      <Phone className="w-2.5 h-2.5 text-indigo-500" />
+                                      <span>{phone}</span>
+                                    </a>
+                                  </div>
+                                )}
                                 {st.selectedLodging?.confirmationNumber && (
-                                  <div className="text-[10px] font-mono font-bold text-indigo-700">
+                                  <div className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-0.5">
                                     Conf: {st.selectedLodging.confirmationNumber}
                                   </div>
                                 )}
@@ -5103,15 +5649,15 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                                   onClick={() => handleToggleLodgingBooked(sIdx)}
                                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black cursor-pointer transition-all ${
                                     isBooked
-                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                      : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
+                                      : "bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300"
                                   }`}
                                   title="Click to toggle booked status"
                                 >
                                   {isBooked ? (
                                     <>
                                       <Check className="w-3 h-3 stroke-[3]" />
-                                      <span>Booked</span>
+                                      <span>Booked &amp; Confirmed</span>
                                     </>
                                   ) : (
                                     <>

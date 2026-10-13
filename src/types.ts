@@ -138,6 +138,7 @@ export interface TourLodgingOption {
   gearSecurityNote?: string;
   bookingSearchUrl?: string;
   address?: string;
+  phone?: string;
 }
 
 export interface TourSelectedVenue {
@@ -177,6 +178,7 @@ export interface TourSelectedLodging {
   name: string;
   type?: string;
   address?: string;
+  phone?: string;
   cost?: number | string; // e.g. 95 or "$95/night"
   confirmationNumber?: string;
   checkInTime?: string;

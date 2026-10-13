@@ -1311,6 +1311,17 @@ app.post("/api/tour/email-itinerary", async (req, res) => {
         ? `<span style="background-color:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;">Penciled In</span>`
         : `<span style="background-color:#f1f5f9;color:#475569;padding:2px 8px;border-radius:12px;font-size:11px;">Unconfirmed Lead</span>`;
 
+      const defaultLodging = s.lodgingOptions && s.lodgingOptions[0] ? s.lodgingOptions[0] : null;
+      const lodgingName = (l.name && !l.name.startsWith("Lodging in "))
+        ? l.name
+        : (defaultLodging?.name || `Hotel in ${s.city}`);
+      const isLodgingBooked = Boolean(l.isBooked || l.confirmationNumber);
+      const lodgingAddress = l.address || defaultLodging?.address || `${s.city}, ${s.state}`;
+      const lodgingPhone = l.phone || defaultLodging?.phone;
+      const lodgingCost = l.cost || (defaultLodging ? defaultLodging.estPricePerNight : null);
+      const lodgingConf = l.confirmationNumber || "";
+      const lodgingSecurity = l.gearSecurityNote || l.notes || s.lodgingNotes || defaultLodging?.gearSecurityNote || "Ground-level monitored van parking. Bring high-value gear into room.";
+
       return `
         <tr style="border-bottom:1px solid #e2e8f0;">
           <td style="padding:12px 8px;vertical-align:top;font-weight:bold;color:#0f172a;">
@@ -1334,10 +1345,18 @@ app.post("/api/tour/email-itinerary", async (req, res) => {
             ${v.doorGuarantee || v.doorSplitPercentage ? `<div style="font-size:11px;color:#15803d;font-weight:bold;">Deal: ${v.doorGuarantee || ""} ${v.doorSplitPercentage ? `(${v.doorSplitPercentage})` : ""}</div>` : ""}
           </td>
           <td style="padding:12px 8px;vertical-align:top;">
-            <div style="font-weight:bold;color:#1e293b;">${l.name || "Band-friendly lodging"}</div>
-            ${l.confirmationNumber ? `<div style="font-size:11px;font-family:monospace;color:#4338ca;">Conf: ${l.confirmationNumber}</div>` : ""}
-            <div style="font-size:11px;color:#64748b;">${l.isBooked ? "✓ Room Reserved" : "Pending Booking"}</div>
-            ${l.gearSecurityNote || l.notes ? `<div style="font-size:11px;color:#b45309;">🔒 ${l.gearSecurityNote || l.notes}</div>` : ""}
+            <div style="font-weight:bold;color:#1e293b;font-size:13px;">
+              ${lodgingName}
+            </div>
+            ${isLodgingBooked 
+              ? `<div style="margin-top:2px;"><span style="background-color:#dcfce7;color:#166534;border:1px solid #86efac;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;">✓ BOOKED &amp; CONFIRMED</span></div>`
+              : `<div style="margin-top:2px;"><span style="background-color:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;">Pending Booking</span></div>`
+            }
+            ${lodgingAddress ? `<div style="color:#475569;font-size:11px;margin-top:3px;">📍 ${lodgingAddress}</div>` : ""}
+            ${lodgingPhone ? `<div style="font-size:11px;margin-top:2px;"><a href="tel:${lodgingPhone.replace(/[^\d+]/g, '')}" style="color:#2563eb;text-decoration:none;font-weight:bold;">📞 Front Desk: ${lodgingPhone}</a></div>` : ""}
+            ${lodgingCost ? `<div style="font-size:11px;color:#059669;font-weight:bold;margin-top:1px;">Rate: $${lodgingCost}/night</div>` : ""}
+            ${lodgingConf ? `<div style="font-size:11px;font-family:monospace;font-weight:bold;color:#4338ca;background-color:#eef2ff;border:1px solid #c7d2fe;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:3px;">Conf #: ${lodgingConf}</div>` : ""}
+            ${lodgingSecurity ? `<div style="font-size:11px;color:#b45309;margin-top:3px;">🔒 <strong>Van Security:</strong> ${lodgingSecurity}</div>` : ""}
           </td>
         </tr>
       `;

@@ -479,6 +479,54 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
   const [selectedFlyerFormat, setSelectedFlyerFormat] = useState<"png" | "jpg">("png");
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
+  // Helper to safely capture concert poster canvas with font safety, asset fallback, and strict try/catch/finally
+  const captureConcertPosterCanvas = async (element: HTMLElement): Promise<HTMLCanvasElement> => {
+    // Wait for fonts to finish loading with a short safety race so it never hangs
+    try {
+      if (document.fonts && document.fonts.ready) {
+        await Promise.race([
+          document.fonts.ready,
+          new Promise((resolve) => setTimeout(resolve, 500))
+        ]);
+      }
+    } catch (fontErr) {
+      console.warn("Font readiness check warning:", fontErr);
+    }
+
+    const html2canvasOptions = {
+      useCORS: true,
+      allowTaint: false,
+      scale: 2, // crisp 300 DPI equivalent
+      logging: false,
+      ignoreElements: (element: Element) => element.classList?.contains("no-export") || false
+    };
+
+    try {
+      return await html2canvas(element, html2canvasOptions);
+    } catch (primaryErr) {
+      console.warn("Primary html2canvas capture failed, falling back to local text/vector capture:", primaryErr);
+      setSaveToast({ show: true, message: "⚠️ Asset loading issue; rendering clean vectors and typography..." });
+
+      // Fallback: render with safe timeouts and ensure any failed external assets are ignored
+      return await html2canvas(element, {
+        ...html2canvasOptions,
+        imageTimeout: 1500,
+        onclone: (clonedDoc) => {
+          const frame = clonedDoc.getElementById("concert-poster-frame");
+          if (frame) {
+            const imgs = frame.querySelectorAll("img");
+            imgs.forEach((img) => {
+              if (!img.complete || img.naturalWidth === 0) {
+                img.classList.add("no-export");
+                img.style.display = "none";
+              }
+            });
+          }
+        }
+      });
+    }
+  };
+
   // 1. Download Print-Ready Poster / Handbill (PDF) - 300 DPI CMYK bleed-ready standard specs (11x17, 12x18, and 4.25x5.5)
   const handleDownloadPrintReadyPdf = async (sizeOverride?: "11x17" | "12x18" | "4.25x5.5") => {
     const size = sizeOverride || selectedPdfSize;
@@ -491,14 +539,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
     setExportNotice(`Rendering ${size === "4.25x5.5" ? "4.25\" × 5.5\" Handbill" : size} 300 DPI bleed-ready PDF...`);
     try {
       await new Promise(r => setTimeout(r, 100));
-      const canvas = await html2canvas(element, {
-        scale: 3, // 300 DPI equivalent print rasterization
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: null,
-        logging: false
-      });
-      const imgData = canvas.toDataURL("image/png");
+      const canvas = await captureConcertPosterCanvas(element);
       
       const widthInches = size === "12x18" ? 12 : size === "4.25x5.5" ? 4.25 : 11;
       const heightInches = size === "12x18" ? 18 : size === "4.25x5.5" ? 5.5 : 17;
@@ -508,6 +549,8 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
         unit: "in",
         format: [widthInches, heightInches]
       });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
 
       // Fit image into the page
       // For 4.25 x 5.5 handbill, calculate cover scaling to ensure proper bleed margins without distorting aspect ratio
@@ -530,9 +573,9 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
           drawW = heightInches * imgRatio;
           offsetX = (widthInches - drawW) / 2;
         }
-        pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH, undefined, "FAST");
+        pdf.addImage(imgData, "JPEG", offsetX, offsetY, drawW, drawH, undefined, "FAST");
       } else {
-        pdf.addImage(imgData, "PNG", 0, 0, widthInches, heightInches, undefined, "FAST");
+        pdf.addImage(imgData, "JPEG", 0, 0, widthInches, heightInches, undefined, "FAST");
       }
 
       const isHandbill = size === "4.25x5.5";
@@ -543,17 +586,25 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
         keywords: "concert poster, 11x17, 12x18, 4.25x5.5, handbill, quarter sheet, bleed ready, 300 dpi, fireball printing"
       });
 
-      const bandSlug = (config.bandName || "concert-poster")
+      const headlineBandName = (config.bandName || "")
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9]+/g, "-") || "concert";
-      pdf.save(`${bandSlug}-${isHandbill ? "4.25x5.5-handbill" : size + "-poster"}-300dpi-print-ready.pdf`);
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+
+      const pdfFileName = `${headlineBandName || "gig"}-poster-${size}.pdf`;
+      pdf.save(pdfFileName);
       
-      setExportNotice(`✓ Downloaded ${isHandbill ? "4.25\" × 5.5\" Handbill" : size} Print-Ready (PDF)!`);
-      setTimeout(() => setExportNotice(null), 4000);
+      // Green toast confirmation once file stream begins
+      setExportNotice("✓ Poster downloaded successfully");
+      setSaveToast({ show: true, message: "✓ Poster downloaded successfully" });
+      setTimeout(() => {
+        setExportNotice(null);
+        setSaveToast(null);
+      }, 4000);
     } catch (err: any) {
       console.error("Could not generate PDF:", err);
-      alert("Could not generate high-resolution PDF. Please try Web Flyer PNG/JPG or browser Local Print.");
+      setSaveToast({ show: true, message: "⚠️ Could not generate PDF. Please try Web Flyer PNG/JPG or local print." });
       setExportNotice(null);
     } finally {
       setIsExportingPdf(false);
@@ -573,18 +624,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
     setExportNotice(`Generating ${ratio === "handbill" ? "4.25:5.5 Handbill" : "web flyer"} (${format.toUpperCase()})...`);
     try {
       await new Promise(r => setTimeout(r, 100));
-      const canvas = await html2canvas(element, {
-        scale: 3, // High-res RGB rendering for Instagram, Facebook, and promo posts
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: null,
-        logging: false
-      });
-
-      const bandSlug = (config.bandName || "concert-poster")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-") || "concert";
+      const canvas = await captureConcertPosterCanvas(element);
 
       let finalCanvas = canvas;
       if (ratio === "handbill") {
@@ -612,33 +652,30 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
         }
       }
 
-      let dataUrl: string;
-      if (format === "jpg") {
-        const jpgCanvas = document.createElement("canvas");
-        jpgCanvas.width = finalCanvas.width;
-        jpgCanvas.height = finalCanvas.height;
-        const ctx = jpgCanvas.getContext("2d");
-        if (ctx) {
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, jpgCanvas.width, jpgCanvas.height);
-          ctx.drawImage(finalCanvas, 0, 0);
-        }
-        dataUrl = jpgCanvas.toDataURL("image/jpeg", 0.95);
-      } else {
-        dataUrl = finalCanvas.toDataURL("image/png");
-      }
+      const headlineBandName = (config.bandName || "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
 
+      // Reliable programmatic anchor download helper
       const link = document.createElement("a");
-      const filenameSuffix = ratio === "handbill" ? "4.25x5.5-handbill" : "web-flyer";
-      link.download = `${bandSlug}-${filenameSuffix}-${format.toLowerCase()}.${format}`;
-      link.href = dataUrl;
+      link.download = `${headlineBandName || "gig"}-flyer.${format === "jpg" ? "jpg" : "png"}`;
+      link.href = finalCanvas.toDataURL(format === "jpg" ? "image/jpeg" : "image/png", 0.95);
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
-      setExportNotice(`✓ Downloaded ${ratio === "handbill" ? "4.25\" × 5.5\" Handbill" : "High-Res Web Flyer"} (${format.toUpperCase()})!`);
-      setTimeout(() => setExportNotice(null), 4000);
+      // Green toast confirmation once file stream begins
+      setExportNotice("✓ Poster downloaded successfully");
+      setSaveToast({ show: true, message: "✓ Poster downloaded successfully" });
+      setTimeout(() => {
+        setExportNotice(null);
+        setSaveToast(null);
+      }, 4000);
     } catch (err: any) {
       console.error("Could not capture flyer:", err);
-      alert("Could not generate flyer download. Try Local Print or PDF export.");
+      setSaveToast({ show: true, message: "⚠️ Could not generate flyer. Try PDF export or Local Print." });
       setExportNotice(null);
     } finally {
       setIsExportingFlyer(false);
@@ -1236,7 +1273,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
                     type="button"
                     id="btn-poster-download-pdf"
                     onClick={() => handleDownloadPrintReadyPdf()}
-                    disabled={isExportingPdf}
+                    disabled={isExportingPdf || isExportingFlyer}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {isExportingPdf ? (
@@ -1334,7 +1371,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
                     type="button"
                     id="btn-poster-download-web-flyer"
                     onClick={() => handleDownloadWebFlyer()}
-                    disabled={isExportingFlyer}
+                    disabled={isExportingPdf || isExportingFlyer}
                     className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {isExportingFlyer ? (
@@ -1405,7 +1442,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
               type="button"
               id="btn-quick-download-pdf"
               onClick={() => handleDownloadPrintReadyPdf()}
-              disabled={isExportingPdf}
+              disabled={isExportingPdf || isExportingFlyer}
               className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
               title="Download 300 DPI CMYK bleed-ready PDF (11x17, 12x18, or 4.25x5.5)"
             >
@@ -1427,7 +1464,7 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
               type="button"
               id="btn-quick-download-flyer"
               onClick={() => handleDownloadWebFlyer()}
-              disabled={isExportingFlyer}
+              disabled={isExportingPdf || isExportingFlyer}
               className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
               title="Download high-resolution RGB flyer for Instagram, Facebook, and handbill sharing"
             >
@@ -1749,6 +1786,14 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
             {renderFireballCard()}
           </div>
         </div>
+
+        {/* Floating Download / Save Confirmation Toast */}
+        {saveToast?.show && (
+          <div className="fixed bottom-6 right-6 z-50 bg-emerald-700 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-2xl border border-emerald-600 flex items-center gap-2 animate-fade-in pointer-events-none">
+            <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
+            <span>{saveToast.message}</span>
+          </div>
+        )}
       </div>
     );
   }

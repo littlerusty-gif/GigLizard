@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Info,
   CheckCircle2,
-  Navigation
+  Navigation,
+  Phone
 } from "lucide-react";
 
 interface TourPrintModalProps {
@@ -324,11 +325,24 @@ export const TourPrintModal: React.FC<TourPrintModalProps> = ({ tourPlan, bandNa
                       <Shield className="w-3 h-3" />
                       <span>Lodging &amp; Van Security</span>
                     </span>
-                    <p className="text-sm font-extrabold text-slate-900">
-                      {stop.selectedLodging?.name || (stop.lodgingOptions && stop.lodgingOptions[0]?.name ? `${stop.lodgingOptions[0].name} (Suggested)` : "Pending Lodging Selection")}
-                    </p>
+                    <div className="flex items-center justify-between gap-1 flex-wrap">
+                      <p className="text-sm font-extrabold text-slate-900">
+                        {stop.selectedLodging?.name || (stop.lodgingOptions && stop.lodgingOptions[0]?.name ? `${stop.lodgingOptions[0].name} (Suggested)` : "Pending Lodging Selection")}
+                      </p>
+                      {stop.selectedLodging?.isBooked || stop.selectedLodging?.confirmationNumber ? (
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          ✓ Booked &amp; Confirmed
+                        </span>
+                      ) : null}
+                    </div>
                     {stop.selectedLodging?.address && (
-                      <p className="text-slate-600 text-[11px] mt-0.5">{stop.selectedLodging.address}</p>
+                      <p className="text-slate-600 text-[11px] mt-0.5">📍 {stop.selectedLodging.address}</p>
+                    )}
+                    {stop.selectedLodging?.phone && (
+                      <p className="text-indigo-600 text-[11px] font-bold mt-0.5 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        <span>Front Desk: {stop.selectedLodging.phone}</span>
+                      </p>
                     )}
                     {stop.selectedLodging?.cost && (
                       <p className="text-slate-700 text-[11px] font-bold mt-0.5">Rate: ${stop.selectedLodging.cost}/night</p>

@@ -183,6 +183,7 @@ interface TourLodgingModalProps {
       parkingNotes: string;
       notes: string;
       address?: string;
+      phone?: string;
       type?: string;
       checkIn: string;
       checkOut: string;

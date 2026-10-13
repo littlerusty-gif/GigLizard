@@ -121,8 +121,11 @@ export const formatPersonalizedItineraryText = (
 
     // Lodging Info
     if (stop.selectedLodging) {
-      lines.push(`• 🛏️ LODGING: ${stop.selectedLodging.name} (${stop.selectedLodging.type || "Stay"})`);
+      const isBooked = Boolean(stop.selectedLodging.isBooked || stop.selectedLodging.confirmationNumber);
+      const bookedTag = isBooked ? "[✓ BOOKED & CONFIRMED] " : "[PENDING BOOKING] ";
+      lines.push(`• 🛏️ LODGING: ${bookedTag}${stop.selectedLodging.name} (${stop.selectedLodging.type || "Stay"})`);
       if (stop.selectedLodging.address) lines.push(`  Address: ${stop.selectedLodging.address}`);
+      if (stop.selectedLodging.phone) lines.push(`  Front Desk Phone: ${stop.selectedLodging.phone}`);
       if (stop.selectedLodging.cost) lines.push(`  Cost: $${stop.selectedLodging.cost}`);
       if (stop.selectedLodging.confirmationNumber) lines.push(`  Confirmation #: ${stop.selectedLodging.confirmationNumber}`);
       if (stop.selectedLodging.gearSecurityNote) lines.push(`  Van/Gear Security: ${stop.selectedLodging.gearSecurityNote}`);

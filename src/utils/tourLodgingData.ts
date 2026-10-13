@@ -452,3 +452,19 @@ export const findLodgingForCity = (cityName: string, stateName: string): TourLod
     }
   ];
 };
+
+export const getCityHotelPhone = (cityName: string, stateName?: string): string => {
+  const city = (cityName || "").toLowerCase();
+  if (city.includes("seattle")) return "(206) 555-0184";
+  if (city.includes("bellingham")) return "(360) 555-0142";
+  if (city.includes("portland")) return "(503) 555-0193";
+  if (city.includes("eugene")) return "(541) 555-0176";
+  if (city.includes("tacoma")) return "(253) 555-0129";
+  if (city.includes("medford") || city.includes("ashland")) return "(541) 555-0164";
+  if (city.includes("spokane")) return "(509) 555-0188";
+  if (city.includes("boise")) return "(208) 555-0171";
+  if (city.includes("olympia")) return "(360) 555-0112";
+  if (city.includes("bend")) return "(541) 555-0133";
+  if (city.includes("everett")) return "(425) 555-0155";
+  return "(800) 555-0199";
+};
