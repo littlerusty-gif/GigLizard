@@ -11,6 +11,7 @@ import { getRatingStats } from "../utils/reviewsManager";
 import { sanitizeInputText, escapeRegexSpecial, detectAutomatedBot, checkRapidHarvestingAttempt } from "../utils/antiScrape";
 import { getOwnerVenueEdits, getOwnerDeletedVenueIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
 import { fetchProfiles, profileToVenue, getCachedProfiles, insertProfile } from "../lib/supabase";
+import { CONTINENTAL_US_STATES } from "../constants/states";
 
 interface VenueDirectoryProps {
   onSelectVenueForPoster: (venue: Venue) => void;
@@ -307,14 +308,14 @@ export default function VenueDirectory({
     // 1. Genre filter
     const matchesGenre = selectedGenre === "All" || venue.genres.includes(selectedGenre);
     
-    // 2. State filter (Washington, Oregon, Other)
+    // 2. State filter (All 48 continental states + DC)
     let matchesState = true;
-    if (selectedState === "WA") {
-      matchesState = venue.address.includes(", WA") || venue.city.includes("WA") || venue.id.startsWith("wa-");
-    } else if (selectedState === "OR") {
-      matchesState = venue.address.includes(", OR") || venue.city.includes("OR") || venue.id.startsWith("or-");
-    } else if (selectedState === "OTHER") {
-      matchesState = !(venue.address.includes(", WA") || venue.address.includes(", OR") || venue.id.startsWith("wa-") || venue.id.startsWith("or-"));
+    if (selectedState !== "All") {
+      const st = selectedState.toUpperCase();
+      matchesState = (venue.state?.toUpperCase() === st) ||
+        venue.address.toUpperCase().includes(`, ${st}`) ||
+        venue.city.toUpperCase().includes(`, ${st}`) ||
+        venue.id.toLowerCase().startsWith(`${st.toLowerCase()}-`);
     }
 
     // 3. Search match
@@ -652,10 +653,12 @@ export default function VenueDirectory({
               onChange={(e) => setSelectedState(e.target.value)}
               className="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-800"
             >
-              <option value="All">All Regions / States</option>
-              <option value="WA">🌲 Washington State (105+)</option>
-              <option value="OR">🌲 Oregon (105+)</option>
-              <option value="OTHER">🇺🇸 National / Other</option>
+              <option value="All">All 48 States (+ DC)</option>
+              {CONTINENTAL_US_STATES.map((st) => (
+                <option key={st.code} value={st.code}>
+                  {st.code} - {st.name}
+                </option>
+              ))}
             </select>
           </div>
 

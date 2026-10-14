@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { TourStop } from "../types";
 import { MapPin, Calendar, Clock, Fuel, X, Save, Edit3 } from "lucide-react";
+import { CONTINENTAL_US_STATES, parseFreeformCityState } from "../constants/states";
 
 interface EditStopModalProps {
   stop: TourStop;
@@ -62,7 +63,7 @@ export const EditStopModal: React.FC<EditStopModalProps> = ({ stop, onSave, onCl
             </div>
             <div>
               <h2 className="text-base font-black tracking-tight">Edit Tour Stop Details</h2>
-              <p className="text-xs text-slate-300">Customize city, date, mileage, and travel time</p>
+              <p className="text-xs text-slate-300">Customize city, date, mileage, and travel time across Lower 48</p>
             </div>
           </div>
           <button 
@@ -93,20 +94,34 @@ export const EditStopModal: React.FC<EditStopModalProps> = ({ stop, onSave, onCl
                 type="text"
                 required
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Portland"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.includes(",") || val.includes(" ")) {
+                    const parsed = parseFreeformCityState(val, state || "WA");
+                    setCity(parsed.city);
+                    if (parsed.state) setState(parsed.state);
+                  } else {
+                    setCity(val);
+                  }
+                }}
+                placeholder="e.g. Portland or Austin, TX"
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
               />
             </div>
             <div>
               <label className="block font-bold text-slate-700 mb-1">State</label>
-              <input
-                type="text"
+              <select
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                placeholder="e.g. OR"
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 uppercase"
-              />
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-bold text-slate-800"
+              >
+                <option value="">Select State...</option>
+                {CONTINENTAL_US_STATES.map((st) => (
+                  <option key={st.code} value={st.code}>
+                    {st.code} - {st.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

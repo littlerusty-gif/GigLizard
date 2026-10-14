@@ -1,20 +1,265 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { TourStop, TourVenueStop, TourSelectedVenue, Venue } from "../types";
 import { MUSIC_VENUES } from "../data/venues";
-import { Search, Building, MapPin, Check, Plus, X, Users, DollarSign, Clock, Mail, Phone, ExternalLink } from "lucide-react";
+import { getMergedVenuesList } from "../utils/directoryStore";
+import { Search, Building, MapPin, Check, Plus, X, Users, DollarSign, Clock, Mail, Phone, ExternalLink, Loader2, Filter } from "lucide-react";
 import RatingStars from "./RatingStars";
 import { getRatingStats } from "../utils/reviewsManager";
+import { supabase } from "../lib/supabase";
+import { CONTINENTAL_US_STATES, parseFreeformCityState, STATE_NAME_TO_CODE_MAP } from "../constants/states";
 
-
-interface VenuePickerModalProps {
+export interface VenuePickerModalProps {
+  isOpen?: boolean;
   stop: TourStop;
   onSave: (selectedVenue: TourSelectedVenue) => void;
   onClose: () => void;
+  suggestedVenues?: Venue[];
+  loadVenuesForStageCity?: (cityName: string, stateName?: string) => Promise<Venue[]>;
+  cityName?: string;
+  allVenues?: Venue[];
+  directoryVenues?: Venue[];
 }
 
-export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave, onClose }) => {
+export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ 
+  isOpen = true,
+  stop, 
+  onSave, 
+  onClose,
+  suggestedVenues,
+  loadVenuesForStageCity,
+  cityName,
+  allVenues: propAllVenues,
+  directoryVenues: propDirectoryVenues
+}) => {
   const [activeTab, setActiveTab] = useState<"suggested" | "directory" | "custom">("suggested");
   const [searchQuery, setSearchQuery] = useState("");
+  const [directoryStateFilter, setDirectoryStateFilter] = useState("All");
+
+  // 1. Resolve in-memory venues directory (132+ items from props, directoryStore, or MUSIC_VENUES)
+  const allVenues = useMemo(() => {
+    if (propAllVenues && propAllVenues.length > 0) return propAllVenues;
+    if (propDirectoryVenues && propDirectoryVenues.length > 0) return propDirectoryVenues;
+    const merged = getMergedVenuesList();
+    if (merged && merged.length > 0) return merged;
+    return MUSIC_VENUES;
+  }, [propAllVenues, propDirectoryVenues]);
+
+  const parsed = parseFreeformCityState(cityName || `${stop.city || ""}, ${stop.state || ""}`);
+  const targetCityName = (parsed.city || cityName || stop.city || "").trim();
+  const targetStateName = (parsed.state || stop.state || "").trim();
+  const stateCode = (STATE_NAME_TO_CODE_MAP[targetStateName.toLowerCase()] || targetStateName).trim();
+
+  const effectiveCity = targetCityName;
+  const effectiveState = targetStateName;
+
+  // 1. Instant In-Memory Filter (0ms Latency):
+  // Since all venues are already loaded into memory (allVenues or directoryVenues showing 132 items),
+  // derive suggestedVenuesList immediately from that local array
+  const matched = useMemo(() => {
+    if (!allVenues || allVenues.length === 0) return [];
+    const cName = targetCityName.toLowerCase();
+    const sName = targetStateName.toLowerCase();
+    const sCode = stateCode.toLowerCase();
+
+    return allVenues.filter(v => {
+      const vCity = (v.city || "").trim().toLowerCase();
+      const vState = (v.state || "").trim().toLowerCase();
+
+      const cityMatches = vCity === cName || 
+        vCity.replace(/\./g, "") === cName.replace(/\./g, "");
+
+      const stateMatches = !sName || 
+        vState === sName || 
+        vState === sCode ||
+        (STATE_NAME_TO_CODE_MAP[vState] && STATE_NAME_TO_CODE_MAP[vState].toLowerCase() === sCode) ||
+        (STATE_NAME_TO_CODE_MAP[sName] && STATE_NAME_TO_CODE_MAP[sName].toLowerCase() === vState);
+
+      return cityMatches && stateMatches;
+    });
+  }, [allVenues, targetCityName, targetStateName, stateCode]);
+
+  // Suggested venues state with immediate local matching
+  const [suggestedVenuesList, setSuggestedVenuesList] = useState<Venue[]>(() => {
+    if (suggestedVenues && suggestedVenues.length > 0) return suggestedVenues;
+    if (stop.suggestedVenues && stop.suggestedVenues.length > 0) return stop.suggestedVenues as any;
+    if (allVenues && allVenues.length > 0) {
+      return matched;
+    }
+    return [];
+  });
+
+  // Synchronously set isLoadingSuggested to false if allVenues is present
+  const [isLoadingSuggested, setIsLoadingSuggested] = useState<boolean>(() => {
+    if (allVenues && allVenues.length > 0) return false;
+    if (suggestedVenues && suggestedVenues.length > 0) return false;
+    if (stop.suggestedVenues && stop.suggestedVenues.length > 0) return false;
+    return true;
+  });
+
+  // Browse All Directory venues state directly initialized with live in-memory pool (132 items)
+  const [allDirectoryVenues, setAllDirectoryVenues] = useState<Venue[]>(() => {
+    return allVenues && allVenues.length > 0 ? allVenues : [];
+  });
+  const [isLoadingDirectory, setIsLoadingDirectory] = useState(false);
+
+  // Synchronous in-memory derivation & fallback network query
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (suggestedVenues && suggestedVenues.length > 0) {
+      setSuggestedVenuesList(suggestedVenues);
+      setIsLoadingSuggested(false);
+      return;
+    }
+    if (stop.suggestedVenues && stop.suggestedVenues.length > 0) {
+      setSuggestedVenuesList(stop.suggestedVenues as any);
+      setIsLoadingSuggested(false);
+      return;
+    }
+
+    // 1. Instant In-Memory Filter (0ms Latency):
+    // If allVenues is already populated in memory, set synchronously and do NOT block on network
+    if (allVenues && allVenues.length > 0) {
+      setSuggestedVenuesList(matched);
+      setIsLoadingSuggested(false);
+      return;
+    }
+
+    // 2. Fallback Network Query with Index Support:
+    // If allVenues is not yet populated, query Supabase using exact equality first
+    // (.eq('state', stateName.trim()).ilike('city', cityName.trim())) to utilize the index.
+    let isMounted = true;
+    setIsLoadingSuggested(true);
+
+    async function loadFallbackVenues() {
+      try {
+        let results: Venue[] = [];
+
+        if (loadVenuesForStageCity) {
+          try {
+            results = await loadVenuesForStageCity(targetCityName, targetStateName);
+          } catch (e) {
+            console.warn("loadVenuesForStageCity handler error:", e);
+          }
+        }
+
+        if (!results || results.length === 0) {
+          try {
+            const queryState = stateCode || targetStateName;
+            let query = supabase.from("venues").select("*");
+
+            if (queryState) {
+              query = query.eq("state", queryState.trim());
+            }
+            if (targetCityName) {
+              query = query.ilike("city", targetCityName.trim());
+            }
+
+            const { data, error } = await query;
+            if (error) {
+              console.error("Supabase indexed venue query error:", error);
+            } else if (data && Array.isArray(data) && data.length > 0) {
+              results = data.map((v: any) => ({
+                id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
+                name: v.name || "Live Venue",
+                city: v.city || targetCityName,
+                state: v.state || targetStateName,
+                country: v.state?.toUpperCase() === "BC" ? "CA" : "US",
+                address: v.address || `${v.city || targetCityName}, ${v.state || targetStateName}`.trim(),
+                capacity: Number(v.capacity) || 150,
+                genres: Array.isArray(v.genres_accepted)
+                  ? v.genres_accepted
+                  : (v.genres_accepted ? String(v.genres_accepted).split(",").map((g: string) => g.trim()) : ["Live Music"]),
+                contactEmail: v.official_email || v.booking_email || v.email || "",
+                official_email: v.official_email || v.booking_email || v.email || "",
+                contactPhone: v.phone || v.contact_phone || "Inquire",
+                website: v.website || undefined,
+                hasPA: true,
+                hasLighting: true,
+                description: v.description || `Live music venue located in ${v.city || targetCityName}.`
+              }));
+            }
+          } catch (err) {
+            console.error("Supabase indexed venue fetch error:", err);
+          }
+        }
+
+        if (isMounted) {
+          setSuggestedVenuesList(results || []);
+        }
+      } catch (err) {
+        console.error("Failed to load suggested venues:", err);
+        if (isMounted) {
+          setSuggestedVenuesList([]);
+        }
+      } finally {
+        // Always ensure setIsLoadingSuggested(false) is called in a finally block
+        // so that towns with 0 venues (like Everett) immediately show the empty state card instead of freezing
+        if (isMounted) {
+          setIsLoadingSuggested(false);
+        }
+      }
+    }
+
+    loadFallbackVenues();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, suggestedVenues, stop.suggestedVenues, allVenues, matched, targetCityName, targetStateName, stateCode, loadVenuesForStageCity]);
+
+  // Sync background live Supabase directory without blocking user
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchAllDirectoryVenues() {
+      if (!allVenues || allVenues.length === 0) {
+        setIsLoadingDirectory(true);
+      }
+      try {
+        const { data, error } = await supabase
+          .from("venues")
+          .select("*")
+          .order("name", { ascending: true });
+
+        if (error) {
+          console.error("Supabase directory fetch error:", error);
+        } else if (data && Array.isArray(data) && isMounted && data.length > 0) {
+          const mapped: Venue[] = data.map((v: any) => ({
+            id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
+            name: v.name || "Live Venue",
+            city: v.city || "",
+            state: v.state || "",
+            country: v.state?.toUpperCase() === "BC" ? "CA" : "US",
+            address: v.address || `${v.city}, ${v.state}`.trim(),
+            capacity: Number(v.capacity) || 150,
+            genres: Array.isArray(v.genres_accepted)
+              ? v.genres_accepted
+              : (v.genres_accepted ? String(v.genres_accepted).split(",").map((g: string) => g.trim()) : ["Live Music"]),
+            contactEmail: v.official_email || v.booking_email || v.email || "",
+            official_email: v.official_email || v.booking_email || v.email || "",
+            contactPhone: v.phone || v.contact_phone || "Inquire",
+            website: v.website || undefined,
+            hasPA: true,
+            hasLighting: true,
+            description: v.description || `Live music venue located in ${v.city}.`
+          }));
+          setAllDirectoryVenues(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching all directory venues:", err);
+      } finally {
+        if (isMounted) setIsLoadingDirectory(false);
+      }
+    }
+
+    if (isOpen) {
+      fetchAllDirectoryVenues();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, allVenues]);
 
   // Custom venue form state
   const [customName, setCustomName] = useState(stop.selectedVenue?.name || "");
@@ -29,26 +274,18 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
   const [customTicketPrice, setCustomTicketPrice] = useState(stop.selectedVenue?.ticketPrice || "$12 Adv / $15 Door");
   const [customNotes, setCustomNotes] = useState(stop.selectedVenue?.notes || "");
 
-  // All venues from data + local custom
-  const allDirectoryVenues: Venue[] = (() => {
-    const customVenues = (() => {
-      const saved = localStorage.getItem("custom_venues_v1");
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { return []; }
-      }
-      return [];
-    })();
-    return [...MUSIC_VENUES, ...customVenues];
-  })();
-
+  // Directory filter: Live text search & State filter across all verified venues in the database
   const filteredDirectoryVenues = allDirectoryVenues.filter(v => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) {
-      return v.city.toLowerCase().includes(stop.city.toLowerCase());
+    if (directoryStateFilter !== "All" && v.state?.toUpperCase() !== directoryStateFilter.toUpperCase()) {
+      return false;
     }
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
     return (
       v.name.toLowerCase().includes(q) ||
-      v.city.toLowerCase().includes(q) ||
+      (v.city && v.city.toLowerCase().includes(q)) ||
+      (v.state && v.state.toLowerCase().includes(q)) ||
+      (v.address && v.address.toLowerCase().includes(q)) ||
       (v.genres && v.genres.some(g => g.toLowerCase().includes(q)))
     );
   });
@@ -67,6 +304,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
       doorsTime: customDoors || "7:30 PM",
       setTime: customSetTime || "9:00 PM - 10:30 PM",
       ticketPrice: customTicketPrice || "$15 Adv / $18 Door",
+      bookingStatus: "penciled",
       notes: (venue as any).description || customNotes
     });
   };
@@ -87,6 +325,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
       doorsTime: customDoors,
       setTime: customSetTime,
       ticketPrice: customTicketPrice,
+      bookingStatus: "penciled",
       notes: customNotes
     });
   };
@@ -231,7 +470,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            Suggested ({stop.suggestedVenues?.length || 0})
+            Suggested ({suggestedVenuesList.length})
           </button>
           <button
             type="button"
@@ -242,7 +481,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            Browse All Directory
+            Browse All Directory {allDirectoryVenues.length > 0 ? `(${allDirectoryVenues.length})` : ""}
           </button>
           <button
             type="button"
@@ -253,7 +492,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            Custom Venue & Run-of-Show
+            Custom Venue &amp; Run-of-Show
           </button>
         </div>
 
@@ -261,11 +500,20 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {activeTab === "suggested" && (
             <div className="space-y-3">
-              <p className="text-xs text-slate-500 font-medium mb-3">
-                Curated live stages in {stop.city} matched to your genre and tour routing:
-              </p>
-              {stop.suggestedVenues && stop.suggestedVenues.length > 0 ? (
-                stop.suggestedVenues.map((v, i) => {
+              <div className="flex items-center justify-between pb-1">
+                <p className="text-xs text-slate-600 font-medium">
+                  Curated live stages in {stop.city}, {stop.state} matched to your tour routing:
+                </p>
+                {suggestedVenuesList.length > 0 && (
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                    {suggestedVenuesList.length} options found
+                  </span>
+                )}
+              </div>
+
+              {/* If suggestedVenuesList.length > 0, show the rooms immediately without showing spinner */}
+              {suggestedVenuesList.length > 0 ? (
+                suggestedVenuesList.map((v, i) => {
                   const isSelected = stop.selectedVenue?.name === v.name;
                   const stats = getRatingStats(v.id || "", v.name, "venue");
                   return (
@@ -279,11 +527,16 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">{v.name}</h3>
                             {isSelected && (
                               <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-indigo-600 text-white text-[10px] font-bold rounded-full">
                                 <Check className="w-3 h-3" /> Selected
+                              </span>
+                            )}
+                            {v.city && v.city.toLowerCase() !== effectiveCity.toLowerCase() && (
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                Regional: {v.city}, {v.state}
                               </span>
                             )}
                           </div>
@@ -322,10 +575,43 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
                     </div>
                   );
                 })
-
+              ) : isLoadingSuggested ? (
+                <div className="py-12 flex flex-col items-center justify-center text-slate-500 space-y-3">
+                  <div className="w-7 h-7 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs font-bold text-slate-600">
+                    Finding live music stages in {effectiveCity}, {effectiveState}...
+                  </span>
+                </div>
               ) : (
-                <div className="text-center py-8 text-slate-400 text-xs">
-                  No suggested venues for this stop. Use directory or custom entry.
+                <div className="text-center py-10 px-4 space-y-3 bg-slate-50/70 rounded-2xl border border-dashed border-slate-300 my-2 animate-in fade-in duration-150">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto border border-amber-200">
+                    <Building className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-black text-slate-800">
+                      No verified venues listed in {effectiveCity}, {effectiveState} yet
+                    </h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      We haven't indexed rooms in this specific corridor town yet. Add your custom venue and soundcheck times in seconds.
+                    </p>
+                  </div>
+                  <div className="pt-2 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("custom")}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    >
+                      <Plus className="w-4 h-4 stroke-[3]" />
+                      <span>+ Add Custom Venue</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("directory")}
+                      className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-colors cursor-pointer"
+                    >
+                      Browse All Directory
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -333,42 +619,84 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({ stop, onSave
 
           {activeTab === "directory" && (
             <div className="space-y-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="text"
-                  placeholder="Search 1,600+ venues by name, city, or genre..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white"
-                />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Search all 62+ database venues by name, city, state, or genre..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white"
+                  />
+                </div>
+                <div className="sm:w-56 shrink-0">
+                  <select
+                    value={directoryStateFilter}
+                    onChange={(e) => setDirectoryStateFilter(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="All">All 48 States (+DC)</option>
+                    {CONTINENTAL_US_STATES.map((st) => (
+                      <option key={st.code} value={st.code}>
+                        {st.code} - {st.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
-                {filteredDirectoryVenues.slice(0, 15).map((v) => {
-                  const isSelected = stop.selectedVenue?.name === v.name;
-                  const stats = getRatingStats(v.id, v.name, "venue");
-                  return (
-                    <div 
-                      key={v.id}
-                      className="p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-200 flex items-center justify-between gap-3 text-xs"
-                    >
-                      <div className="space-y-0.5">
-                        <p className="font-bold text-slate-900">{v.name}</p>
-                        <RatingStars rating={stats.average} size="xs" showNumber={true} reviewCount={stats.count} />
-                        <p className="text-[11px] text-slate-500">{v.city} &bull; Cap: {v.capacity || "N/A"}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectPredefined(v)}
-                        className="px-3 py-1.5 bg-slate-900 hover:bg-indigo-600 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer shrink-0"
-                      >
-                        {isSelected ? "Selected" : "Select"}
-                      </button>
+              {isLoadingDirectory ? (
+                <div className="py-12 flex flex-col items-center justify-center text-slate-500 space-y-3">
+                  <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+                  <span className="text-xs font-bold text-slate-600">Loading verified database venues...</span>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                  {filteredDirectoryVenues.length === 0 ? (
+                    <div className="text-center py-8 text-xs text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      No venues matched "{searchQuery}".
                     </div>
-                  );
-                })}
-              </div>
+                  ) : (
+                    filteredDirectoryVenues.map((v) => {
+                      const isSelected = stop.selectedVenue?.name === v.name;
+                      const stats = getRatingStats(v.id, v.name, "venue");
+                      return (
+                        <div 
+                          key={v.id}
+                          className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs transition-colors ${
+                            isSelected 
+                              ? "border-indigo-600 bg-indigo-50/60" 
+                              : "border-slate-200 bg-white hover:border-indigo-200"
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-slate-900">{v.name}</p>
+                              {v.city && (
+                                <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                                  {v.city}, {v.state}
+                                </span>
+                              )}
+                            </div>
+                            <RatingStars rating={stats.average} size="xs" showNumber={true} reviewCount={stats.count} />
+                            <p className="text-[11px] text-slate-500">
+                              {v.address ? `${v.address} • ` : ""}Cap: {v.capacity || "N/A"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectPredefined(v)}
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-indigo-600 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer shrink-0"
+                          >
+                            {isSelected ? "Keep Selected" : "Select"}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           )}
 

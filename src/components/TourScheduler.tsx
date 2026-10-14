@@ -26,8 +26,14 @@ import {
   detectDuplicateReturnStops,
   diversifyTourRoute,
   DuplicateReturnAnalysis,
-  RouteDiversificationResult
+  RouteDiversificationResult,
+  estimateDrivingDistanceMiles,
+  calculateGasCost,
+  findCityCoordinates,
+  calculateGreatCircleDistanceMiles
 } from "../utils/corridorOptimizer";
+import { CONTINENTAL_US_STATES, parseFreeformCityState, POPULAR_NATIONWIDE_HUBS, STATE_NAME_TO_CODE_MAP } from "../constants/states";
+import { getMergedVenuesList } from "../utils/directoryStore";
 import { 
   supabase,
   saveTourToDatabase, 
@@ -38,6 +44,8 @@ import {
 } from "../lib/supabase";
 import { TourPrintModal } from "./TourPrintModal";
 import { TourLodgingModal, parseNightlyRate, parseBookingConfirmationSnippet, calculateStayCost } from "./TourLodgingModal";
+import { EditStopModal } from "./EditStopModal";
+import { VenuePickerModal } from "./VenuePickerModal";
 import { generateLodgingDeepLinks, getTourStopLodgingDates } from "../utils/lodgingAffiliateLinks";
 import { runTourReadinessAudit, TourReadinessReport } from "../utils/tourAuditEngine";
 import { TourMap } from "./TourMap";
@@ -71,6 +79,7 @@ import {
   Bookmark,
   RotateCcw,
   RefreshCw,
+  Loader2,
   Search,
   FolderOpen,
   ArrowRight,
@@ -241,6 +250,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
   // Step 3 City-by-City stage & lodging navigation
   const [activeStageIndex, setActiveStageIndex] = useState(0);
+  const allDirectoryVenues = useMemo(() => getMergedVenuesList(), []);
   const [cityVenuesMap, setCityVenuesMap] = useState<Record<string, Venue[]>>({});
   const [isLoadingVenues, setIsLoadingVenues] = useState(false);
   const [customVenueMode, setCustomVenueMode] = useState<Record<string, boolean>>({});
@@ -273,6 +283,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
   // Step 2 Edit Tour Stop State (City Switching & Real-Time Itinerary Recalculation)
   const [editingStopIndex, setEditingStopIndex] = useState<number | null>(null);
+  const [editModalStopIndex, setEditModalStopIndex] = useState<number | null>(null);
+  const [showRouteSettings, setShowRouteSettings] = useState(false);
   const [editStopCity, setEditStopCity] = useState("");
   const [editStopState, setEditStopState] = useState("");
   const [editStopDate, setEditStopDate] = useState("");
@@ -286,6 +298,10 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
   // In-app lodging booking modal state
   const [bookingModalStopIndex, setBookingModalStopIndex] = useState<number | null>(null);
+  // Venue picker modal state
+  const [venueModalStopIndex, setVenueModalStopIndex] = useState<number | null>(null);
+  const [isVenueModalOpen, setIsVenueModalOpen] = useState(false);
+  const [loadingVenueStopIdx, setLoadingVenueStopIdx] = useState<number | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
   // Email Itinerary Modal State
@@ -747,9 +763,9 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     const raw = (cityToAdd || newWaypointInput).trim();
     if (!raw) return;
 
-    const parts = raw.split(",").map(p => p.trim());
-    const cCity = parts[0];
-    const cState = parts[1] || "WA";
+    const parsed = parseFreeformCityState(raw);
+    const cCity = parsed.city;
+    const cState = parsed.state || "WA";
 
     // Insert before destination stop
     const destStop = stops[stops.length - 1];
@@ -866,6 +882,248 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     );
   };
 
+  // Save changes from EditStopModal
+  const handleSaveEditStopFromModal = (index: number, updatedFields: Partial<TourStop>) => {
+    const target = stops[index];
+    if (!target) return;
+
+    const newCity = (updatedFields.city || target.city).trim();
+    const newState = (updatedFields.state || target.state).trim();
+    const cityChanged = newCity.toLowerCase() !== target.city.toLowerCase() || newState.toLowerCase() !== target.state.toLowerCase();
+
+    const updatedStops = stops.map((s, i) => {
+      if (i !== index) return s;
+      const baseStop: TourStop = {
+        ...s,
+        ...updatedFields,
+        city: newCity,
+        state: newState,
+        stopName: updatedFields.stopName || s.stopName,
+        date: updatedFields.date || s.date,
+        driveTimeFromPrev: updatedFields.driveTimeFromPrev || s.driveTimeFromPrev,
+        distanceMilesFromPrev: updatedFields.distanceMilesFromPrev !== undefined ? Number(updatedFields.distanceMilesFromPrev) : s.distanceMilesFromPrev,
+        estimatedGasCost: updatedFields.estimatedGasCost !== undefined ? Number(updatedFields.estimatedGasCost) : s.estimatedGasCost,
+        customNotes: updatedFields.customNotes !== undefined ? updatedFields.customNotes : s.customNotes
+      };
+
+      if (cityChanged) {
+        return {
+          ...baseStop,
+          suggestedVenues: [],
+          selectedVenue: undefined,
+          lodgingOptions: findLodgingForCity(newCity, newState),
+          selectedLodging: undefined
+        };
+      }
+      return baseStop;
+    });
+
+    const recal = recalculateStopsMetrics(updatedStops, startDate);
+    setStops(recal.updatedStops);
+    setTotalDistanceMiles(recal.totalDistanceMiles);
+    setTotalDriveTime(recal.totalDriveTime);
+
+    if (index === 0) {
+      setOriginCity(`${newCity}, ${newState}`);
+    } else if (index === updatedStops.length - 1) {
+      setDestinationCity(`${newCity}, ${newState}`);
+    }
+
+    if (cityChanged) {
+      const cityKey = `${newCity.toLowerCase()}_${newState.toLowerCase()}`;
+      setCityVenuesMap(prev => {
+        const copy = { ...prev };
+        delete copy[cityKey];
+        return copy;
+      });
+      loadVenuesForStageCity(newCity, newState);
+    }
+
+    triggerToast(`✓ Stop #${index + 1} (${newCity}, ${newState}) updated!`, "success");
+  };
+
+  // Quick-toggle cycling for Stage/Venue status:
+  // Default is 'hold' ("ON HOLD"). When venue selected -> 'penciled' ("PENCILED IN").
+  // Clicking badge while in 'penciled' toggles to 'confirmed'.
+  // Clicking again cycles: 'confirmed' -> 'hold' -> 'penciled' -> 'confirmed'
+  const handleCycleVenueStatus = (stopIdx: number, targetStatus?: "penciled" | "hold" | "confirmed") => {
+    let affectedCity = "";
+    let affectedLabel = "";
+    let affectedVenueName = "";
+
+    setStops(prev => {
+      return prev.map((stop, idx) => {
+        if (idx !== stopIdx) return stop;
+
+        const curStatus = stop.selectedVenue?.bookingStatus || "hold";
+        let nextStatus: "penciled" | "hold" | "confirmed";
+        if (targetStatus) {
+          nextStatus = targetStatus;
+        } else {
+          if (curStatus === "penciled") {
+            nextStatus = "confirmed";
+          } else if (curStatus === "confirmed") {
+            nextStatus = "hold";
+          } else {
+            // curStatus === "hold" or unconfirmed
+            nextStatus = "penciled";
+          }
+        }
+
+        affectedCity = stop.city;
+        affectedLabel = nextStatus === "confirmed" ? "✓ Confirmed & Booked" : nextStatus === "penciled" ? "Penciled In" : "On Hold";
+
+        const currentVenue = stop.selectedVenue ? { ...stop.selectedVenue } : {
+          id: `venue-${Date.now()}-${stopIdx}`,
+          name: `${stop.city} Stage`,
+          city: stop.city,
+          address: `${stop.city}, ${stop.state}`
+        };
+
+        affectedVenueName = currentVenue.name || `${stop.city} Stage`;
+
+        return {
+          ...stop,
+          selectedVenue: {
+            ...currentVenue,
+            bookingStatus: nextStatus
+          }
+        };
+      });
+    });
+
+    if (affectedCity) {
+      triggerToast(`Stop #${stopIdx + 1} (${affectedCity}): Stage marked ${affectedLabel}`, "success");
+    }
+  };
+
+  // Quick-toggle cycling for Lodging status: 'penciled' -> 'hold' -> 'confirmed' -> 'penciled'
+  const handleCycleLodgingStatus = (stopIdx: number, targetStatus?: "penciled" | "hold" | "confirmed") => {
+    let affectedCity = "";
+    let affectedLabel = "";
+    let affectedPropName = "";
+
+    setStops(prev => {
+      return prev.map((stop, idx) => {
+        if (idx !== stopIdx) return stop;
+
+        const curStatus = stop.selectedLodging?.bookingStatus || (stop.selectedLodging?.isBooked ? "confirmed" : "penciled");
+        let nextStatus: "penciled" | "hold" | "confirmed";
+        if (targetStatus) {
+          nextStatus = targetStatus;
+        } else {
+          if (curStatus === "penciled" || curStatus === "unconfirmed") {
+            nextStatus = "hold";
+          } else if (curStatus === "hold") {
+            nextStatus = "confirmed";
+          } else {
+            nextStatus = "penciled";
+          }
+        }
+
+        affectedCity = stop.city;
+        affectedLabel = nextStatus === "confirmed" ? "✓ Confirmed & Booked" : nextStatus === "hold" ? "On Hold" : "Penciled In";
+
+        const defaultOption = stop.lodgingOptions?.[0];
+        const existing = stop.selectedLodging;
+        const isNowBooked = nextStatus === "confirmed";
+
+        const name = existing?.name && !existing.name.startsWith("Lodging in ")
+          ? existing.name
+          : defaultOption?.name || `${stop.city} Musician Suites & Inn`;
+        affectedPropName = name;
+
+        const address = existing?.address || defaultOption?.address || `${stop.city}, ${stop.state}`;
+        const phone = existing?.phone || defaultOption?.phone || getCityHotelPhone(stop.city, stop.state);
+        const cost = existing?.cost || (defaultOption ? parseNightlyRate(defaultOption.estPricePerNight) : 85);
+        const securityNote = existing?.gearSecurityNote || existing?.notes || defaultOption?.gearSecurityNote || "Ground-level monitored van parking. Bring high-value gear into room.";
+        const confNumber = existing?.confirmationNumber || (isNowBooked ? `CONF-${Date.now().toString().slice(-6)}` : "");
+
+        return {
+          ...stop,
+          selectedLodging: {
+            ...existing,
+            name,
+            address,
+            phone,
+            cost,
+            confirmationNumber: confNumber,
+            gearSecurityNote: securityNote,
+            notes: securityNote,
+            isBooked: isNowBooked,
+            bookingStatus: nextStatus
+          },
+          lodgingNotes: securityNote
+        };
+      });
+    });
+
+    if (affectedCity) {
+      triggerToast(`Stop #${stopIdx + 1} (${affectedCity}): Lodging marked ${affectedLabel}`, "success");
+    }
+  };
+
+  // Select and commit venue from VenuePickerModal:
+  // Automatically changes that stop's booking status badge from "ON HOLD" to "PENCILED IN"
+  const handleCommitVenuePicker = (stopIdx: number, selectedVenue: TourSelectedVenue) => {
+    setStops(prev => prev.map((s, idx) => {
+      if (idx !== stopIdx) return s;
+      const current = s.selectedVenue || {};
+      const nextStatus: "penciled" | "hold" | "confirmed" = "penciled";
+
+      return {
+        ...s,
+        selectedVenue: {
+          ...current,
+          ...selectedVenue,
+          bookingStatus: nextStatus
+        }
+      };
+    }));
+
+    setIsVenueModalOpen(false);
+    setVenueModalStopIndex(null);
+    triggerToast(
+      `✓ Stage selected for Stop #${stopIdx + 1} (${stops[stopIdx]?.city || ""}): ${selectedVenue.name}. Marked Penciled In!`,
+      "success"
+    );
+  };
+
+  // Open Venue Modal: Instant 0ms modal opening without blocking on network
+  const handleOpenVenueModalForStop = (stopIdx: number) => {
+    const targetStop = stops[stopIdx];
+    if (!targetStop) return;
+
+    // Immediately open modal cleanly
+    setVenueModalStopIndex(stopIdx);
+    setIsVenueModalOpen(true);
+  };
+
+  // Booking Health progress calculations (Stages Booked & Lodging Secured)
+  const bookingHealth = useMemo(() => {
+    const totalStops = stops.length || 1;
+    const stagesConfirmed = stops.filter(s => s.selectedVenue?.bookingStatus === "confirmed").length;
+    const stagesPenciled = stops.filter(s => s.selectedVenue?.bookingStatus === "penciled").length;
+    const stagesHold = stops.filter(s => !s.selectedVenue?.bookingStatus || s.selectedVenue?.bookingStatus === "hold" || s.selectedVenue?.bookingStatus === "unconfirmed").length;
+    const stagesConfirmedPercent = Math.round((stagesConfirmed / totalStops) * 100);
+
+    const lodgingConfirmed = stops.filter(s => s.selectedLodging?.bookingStatus === "confirmed" || s.selectedLodging?.isBooked).length;
+    const lodgingHold = stops.filter(s => s.selectedLodging?.bookingStatus === "hold" && !s.selectedLodging?.isBooked).length;
+    const lodgingPenciled = stops.filter(s => (!s.selectedLodging?.bookingStatus || s.selectedLodging?.bookingStatus === "penciled" || s.selectedLodging?.bookingStatus === "unconfirmed") && !s.selectedLodging?.isBooked).length;
+    const lodgingConfirmedPercent = Math.round((lodgingConfirmed / totalStops) * 100);
+
+    return {
+      stagesConfirmed,
+      stagesHold,
+      stagesPenciled,
+      stagesConfirmedPercent,
+      lodgingConfirmed,
+      lodgingHold,
+      lodgingPenciled,
+      lodgingConfirmedPercent
+    };
+  }, [stops]);
+
   // Step 2 -> Step 3: Advance to City-by-City stage setup
   const handleProceedToStages = () => {
     if (stops.length < 2) {
@@ -879,112 +1137,262 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     }
   };
 
-  // Loads venues for a specific city with strict state/province precision
-  const loadVenuesForStageCity = async (cityName: string, stateName?: string) => {
-    const cacheKey = stateName ? `${cityName}_${stateName}` : cityName;
-    if (cityVenuesMap[cacheKey] && cityVenuesMap[cacheKey].length > 0) return;
+  // Loads venues for a specific city with fallback to state query
+  // Instant In-Memory Filter (0ms Latency) from memory directory (132 items) + indexed Supabase fallback
+  const loadVenuesForStageCity = async (cityName: string, stateName?: string): Promise<Venue[]> => {
+    let cleanCity = (cityName || "").trim();
+    let cleanState = (stateName || "").trim();
+
+    if (cleanCity.includes(",")) {
+      const parts = cleanCity.split(",");
+      cleanCity = parts[0].trim();
+      if (!cleanState && parts[1]) {
+        cleanState = parts[1].trim();
+      }
+    }
+
+    const stateCode = (STATE_NAME_TO_CODE_MAP[cleanState.toLowerCase()] || cleanState).trim();
+    const cacheKey = cleanState ? `${cleanCity}_${cleanState.toUpperCase()}` : cleanCity;
+
+    if (cityVenuesMap[cacheKey] !== undefined) {
+      return cityVenuesMap[cacheKey];
+    }
+
+    // 1. Instant In-Memory Filter (0ms Latency)
+    const inMemory = allDirectoryVenues && allDirectoryVenues.length > 0 ? allDirectoryVenues : getMergedVenuesList();
+    const inMemMatches = inMemory.filter(v => {
+      const vCity = (v.city || "").trim().toLowerCase();
+      const vState = (v.state || "").trim().toLowerCase();
+      const matchesCity = vCity === cleanCity.toLowerCase() || vCity.replace(/\./g, "") === cleanCity.toLowerCase().replace(/\./g, "");
+      const matchesState = !cleanState || 
+        vState === cleanState.toLowerCase() || 
+        vState === stateCode.toLowerCase() ||
+        (STATE_NAME_TO_CODE_MAP[vState] && STATE_NAME_TO_CODE_MAP[vState].toLowerCase() === stateCode.toLowerCase());
+      return matchesCity && matchesState;
+    });
+
+    if (inMemMatches.length > 0) {
+      setCityVenuesMap(prev => ({ 
+        ...prev, 
+        [cacheKey]: inMemMatches,
+        [cleanCity]: inMemMatches,
+        [cityName]: inMemMatches
+      }));
+
+      setStops(prev => prev.map(s => {
+        if (s.city.toLowerCase() === cleanCity.toLowerCase() || s.city.toLowerCase() === cityName.toLowerCase()) {
+          return {
+            ...s,
+            suggestedVenues: inMemMatches as any
+          };
+        }
+        return s;
+      }));
+
+      return inMemMatches;
+    }
+
+    // 2. Fallback Network Query with Index Support:
+    // Query Supabase using exact equality first (.eq('state', stateName.trim()).ilike('city', cityName.trim()))
     setIsLoadingVenues(true);
     try {
-      // 1. Query Supabase public.venues strictly checking city and state
       let remoteVenues: Venue[] = [];
       try {
-        let query = supabase
-          .from("venues")
-          .select("*")
-          .ilike("city", `%${cityName.trim()}%`);
+        const queryState = stateCode || cleanState;
+        let query = supabase.from("venues").select("*");
 
-        if (stateName && stateName.trim()) {
-          const s = stateName.trim().toUpperCase();
-          if (s === "BC") {
-            // Strictly BC / Canada
-            query = query.or("state.eq.BC,state_province.eq.BC,country.eq.CA,country.eq.Canada");
-          } else if (s === "WA") {
-            // Strictly Washington State, not BC
-            query = query.or("state.eq.WA,state_province.eq.WA");
-          } else {
-            query = query.or(`state.eq.${s},state_province.eq.${s}`);
-          }
+        if (queryState) {
+          query = query.eq("state", queryState.trim());
+        }
+        if (cleanCity) {
+          query = query.ilike("city", cleanCity.trim());
         }
 
         const { data, error } = await query;
-        if (!error && data && Array.isArray(data)) {
+
+        if (error) {
+          console.error("Supabase venue fetch error:", error);
+        } else if (data && Array.isArray(data)) {
           remoteVenues = data.map((v: any) => ({
             id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
             name: v.name || "Live Venue",
-            city: v.city || cityName,
-            state: v.state || v.state_province || stateName,
-            country: v.country || (stateName?.toUpperCase() === "BC" ? "CA" : "US"),
-            address: v.address || `${cityName}, ${v.state || stateName || ""}`.trim(),
+            city: v.city || cleanCity,
+            state: v.state || cleanState,
+            country: v.state?.toUpperCase() === "BC" ? "CA" : "US",
+            address: v.address || `${v.city || cleanCity}, ${v.state || cleanState}`.trim(),
             capacity: Number(v.capacity) || 150,
             genres: Array.isArray(v.genres_accepted) 
               ? v.genres_accepted 
               : (v.genres_accepted ? String(v.genres_accepted).split(",").map((g: string) => g.trim()) : ["Live Music"]),
-            contactEmail: v.booking_email || v.email || "",
-            contactPhone: v.phone || "Inquire",
+            contactEmail: v.official_email || v.booking_email || v.email || "",
+            official_email: v.official_email || v.booking_email || v.email || "",
+            contactPhone: v.phone || v.contact_phone || "Inquire",
             website: v.website || undefined,
             hasPA: true,
             hasLighting: true,
-            description: v.description || `Live music venue located in ${cityName}.`
+            description: v.description || `Live music venue located in ${v.city || cleanCity}.`
           }));
         }
       } catch (err) {
-        console.warn("Could not query Supabase venues:", err);
+        console.error("Supabase venue fetch error:", err);
       }
-      
-      // 2. Query local curated MUSIC_VENUES & localStorage custom_venues_v1
-      const localCustom: Venue[] = (() => {
-        try {
-          return JSON.parse(localStorage.getItem("custom_venues_v1") || "[]");
-        } catch { return []; }
-      })();
-      const allLocal = [...MUSIC_VENUES, ...localCustom];
-      const matchedLocal = allLocal.filter(v => {
-        const cityMatch = v.city.toLowerCase() === cityName.toLowerCase() ||
-          v.city.toLowerCase().includes(cityName.toLowerCase()) || 
-          cityName.toLowerCase().includes(v.city.toLowerCase());
-        if (!cityMatch) return false;
-
-        if (stateName) {
-          const s = stateName.toUpperCase();
-          if (s === "BC") {
-            // Strictly BC / Canada venues (Rickshaw, Commodore Ballroom, Cobalt, Biltmore, Fox, Wise Hall)
-            // DO NOT return venues located in WA / Washington State
-            return v.state?.toUpperCase() === "BC" || v.country?.toUpperCase() === "CA" || v.address?.includes("BC");
-          }
-          if (s === "WA") {
-            // Strictly WA / US venues
-            return (v.state?.toUpperCase() === "WA" || v.address?.includes(", WA")) &&
-                   v.state?.toUpperCase() !== "BC" &&
-                   !v.address?.includes("BC");
-          }
-          if (v.state) {
-            return v.state.toUpperCase() === s;
-          }
-        }
-        return true;
-      });
-
-      // Merge and deduplicate
-      const seenNames = new Set<string>();
-      const merged: Venue[] = [];
-      [...remoteVenues, ...matchedLocal].forEach(v => {
-        const key = v.name.toLowerCase().trim();
-        if (!seenNames.has(key)) {
-          seenNames.add(key);
-          merged.push(v);
-        }
-      });
 
       setCityVenuesMap(prev => ({ 
         ...prev, 
-        [cacheKey]: merged,
-        [cityName]: merged 
+        [cacheKey]: remoteVenues,
+        [cleanCity]: remoteVenues,
+        [cityName]: remoteVenues
       }));
+
+      // Update stop suggested venues in state for this specific city
+      setStops(prev => prev.map(s => {
+        if (s.city.toLowerCase() === cleanCity.toLowerCase() || s.city.toLowerCase() === cityName.toLowerCase()) {
+          return {
+            ...s,
+            suggestedVenues: remoteVenues as any
+          };
+        }
+        return s;
+      }));
+
+      return remoteVenues;
     } catch (err) {
-      console.warn("Could not query city venues:", err);
+      console.error("Failed loading venues for stage city:", err);
+      return [];
     } finally {
       setIsLoadingVenues(false);
     }
+  };
+
+  // Add Return Leg (Route Home) Option: Dynamic nationwide return leg routing back to originCity (home base)
+  const handleAddReturnLegStop = () => {
+    if (stops.length === 0) {
+      triggerToast("Please configure your tour stops first before generating a return leg.", "info");
+      return;
+    }
+
+    const lastStop = stops[stops.length - 1];
+    const { city: homeCity, state: homeState } = parseFreeformCityState(originCity);
+
+    // If the last stop is already the home base, inform user
+    if (lastStop.city.toLowerCase().trim() === homeCity.toLowerCase().trim() &&
+        lastStop.state?.toUpperCase().trim() === homeState.toUpperCase().trim()) {
+      triggerToast(`Your tour is already scheduled to return to ${homeCity}, ${homeState}!`, "info");
+      return;
+    }
+
+    // Get current stops cities set to avoid immediate back-to-back duplicate if multiple options exist
+    const recentCities = new Set(stops.map(s => s.city.toLowerCase().trim()));
+
+    // Find candidate corridor cities between lastStop and homeCity
+    const lastCoords = findCityCoordinates(`${lastStop.city}, ${lastStop.state}`);
+    const homeCoords = findCityCoordinates(`${homeCity}, ${homeState}`);
+    const directDistance = calculateGreatCircleDistanceMiles(lastCoords.lat, lastCoords.lng, homeCoords.lat, homeCoords.lng);
+
+    // Existing return leg count
+    const existingReturnLegs = stops.filter(s => s.isReturnLeg);
+    
+    // Candidates that lie between last stop and home base
+    const returnCandidates = KNOWN_CORRIDOR_CITIES.filter(c => {
+      const cName = c.city.toLowerCase().trim();
+      if (cName === lastStop.city.toLowerCase().trim() || cName === homeCity.toLowerCase().trim()) return false;
+      if (recentCities.has(cName)) return false;
+
+      const distFromLast = calculateGreatCircleDistanceMiles(lastCoords.lat, lastCoords.lng, c.lat, c.lng);
+      const distToHome = calculateGreatCircleDistanceMiles(c.lat, c.lng, homeCoords.lat, homeCoords.lng);
+      const totalPath = distFromLast + distToHome;
+      return totalPath <= Math.max(1, directDistance) * 1.38;
+    }).sort((a, b) => {
+      const distA = calculateGreatCircleDistanceMiles(lastCoords.lat, lastCoords.lng, a.lat, a.lng);
+      const distB = calculateGreatCircleDistanceMiles(lastCoords.lat, lastCoords.lng, b.lat, b.lng);
+      return distA - distB;
+    });
+
+    // Choose next candidate or the home base if no intermediate candidate or already routed close enough
+    let nextStopCity = homeCity;
+    let nextStopState = homeState;
+    let nextHighlight = `Home base victory homecoming show in ${homeCity}!`;
+    let isFinalHome = true;
+
+    if (returnCandidates.length > 0 && directDistance > 160 && existingReturnLegs.length < returnCandidates.length) {
+      // Pick next intermediate along the return corridor
+      const candidate = returnCandidates[0];
+      nextStopCity = candidate.city;
+      nextStopState = candidate.state;
+      nextHighlight = `${candidate.tier} stop on return corridor: ${candidate.sceneHighlight}`;
+      isFinalHome = false;
+    }
+
+    const nextCoords = findCityCoordinates(`${nextStopCity}, ${nextStopState}`);
+    const drivingDistance = estimateDrivingDistanceMiles(lastCoords.lat, lastCoords.lng, nextCoords.lat, nextCoords.lng) || 60;
+    const driveTimeStr = formatDriveTime(drivingDistance);
+    const gasCost = calculateGasCost(drivingDistance);
+
+    // Compute next performance date (day after the last stop)
+    let nextDateStr = "";
+    if (lastStop && lastStop.date) {
+      try {
+        const d = new Date(lastStop.date + "T12:00:00");
+        d.setDate(d.getDate() + 1);
+        nextDateStr = d.toISOString().split("T")[0];
+      } catch {
+        nextDateStr = new Date().toISOString().split("T")[0];
+      }
+    } else {
+      nextDateStr = new Date().toISOString().split("T")[0];
+    }
+
+    const newReturnStop: TourStop = {
+      id: `stop-return-${Date.now()}`,
+      stopName: isFinalHome ? `Home Base: ${nextStopCity}` : `Return Leg: ${nextStopCity}`,
+      city: nextStopCity,
+      state: nextStopState,
+      dayNumber: stops.length + 1,
+      date: nextDateStr,
+      distanceMilesFromPrev: drivingDistance,
+      driveTimeFromPrev: driveTimeStr,
+      estimatedGasCost: gasCost,
+      routeHighlight: nextHighlight,
+      localSceneNotes: isFinalHome 
+        ? `Home base celebratory homecoming show in ${nextStopCity}, ${nextStopState}.`
+        : `Return corridor stop heading toward ${homeCity}, ${homeState}.`,
+      isReturnLeg: true,
+      selectedVenue: {
+        id: "",
+        name: "",
+        city: nextStopCity,
+        address: `${nextStopCity}, ${nextStopState}`,
+        bookingStatus: "hold",
+        loadInTime: "5:00 PM",
+        soundcheckTime: "6:30 PM",
+        doorsTime: "7:30 PM",
+        setTime: "9:00 PM - 10:30 PM",
+        ticketPrice: "$12 Adv / $15 Door",
+        notes: isFinalHome ? "Homecoming show - on hold" : "Return leg stage - on hold"
+      },
+      selectedLodging: {
+        id: "",
+        name: "",
+        address: `${nextStopCity}, ${nextStopState}`,
+        bookingStatus: "penciled",
+        isBooked: false,
+        notes: isFinalHome ? "Home sweet home" : "Return leg lodging - penciled in"
+      },
+      suggestedVenues: [],
+      lodgingOptions: findLodgingForCity(nextStopCity, nextStopState)
+    };
+
+    setStops(prev => [...prev, newReturnStop]);
+
+    // Pre-cache venues for this return city
+    loadVenuesForStageCity(nextStopCity, nextStopState);
+
+    triggerToast(
+      isFinalHome 
+        ? `+ Added Homecoming Stop: ${nextStopCity}, ${nextStopState}!`
+        : `+ Added Return Stop: ${nextStopCity}, ${nextStopState} heading toward Home Base (${homeCity})!`,
+      "success"
+    );
   };
 
   // Select venue for current stop (1-click from directory)
@@ -1007,7 +1415,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
             doorsTime: target.selectedVenue?.doorsTime || "7:30 PM",
             setTime: target.selectedVenue?.setTime || "9:00 PM",
             ticketPrice: target.selectedVenue?.ticketPrice || "$12 Adv / $15 Door",
-            bookingStatus: target.selectedVenue?.bookingStatus || "confirmed",
+            bookingStatus: target.selectedVenue?.bookingStatus || "penciled",
             doorGuarantee: target.selectedVenue?.doorGuarantee || "$350 Guarantee",
             doorSplitPercentage: target.selectedVenue?.doorSplitPercentage || "80% Door Split",
             website: venue.website
@@ -1088,7 +1496,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
         if (copy[stopIdx]) {
           copy[stopIdx].selectedVenue = {
             ...venueObj,
-            bookingStatus: "confirmed"
+            bookingStatus: "penciled"
           };
         }
         return copy;
@@ -1125,7 +1533,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
         capacity: inputs.capacity ? Number(inputs.capacity) : undefined,
         venueType: selectedType,
         isPrivate: isHouse,
-        bookingStatus: "confirmed"
+        bookingStatus: "penciled"
       };
 
       setStops(prev => {
@@ -1995,31 +2403,91 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
               <button
                 type="button"
                 onClick={() => handleApplyPreset(
-                  "Cascadia Highway Run",
-                  "Vancouver, BC", 
-                  ["Bellingham, WA", "Seattle, WA", "Olympia, WA"], 
-                  "Portland, OR"
+                  "I-80 Midwest Heartland Tour",
+                  "Chicago, IL", 
+                  ["Iowa City, IA", "Des Moines, IA", "Omaha, NE", "Lincoln, NE"], 
+                  "Denver, CO"
                 )}
                 className="p-4 rounded-2xl bg-slate-800/80 hover:bg-indigo-600/30 border border-slate-700 hover:border-indigo-500 text-left transition-all cursor-pointer group"
               >
-                <div className="font-black text-white text-sm group-hover:text-indigo-300">🍁 Cascadia Run</div>
-                <div className="text-xs text-slate-400 mt-1">Vancouver BC → Seattle → Olympia → Portland</div>
-                <div className="text-[11px] text-indigo-400 font-bold mt-2">5 Stops • 315 mi</div>
+                <div className="font-black text-white text-sm group-hover:text-indigo-300">⚡ I-80 Heartland Corridor</div>
+                <div className="text-xs text-slate-400 mt-1">Chicago → Iowa City → Des Moines → Omaha → Denver</div>
+                <div className="text-[11px] text-indigo-400 font-bold mt-2">6 Stops • 1,010 mi</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleApplyPreset(
-                  "Rocky Mountain Front Range",
-                  "Fort Collins, CO", 
-                  ["Boulder, CO", "Denver, CO", "Colorado Springs, CO"], 
+                  "I-40 Music Highway Run",
+                  "Nashville, TN", 
+                  ["Memphis, TN", "Little Rock, AR", "Oklahoma City, OK", "Amarillo, TX"], 
                   "Albuquerque, NM"
                 )}
                 className="p-4 rounded-2xl bg-slate-800/80 hover:bg-indigo-600/30 border border-slate-700 hover:border-indigo-500 text-left transition-all cursor-pointer group"
               >
-                <div className="font-black text-white text-sm group-hover:text-indigo-300">⛰️ Rocky Mountain Run</div>
-                <div className="text-xs text-slate-400 mt-1">Fort Collins → Denver → Springs → Albuquerque</div>
-                <div className="text-[11px] text-indigo-400 font-bold mt-2">5 Stops • 475 mi</div>
+                <div className="font-black text-white text-sm group-hover:text-indigo-300">🎸 I-40 Music Highway</div>
+                <div className="text-xs text-slate-400 mt-1">Nashville → Memphis → Little Rock → OKC → Albuquerque</div>
+                <div className="text-[11px] text-indigo-400 font-bold mt-2">6 Stops • 1,180 mi</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleApplyPreset(
+                  "I-10 Sunbelt Desert Corridor",
+                  "Houston, TX", 
+                  ["San Antonio, TX", "El Paso, TX", "Tucson, AZ"], 
+                  "Phoenix, AZ"
+                )}
+                className="p-4 rounded-2xl bg-slate-800/80 hover:bg-indigo-600/30 border border-slate-700 hover:border-indigo-500 text-left transition-all cursor-pointer group"
+              >
+                <div className="font-black text-white text-sm group-hover:text-indigo-300">🌵 I-10 Sunbelt Run</div>
+                <div className="text-xs text-slate-400 mt-1">Houston → San Antonio → El Paso → Tucson → Phoenix</div>
+                <div className="text-[11px] text-indigo-400 font-bold mt-2">5 Stops • 1,170 mi</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleApplyPreset(
+                  "I-95 Northeast Megalopolis",
+                  "Boston, MA", 
+                  ["New York, NY", "Philadelphia, PA", "Baltimore, MD"], 
+                  "Washington, DC"
+                )}
+                className="p-4 rounded-2xl bg-slate-800/80 hover:bg-indigo-600/30 border border-slate-700 hover:border-indigo-500 text-left transition-all cursor-pointer group"
+              >
+                <div className="font-black text-white text-sm group-hover:text-indigo-300">🏙️ I-95 Northeast Corridor</div>
+                <div className="text-xs text-slate-400 mt-1">Boston → New York → Philadelphia → Baltimore → DC</div>
+                <div className="text-[11px] text-indigo-400 font-bold mt-2">5 Stops • 440 mi</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleApplyPreset(
+                  "I-70 Crossroads of America",
+                  "Columbus, OH", 
+                  ["Indianapolis, IN", "St. Louis, MO", "Columbia, MO", "Kansas City, MO"], 
+                  "Denver, CO"
+                )}
+                className="p-4 rounded-2xl bg-slate-800/80 hover:bg-indigo-600/30 border border-slate-700 hover:border-indigo-500 text-left transition-all cursor-pointer group"
+              >
+                <div className="font-black text-white text-sm group-hover:text-indigo-300">🌽 I-70 Heartland Run</div>
+                <div className="text-xs text-slate-400 mt-1">Columbus → Indy → St. Louis → Kansas City → Denver</div>
+                <div className="text-[11px] text-indigo-400 font-bold mt-2">6 Stops • 1,260 mi</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleApplyPreset(
+                  "I-35 Central Spine Corridor",
+                  "Minneapolis, MN", 
+                  ["Des Moines, IA", "Kansas City, MO", "Oklahoma City, OK", "Dallas, TX"], 
+                  "Austin, TX"
+                )}
+                className="p-4 rounded-2xl bg-slate-800/80 hover:bg-indigo-600/30 border border-slate-700 hover:border-indigo-500 text-left transition-all cursor-pointer group"
+              >
+                <div className="font-black text-white text-sm group-hover:text-indigo-300">🚚 I-35 Central Spine</div>
+                <div className="text-xs text-slate-400 mt-1">Minneapolis → Des Moines → KC → Dallas → Austin</div>
+                <div className="text-[11px] text-indigo-400 font-bold mt-2">6 Stops • 1,180 mi</div>
               </button>
             </div>
           </div>
@@ -2275,8 +2743,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
       {viewState === "wizard" && (
         <div className="space-y-6 animate-in fade-in duration-300" id="tour-wizard-container">
           
-          {/* Wizard Header Bar & Action Menu */}
-          <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Run-of-Show Master Board Header Bar */}
+          <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-xl">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <button
@@ -2288,28 +2756,83 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                   <span>Menu</span>
                 </button>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
-                    Tour Creation Wizard
+                  <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
+                    {tourStatus === "confirmed" ? "✓ Confirmed Tour Run" : "Run-of-Show Master Board"}
                   </span>
-                  <span className="text-xs text-slate-400">• Step {wizardStep} of 5</span>
+                  <span className="text-xs text-slate-400">• {stops.length} Tour Stops</span>
                 </div>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                 {tourTitle || "Custom Tour Run"}
               </h2>
+              <p className="text-xs sm:text-sm text-slate-400">
+                {originCity} → {destinationCity} • {startDate} through {endDate}
+              </p>
             </div>
 
-            {/* Global Actions: Save & Finish Later */}
-            <div className="flex items-center gap-2.5">
+            {/* Global Actions Toolbar */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowRouteSettings(!showRouteSettings)}
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition-colors ${
+                  showRouteSettings
+                    ? "bg-indigo-600 text-white border-indigo-500"
+                    : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+                }`}
+                title="Toggle Corridor & Route Setup"
+              >
+                <Sliders className="w-3.5 h-3.5 text-indigo-300" />
+                <span>Route Settings</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => handleSaveAndFinishLater(false)}
                 disabled={isSaving}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-black border border-slate-700 flex items-center gap-2 shadow-sm cursor-pointer transition-all active:scale-98"
-                id="btn-save-finish-later-top"
+                className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-black border border-slate-700 flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-98"
+                id="btn-save-draft-top"
               >
                 <Save className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{isSaving ? "Saving..." : "Save & Finish Later"}</span>
+                <span>{isSaving ? "Saving..." : "Save Draft"}</span>
+              </button>
+
+              {tourStatus !== "confirmed" ? (
+                <button
+                  type="button"
+                  onClick={() => handleSaveAndFinishLater(true)}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-600/30 flex items-center gap-1.5 cursor-pointer transition-all active:scale-98"
+                  id="btn-confirm-tour-top"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Confirm Tour</span>
+                </button>
+              ) : (
+                <span className="px-3 py-2 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1">
+                  <Check className="w-3 h-3 stroke-[3]" />
+                  <span>Confirmed</span>
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowEmailModal(true)}
+                className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md flex items-center gap-1.5 cursor-pointer transition-colors"
+                id="btn-open-email-modal-top"
+                title="Email Master Itinerary to Band & Crew"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Email Band</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(true)}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+                title="Print Run-of-Show Sheet"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Print</span>
               </button>
 
               <button
@@ -2318,7 +2841,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                   refreshTours();
                   setViewState("history");
                 }}
-                className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 flex items-center gap-1 cursor-pointer"
                 title="View Saved Tours"
               >
                 <FolderOpen className="w-3.5 h-3.5" />
@@ -2327,742 +2850,534 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
             </div>
           </div>
 
-          {/* Stepper Progress Tabs */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
-            <button
-              type="button"
-              onClick={() => setWizardStep(1)}
-              className={`p-3 rounded-xl text-left transition-all cursor-pointer ${
-                wizardStep === 1 
-                  ? "bg-indigo-600 text-white shadow-md" 
-                  : "hover:bg-slate-50 text-slate-700"
-              }`}
-            >
-              <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 1</div>
-              <div className="text-xs font-black truncate">1. Route Setup</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => stops.length > 0 && setWizardStep(2)}
-              disabled={stops.length === 0}
-              className={`p-3 rounded-xl text-left transition-all ${
-                wizardStep === 2 
-                  ? "bg-indigo-600 text-white shadow-md" 
-                  : stops.length > 0 
-                  ? "hover:bg-slate-50 text-slate-700 cursor-pointer" 
-                  : "opacity-40 cursor-not-allowed text-slate-400"
-              }`}
-            >
-              <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 2</div>
-              <div className="text-xs font-black truncate">2. Corridor &amp; Stops</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => stops.length > 0 && setWizardStep(3)}
-              disabled={stops.length === 0}
-              className={`p-3 rounded-xl text-left transition-all ${
-                wizardStep === 3 
-                  ? "bg-indigo-600 text-white shadow-md" 
-                  : stops.length > 0 
-                  ? "hover:bg-slate-50 text-slate-700 cursor-pointer" 
-                  : "opacity-40 cursor-not-allowed text-slate-400"
-              }`}
-            >
-              <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 3</div>
-              <div className="text-xs font-black truncate">3. Choose Stages &amp; Venues</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => stops.length > 0 && setWizardStep(4)}
-              disabled={stops.length === 0}
-              className={`p-3 rounded-xl text-left transition-all ${
-                wizardStep === 4 
-                  ? "bg-indigo-600 text-white shadow-md" 
-                  : stops.length > 0 
-                  ? "hover:bg-slate-50 text-slate-700 cursor-pointer" 
-                  : "opacity-40 cursor-not-allowed text-slate-400"
-              }`}
-            >
-              <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 4</div>
-              <div className="text-xs font-black truncate">4. Book Hotels &amp; Lodging</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => stops.length > 0 && setWizardStep(5)}
-              disabled={stops.length === 0}
-              className={`p-3 rounded-xl text-left transition-all ${
-                wizardStep === 5 
-                  ? "bg-indigo-600 text-white shadow-md" 
-                  : stops.length > 0 
-                  ? "hover:bg-slate-50 text-slate-700 cursor-pointer" 
-                  : "opacity-40 cursor-not-allowed text-slate-400"
-              }`}
-            >
-              <div className="text-[10px] font-black uppercase tracking-wider opacity-80">Step 5</div>
-              <div className="text-xs font-black truncate">5. Review &amp; Finalize</div>
-            </button>
-          </div>
-
-          {/* --------------------------------------------------------------------- */}
-          {/* STEP 1: ROUTE SETUP                                                   */}
-          {/* --------------------------------------------------------------------- */}
-          {wizardStep === 1 && (
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8 animate-in fade-in duration-200">
-              <div className="space-y-1.5 pb-4 border-b border-slate-100">
-                <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
-                  Step 1 • Geographic Framework
-                </span>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                  Define Your Tour Corridor &amp; Dates
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600">
-                  Input your starting city, final destination, and date range. In Step 2, the smart corridor algorithm will calculate optimal waypoints.
-                </p>
+          {/* Collapsible Route Settings Panel */}
+          {showRouteSettings && (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="space-y-1">
+                  <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-indigo-600" />
+                    <span>Corridor Framework &amp; Highway Waypoints</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Adjust origin, destination, dates, and circular routing. Modifying endpoints will recalculate intermediate stops.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRouteSettings(false)}
+                  className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  ✕ Close
+                </button>
               </div>
 
-              {/* Form Grid */}
-              <div className="space-y-5">
-                {/* Tour Title */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-2">
-                    Tour Name / Run Title
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Starting / Home City</label>
                   <input
                     type="text"
-                    value={tourTitle}
-                    onChange={(e) => setTourTitle(e.target.value)}
-                    placeholder="e.g. West Coast Summer Tour 2026"
-                    className="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white"
+                    list="tour-nationwide-hubs-list"
+                    value={originCity}
+                    onChange={(e) => setOriginCity(e.target.value)}
+                    placeholder="e.g. Seattle, WA or Austin, TX"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
-                {/* Origin and Destination with Swap */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-                  <div>
-                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>Origin City / State (Kickoff Point) *</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={originCity}
-                      onChange={(e) => setOriginCity(e.target.value)}
-                      placeholder="e.g. Seattle, WA or Portland, OR"
-                      className="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Destination City / State (Final Stop) *</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={destinationCity}
-                      onChange={(e) => setDestinationCity(e.target.value)}
-                      placeholder="e.g. Medford, OR or Los Angeles, CA"
-                      className="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Destination / Turnaround City</label>
+                  <input
+                    type="text"
+                    list="tour-nationwide-hubs-list"
+                    value={destinationCity}
+                    onChange={(e) => setDestinationCity(e.target.value)}
+                    placeholder="e.g. San Francisco, CA or Chicago, IL"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
 
-                {/* Start Date and End Date */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-slate-600" />
-                      <span>Tour Start Date *</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-slate-600" />
-                      <span>Tour End Date *</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full p-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600 focus:bg-white"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Tour Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
 
-                {/* Vehicle Specifications & MPG */}
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                      <Fuel className="w-4 h-4 text-amber-600" />
-                      <span>Tour Vehicle &amp; Fuel Efficiency</span>
-                    </label>
-                    <span className="text-[11px] text-slate-500">Used for leg gas budgeting</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                        Vehicle Type
-                      </label>
-                      <select
-                        value={vehicleType}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setVehicleType(val);
-                          if (val.includes("15-Passenger")) setVehicleMpg(14);
-                          else if (val.includes("Sprinter")) setVehicleMpg(18);
-                          else if (val.includes("SUV")) setVehicleMpg(22);
-                          else if (val.includes("Passenger Car")) setVehicleMpg(28);
-                          else if (val.includes("Bus")) setVehicleMpg(8);
-                        }}
-                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600 cursor-pointer"
-                      >
-                        <option value="15-Passenger Touring Van">15-Passenger Touring Van (~14 MPG)</option>
-                        <option value="Sprinter Van / Cargo">Sprinter Van / Diesel Cargo (~18 MPG)</option>
-                        <option value="Mini-Van / SUV">Mini-Van / SUV (~22 MPG)</option>
-                        <option value="Passenger Car / Wagon">Passenger Car / Station Wagon (~28 MPG)</option>
-                        <option value="Tour Bus / RV">Tour Bus / Splitter RV (~8 MPG)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                        Estimated MPG (Miles Per Gallon)
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          min="5"
-                          max="50"
-                          value={vehicleMpg}
-                          onChange={(e) => setVehicleMpg(Math.max(5, Number(e.target.value) || 14))}
-                          className="w-full p-3 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
-                        />
-                        <Fuel className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3.5 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Round-Trip Loop Toggle */}
-                <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-5 space-y-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
-                          <RefreshCw className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>Book Tour on Way Back Home (Round-Trip Loop)</span>
-                        </span>
-                        {isRoundTripLoop && (
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-600 text-white">
-                            Enabled
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-indigo-800/80 max-w-xl">
-                        Automatically generate reverse routing stops returning to your starting city, turning your tour into a complete round-trip loop.
-                      </p>
-                    </div>
-
-                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                      <input
-                        type="checkbox"
-                        checked={isRoundTripLoop}
-                        onChange={(e) => setIsRoundTripLoop(e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-
-                  {/* Diversify Return Route sub-toggle */}
-                  {isRoundTripLoop && (
-                    <div className="pt-3 border-t border-indigo-200/60 flex items-center justify-between gap-3 animate-in fade-in duration-150">
-                      <div className="space-y-0.5">
-                        <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
-                          <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Diversify Return Route (Loop / Alternate Cities)</span>
-                        </span>
-                        <p className="text-[11px] text-indigo-800/80">
-                          Replaces duplicate cities on the return trip with adjacent, viable secondary music markets along parallel highways (e.g. Bend, Hood River, Yakima, Wenatchee, Everett).
-                        </p>
-                      </div>
-
-                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input
-                          type="checkbox"
-                          checked={isReturnDiversified}
-                          onChange={(e) => setIsReturnDiversified(e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                      </label>
-                    </div>
-                  )}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Tour End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
               </div>
 
-              {/* Action Bar */}
-              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <button
-                  type="button"
-                  onClick={() => handleSaveAndFinishLater(false)}
-                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition-colors"
-                >
-                  <Save className="w-4 h-4 text-slate-600" />
-                  <span>Save &amp; Finish Later</span>
-                </button>
+              {/* Loop & Add Waypoint Row */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={isRoundTripLoop}
+                      onChange={(e) => setIsRoundTripLoop(e.target.checked)}
+                      className="rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span>Round-Trip Circular Loop (Returns to starting city)</span>
+                  </label>
 
-                <button
-                  type="button"
-                  onClick={handleProceedToOptimization}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-98"
-                  id="btn-proceed-to-step2"
-                >
-                  <span>Optimize Driving Corridor (Step 2)</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                  {isRoundTripLoop && (
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-emerald-700">
+                      <input
+                        type="checkbox"
+                        checked={isReturnDiversified}
+                        onChange={(e) => handleToggleReturnDiversification(e.target.checked)}
+                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span>Diversify return corridor with alternate towns</span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleProceedToOptimization}
+                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Recalculate Corridor &amp; Stops</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* --------------------------------------------------------------------- */}
-          {/* STEP 2: SMART ROUTE OPTIMIZATION                                     */}
-          {/* --------------------------------------------------------------------- */}
-          {wizardStep === 2 && (
-            <div className="space-y-6 animate-in fade-in duration-200" id="tour-step-2-optimization">
+          {/* ===================================================================== */}
+          {/* RUN-OF-SHOW MASTER BOARD: OPTION 1 UNIFIED SPLIT LAYOUT               */}
+          {/* ===================================================================== */}
+          {stops.length === 0 ? (
+            /* Empty State: Initial Corridor Builder */
+            <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-sm text-center max-w-xl mx-auto space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                <Compass className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                  Define Your Tour Corridor
+                </h3>
+                <p className="text-xs text-slate-600">
+                  Select your tour starting city and final turnaround destination. The intelligent corridor engine will generate your master day-by-day run-of-show board.
+                </p>
+              </div>
+
+              <div className="space-y-4 text-left">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Starting / Home City</label>
+                  <input
+                    type="text"
+                    list="tour-nationwide-hubs-list"
+                    value={originCity}
+                    onChange={(e) => setOriginCity(e.target.value)}
+                    placeholder="e.g. Seattle, WA or Austin, TX"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Destination City</label>
+                  <input
+                    type="text"
+                    list="tour-nationwide-hubs-list"
+                    value={destinationCity}
+                    onChange={(e) => setDestinationCity(e.target.value)}
+                    placeholder="e.g. Chicago, IL or San Francisco, CA"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleProceedToOptimization}
+                className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+              >
+                <span>Optimize Corridor &amp; Open Master Board</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            /* UNIFIED SPLIT LAYOUT */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" id="run-of-show-master-board">
               
-              {/* Corridor Overview Banner */}
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                  <div className="space-y-1">
-                    <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
-                      Step 2 • Smart Corridor Optimization
+              {/* ================================================================= */}
+              {/* STICKY LEFT PANEL (30-35%): Vitals, Booking Health & TourMap      */}
+              {/* ================================================================= */}
+              <div className="col-span-12 lg:col-span-4 xl:col-span-4 space-y-4 lg:sticky lg:top-4 self-start max-h-[calc(100vh-2rem)] overflow-y-auto pr-1">
+                
+                {/* Embedded Leaflet TourMap */}
+                <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-2">
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Tour Route Map</span>
                     </span>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                      Corridor Stops &amp; Driving Logistics
+                    <a
+                      href={currentTourPlan.googleMapsDirectionsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                    >
+                      <span>Google Maps</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <div className="h-60 sm:h-64 rounded-2xl overflow-hidden border border-slate-200 relative shadow-inner">
+                    <TourMap
+                      stops={stops}
+                      tourTitle={tourTitle}
+                      totalDistanceMiles={totalDistanceMiles}
+                      totalDriveTime={totalDriveTime}
+                      className="h-full w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Tour Vitals Card */}
+                <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <Compass className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                      Tour Vitals &amp; Logistics
                     </h3>
-                    <p className="text-xs sm:text-sm text-slate-600">
-                      We've calculated logical waypoints along the highway corridor to minimize mileage, gas costs, and driving fatigue. Add, remove, or reorder stops below.
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                      <span className="text-[10px] font-black uppercase text-slate-400 block">Total Miles</span>
+                      <div className="text-base font-black text-slate-900 flex items-center gap-1">
+                        <Navigation className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{totalDistanceMiles} mi</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                      <span className="text-[10px] font-black uppercase text-slate-400 block">Drive Hours</span>
+                      <div className="text-base font-black text-slate-900 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{totalDriveTime || "0 hrs"}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 space-y-1">
+                      <span className="text-[10px] font-black uppercase text-emerald-700 block">Est. Van Gas</span>
+                      <div className="text-base font-black text-emerald-800 flex items-center gap-1">
+                        <Fuel className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>${financials.totalGas}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-indigo-50/60 rounded-2xl border border-indigo-200/80 space-y-1">
+                      <span className="text-[10px] font-black uppercase text-indigo-700 block">Est. Budget</span>
+                      <div className="text-base font-black text-indigo-900 flex items-center gap-1">
+                        <DollarSign className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>${financials.totalGas + financials.totalLodgingCost}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Booking Health Progress Bars Card */}
+                <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                        Booking Health
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                      {stops.length} Days Total
+                    </span>
+                  </div>
+
+                  {/* Progress Bar 1: Stages Booked */}
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="text-slate-700 flex items-center gap-1">
+                        <Building className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Stages Booked</span>
+                      </span>
+                      <span className="font-mono text-xs font-black text-indigo-700">
+                        {bookingHealth.stagesConfirmed} / {stops.length} ({bookingHealth.stagesConfirmedPercent}%)
+                      </span>
+                    </div>
+
+                    <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200/60">
+                      <div
+                        className="bg-emerald-500 h-full transition-all duration-300"
+                        style={{ width: `${(bookingHealth.stagesConfirmed / stops.length) * 100}%` }}
+                        title={`Confirmed: ${bookingHealth.stagesConfirmed}`}
+                      />
+                      <div
+                        className="bg-blue-400 h-full transition-all duration-300"
+                        style={{ width: `${(bookingHealth.stagesHold / stops.length) * 100}%` }}
+                        title={`On Hold: ${bookingHealth.stagesHold}`}
+                      />
+                      <div
+                        className="bg-amber-300 h-full transition-all duration-300"
+                        style={{ width: `${(bookingHealth.stagesPenciled / stops.length) * 100}%` }}
+                        title={`Penciled: ${bookingHealth.stagesPenciled}`}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium pt-0.5">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                        <span>{bookingHealth.stagesConfirmed} Confirmed</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
+                        <span>{bookingHealth.stagesHold} Hold</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-300 inline-block" />
+                        <span>{bookingHealth.stagesPenciled} Penciled</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar 2: Lodging Secured */}
+                  <div className="space-y-1.5 text-xs pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="text-slate-700 flex items-center gap-1">
+                        <Hotel className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Lodging Secured</span>
+                      </span>
+                      <span className="font-mono text-xs font-black text-emerald-700">
+                        {bookingHealth.lodgingConfirmed} / {stops.length} ({bookingHealth.lodgingConfirmedPercent}%)
+                      </span>
+                    </div>
+
+                    <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200/60">
+                      <div
+                        className="bg-emerald-500 h-full transition-all duration-300"
+                        style={{ width: `${(bookingHealth.lodgingConfirmed / stops.length) * 100}%` }}
+                        title={`Secured: ${bookingHealth.lodgingConfirmed}`}
+                      />
+                      <div
+                        className="bg-blue-400 h-full transition-all duration-300"
+                        style={{ width: `${(bookingHealth.lodgingHold / stops.length) * 100}%` }}
+                        title={`Hold: ${bookingHealth.lodgingHold}`}
+                      />
+                      <div
+                        className="bg-amber-300 h-full transition-all duration-300"
+                        style={{ width: `${(bookingHealth.lodgingPenciled / stops.length) * 100}%` }}
+                        title={`Pending: ${bookingHealth.lodgingPenciled}`}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium pt-0.5">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                        <span>{bookingHealth.lodgingConfirmed} Secured</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
+                        <span>{bookingHealth.lodgingHold} Hold</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-300 inline-block" />
+                        <span>{bookingHealth.lodgingPenciled} Pending</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Add Waypoint Bar in Left Panel */}
+                <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-2.5">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-700 block">
+                    + Add Tour Waypoint
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      list="known-corridor-cities-list"
+                      value={newWaypointInput}
+                      onChange={(e) => setNewWaypointInput(e.target.value)}
+                      placeholder="e.g. Olympia, WA"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddWaypoint}
+                      disabled={!newWaypointInput.trim()}
+                      className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-black shrink-0 cursor-pointer transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* ================================================================= */}
+              {/* SCROLLABLE RIGHT PANEL (65-70%): Chronological Day-by-Day Cards    */}
+              {/* ================================================================= */}
+              <div className="col-span-12 lg:col-span-8 xl:col-span-8 space-y-4">
+                
+                {/* Right Panel Header Bar */}
+                <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-indigo-600" />
+                      <span>Chronological Day-by-Day Schedule</span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      {stops.length} dates • Review transit legs, contracts, load-in times, and hotel holds.
                     </p>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => handleSaveAndFinishLater(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black flex items-center gap-2 cursor-pointer shrink-0"
+                    onClick={() => {
+                      const txt = formatPersonalizedItineraryText(currentTourPlan, bandProfile?.name);
+                      navigator.clipboard.writeText(txt);
+                      setCopiedLink(true);
+                      setTimeout(() => setCopiedLink(false), 3000);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black flex items-center gap-1.5 self-start sm:self-auto cursor-pointer transition-colors"
                   >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>Save &amp; Finish Later</span>
+                    {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedLink ? "Copied Itinerary!" : "Copy Itinerary Text"}</span>
                   </button>
                 </div>
 
-                {/* Key Metrics Bar */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Total Distance</span>
-                    <div className="text-lg font-black text-slate-900 flex items-center gap-1">
-                      <Navigation className="w-4 h-4 text-indigo-600" />
-                      <span>{totalDistanceMiles} mi</span>
-                    </div>
-                  </div>
+                {/* Native Autocomplete Datalist for Corridor Cities & Hubs */}
+                <datalist id="known-corridor-cities-list">
+                  {POPULAR_NATIONWIDE_HUBS.map(h => (
+                    <option key={`hub-${h}`} value={h}>
+                      {h} (Tour Hub)
+                    </option>
+                  ))}
+                  {KNOWN_CORRIDOR_CITIES.map((c) => (
+                    <option key={`${c.city}-${c.state}`} value={`${c.city}, ${c.state}`}>
+                      {c.city}, {c.state} ({c.tier})
+                    </option>
+                  ))}
+                </datalist>
 
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Est. Total Drive Time</span>
-                    <div className="text-lg font-black text-slate-900 flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-indigo-600" />
-                      <span>{totalDriveTime}</span>
-                    </div>
-                  </div>
+                <datalist id="tour-nationwide-hubs-list">
+                  {POPULAR_NATIONWIDE_HUBS.map(h => (
+                    <option key={`nhub-${h}`} value={h} />
+                  ))}
+                  {KNOWN_CORRIDOR_CITIES.map(c => (
+                    <option key={`ncity-${c.city}-${c.state}`} value={`${c.city}, ${c.state}`} />
+                  ))}
+                </datalist>
 
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Van Gas Budget (Est.)</span>
-                    <div className="text-lg font-black text-emerald-700 flex items-center gap-1">
-                      <Fuel className="w-4 h-4 text-emerald-600" />
-                      <span>${financials.totalGas}</span>
-                    </div>
-                  </div>
+                {/* Day-by-Day Tour Stop Cards */}
+                <div className="space-y-4">
+                  {stops.map((stop, idx) => {
+                    const isOrigin = idx === 0;
+                    const isDestination = idx === stops.length - 1;
+                    const isFatigued = (stop.distanceMilesFromPrev || 0) > 240 || (
+                      Boolean(stop.driveTimeFromPrev && (
+                        stop.driveTimeFromPrev.includes("4 hr") || 
+                        stop.driveTimeFromPrev.includes("5 hr") || 
+                        stop.driveTimeFromPrev.includes("6 hr") || 
+                        stop.driveTimeFromPrev.includes("7 hr") || 
+                        stop.driveTimeFromPrev.includes("8 hr")
+                      ))
+                    );
 
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Performance Stops</span>
-                    <div className="text-lg font-black text-slate-900 flex items-center gap-1">
-                      <Building className="w-4 h-4 text-indigo-600" />
-                      <span>{stops.length} Cities</span>
-                    </div>
-                  </div>
-                </div>
+                    // Stage status defaults to 'hold' ("ON HOLD") if unselected/unconfirmed
+                    const venueRawStatus = stop.selectedVenue?.bookingStatus;
+                    const venueStatus: "penciled" | "hold" | "confirmed" = 
+                      venueRawStatus === "confirmed" ? "confirmed" : 
+                      venueRawStatus === "penciled" ? "penciled" : "hold";
 
-                {/* Loop Route / Return Leg Diversification Card */}
-                {(duplicateReturnAnalysis.isOutAndBack || isRoundTripLoop || duplicateReturnAnalysis.hasDuplicates || replacedLoopPairs.length > 0) && (
-                  <div className="bg-gradient-to-br from-indigo-50/90 via-slate-50 to-emerald-50/70 border-2 border-indigo-200 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs" id="loop-route-diversification-card">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-indigo-100">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <RotateCcw className="w-4 h-4 text-indigo-600 shrink-0" />
-                          <h4 className="text-sm font-black text-slate-900 tracking-tight">
-                            Loop Route / Return Leg Diversification
-                          </h4>
-                          {isReturnDiversified && replacedLoopPairs.length > 0 ? (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              ✓ Diversified Circular Loop Active
-                            </span>
-                          ) : duplicateReturnAnalysis.hasDuplicates ? (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              <span>{duplicateReturnAnalysis.duplicateCount} Duplicate Cities Detected</span>
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
-                              Circular Routing
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-600 max-w-2xl">
-                          Replaces duplicate corridor stops on the return leg with adjacent, viable secondary music markets along parallel highways and byways (e.g. Bend, Hood River, Yakima, Wenatchee, Everett).
-                        </p>
-                      </div>
+                    // Lodging status defaults to 'penciled' if unconfirmed
+                    const lodgingRawStatus = stop.selectedLodging?.bookingStatus;
+                    const lodgingStatus: "penciled" | "hold" | "confirmed" =
+                      (lodgingRawStatus === "confirmed" || stop.selectedLodging?.isBooked) ? "confirmed" :
+                      lodgingRawStatus === "hold" ? "hold" : "penciled";
 
-                      {/* Diversify Toggle */}
-                      <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-white/80 p-2 rounded-2xl border border-indigo-200/80 shadow-xs">
-                        <span className="text-xs font-black text-slate-800">
-                          Diversify Return Route
-                        </span>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={isReturnDiversified}
-                            onChange={(e) => handleToggleReturnDiversification(e.target.checked)}
-                            className="sr-only peer"
-                            id="toggle-diversify-return-route"
-                          />
-                          <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                        </label>
-                      </div>
-                    </div>
+                    const isInlineEditing = editingStopIndex === idx;
 
-                    {/* Diversified Replacement Details */}
-                    {isReturnDiversified && replacedLoopPairs.length > 0 ? (
-                      <div className="space-y-2.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-black text-slate-700 uppercase tracking-wider text-[11px]">
-                            Parallel Highway Music Markets ({replacedLoopPairs.length} Alternative Stops)
-                          </span>
-                          <span className="text-slate-500 text-[11px]">Zero redundant backtracking</span>
-                        </div>
+                    const isMedfordFinale = (stop.city.toLowerCase().includes("medford") || (!stop.isReturnLeg && (idx === 5 || isDestination))) && !stop.isReturnLeg;
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                          {replacedLoopPairs.map((pair, pIdx) => (
-                            <div
-                              key={pIdx}
-                              className="p-3 bg-white rounded-xl border border-indigo-100 shadow-2xs flex items-center justify-between gap-3 text-xs"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="line-through text-slate-400 font-bold">{pair.originalCity}</span>
-                                <ArrowRight className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                                <span className="font-black text-emerald-800">{pair.newCity}, {pair.newState}</span>
-                              </div>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                                {pair.highway}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="text-[11px] text-slate-500 pt-1 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>Driving logistics, van gas budget, and OpenStreetMap Leaflet waypoints automatically updated for this genuine circular touring loop.</span>
-                        </div>
-                      </div>
-                    ) : duplicateReturnAnalysis.hasDuplicates ? (
-                      <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                        <div className="space-y-1">
-                          <div className="font-black text-amber-900 flex items-center gap-1.5">
-                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                            <span>Repeating Cities on Return Leg: {duplicateReturnAnalysis.duplicateCities.join(" → ")}</span>
-                          </div>
-                          <p className="text-amber-800/80 text-[11px]">
-                            Playing the same cities twice on the way back may dilute ticket sales. Turn on return diversification to route through adjacent secondary markets along parallel corridors!
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleReturnDiversification(true)}
-                          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shrink-0 cursor-pointer transition-colors shadow-xs"
-                        >
-                          Diversify Route Now
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-
-                {/* Stops Manager List */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between pb-1">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-                      Sequential Corridor Stops ({stops.length})
-                    </span>
-                    <span className="text-xs text-slate-500">Reorder with arrows or delete</span>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {/* Native autocomplete suggestions for standard corridor cities */}
-                    <datalist id="known-corridor-cities-list">
-                      {KNOWN_CORRIDOR_CITIES.map((c) => (
-                        <option key={c.label} value={`${c.city}, ${c.state}`}>
-                          {c.label} • {c.tier}
-                        </option>
-                      ))}
-                    </datalist>
-
-                    {stops.map((stop, idx) => {
-                      const isOrigin = idx === 0;
-                      const isDestination = idx === stops.length - 1;
-                      const isFatigued = stop.distanceMilesFromPrev > 260; // > 4.5 hours drive
-                      const isEditing = editingStopIndex === idx;
-
-                      if (isEditing) {
-                        return (
-                          <div
-                            key={stop.id || idx}
-                            className="p-5 rounded-2xl bg-indigo-50/70 border-2 border-indigo-500 shadow-md space-y-4 transition-all animate-in fade-in"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200 pb-3">
-                              <div className="flex items-center gap-2.5">
-                                <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
-                                  {idx + 1}
-                                </span>
-                                <div>
-                                  <h4 className="font-black text-indigo-950 text-sm flex items-center gap-1.5">
-                                    <Pencil className="w-3.5 h-3.5 text-indigo-600" />
-                                    <span>Edit Tour Stop #{idx + 1} — {stop.city}, {stop.state}</span>
-                                  </h4>
-                                  <p className="text-[11px] text-indigo-700">
-                                    Update city, adjust show date, or modify routing priority. Transit metrics &amp; itinerary recalculate instantly.
-                                  </p>
-                                </div>
-                              </div>
-                              <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
-                                {isOrigin ? "Tour Kickoff" : isDestination ? "Tour Finale" : `Day ${idx + 1} Waypoint`}
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {/* City & State Input */}
-                              <div className="space-y-1.5 sm:col-span-2">
-                                <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                                  <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-                                  <span>City &amp; State / Region</span>
-                                </label>
-                                <div className="flex gap-2">
-                                  <input
-                                    type="text"
-                                    list="known-corridor-cities-list"
-                                    value={editStopCity}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      if (val.includes(",")) {
-                                        const [c, s] = val.split(",").map(p => p.trim());
-                                        setEditStopCity(c);
-                                        if (s) setEditStopState(s);
-                                      } else {
-                                        setEditStopCity(val);
-                                      }
-                                    }}
-                                    placeholder="Enter city (e.g. Portland, Seattle, Eugene, Bend, Boise)"
-                                    className="flex-1 px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-semibold text-slate-900 shadow-2xs"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={editStopState}
-                                    onChange={(e) => setEditStopState(e.target.value.toUpperCase())}
-                                    placeholder="State"
-                                    maxLength={4}
-                                    className="w-24 px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-bold text-slate-900 uppercase text-center shadow-2xs"
-                                  />
-                                </div>
-
-                                {/* Quick Corridor City Switcher Badges */}
-                                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                                  <span className="text-[11px] font-bold text-slate-500">Quick Corridor Suggestions:</span>
-                                  {[
-                                    "Portland, OR", 
-                                    "Seattle, WA", 
-                                    "Eugene, OR", 
-                                    "Bend, OR", 
-                                    "Olympia, WA", 
-                                    "Tacoma, WA", 
-                                    "Spokane, WA", 
-                                    "Boise, ID", 
-                                    "San Francisco, CA"
-                                  ].map((quickCity) => {
-                                    const [qC, qS] = quickCity.split(", ");
-                                    const isCurrent = editStopCity.toLowerCase() === qC.toLowerCase() && editStopState.toUpperCase() === qS.toUpperCase();
-                                    return (
-                                      <button
-                                        key={quickCity}
-                                        type="button"
-                                        onClick={() => {
-                                          setEditStopCity(qC);
-                                          setEditStopState(qS);
-                                        }}
-                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
-                                          isCurrent
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
-                                            : "bg-white hover:bg-indigo-100 text-slate-700 hover:text-indigo-900 border-slate-200"
-                                        }`}
-                                      >
-                                        {quickCity}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-
-                              {/* Performance Date Picker */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                                  <span>Performance Date</span>
-                                </label>
-                                <input
-                                  type="date"
-                                  value={editStopDate}
-                                  onChange={(e) => setEditStopDate(e.target.value)}
-                                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-semibold text-slate-900 shadow-2xs"
-                                />
-                                <span className="text-[11px] text-slate-500 block">
-                                  Shifting show dates updates run-of-show &amp; hotel reservations.
-                                </span>
-                              </div>
-
-                              {/* Routing Priority / Highlight */}
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                                  <Compass className="w-3.5 h-3.5 text-indigo-600" />
-                                  <span>Routing Priority / Category</span>
-                                </label>
-                                <select
-                                  value={editStopRoutingPriority}
-                                  onChange={(e) => setEditStopRoutingPriority(e.target.value)}
-                                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-semibold text-slate-900 shadow-2xs"
-                                >
-                                  <option value="Essential Tour Stop (Anchor Market)">Essential Tour Stop (Anchor Market)</option>
-                                  <option value="High Priority Weekend Draw">High Priority Weekend Draw</option>
-                                  <option value="Corridor Connector / Midweek Showcase">Corridor Connector / Midweek Showcase</option>
-                                  <option value="DIY / Community Underplay">DIY / Community Underplay</option>
-                                  <option value="Homecoming Wrap-up Show">Homecoming Wrap-up Show</option>
-                                  <option value="Rest Day &amp; Van Maintenance">Rest Day &amp; Van Maintenance</option>
-                                </select>
-                                <span className="text-[11px] text-slate-500 block">
-                                  Affects scheduling tags and band itinerary priority.
-                                </span>
-                              </div>
-
-                              {/* Notes / Routing details */}
-                              <div className="space-y-1.5 sm:col-span-2">
-                                <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                                  <Info className="w-3.5 h-3.5 text-indigo-600" />
-                                  <span>Scene Notes &amp; Routing Priorities</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  value={editStopNotes}
-                                  onChange={(e) => setEditStopNotes(e.target.value)}
-                                  placeholder="e.g. Load-in at 5:00 PM, strong local radio station support, merchandise booth setup"
-                                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium text-slate-900 shadow-2xs"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-indigo-200">
-                              <button
-                                type="button"
-                                onClick={handleCancelEditStop}
-                                className="px-4 py-2 text-xs font-black text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition-all cursor-pointer shadow-2xs"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSaveEditStop(idx)}
-                                className="px-5 py-2 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5 active:scale-98"
-                              >
-                                <Check className="w-4 h-4 stroke-[3]" />
-                                <span>Save Changes</span>
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return (
+                    return (
+                      <React.Fragment key={stop.id || idx}>
                         <div
-                          key={stop.id || idx}
-                          className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
+                          id={`master-stop-card-${idx}`}
+                          className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4 hover:border-slate-300 transition-all"
                         >
-                          <div className="flex items-start sm:items-center gap-3">
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
-                              isOrigin 
-                                ? "bg-indigo-600 text-white" 
-                                : isDestination 
-                                ? "bg-rose-600 text-white" 
-                                : "bg-slate-100 text-slate-800"
-                            }`}>
-                              {idx + 1}
-                            </div>
-
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-black text-slate-900 text-sm">
+                        {/* Stop Header Bar */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                              {stop.dayNumber || idx + 1}
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-base font-black text-slate-900 tracking-tight">
                                   {stop.city}, {stop.state}
                                 </h4>
                                 {isOrigin && (
-                                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                                    Kickoff
+                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                    Tour Kickoff
                                   </span>
                                 )}
-                                {isDestination && (
-                                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-rose-100 text-rose-800">
-                                    Finale
+                                {isDestination && !isOrigin && !stop.isReturnLeg && (
+                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                                    Tour Finale
                                   </span>
                                 )}
-                                {isFatigued && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3 text-amber-600" />
-                                    <span>Fatigue Alert (&gt;4.5 hrs)</span>
+                                {stop.isReturnLeg && (
+                                  <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1 shadow-2xs">
+                                    <Compass className="w-3 h-3 text-amber-600" />
+                                    <span>Return Leg</span>
                                   </span>
                                 )}
                               </div>
-
-                              <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <span>📅 Day {idx + 1} ({stop.date})</span>
-                                <span>🚗 {stop.driveTimeFromPrev} ({stop.distanceMilesFromPrev} mi)</span>
-                                <span>⛽ ~${stop.estimatedGasCost || 0} fuel</span>
-                              </div>
+                              <span className="text-xs text-slate-500 font-bold">
+                                {formatReadableDate(stop.date || "")}
+                              </span>
                             </div>
                           </div>
 
-                          {/* Stop Actions */}
-                          <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-auto">
-                            {/* Edit Tour Stop Action Button */}
+                          {/* Stop Action Buttons (Edit Stop, Reorder, Remove) */}
+                          <div className="flex items-center gap-1.5 self-start sm:self-auto">
                             <button
                               type="button"
-                              onClick={() => handleOpenEditStop(idx)}
-                              className="text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 shadow-2xs hover:border-indigo-300"
-                              title={`Edit tour stop details for ${stop.city}, ${stop.state}`}
+                              onClick={() => setEditModalStopIndex(idx)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors border border-slate-200"
+                              title="Edit Tour Stop (City, Date, Times)"
                             >
                               <Pencil className="w-3.5 h-3.5 text-indigo-600" />
                               <span>Edit Tour Stop</span>
@@ -3071,9 +3386,9 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                             <button
                               type="button"
                               onClick={() => handleMoveStop(idx, "up")}
-                              disabled={isOrigin}
-                              title="Move Stop Up"
-                              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 cursor-pointer"
+                              disabled={idx === 0}
+                              className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-30 text-slate-600 cursor-pointer border border-slate-200"
+                              title="Move Stop Earlier"
                             >
                               <ArrowUp className="w-3.5 h-3.5" />
                             </button>
@@ -3081,2946 +3396,580 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                             <button
                               type="button"
                               onClick={() => handleMoveStop(idx, "down")}
-                              disabled={isDestination}
-                              title="Move Stop Down"
-                              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 cursor-pointer"
+                              disabled={idx === stops.length - 1}
+                              className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 disabled:opacity-30 text-slate-600 cursor-pointer border border-slate-200"
+                              title="Move Stop Later"
                             >
                               <ArrowDown className="w-3.5 h-3.5" />
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveStop(idx)}
-                              title="Remove Stop"
-                              className="p-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Add Intermediate Waypoint Tool */}
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <Plus className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Add Custom Waypoint City to Route</span>
-                  </span>
-
-                  <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. Olympia, WA or Sacramento, CA"
-                      value={newWaypointInput}
-                      onChange={(e) => setNewWaypointInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddWaypoint()}
-                      className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleAddWaypoint()}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-black shrink-0 cursor-pointer transition-colors"
-                    >
-                      Insert Stop
-                    </button>
-                  </div>
-                </div>
-
-                {/* Route Map Preview */}
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-                      Interactive Corridor Map Preview
-                    </span>
-                    <span className="text-xs text-slate-500">OpenStreetMap route geometry</span>
-                  </div>
-                  <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-inner h-80">
-                    <TourMap
-                      stops={stops}
-                      tourTitle={tourTitle}
-                      totalDistanceMiles={totalDistanceMiles}
-                      totalDriveTime={totalDriveTime}
-                      className="h-full w-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Step 2 Action Buttons */}
-                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setWizardStep(1)}
-                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    <span>Back to Route Setup</span>
-                  </button>
-
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => handleSaveAndFinishLater(false)}
-                      className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>Save Draft</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleProceedToStages}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-98"
-                      id="btn-proceed-to-step3"
-                    >
-                      <span>Set Up Stages &amp; Venues (Step 3)</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* --------------------------------------------------------------------- */}
-          {/* STEP 3: CITY-BY-CITY STAGE & LODGING SETUP                            */}
-          {/* --------------------------------------------------------------------- */}
-          {wizardStep === 3 && stops[activeStageIndex] && (
-            <div className="space-y-6 animate-in fade-in duration-200" id="tour-step-3-stages">
-              
-              {/* Active Stop Card */}
-              {(() => {
-                const currentStop = stops[activeStageIndex];
-                const rawVenues = cityVenuesMap[`${currentStop.city}_${currentStop.state}`] || cityVenuesMap[currentStop.city] || [];
-                const availableVenues = rawVenues.length > 0 ? rawVenues : (currentStop.suggestedVenues || []);
-                const isCustomMode = customVenueMode[currentStop.id];
-                const hasSelectedVenue = Boolean(currentStop.selectedVenue?.name);
-                const isLodgingResolved = Boolean(currentStop.selectedLodging?.name) || Boolean(skippedLodgingMap[activeStageIndex]);
-                const showInterstitialPrompt = hasSelectedVenue && !isLodgingResolved && inlineLodgingStopIndex !== activeStageIndex;
-                const showInlineLodging = inlineLodgingStopIndex === activeStageIndex;
-
-                const stopLodgingOptions = (currentStop.lodgingOptions && currentStop.lodgingOptions.length > 0)
-                  ? currentStop.lodgingOptions
-                  : findLodgingForCity(currentStop.city, currentStop.state);
-
-                const filteredLodgingOptions = stopLodgingOptions.filter(l => {
-                  if (lodgingCategoryFilter === "hotels") return l.type.toLowerCase().includes("hotel") || l.type.toLowerCase().includes("motel") || l.type.toLowerCase().includes("inn");
-                  if (lodgingCategoryFilter === "campgrounds") return l.type.toLowerCase().includes("van") || l.type.toLowerCase().includes("rv") || l.type.toLowerCase().includes("camp") || l.type.toLowerCase().includes("koa");
-                  if (lodgingCategoryFilter === "free") return l.type.toLowerCase().includes("van") || l.type.toLowerCase().includes("parking") || l.estPricePerNight.includes("$0") || l.estPricePerNight.includes("Free");
-                  return true;
-                });
-
-                return (
-                  <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8">
-                    
-                    {/* City Stepper Navigation */}
-                    <div className="space-y-3 pb-6 border-b border-slate-100">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-0.5">
-                          <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
-                            Step 3 • Stop-by-Stop Stages &amp; Lodging Selection
-                          </span>
-                          <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                            <span>Stop {activeStageIndex + 1} of {stops.length}:</span>
-                            <span className="text-indigo-600">{currentStop.city}, {currentStop.state}</span>
-                          </h3>
-                          <p className="text-xs text-slate-500">
-                            {currentStop.localSceneNotes || "Select a vetted live music venue, then configure overnight lodging accommodations."}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                          <button
-                            type="button"
-                            onClick={handleStagePrev}
-                            disabled={activeStageIndex === 0}
-                            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
-                          >
-                            <ChevronLeft className="w-3.5 h-3.5" />
-                            <span>Previous City</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleStageNext}
-                            className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-1 cursor-pointer transition-colors"
-                          >
-                            <span>{activeStageIndex === stops.length - 1 ? "Review Tour (Step 5)" : "Next City"}</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Horizontal City Stepper Tabs */}
-                      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2">
-                        {stops.map((s, idx) => {
-                          const stopVenueDone = Boolean(s.selectedVenue?.name);
-                          const stopLodgingDone = Boolean(s.selectedLodging?.name) || Boolean(skippedLodgingMap[idx]);
-                          const isFullyDone = stopVenueDone && stopLodgingDone;
-                          const isActive = idx === activeStageIndex;
-
-                          return (
-                            <button
-                              key={s.id || idx}
-                              type="button"
-                              onClick={() => {
-                                setActiveStageIndex(idx);
-                                setInterstitialLodgingPromptStop(null);
-                                setInlineLodgingStopIndex(null);
-                                loadVenuesForStageCity(s.city, s.state);
-                              }}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 cursor-pointer transition-all ${
-                                isActive 
-                                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-black" 
-                                  : isFullyDone
-                                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
-                                  : stopVenueDone
-                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
-                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                              }`}
-                            >
-                              <span>{idx + 1}. {s.city}</span>
-                              {isFullyDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
-                              {!isFullyDone && stopVenueDone && <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Section 1: Venue Selection */}
-                    <div className="space-y-4" id="stop-venue-selection-section">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="space-y-0.5">
-                          <h4 className="text-base font-black text-slate-900 flex items-center gap-2">
-                            <Building className="w-4 h-4 text-indigo-600" />
-                            <span>1. Select Live Music Venue in {currentStop.city}</span>
-                          </h4>
-                          <p className="text-xs text-slate-500">
-                            Vetted live music stages matching your tour genre and room capacity.
-                          </p>
-                        </div>
-
-                        {hasSelectedVenue && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStops(prev => {
-                                const copy = [...prev];
-                                if (copy[activeStageIndex]) {
-                                  copy[activeStageIndex].selectedVenue = undefined;
-                                }
-                                return copy;
-                              });
-                              setInterstitialLodgingPromptStop(null);
-                              setInlineLodgingStopIndex(null);
-                            }}
-                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer self-start sm:self-auto"
-                          >
-                            ← Change / Reselect Venue
-                          </button>
-                        )}
-                      </div>
-
-                      {/* If venue is already selected, display confirmation card */}
-                      {hasSelectedVenue && !isCustomMode ? (() => {
-                        const v = currentStop.selectedVenue;
-                        const vStatus = v?.bookingStatus || "confirmed";
-
-                        return (
-                          <div className="p-5 rounded-2xl bg-slate-50 border-2 border-indigo-300 shadow-sm space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h5 className="font-black text-slate-900 text-lg">{v?.name}</h5>
-                                  {(v?.isPrivate || v?.venueType === "house_show") && (
-                                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300 flex items-center gap-1">
-                                      <Lock className="w-2.5 h-2.5 stroke-[2.5]" />
-                                      <span>Private House Show / DIY Space</span>
-                                    </span>
-                                  )}
-                                  <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
-                                    vStatus === "confirmed"
-                                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                                      : vStatus === "penciled"
-                                      ? "bg-amber-100 text-amber-800 border border-amber-300"
-                                      : "bg-slate-200 text-slate-700 border border-slate-300"
-                                  }`}>
-                                    {vStatus === "confirmed" && <Check className="w-3 h-3 stroke-[3]" />}
-                                    {vStatus === "confirmed" ? "✓ Confirmed & Booked" : vStatus === "penciled" ? "Penciled In (Hold)" : "Unconfirmed Lead"}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1">
-                                  <span>
-                                    📍 {v?.address || `${currentStop.city}, ${currentStop.state}`}
-                                    {(v?.isPrivate || v?.venueType === "house_show") && (
-                                      <strong className="text-purple-700 ml-1">(Private Residential Address)</strong>
-                                    )}
-                                  </span>
-                                  {v?.capacity && <span>👥 Cap: {v.capacity}</span>}
-                                  {v?.contactPhone && <span>📞 {(v?.isPrivate || v?.venueType === "house_show") ? "Host Cell: " : ""}{v.contactPhone}</span>}
-                                  {v?.contactEmail && <span>✉️ {v.contactEmail}</span>}
-                                </div>
-                                {(v?.loadInNotes || (v?.isPrivate && v?.notes)) && (
-                                  <div className="text-[11px] text-purple-950 bg-purple-50 p-2.5 rounded-xl border border-purple-200">
-                                    🔒 <strong>Door / Load-In Notes:</strong> {v.loadInNotes || v.notes}
-                                  </div>
-                                )}
-                                {v?.suggestedDonation && (
-                                  <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 w-fit">
-                                    🎟️ Suggested Donation: {v.suggestedDonation}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Manual Booking Status Toggle */}
-                              <div className="flex items-center gap-1.5 self-start sm:self-auto bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleVenueStatus(activeStageIndex, "unconfirmed")}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
-                                    vStatus === "unconfirmed" ? "bg-slate-800 text-white font-black" : "text-slate-600 hover:text-slate-900"
-                                  }`}
-                                >
-                                  Unconfirmed / Lead
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleVenueStatus(activeStageIndex, "penciled")}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
-                                    vStatus === "penciled" ? "bg-amber-500 text-white font-black" : "text-slate-600 hover:text-slate-900"
-                                  }`}
-                                >
-                                  Penciled In
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleVenueStatus(activeStageIndex, "confirmed")}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
-                                    vStatus === "confirmed" ? "bg-emerald-600 text-white font-black" : "text-slate-600 hover:text-slate-900"
-                                  }`}
-                                >
-                                  ✓ Confirmed &amp; Booked
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Run of Show Times & Door Payout Terms */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                              <div>
-                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-0.5">Load-In Time</label>
-                                <input
-                                  type="text"
-                                  value={v?.loadInTime || "5:00 PM"}
-                                  onChange={(e) => handleUpdateSchedule(activeStageIndex, "loadInTime", e.target.value)}
-                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                                  placeholder="5:00 PM"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-0.5">Soundcheck</label>
-                                <input
-                                  type="text"
-                                  value={v?.soundcheckTime || "6:30 PM"}
-                                  onChange={(e) => handleUpdateSchedule(activeStageIndex, "soundcheckTime", e.target.value)}
-                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                                  placeholder="6:30 PM"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-0.5">Set Time</label>
-                                <input
-                                  type="text"
-                                  value={v?.setTime || "9:00 PM"}
-                                  onChange={(e) => handleUpdateSchedule(activeStageIndex, "setTime", e.target.value)}
-                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                                  placeholder="9:00 PM"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-black uppercase text-slate-500 mb-0.5">Door Terms ($ / %)</label>
-                                <input
-                                  type="text"
-                                  value={v?.doorGuarantee || "$350 Guarantee (80% Door)"}
-                                  onChange={(e) => handleUpdateSchedule(activeStageIndex, "doorGuarantee", e.target.value)}
-                                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                                  placeholder="$350 or 80% Door"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })() : (
-                        /* Directory Venues List or Custom Mode */
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
-                              Available Live Stages ({availableVenues.length})
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setCustomVenueMode(prev => ({ ...prev, [currentStop.id]: !isCustomMode }))}
-                              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
-                            >
-                              {isCustomMode ? "← Choose from Directory" : "+ Add Custom Stage (Commercial or House Show)"}
-                            </button>
-                          </div>
-
-                          {isCustomMode ? (() => {
-                            const stopKey = currentStop.id || String(activeStageIndex);
-                            const selectedType = customStageType[stopKey] || "commercial";
-                            const isHouseShow = selectedType === "house_show";
-                            const inputs = customStageInputs[stopKey] || {};
-
-                            const updateInput = (field: string, val: string) => {
-                              setCustomStageInputs(prev => ({
-                                ...prev,
-                                [stopKey]: {
-                                  ...(prev[stopKey] || {}),
-                                  [field]: val
-                                }
-                              }));
-                            };
-
-                            return (
-                              <div className="bg-slate-50 p-5 sm:p-6 rounded-3xl border-2 border-indigo-200/90 shadow-sm space-y-5 animate-in fade-in duration-200">
-                                <div>
-                                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                                    <span>Add Custom Stage for {currentStop.city}, {currentStop.state}</span>
-                                  </h4>
-                                  <p className="text-xs text-slate-500 mt-0.5">
-                                    Select the venue classification to control public directory listing vs. private tour privacy.
-                                  </p>
-                                </div>
-
-                                {/* 1. Classification Toggle */}
-                                <div className="p-1.5 bg-slate-200/80 rounded-2xl flex flex-col sm:flex-row gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setCustomStageType(prev => ({ ...prev, [stopKey]: "public_venue" }))}
-                                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                                      !isHouseShow
-                                        ? "bg-white text-indigo-950 shadow-md ring-1 ring-slate-300"
-                                        : "text-slate-600 hover:text-slate-900"
-                                    }`}
-                                  >
-                                    <Globe className="w-4 h-4 text-indigo-600" />
-                                    <span>Commercial / Public Music Venue</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => setCustomStageType(prev => ({ ...prev, [stopKey]: "house_show" }))}
-                                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                                      isHouseShow
-                                        ? "bg-purple-700 text-white shadow-md shadow-purple-900/30"
-                                        : "text-slate-600 hover:text-slate-900"
-                                    }`}
-                                  >
-                                    <Lock className="w-4 h-4 text-purple-200" />
-                                    <span>Private House Show / DIY Space</span>
-                                  </button>
-                                </div>
-
-                                {/* 2. Explicit Privacy Shield or Public Directory Notice Badge */}
-                                {isHouseShow ? (
-                                  <div className="p-4 rounded-2xl bg-purple-50 border-2 border-purple-300 flex items-start gap-3.5 text-xs text-purple-950 shadow-xs">
-                                    <div className="p-2 rounded-xl bg-purple-600 text-white shrink-0 mt-0.5">
-                                      <Shield className="w-4 h-4 stroke-[2.5]" />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="font-black text-purple-950 text-xs uppercase tracking-wider block">
-                                        🔒 Private / Anonymous Privacy Shield
-                                      </span>
-                                      <p className="text-xs text-purple-900 leading-relaxed font-semibold">
-                                        🔒 Private / Anonymous: This residential address &amp; contact will ONLY appear on your band&apos;s private tour sheet and will NEVER be published to other users or search engines.
-                                      </p>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="p-4 rounded-2xl bg-blue-50 border-2 border-blue-300 flex items-start gap-3.5 text-xs text-blue-950 shadow-xs">
-                                    <div className="p-2 rounded-xl bg-blue-600 text-white shrink-0 mt-0.5">
-                                      <Globe className="w-4 h-4 stroke-[2.5]" />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="font-black text-blue-950 text-xs uppercase tracking-wider block">
-                                        🌐 Public Directory
-                                      </span>
-                                      <p className="text-xs text-blue-900 leading-relaxed font-semibold">
-                                        🌐 Public Directory: This verified commercial club/theater will be added to the global GigLizard venue directory for all touring bands.
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* 3. Conditional Input Fields */}
-                                {isHouseShow ? (
-                                  /* Private House Show Fields */
-                                  <div className="space-y-3.5">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Host Name *
-                                        </label>
-                                        <input
-                                          type="text"
-                                          placeholder="e.g. Sarah's Basement / The Treehouse"
-                                          value={inputs.hostName || ""}
-                                          onChange={(e) => updateInput("hostName", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Host Cell Phone *
-                                        </label>
-                                        <input
-                                          type="text"
-                                          placeholder="e.g. 555-234-5678"
-                                          value={inputs.hostPhone || ""}
-                                          onChange={(e) => updateInput("hostPhone", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
-                                        />
-                                      </div>
-                                    </div>
-
-                                    <div>
-                                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                        Full Address * (Residential / Confidential)
-                                      </label>
-                                      <input
-                                        type="text"
-                                        placeholder={`e.g. 1420 Maple Ave, Apt 2, ${currentStop.city}, ${currentStop.state}`}
-                                        value={inputs.address || ""}
-                                        onChange={(e) => updateInput("address", e.target.value)}
-                                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
-                                      />
-                                      <span className="text-[10px] text-purple-700 mt-1 block font-medium">
-                                        🔒 Stored securely only in your tour route data. Never rendered in public searches.
-                                      </span>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Door / Load-in Notes
-                                        </label>
-                                        <input
-                                          type="text"
-                                          placeholder="e.g. Back alley load-in, quiet after 11 PM"
-                                          value={inputs.loadInNotes || ""}
-                                          onChange={(e) => updateInput("loadInNotes", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-600"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Suggested Donation / Door
-                                        </label>
-                                        <input
-                                          type="text"
-                                          placeholder="e.g. $10 suggested donation at door, BYOB"
-                                          value={inputs.suggestedDonation || ""}
-                                          onChange={(e) => updateInput("suggestedDonation", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-600"
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  /* Commercial Public Venue Fields */
-                                  <div className="space-y-3.5">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Venue Name *
-                                        </label>
-                                        <input
-                                          type="text"
-                                          placeholder="e.g. The Substation Club"
-                                          value={inputs.name || ""}
-                                          onChange={(e) => updateInput("name", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Room Capacity
-                                        </label>
-                                        <input
-                                          type="number"
-                                          placeholder="e.g. 250"
-                                          value={inputs.capacity || ""}
-                                          onChange={(e) => updateInput("capacity", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
-                                        />
-                                      </div>
-                                    </div>
-
-                                    <div>
-                                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                        Address *
-                                      </label>
-                                      <input
-                                        type="text"
-                                        placeholder={`e.g. 645 NW 45th St, ${currentStop.city}, ${currentStop.state}`}
-                                        value={inputs.address || ""}
-                                        onChange={(e) => updateInput("address", e.target.value)}
-                                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600"
-                                      />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Booking Contact
-                                        </label>
-                                        <input
-                                          type="text"
-                                          placeholder="e.g. Alex Rivera"
-                                          value={inputs.contactName || ""}
-                                          onChange={(e) => updateInput("contactName", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-600"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Phone
-                                        </label>
-                                        <input
-                                          type="text"
-                                          placeholder="e.g. 206-555-0199"
-                                          value={inputs.contactPhone || ""}
-                                          onChange={(e) => updateInput("contactPhone", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-600"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                          Booking Email
-                                        </label>
-                                        <input
-                                          type="email"
-                                          placeholder="e.g. booking@substation.com"
-                                          value={inputs.contactEmail || ""}
-                                          onChange={(e) => updateInput("contactEmail", e.target.value)}
-                                          className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-600"
-                                        />
-                                      </div>
-                                    </div>
-
-                                    <div>
-                                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                                        PA / Sound Specs
-                                      </label>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. 32-channel digital desk, 4 monitor mixes, 2x18 subs"
-                                        value={inputs.soundSpecs || ""}
-                                        onChange={(e) => updateInput("soundSpecs", e.target.value)}
-                                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-indigo-600"
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Action Controls */}
-                                <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200">
-                                  <button
-                                    type="button"
-                                    onClick={() => setCustomVenueMode(prev => ({ ...prev, [currentStop.id]: false }))}
-                                    className="text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer order-2 sm:order-1"
-                                  >
-                                    ← Cancel &amp; Choose from Directory
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => handleConfirmCustomStage(activeStageIndex)}
-                                    disabled={isSubmittingCustomStage}
-                                    className={`w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-black text-white shadow-md cursor-pointer transition-all flex items-center justify-center gap-2 order-1 sm:order-2 ${
-                                      isHouseShow
-                                        ? "bg-purple-700 hover:bg-purple-800 shadow-purple-900/30"
-                                        : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30"
-                                    }`}
-                                  >
-                                    {isSubmittingCustomStage ? (
-                                      <>
-                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                        <span>Saving Stage...</span>
-                                      </>
-                                    ) : isHouseShow ? (
-                                      <>
-                                        <Lock className="w-3.5 h-3.5" />
-                                        <span>🔒 Save Private House Show to Tour Sheet</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Globe className="w-3.5 h-3.5" />
-                                        <span>🌐 Publish Commercial Venue &amp; Attach to Tour</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })() : (
-                            /* Vetted Venues Grid with 1-click selection */
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                              {availableVenues.map((v) => {
-                                const isSelected = currentStop.selectedVenue?.name === v.name;
-
-                                return (
-                                  <div
-                                    key={v.id || v.name}
-                                    className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
-                                      isSelected 
-                                        ? "bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-600/30 shadow-md" 
-                                        : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-xs"
-                                    }`}
-                                  >
-                                    <div className="space-y-1.5">
-                                      <div className="flex items-start justify-between gap-2">
-                                        <h5 className="font-black text-slate-900 text-sm">{v.name}</h5>
-                                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                                          {v.capacity || 150} cap
-                                        </span>
-                                      </div>
-                                      <div className="text-xs text-slate-500 truncate">{v.address}</div>
-                                      <div className="flex flex-wrap gap-1 pt-1">
-                                        {v.hasPA && (
-                                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                                            In-House PA
-                                          </span>
-                                        )}
-                                        {v.hasLighting && (
-                                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                                            Stage Lights
-                                          </span>
-                                        )}
-                                        {v.genres?.slice(0, 2).map((g) => (
-                                          <span key={g} className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                                            {g}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-
-                                    <div className="pt-2 flex items-center justify-between border-t border-slate-100">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleSelectVenueForStop(activeStageIndex, v)}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
-                                          isSelected
-                                            ? "bg-indigo-600 text-white shadow-xs"
-                                            : "bg-slate-900 hover:bg-indigo-600 text-white"
-                                        }`}
-                                      >
-                                        {isSelected ? (
-                                          <>
-                                            <Check className="w-3.5 h-3.5" />
-                                            <span>Stage Selected</span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <span>Select This Stage / Venue</span>
-                                            <ArrowRight className="w-3.5 h-3.5" />
-                                          </>
-                                        )}
-                                      </button>
-                                      {v.contactEmail && (
-                                        <span className="text-[10px] text-slate-400 font-mono truncate max-w-[120px]">
-                                          {v.contactEmail}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Section 2: Interstitial Accommodation Prompt per Stop */}
-                    {showInterstitialPrompt && (() => {
-                      const lodgingDates = getTourStopLodgingDates(currentStop.date);
-                      const cityLinks = generateLodgingDeepLinks({
-                        city: currentStop.city,
-                        state: currentStop.state,
-                        checkInDate: lodgingDates.checkIn,
-                        checkOutDate: lodgingDates.checkOut,
-                        guests: 4
-                      });
-
-                      return (
-                        <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white rounded-3xl p-6 sm:p-8 border border-indigo-500/40 shadow-xl space-y-5 animate-in fade-in duration-200" id="interstitial-lodging-prompt">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                  ✓ Stage Locked: {currentStop.selectedVenue?.name}
-                                </span>
-                                <span className="text-xs text-indigo-300">• Stop {activeStageIndex + 1} of {stops.length}</span>
-                              </div>
-                              <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                                Do you need lodging accommodations in {currentStop.city}?
-                              </h4>
-                              <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-                                Show night: <strong>{formatReadableDate(currentStop.date || lodgingDates.checkIn)}</strong> (Check-out: {formatReadableDate(lodgingDates.checkOut)}). Find band-friendly hotels with trailer/van parking, KOA &amp; RV campgrounds, or proceed without lodging.
-                              </p>
-                            </div>
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-800/50 border border-indigo-700/50 flex items-center justify-center shrink-0 hidden sm:flex">
-                              <Hotel className="w-6 h-6 text-indigo-300" />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-                            {/* Option A */}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenInlineLodging(activeStageIndex)}
-                              className="p-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black flex items-center justify-between gap-3 shadow-lg shadow-emerald-600/30 cursor-pointer transition-all active:scale-98"
-                              id={`btn-lodging-yes-${activeStageIndex}`}
-                            >
-                              <div className="flex items-center gap-3 text-left">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-700/60 flex items-center justify-center shrink-0">
-                                  <Hotel className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                  <div className="font-black text-sm">Option A: Yes, Find Lodging</div>
-                                  <div className="text-[11px] text-emerald-100 font-normal">Hotels, KOA/RV sites, secure parking</div>
-                                </div>
-                              </div>
-                              <ChevronRight className="w-5 h-5 shrink-0" />
-                            </button>
-
-                            {/* Option B */}
-                            <button
-                              type="button"
-                              onClick={() => handleSkipLodgingForStop(activeStageIndex)}
-                              className="p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 font-black flex items-center justify-between gap-3 border border-slate-700 cursor-pointer transition-all active:scale-98"
-                              id={`btn-lodging-no-${activeStageIndex}`}
-                            >
-                              <div className="flex items-center gap-3 text-left">
-                                <div className="w-10 h-10 rounded-xl bg-slate-700/60 flex items-center justify-center shrink-0">
-                                  <ArrowRight className="w-5 h-5 text-slate-300" />
-                                </div>
-                                <div>
-                                  <div className="font-black text-sm">Option B: No, Continue Without Lodging</div>
-                                  <div className="text-[11px] text-slate-400 font-normal">Skip accommodation and advance immediately</div>
-                                </div>
-                              </div>
-                              <ChevronRight className="w-5 h-5 shrink-0" />
-                            </button>
-                          </div>
-
-                          {/* Quick OTA Deep-Link Strip */}
-                          <div className="pt-2 border-t border-indigo-800/60 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-                            <span className="text-[11px] text-slate-300 font-bold flex items-center gap-1.5">
-                              <span>Instant OTA Deep-Links ({lodgingDates.checkIn} → {lodgingDates.checkOut}):</span>
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={cityLinks.expediaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 shadow-xs transition-colors"
-                              >
-                                <span>Reserve on Expedia (Pre-Filled Dates)</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <a
-                                href={cityLinks.bookingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 border border-slate-700 transition-colors"
-                              >
-                                <span>Booking.com</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <a
-                                href={cityLinks.koaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 border border-slate-700 transition-colors"
-                              >
-                                <span>KOA Campgrounds</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Section 3: Inline Lodging Module (Opened via Option A) */}
-                    {showInlineLodging && (() => {
-                      const lodgingDates = getTourStopLodgingDates(currentStop.date);
-                      const cityLinks = generateLodgingDeepLinks({
-                        city: currentStop.city,
-                        state: currentStop.state,
-                        checkInDate: lodgingDates.checkIn,
-                        checkOutDate: lodgingDates.checkOut,
-                        guests: 4
-                      });
-
-                      return (
-                        <div className="bg-slate-50 p-6 sm:p-8 rounded-3xl border-2 border-indigo-200 space-y-6 animate-in fade-in duration-200" id="stop-lodging-module">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-                            <div className="space-y-0.5">
-                              <span className="text-xs font-black uppercase tracking-wider text-emerald-700">
-                                Overnight Accommodations
-                              </span>
-                              <h4 className="text-xl font-black text-slate-900 tracking-tight">
-                                Band Lodging &amp; Campgrounds in {currentStop.city}
-                              </h4>
-                              <p className="text-xs text-slate-500">
-                                Check-in: <strong>{formatReadableDate(lodgingDates.checkIn)}</strong> → Check-out: <strong>{formatReadableDate(lodgingDates.checkOut)}</strong>. Pre-filtered for trailer parking and gear safety.
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={cityLinks.expediaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-xs transition-colors"
-                              >
-                                <span>Reserve on Expedia (Pre-Filled Dates)</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
+                            {stops.length > 2 && (
                               <button
                                 type="button"
-                                onClick={() => handleSkipLodgingForStop(activeStageIndex)}
-                                className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-300 cursor-pointer"
+                                onClick={() => handleRemoveStop(idx)}
+                                className="p-1.5 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer border border-slate-200 transition-colors"
+                                title="Remove Tour Stop"
                               >
-                                Skip Lodging for this City
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
-                            </div>
-                          </div>
-
-                          {/* Category Filter Pills */}
-                          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                            <button
-                              type="button"
-                              onClick={() => setLodgingCategoryFilter("all")}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
-                                lodgingCategoryFilter === "all" ? "bg-indigo-600 text-white font-black" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
-                              }`}
-                            >
-                              All Accommodations
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setLodgingCategoryFilter("hotels")}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
-                                lodgingCategoryFilter === "hotels" ? "bg-indigo-600 text-white font-black" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
-                              }`}
-                            >
-                              🏨 Band-Friendly Hotels &amp; Motels
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setLodgingCategoryFilter("campgrounds")}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
-                                lodgingCategoryFilter === "campgrounds" ? "bg-indigo-600 text-white font-black" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
-                              }`}
-                            >
-                              🏕 KOA &amp; RV Campgrounds
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setLodgingCategoryFilter("free")}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
-                                lodgingCategoryFilter === "free" ? "bg-indigo-600 text-white font-black" : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
-                              }`}
-                            >
-                              🚐 Free Overnight Van Parking
-                            </button>
-                          </div>
-
-                          {/* Curated Lodging Options Grid */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                            {filteredLodgingOptions.map((lodge) => {
-                              const isSelected = currentStop.selectedLodging?.name === lodge.name;
-                              const lodgeLinks = generateLodgingDeepLinks({
-                                city: currentStop.city,
-                                state: currentStop.state,
-                                checkInDate: lodgingDates.checkIn,
-                                checkOutDate: lodgingDates.checkOut,
-                                guests: 4,
-                                lodgingName: lodge.name,
-                                lodgingType: lodge.type
-                              });
-
-                              return (
-                                <div
-                                  key={lodge.id || lodge.name}
-                                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
-                                    isSelected 
-                                      ? "bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-600/30 shadow-md" 
-                                      : "bg-white border-slate-200 hover:border-slate-300"
-                                  }`}
-                                >
-                                  <div className="space-y-1.5">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <h5 className="font-black text-slate-900 text-sm">{lodge.name}</h5>
-                                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                                        {lodge.estPricePerNight}
-                                      </span>
-                                    </div>
-                                    <div className="text-[11px] text-indigo-700 font-bold">{lodge.type}</div>
-                                    <div className="text-xs text-slate-500">{lodge.address}</div>
-
-                                    {/* Gear Security & Parking Note */}
-                                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 space-y-1">
-                                      <span className="font-bold text-slate-900 block flex items-center gap-1">
-                                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                        <span>Parking &amp; Trailer Security:</span>
-                                      </span>
-                                      <p className="text-slate-600">{lodge.gearSecurityNote}</p>
-                                    </div>
-
-                                    {/* Amenities */}
-                                    {lodge.amenities && lodge.amenities.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 pt-1">
-                                        {lodge.amenities.map((am) => (
-                                          <span key={am} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                                            {am}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleLockInLodgingAndAdvance(activeStageIndex, lodge)}
-                                        className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all ${
-                                          isSelected
-                                            ? "bg-emerald-600 text-white shadow-xs"
-                                            : "bg-slate-900 hover:bg-emerald-600 text-white"
-                                        }`}
-                                      >
-                                        <Check className="w-3.5 h-3.5" />
-                                        <span>Select &amp; Advance →</span>
-                                      </button>
-
-                                      <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 cursor-pointer select-none">
-                                        <input
-                                          type="checkbox"
-                                          checked={Boolean(currentStop.selectedLodging?.name === lodge.name && currentStop.selectedLodging?.isBooked)}
-                                          onChange={() => {
-                                            if (currentStop.selectedLodging?.name !== lodge.name) {
-                                              handleSelectLodgingForStop(activeStageIndex, lodge);
-                                            }
-                                            handleToggleLodgingBooked(activeStageIndex);
-                                          }}
-                                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                                        />
-                                        <span>Mark as Booked</span>
-                                      </label>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                      <a
-                                        href={lodgeLinks.expediaUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black flex items-center gap-1 shadow-xs transition-colors"
-                                        title="Reserve on Expedia with pre-filled gig dates"
-                                      >
-                                        <span>Expedia</span>
-                                        <ExternalLink className="w-3 h-3" />
-                                      </a>
-                                      <a
-                                        href={lodgeLinks.bookingUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-                                        title="Search on Booking.com"
-                                      >
-                                        <span>Booking.com</span>
-                                        <ExternalLink className="w-3 h-3" />
-                                      </a>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                        {/* Custom Lodging Booking Form Fallback */}
-                        <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
-                          <span className="text-xs font-black uppercase text-slate-700 block">
-                            Or Add Custom / Already Booked Lodging Reservation
-                          </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                            <input
-                              type="text"
-                              placeholder="Hotel / RV Campground Name *"
-                              value={customLodgingInputs[activeStageIndex]?.name || ""}
-                              onChange={(e) => setCustomLodgingInputs(prev => ({
-                                ...prev,
-                                [activeStageIndex]: { ...prev[activeStageIndex], name: e.target.value }
-                              }))}
-                              className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Confirmation #"
-                              value={customLodgingInputs[activeStageIndex]?.confirmationNumber || ""}
-                              onChange={(e) => setCustomLodgingInputs(prev => ({
-                                ...prev,
-                                [activeStageIndex]: { ...prev[activeStageIndex], confirmationNumber: e.target.value }
-                              }))}
-                              className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white"
-                            />
-                            <input
-                              type="number"
-                              placeholder="Nightly Cost ($)"
-                              value={customLodgingInputs[activeStageIndex]?.cost || ""}
-                              onChange={(e) => setCustomLodgingInputs(prev => ({
-                                ...prev,
-                                [activeStageIndex]: { ...prev[activeStageIndex], cost: e.target.value }
-                              }))}
-                              className="p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:bg-white"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleSaveCustomLodgingForStop(activeStageIndex)}
-                              className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black cursor-pointer shadow-xs"
-                            >
-                              Save Reservation &amp; Advance →
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                    {/* Confirmed Lodging Display if already booked */}
-                    {currentStop.selectedLodging?.name && !showInlineLodging && (
-                      <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Hotel className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span className="font-black text-emerald-900 text-sm">
-                              Confirmed Lodging: {currentStop.selectedLodging.name}
-                            </span>
-                            {currentStop.selectedLodging.cost && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">
-                                ${currentStop.selectedLodging.cost} / night
-                              </span>
                             )}
                           </div>
-                          {currentStop.selectedLodging.gearSecurityNote && (
-                            <p className="text-emerald-800 text-[11px]">{currentStop.selectedLodging.gearSecurityNote}</p>
+                        </div>
+
+                        {/* Transit Badge (Miles, Drive Time, Fatigue Warning) */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isOrigin ? (
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100/80 px-3 py-1.5 rounded-xl border border-slate-200">
+                              <Navigation className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Kickoff Leg • 0 mi transit</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3 text-xs font-bold text-slate-700 bg-slate-100/90 px-3 py-1.5 rounded-xl border border-slate-200">
+                              <span className="flex items-center gap-1.5">
+                                <Navigation className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>{stop.distanceMilesFromPrev || 0} mi</span>
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>{stop.driveTimeFromPrev || "0 hrs"}</span>
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              <span className="flex items-center gap-1.5 text-emerald-700">
+                                <Fuel className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>~${stop.estimatedGasCost || Math.round((stop.distanceMilesFromPrev || 0) * 0.28)} gas</span>
+                              </span>
+                            </div>
+                          )}
+
+                          {isFatigued && !isOrigin && (
+                            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span>Fatigue Warning (&gt;4 hrs drive)</span>
+                            </span>
                           )}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenInlineLodging(activeStageIndex)}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 cursor-pointer self-start sm:self-auto shrink-0"
-                        >
-                          Change Lodging
-                        </button>
-                      </div>
-                    )}
+                        {/* Inline Stop Editor (if open) */}
+                        {isInlineEditing && (
+                          <div className="p-4 bg-indigo-50/60 rounded-2xl border border-indigo-200 space-y-3 animate-in fade-in duration-150">
+                            <div className="flex items-center justify-between pb-2 border-b border-indigo-200/60">
+                              <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                                <Pencil className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>Quick Edit Stop #{idx + 1}</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={handleCancelEditStop}
+                                className="text-xs font-bold text-slate-500 hover:text-slate-700"
+                              >
+                                Cancel
+                              </button>
+                            </div>
 
-                    {/* Skipped Lodging Display */}
-                    {skippedLodgingMap[activeStageIndex] && !currentStop.selectedLodging?.name && !showInlineLodging && (
-                      <div className="p-3.5 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-between gap-3 text-xs text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <Car className="w-4 h-4 text-slate-500 shrink-0" />
-                          <span>No lodging needed in {currentStop.city} (crashing with friends or driving through).</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenInlineLodging(activeStageIndex)}
-                          className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-bold text-[11px] border border-slate-300 cursor-pointer shrink-0"
-                        >
-                          Add Lodging
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Section 4: Show Schedule Times */}
-                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>Show Date &amp; Run-of-Show Times</span>
-                        </h4>
-                        <span className="text-xs text-slate-500">Customized for this city stop</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Show Date</label>
-                          <input
-                            type="date"
-                            value={currentStop.date || ""}
-                            onChange={(e) => handleUpdateStopDate(activeStageIndex, e.target.value)}
-                            className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Load-in Time</label>
-                          <input
-                            type="text"
-                            value={currentStop.selectedVenue?.loadInTime || "5:00 PM"}
-                            onChange={(e) => handleUpdateSchedule(activeStageIndex, "loadInTime", e.target.value)}
-                            placeholder="5:00 PM"
-                            className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Soundcheck</label>
-                          <input
-                            type="text"
-                            value={currentStop.selectedVenue?.soundcheckTime || "6:30 PM"}
-                            onChange={(e) => handleUpdateSchedule(activeStageIndex, "soundcheckTime", e.target.value)}
-                            placeholder="6:30 PM"
-                            className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Doors Open</label>
-                          <input
-                            type="text"
-                            value={currentStop.selectedVenue?.doorsTime || "7:30 PM"}
-                            onChange={(e) => handleUpdateSchedule(activeStageIndex, "doorsTime", e.target.value)}
-                            placeholder="7:30 PM"
-                            className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Set Time</label>
-                          <input
-                            type="text"
-                            value={currentStop.selectedVenue?.setTime || "9:00 PM"}
-                            onChange={(e) => handleUpdateSchedule(activeStageIndex, "setTime", e.target.value)}
-                            placeholder="9:00 PM"
-                            className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Tickets / Door</label>
-                          <input
-                            type="text"
-                            value={currentStop.selectedVenue?.ticketPrice || "$12 Adv / $15 Door"}
-                            onChange={(e) => handleUpdateSchedule(activeStageIndex, "ticketPrice", e.target.value)}
-                            placeholder="$12 Door"
-                            className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Section 5: Custom City / Stage Notes */}
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-black text-slate-800 uppercase tracking-wider">
-                        City &amp; Technical Notes (Optional)
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={currentStop.customNotes || ""}
-                        onChange={(e) => handleUpdateStopNotes(activeStageIndex, e.target.value)}
-                        placeholder="e.g. Inquire about house bass cab, co-bill support acts, merch table location..."
-                        className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
-
-                    {/* Step 3 Navigation Controls */}
-                    <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(2)}
-                          className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
-                        >
-                          ← Back to Corridor (Step 2)
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleSaveAndFinishLater(false)}
-                          className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Save className="w-3.5 h-3.5" />
-                          <span>Save Draft</span>
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-3 w-full sm:w-auto">
-                        {activeStageIndex > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleStagePrev}
-                            className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
-                          >
-                            Previous City Stop
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={handleStageNext}
-                          className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-98"
-                          id="btn-next-stage-or-review"
-                        >
-                          <span>
-                            {activeStageIndex === stops.length - 1 
-                              ? "Review & Finalize Tour (Step 5) →" 
-                              : "Next City Stop →"}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                  </div>
-                );
-              })()}
-
-            </div>
-          )}
-
-          {/* --------------------------------------------------------------------- */}
-          {/* STEP 4: TOUR LODGING & ACCOMMODATIONS (Unlocked after stages chosen)  */}
-          {/* --------------------------------------------------------------------- */}
-          {wizardStep === 4 && stops[activeLodgingIndex] && (
-            <div className="space-y-6 animate-in fade-in duration-200" id="tour-step-4-lodging">
-              {(() => {
-                const currentStop = stops[activeLodgingIndex];
-                const { checkIn, checkOut } = getStopCheckInAndOut(currentStop, startDate, activeLodgingIndex);
-                const formattedCheckIn = formatReadableDate(checkIn);
-                const formattedCheckOut = formatReadableDate(checkOut);
-                const { hotelsDotComUrl, bookingDotComUrl, googleHotelsUrl } = generateHotelSearchUrls(
-                  currentStop.city,
-                  currentStop.state,
-                  checkIn,
-                  checkOut
-                );
-                const hasLodgingDetails = Boolean(
-                  currentStop.selectedLodging?.name ||
-                  currentStop.selectedLodging?.confirmationNumber ||
-                  currentStop.selectedLodging?.cost ||
-                  currentStop.selectedLodging?.notes
-                );
-                const currentSnippet = pastedConfirmationSnippet[activeLodgingIndex] || "";
-
-                return (
-                  <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8">
-                    
-                    {/* Header & City Tabs */}
-                    <div className="space-y-4 pb-6 border-b border-slate-100">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <span className="text-xs font-black uppercase tracking-wider text-amber-600">
-                            Step 4 • Book Hotels &amp; Accommodations
-                          </span>
-                          <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                            Stop {activeLodgingIndex + 1} of {stops.length}: {currentStop.city}, {currentStop.state}
-                          </h3>
-                          <p className="text-xs text-slate-500">
-                            Show Night: <strong className="text-slate-800">{currentStop.date || formattedCheckIn}</strong> • Check-In: <strong className="text-slate-800">{formattedCheckIn}</strong> → Check-Out: <strong className="text-slate-800">{formattedCheckOut}</strong>
-                          </p>
-
-                          {/* Stop Venue Booking Status Badge & Quick Toggle */}
-                          {(() => {
-                            const v = currentStop.selectedVenue;
-                            const vStatus = v?.bookingStatus || (v?.name ? "unconfirmed" : "unconfirmed");
-                            const hasVenue = Boolean(v?.name);
-
-                            return (
-                              <div className="flex flex-wrap items-center gap-2 pt-1">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Venue:</span>
-                                <span className="text-xs font-black text-slate-900">{v?.name || "Unbooked / Missing Venue"}</span>
-                                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
-                                  !hasVenue 
-                                    ? "bg-rose-100 text-rose-800 border border-rose-300"
-                                    : vStatus === "confirmed"
-                                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                                    : vStatus === "penciled"
-                                    ? "bg-amber-100 text-amber-800 border border-amber-300"
-                                    : "bg-slate-200 text-slate-700 border border-slate-300"
-                                }`}>
-                                  {vStatus === "confirmed" && hasVenue && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                                  {!hasVenue ? "Unbooked / Missing Venue" : vStatus === "confirmed" ? "✓ Venue Confirmed" : vStatus === "penciled" ? "Penciled In" : "Unconfirmed Lead"}
-                                </span>
-
-                                <div className="inline-flex rounded-lg bg-white p-0.5 border border-slate-200 text-[10px]">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleVenueStatus(activeLodgingIndex, "unconfirmed")}
-                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
-                                      vStatus === "unconfirmed" && hasVenue ? "bg-slate-800 text-white" : "text-slate-600 hover:text-slate-900"
-                                    }`}
-                                  >
-                                    Lead
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleVenueStatus(activeLodgingIndex, "penciled")}
-                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
-                                      vStatus === "penciled" ? "bg-amber-500 text-white" : "text-slate-600 hover:text-slate-900"
-                                    }`}
-                                  >
-                                    Penciled
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleVenueStatus(activeLodgingIndex, "confirmed")}
-                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
-                                      vStatus === "confirmed" ? "bg-emerald-600 text-white" : "text-slate-600 hover:text-slate-900"
-                                    }`}
-                                  >
-                                    ✓ Confirmed
-                                  </button>
-                                </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="sm:col-span-2">
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  City &amp; State (Corridor Autocomplete)
+                                </label>
+                                <input
+                                  type="text"
+                                  list="known-corridor-cities-list"
+                                  value={`${editStopCity}${editStopState ? `, ${editStopState}` : ""}`}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const parts = val.split(",").map(p => p.trim());
+                                    setEditStopCity(parts[0] || "");
+                                    if (parts[1]) setEditStopState(parts[1]);
+                                  }}
+                                  placeholder="e.g. Eugene, OR"
+                                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold bg-white"
+                                />
                               </div>
-                            );
-                          })()}
-                        </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={handleLodgingPrev}
-                            disabled={activeLodgingIndex === 0}
-                            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
-                          >
-                            <ChevronLeft className="w-3.5 h-3.5" />
-                            <span>Previous City</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleLodgingNext}
-                            className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-black flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>{activeLodgingIndex === stops.length - 1 ? "Proceed to Review (Step 5)" : "Next City"}</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">Performance Date</label>
+                                <input
+                                  type="date"
+                                  value={editStopDate}
+                                  onChange={(e) => setEditStopDate(e.target.value)}
+                                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold bg-white"
+                                />
+                              </div>
+                            </div>
 
-                      {/* Horizontal City Tabs */}
-                      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
-                        {stops.map((s, idx) => {
-                          const isLodgingDone = Boolean(s.selectedLodging?.name || s.selectedLodging?.confirmationNumber);
-                          const isActive = idx === activeLodgingIndex;
-
-                          return (
-                            <button
-                              key={s.id || idx}
-                              type="button"
-                              onClick={() => setActiveLodgingIndex(idx)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 cursor-pointer transition-all ${
-                                isActive 
-                                  ? "bg-amber-600 text-white shadow-md shadow-amber-600/30 font-black" 
-                                  : isLodgingDone
-                                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
-                                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                              }`}
-                            >
-                              <span>{idx + 1}. {s.city}</span>
-                              {isLodgingDone && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Clear, Honest Lodging Disclaimer Banner */}
-                    <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-xs">
-                      <div className="p-2 rounded-xl bg-amber-500/20 text-amber-800 shrink-0 mt-0.5">
-                        <Info className="w-5 h-5 text-amber-800" />
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-amber-900">
-                          Direct Hotel Booking Policy
-                        </h4>
-                        <p className="text-xs sm:text-sm text-amber-950 leading-relaxed font-medium">
-                          GigLizard helps your band find budget-friendly rooms and trailer parking along your route, but does NOT book rooms or charge your card. You will book directly on each hotel&apos;s official site. We are working on a seamless hotel booking solution.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Direct Outbound Provider Buttons */}
-                    {(() => {
-                      const lodgingDates = getTourStopLodgingDates(currentStop.date || checkIn);
-                      const cityLinks = generateLodgingDeepLinks({
-                        city: currentStop.city,
-                        state: currentStop.state,
-                        checkInDate: lodgingDates.checkIn,
-                        checkOutDate: lodgingDates.checkOut,
-                        guests: 4
-                      });
-
-                      return (
-                        <div className="space-y-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                              <ExternalLink className="w-4 h-4 text-emerald-600" />
-                              <span>Live OTA Deep-Links for {currentStop.city} ({lodgingDates.checkIn} → {lodgingDates.checkOut})</span>
-                            </h4>
-                            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-slate-200 transition-colors w-fit">
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Routing / Priority Notes</label>
                               <input
-                                type="checkbox"
-                                checked={Boolean(currentStop.selectedLodging?.isBooked)}
-                                onChange={() => handleToggleLodgingBooked(activeLodgingIndex)}
-                                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                type="text"
+                                value={editStopNotes}
+                                onChange={(e) => setEditStopNotes(e.target.value)}
+                                placeholder="e.g. Must soundcheck before 6:00 PM for festival slot"
+                                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 bg-white"
                               />
-                              <span>Mark {currentStop.city} Room as Booked</span>
-                            </label>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                            {/* Expedia Deep Link */}
-                            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-white border-2 border-amber-300 hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between space-y-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-black text-slate-900 text-sm flex items-center gap-1.5">
-                                    <Hotel className="w-4 h-4 text-amber-600" />
-                                    <span>Expedia</span>
-                                  </span>
-                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-200 text-amber-950">Official Partner</span>
-                                </div>
-                                <p className="text-[11px] text-slate-600">
-                                  Gig night: <strong>{formatReadableDate(lodgingDates.checkIn)}</strong> → <strong>{formatReadableDate(lodgingDates.checkOut)}</strong>. Pre-filled dates &amp; 4 band guests.
-                                </p>
-                              </div>
-                              <a
-                                href={cityLinks.expediaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                              >
-                                <span>Reserve on Expedia (Pre-Filled Dates) ↗</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
                             </div>
 
-                            {/* Booking.com */}
-                            <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-indigo-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-black text-slate-900 text-sm">Booking.com</span>
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Free Parking Filter</span>
-                                </div>
-                                <p className="text-[11px] text-slate-500">
-                                  Pre-filtered for on-site vehicle parking to safeguard tour vans and gear trailers.
-                                </p>
-                              </div>
-                              <a
-                                href={cityLinks.bookingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                              >
-                                <span>Book on Booking.com ↗</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            </div>
-
-                            {/* KOA & Campgrounds */}
-                            <div className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col justify-between space-y-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-black text-slate-900 text-sm">KOA / Van Camping</span>
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">RV / Van Sites</span>
-                                </div>
-                                <p className="text-[11px] text-slate-500">
-                                  Tour van campsites, pull-through RV spaces, and 24/7 security near {currentStop.city}.
-                                </p>
-                              </div>
-                              <a
-                                href={cityLinks.koaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                              >
-                                <span>Search KOA Campgrounds ↗</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Vetted Band-Friendly Hotels for this Stop */}
-                    {currentStop.lodgingOptions && currentStop.lodgingOptions.length > 0 && (
-                      <div className="space-y-3">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span>Recommended Band Motels in {currentStop.city}</span>
-                        </h4>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                          {currentStop.lodgingOptions.map((opt, i) => {
-                            const optKey = opt.id || opt.name || String(i);
-                            const isEditingThisCard = inlineHotelEditKey === optKey;
-                            const nightlyRate = parseNightlyRate(opt.estPricePerNight);
-                            const totalCost = calculateStayCost(nightlyRate, 1);
-                            const optDates = getTourStopLodgingDates(currentStop.date || checkIn);
-                            const optLinks = generateLodgingDeepLinks({
-                              city: currentStop.city,
-                              state: currentStop.state,
-                              checkInDate: optDates.checkIn,
-                              checkOutDate: optDates.checkOut,
-                              guests: 4,
-                              lodgingName: opt.name,
-                              lodgingType: opt.type
-                            });
-                            const isThisHotelSelected = currentStop.selectedLodging?.name === opt.name;
-                            const isOptBooked = Boolean(isThisHotelSelected && currentStop.selectedLodging?.isBooked);
-                            const phone = (isThisHotelSelected && currentStop.selectedLodging?.phone) || opt.phone || getCityHotelPhone(currentStop.city, currentStop.state);
-                            const address = (isThisHotelSelected && currentStop.selectedLodging?.address) || opt.address || `${currentStop.city}, ${currentStop.state}`;
-
-                            return (
-                              <div
-                                key={optKey}
-                                className={`p-4 rounded-2xl border transition-all shadow-xs flex flex-col justify-between space-y-3 ${
-                                  isOptBooked
-                                    ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20"
-                                    : isThisHotelSelected
-                                    ? "border-indigo-400 bg-indigo-50/40 ring-1 ring-indigo-400/30"
-                                    : "border-slate-200 bg-white hover:border-slate-300"
-                                }`}
-                              >
-                                <div className="space-y-2">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div>
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <h5 className="font-black text-slate-900 text-sm">{opt.name}</h5>
-                                        {isOptBooked ? (
-                                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                            <span>✓ BOOKED &amp; CONFIRMED</span>
-                                          </span>
-                                        ) : isThisHotelSelected ? (
-                                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
-                                            Selected
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                      <span className="text-xs text-slate-500 block mt-0.5">
-                                        {opt.type} • {address}
-                                      </span>
-                                      {phone && (
-                                        <div className="text-[11px] mt-1 flex items-center gap-1">
-                                          <Phone className="w-3 h-3 text-indigo-500 shrink-0" />
-                                          <span className="text-slate-500">Front Desk:</span>
-                                          <a
-                                            href={`tel:${phone.replace(/[^\d+]/g, "")}`}
-                                            className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline"
-                                            title={`Call front desk at ${phone}`}
-                                          >
-                                            {phone}
-                                          </a>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                      <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">
-                                        ${nightlyRate}/nt
-                                      </span>
-                                      <div className="text-[10px] text-slate-400 mt-0.5">
-                                        Est. Total: ${totalCost}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {opt.gearSecurityNote && (
-                                    <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-start gap-1.5">
-                                      <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                      <span>{opt.gearSecurityNote}</span>
-                                    </div>
-                                  )}
-
-                                  {/* Quick Confirmation / Inline Hotel Details Row (User Request 2) */}
-                                  {isEditingThisCard && (
-                                    <div className="p-3 bg-white rounded-xl border border-indigo-200 shadow-2xs space-y-2 mt-2">
-                                      <div className="text-[11px] font-black uppercase text-indigo-900 flex items-center justify-between">
-                                        <span>Add / Edit Hotel Details for Itinerary</span>
-                                        <span className="text-[10px] text-slate-400 font-normal">Auto-saves to tour</span>
-                                      </div>
-
-                                      {/* Quick Paste Ingest Row */}
-                                      <div className="p-2 bg-indigo-50/70 rounded-lg border border-indigo-100 space-y-1">
-                                        <div className="flex items-center justify-between text-[10px] font-bold text-indigo-900">
-                                          <span className="flex items-center gap-1">
-                                            <Clipboard className="w-3 h-3 text-indigo-600" />
-                                            <span>Quick Paste Ingest (Confirmation Email / Text)</span>
-                                          </span>
-                                        </div>
-                                        <input
-                                          type="text"
-                                          placeholder="Paste Expedia/Hotel receipt or confirmation email..."
-                                          className="w-full p-1.5 bg-white border border-slate-300 rounded-md text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
-                                          onChange={(e) => {
-                                            const text = e.target.value;
-                                            if (text.trim()) {
-                                              const parsed = parseBookingConfirmationSnippet(text);
-                                              if (parsed.confirmationNumber) {
-                                                handleUpdateLodgingField(activeLodgingIndex, "confirmationNumber", parsed.confirmationNumber);
-                                              }
-                                              if (parsed.hotelName) {
-                                                handleUpdateLodgingField(activeLodgingIndex, "name", parsed.hotelName);
-                                              }
-                                              if (parsed.totalCost) {
-                                                handleUpdateLodgingField(activeLodgingIndex, "cost", parsed.totalCost);
-                                              }
-                                              if (parsed.parkingNotes) {
-                                                handleUpdateLodgingField(activeLodgingIndex, "notes", parsed.parkingNotes);
-                                              }
-                                              handleUpdateLodgingField(activeLodgingIndex, "isBooked", true);
-                                              triggerToast("✓ Ingested confirmation details into itinerary!", "success");
-                                            }
-                                          }}
-                                        />
-                                      </div>
-
-                                      <div className="space-y-1.5">
-                                        <div>
-                                          <label className="block text-[10px] font-bold text-slate-600 uppercase">Hotel / Motel Name</label>
-                                          <input
-                                            type="text"
-                                            value={isThisHotelSelected && currentStop.selectedLodging?.name ? currentStop.selectedLodging.name : opt.name}
-                                            onChange={(e) => {
-                                              if (!isThisHotelSelected) {
-                                                handleSelectLodgingForStop(activeLodgingIndex, opt, true);
-                                              }
-                                              handleUpdateLodgingField(activeLodgingIndex, "name", e.target.value);
-                                            }}
-                                            placeholder="Hotel Name"
-                                            className="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
-                                          />
-                                        </div>
-
-                                        <div>
-                                          <label className="block text-[10px] font-bold text-slate-600 uppercase">Street Address</label>
-                                          <input
-                                            type="text"
-                                            value={(isThisHotelSelected && currentStop.selectedLodging?.address) || opt.address || `${currentStop.city}, ${currentStop.state}`}
-                                            onChange={(e) => {
-                                              if (!isThisHotelSelected) {
-                                                handleSelectLodgingForStop(activeLodgingIndex, opt, true);
-                                              }
-                                              handleUpdateLodgingField(activeLodgingIndex, "address", e.target.value);
-                                            }}
-                                            placeholder="Street Address"
-                                            className="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
-                                          />
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Front Desk Phone</label>
-                                            <input
-                                              type="text"
-                                              value={(isThisHotelSelected && currentStop.selectedLodging?.phone) || phone}
-                                              onChange={(e) => {
-                                                if (!isThisHotelSelected) {
-                                                  handleSelectLodgingForStop(activeLodgingIndex, opt, true);
-                                                }
-                                                handleUpdateLodgingField(activeLodgingIndex, "phone", e.target.value);
-                                              }}
-                                              placeholder="(555) 000-0000"
-                                              className="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900"
-                                            />
-                                          </div>
-                                          <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Confirmation / Res #</label>
-                                            <input
-                                              type="text"
-                                              value={(isThisHotelSelected && currentStop.selectedLodging?.confirmationNumber) || ""}
-                                              onChange={(e) => {
-                                                if (!isThisHotelSelected) {
-                                                  handleSelectLodgingForStop(activeLodgingIndex, opt, true);
-                                                }
-                                                handleUpdateLodgingField(activeLodgingIndex, "confirmationNumber", e.target.value);
-                                              }}
-                                              placeholder="e.g. CONF-89210"
-                                              className="w-full p-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono font-bold text-indigo-700"
-                                            />
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center justify-between pt-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            handleSelectLodgingForStop(activeLodgingIndex, opt, true);
-                                            setInlineHotelEditKey(null);
-                                          }}
-                                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs inline-flex items-center gap-1 cursor-pointer"
-                                        >
-                                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                          <span>✓ Save Hotel to Itinerary</span>
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => setInlineHotelEditKey(null)}
-                                          className="text-xs text-slate-500 hover:text-slate-800 cursor-pointer font-bold"
-                                        >
-                                          Close
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2">
-                                    {!isThisHotelSelected ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          handleSelectLodgingForStop(activeLodgingIndex, opt, true);
-                                          setInlineHotelEditKey(optKey);
-                                        }}
-                                        className="px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-colors flex items-center gap-1 bg-indigo-600 text-white hover:bg-indigo-700 shadow-2xs"
-                                        title="Select this hotel and bind to itinerary as Booked & Confirmed"
-                                      >
-                                        <Check className="w-3 h-3 stroke-[3]" />
-                                        <span>Select &amp; Confirm</span>
-                                      </button>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const nextBooked = !isOptBooked;
-                                          handleSelectLodgingForStop(activeLodgingIndex, opt, nextBooked);
-                                          if (nextBooked) {
-                                            setInlineHotelEditKey(optKey);
-                                          }
-                                        }}
-                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-colors flex items-center gap-1 ${
-                                          isOptBooked
-                                            ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs"
-                                            : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300"
-                                        }`}
-                                        title={isOptBooked ? "Click to mark pending" : "Click to mark as booked & confirmed"}
-                                      >
-                                        <Check className="w-3 h-3 stroke-[3]" />
-                                        <span>{isOptBooked ? "✓ Booked & Confirmed" : "Mark as Booked"}</span>
-                                      </button>
-                                    )}
-
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (inlineHotelEditKey === optKey) {
-                                          setInlineHotelEditKey(null);
-                                        } else {
-                                          if (!isThisHotelSelected) {
-                                            handleSelectLodgingForStop(activeLodgingIndex, opt, true);
-                                          }
-                                          setInlineHotelEditKey(optKey);
-                                        }
-                                      }}
-                                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
-                                    >
-                                      <span>{inlineHotelEditKey === optKey ? "Hide details ↑" : "Add Hotel Details ↓"}</span>
-                                    </button>
-                                  </div>
-
-                                  <div className="flex items-center gap-1.5">
-                                    <a
-                                      href={optLinks.expediaUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={() => {
-                                        handleSelectLodgingForStop(activeLodgingIndex, opt, true);
-                                        setInlineHotelEditKey(optKey);
-                                      }}
-                                      className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer shrink-0"
-                                      title="Reserve this property directly on Expedia with pre-filled dates"
-                                    >
-                                      <span>Reserve on Expedia ↗</span>
-                                      <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Streamlined Itinerary Import */}
-                    <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border-2 border-slate-200 space-y-5">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <h5 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                            <Receipt className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>Already booked your room? Enter your details below to save them to your master tour itinerary.</span>
-                          </h5>
-                          <p className="text-xs text-slate-500">
-                            Enter your confirmed booking details to lock lodging into your route data and financial totals.
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                          {hasLodgingDetails && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Saved in Route Data</span>
-                            </span>
-                          )}
-                          {hasLodgingDetails && (
-                            <button
-                              type="button"
-                              onClick={() => handleClearLodgingForStop(activeLodgingIndex)}
-                              className="text-[11px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            >
-                              Clear Details
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Confirmation Email Paste Snippet Reader */}
-                      <div className="space-y-1.5">
-                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700">
-                          Instant Confirmation Paste Reader
-                        </label>
-                        <textarea
-                          rows={2}
-                          value={currentSnippet}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setPastedConfirmationSnippet(prev => ({ ...prev, [activeLodgingIndex]: val }));
-                            const parsed = parseBookingConfirmationSnippet(val);
-                            if (parsed.hotelName) handleUpdateLodgingField(activeLodgingIndex, "name", parsed.hotelName);
-                            if (parsed.confirmationNumber) handleUpdateLodgingField(activeLodgingIndex, "confirmationNumber", parsed.confirmationNumber);
-                            if (parsed.totalCost) handleUpdateLodgingField(activeLodgingIndex, "cost", parsed.totalCost);
-                            if (parsed.parkingNotes) handleUpdateLodgingField(activeLodgingIndex, "notes", parsed.parkingNotes);
-                          }}
-                          placeholder="Paste booking confirmation snippet from Booking.com, Hotels.com, or motel email to auto-extract fields..."
-                          className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600"
-                        />
-                      </div>
-
-                      {/* Clean Entry Fields */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                        <div>
-                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                            Hotel / Motel Name *
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={currentStop.selectedLodging?.name || ""}
-                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "name", e.target.value)}
-                              placeholder="e.g. Motel 6 Central"
-                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
-                            />
-                            <Hotel className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                            Street Address
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={currentStop.selectedLodging?.address || ""}
-                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "address", e.target.value)}
-                              placeholder={`e.g. 1024 Main St, ${currentStop.city}, ${currentStop.state}`}
-                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-emerald-600"
-                            />
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                            Front Desk Phone
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={currentStop.selectedLodging?.phone || ""}
-                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "phone", e.target.value)}
-                              placeholder="e.g. (555) 234-5678"
-                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-emerald-600"
-                            />
-                            <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                            Confirmed Reservation #
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={currentStop.selectedLodging?.confirmationNumber || ""}
-                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "confirmationNumber", e.target.value)}
-                              placeholder="e.g. CONF-8924192"
-                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
-                            />
-                            <Receipt className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                            Cost ($/night) *
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={currentStop.selectedLodging?.cost ?? ""}
-                              onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "cost", e.target.value)}
-                              placeholder="e.g. 95"
-                              className="w-full p-2.5 pl-8 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-600"
-                            />
-                            <DollarSign className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3 pointer-events-none" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
-                          Trailer Parking Notes *
-                        </label>
-                        <textarea
-                          rows={2}
-                          value={currentStop.selectedLodging?.notes ?? currentStop.lodgingNotes ?? ""}
-                          onChange={(e) => handleUpdateLodgingField(activeLodgingIndex, "notes", e.target.value)}
-                          placeholder="e.g. Front desk confirmed van + trailer parking in rear lot under spotlight. 14ft height clearance."
-                          className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600"
-                        />
-                      </div>
-
-                      {/* Direct Commit to Supabase route_data */}
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                        <span className="text-[11px] text-slate-500">
-                          Saves directly into your tour route_data in Supabase.
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const lodging = currentStop.selectedLodging;
-                            handleCommitLodgingReservation(activeLodgingIndex, {
-                              name: lodging?.name || `Hotel in ${currentStop.city}`,
-                              confirmationNumber: lodging?.confirmationNumber || `CONF-${Date.now().toString().slice(-6)}`,
-                              cost: lodging?.cost !== undefined ? lodging.cost : 85,
-                              parkingNotes: lodging?.notes || currentStop.lodgingNotes || "Ground lot trailer clearance confirmed",
-                              notes: lodging?.notes || "",
-                              address: lodging?.address || `${currentStop.city}, ${currentStop.state}`,
-                              phone: lodging?.phone || getCityHotelPhone(currentStop.city, currentStop.state),
-                              checkIn,
-                              checkOut
-                            });
-                          }}
-                          disabled={!currentStop.selectedLodging?.name}
-                          className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-emerald-600/30 transition-all cursor-pointer"
-                        >
-                          <Check className="w-4 h-4 stroke-[3]" />
-                          <span>Save Reservation to Tour Itinerary</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Step 4 Navigation Controls */}
-                    <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(3)}
-                          className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
-                        >
-                          ← Back to Stages (Step 3)
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleSaveAndFinishLater(false)}
-                          className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Save className="w-3.5 h-3.5" />
-                          <span>Save Draft</span>
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-3 w-full sm:w-auto">
-                        {activeLodgingIndex > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleLodgingPrev}
-                            className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
-                          >
-                            Previous City Lodging
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={handleLodgingNext}
-                          className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-black shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-98"
-                          id="btn-next-lodging-or-review"
-                        >
-                          <span>
-                            {activeLodgingIndex === stops.length - 1 
-                              ? "Proceed to Review & Finalize (Step 5) →" 
-                              : "Next City Lodging →"}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* --------------------------------------------------------------------- */}
-          {/* STEP 5: REVIEW, INTERACTIVE MAP & FINALIZATION                        */}
-          {/* --------------------------------------------------------------------- */}
-          {wizardStep === 5 && (
-            <div className="space-y-6 animate-in fade-in duration-200" id="tour-step-5-review">
-              
-              {/* Review Overview Banner */}
-              <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-6">
-                
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        {tourStatus === "confirmed" ? "Confirmed Run" : "Review Stage"}
-                      </span>
-                      <span className="text-xs text-slate-500">• {stops.length} Cities</span>
-                    </div>
-                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                      {tourTitle}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-600">
-                      {originCity} → {destinationCity} ({startDate} through {endDate})
-                    </p>
-                  </div>
-
-                  {/* Top Confirmation & Export Actions */}
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {tourStatus !== "confirmed" && (
-                      <button
-                        type="button"
-                        onClick={() => handleSaveAndFinishLater(true)}
-                        className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-600/20 flex items-center gap-2 cursor-pointer transition-transform active:scale-98"
-                        id="btn-confirm-tour-final"
-                      >
-                        <ShieldCheck className="w-4 h-4" />
-                        <span>Confirm &amp; Finalize Tour</span>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => handleSaveAndFinishLater(false)}
-                      className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black flex items-center gap-2 cursor-pointer"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>Save Draft</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowEmailModal(true)}
-                      className="px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-2 shadow-md hover:shadow-indigo-600/30 cursor-pointer transition-all active:scale-98"
-                      id="btn-open-email-itinerary"
-                    >
-                      <Mail className="w-3.5 h-3.5" />
-                      <span>Email Itinerary to Band &amp; Crew</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowPrintModal(true)}
-                      className="px-4 py-3 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-black flex items-center gap-2 shadow-sm cursor-pointer transition-colors"
-                      id="btn-open-print-modal"
-                    >
-                      <Printer className="w-3.5 h-3.5" />
-                      <span>Print Sheet</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Financials & Distance Metrics Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase text-slate-500">Total Mileage</span>
-                    <div className="text-lg font-black text-slate-900 flex items-center gap-1">
-                      <Navigation className="w-4 h-4 text-indigo-600" />
-                      <span>{totalDistanceMiles} mi</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase text-slate-500">Est. Drive Time</span>
-                    <div className="text-lg font-black text-slate-900 flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-indigo-600" />
-                      <span>{totalDriveTime}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase text-slate-500">Gas Budget</span>
-                    <div className="text-lg font-black text-emerald-700 flex items-center gap-1">
-                      <Fuel className="w-4 h-4 text-emerald-600" />
-                      <span>${financials.totalGas}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase text-slate-500">Lodging Est.</span>
-                    <div className="text-lg font-black text-slate-900 flex items-center gap-1">
-                      <Hotel className="w-4 h-4 text-indigo-600" />
-                      <span>${financials.totalLodgingCost}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <span className="text-[10px] font-black uppercase text-slate-500">Confirmed Stages</span>
-                    <div className="text-lg font-black text-indigo-700 flex items-center gap-1">
-                      <Building className="w-4 h-4 text-indigo-600" />
-                      <span>{financials.confirmedVenuesCount} / {stops.length}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pre-Tour Flawless Execution Audit Engine Banner */}
-                <div className={`p-5 sm:p-6 rounded-3xl border-2 space-y-4 ${
-                  tourAuditReport.criticalIssuesCount > 0 
-                    ? "bg-rose-50/70 border-rose-300"
-                    : tourAuditReport.warningIssuesCount > 0
-                    ? "bg-amber-50/70 border-amber-300"
-                    : "bg-emerald-50/70 border-emerald-300"
-                }`} id="tour-readiness-audit-card">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <ShieldAlert className={`w-5 h-5 ${
-                          tourAuditReport.criticalIssuesCount > 0 ? "text-rose-600" : tourAuditReport.warningIssuesCount > 0 ? "text-amber-600" : "text-emerald-600"
-                        }`} />
-                        <h4 className="text-base font-black text-slate-900 tracking-tight">
-                          Pre-Tour Flawless Execution Audit
-                        </h4>
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                          tourAuditReport.criticalIssuesCount > 0 
-                            ? "bg-rose-100 text-rose-800"
-                            : tourAuditReport.warningIssuesCount > 0
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}>
-                          {tourAuditReport.rating}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 font-medium">
-                        {tourAuditReport.summaryText}
-                      </p>
-                    </div>
-
-                    {/* Live Score Gauge */}
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="text-2xl font-black text-slate-900 leading-none">
-                          {tourAuditReport.score}%
-                        </div>
-                        <div className="text-[10px] font-black uppercase text-slate-500">Readiness Score</div>
-                      </div>
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm text-white shadow-xs ${
-                        tourAuditReport.score >= 85 ? "bg-emerald-600" : tourAuditReport.score >= 60 ? "bg-amber-500" : "bg-rose-600"
-                      }`}>
-                        {tourAuditReport.score}%
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Audit Issues List with 1-click jumps & Inline Venue Contact Dossier */}
-                  {tourAuditReport.issues.length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
-                      {tourAuditReport.issues.map((iss) => {
-                        const targetStop = stops[iss.stopIndex];
-                        const venue = targetStop?.selectedVenue;
-                        const vStatus = targetStop?.venueStatus || (venue?.isPrivate ? "confirmed" : venue ? "penciled" : "unconfirmed");
-                        const isVenueIssue = (iss.category === "venue" || iss.category === "contact" || iss.category === "terms" || vStatus !== "confirmed") && iss.category !== "lodging";
-                        const isLodgingIssue = iss.category === "lodging";
-
-                        const phone = venue?.contactPhone || venue?.hostPhone;
-                        const email = venue?.contactEmail;
-                        const contactPerson = venue?.contactName || venue?.hostName;
-                        const isHouseShow = Boolean(venue?.isPrivate || venue?.venueType === "house_show");
-
-                        const mailSubject = encodeURIComponent(`Booking Inquiry: ${tourTitle || "Upcoming Tour"} - ${iss.stopCity} (${targetStop?.date || "Show Date"})`);
-                        const mailBody = encodeURIComponent(`Hi ${contactPerson || "Booking Team"},\n\nWe are routing our tour and would love to confirm a date with ${venue?.name || "your venue"} in ${iss.stopCity} on ${targetStop?.date || "our upcoming show date"}.\n\nPlease let us know your hold status, sound specs, and door settlement terms.\n\nTour: ${tourTitle || "Touring Artist"}\nCity: ${iss.stopCity}\nDate: ${targetStop?.date || ""}\n\nThank you!`);
-                        const mailtoHref = email ? `mailto:${email}?subject=${mailSubject}&body=${mailBody}` : undefined;
-                        const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined;
-
-                        return (
-                          <div
-                            key={iss.id}
-                            className="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col justify-between gap-3 text-xs"
-                          >
-                            <div className="space-y-2">
-                              {/* Header & Severity */}
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                                    iss.severity === "critical" ? "bg-rose-600" : iss.severity === "warning" ? "bg-amber-500" : "bg-blue-500"
-                                  }`} />
-                                  <span className="text-xs font-black">{iss.title}</span>
-                                </div>
-                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ${
-                                  iss.severity === "critical" ? "bg-rose-100 text-rose-800 border border-rose-200" :
-                                  iss.severity === "warning" ? "bg-amber-100 text-amber-800 border border-amber-200" :
-                                  "bg-blue-100 text-blue-800 border border-blue-200"
-                                }`}>
-                                  {iss.severity}
-                                </span>
-                              </div>
-
-                              <p className="text-[11px] text-slate-500 leading-tight">
-                                {iss.message}
-                              </p>
-
-                              {/* Inline Venue Contact Dossier for Unconfirmed/Pending Venues */}
-                              {isVenueIssue && (
-                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2 mt-1">
-                                  {/* Prominent Venue Name & Status */}
-                                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                                    <div className="flex items-center gap-1.5">
-                                      <Building className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                                      <span className="font-black text-slate-900 text-xs">
-                                        {venue?.name || `No Venue Selected (${iss.stopCity})`}
-                                      </span>
-                                      {isHouseShow && (
-                                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-0.5">
-                                          <Lock className="w-2.5 h-2.5" />
-                                          <span>House Show</span>
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                                      vStatus === "confirmed" ? "bg-emerald-100 text-emerald-800 border border-emerald-300" :
-                                      vStatus === "penciled" ? "bg-amber-100 text-amber-800 border border-amber-300" :
-                                      "bg-rose-100 text-rose-800 border border-rose-300"
-                                    }`}>
-                                      {vStatus === "confirmed" ? "✓ Confirmed" : vStatus === "penciled" ? "Penciled In" : "Unconfirmed Lead"}
-                                    </span>
-                                  </div>
-
-                                  {/* Primary Contact / Talent Buyer */}
-                                  {contactPerson && (
-                                    <div className="text-[11px] text-slate-700 flex items-center gap-1.5">
-                                      <User className="w-3 h-3 text-slate-400 shrink-0" />
-                                      <span>Talent Buyer / Host: <strong className="text-slate-900">{contactPerson}</strong></span>
-                                    </div>
-                                  )}
-
-                                  {/* Contact Links */}
-                                  {(phone || email) ? (
-                                    <div className="flex flex-wrap items-center gap-3 text-[11px]">
-                                      {phone && (
-                                        <a
-                                          href={telHref}
-                                          className="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline"
-                                          title={`Call ${venue?.name || "Venue"}`}
-                                        >
-                                          <Phone className="w-3 h-3 text-indigo-500" />
-                                          <span>{phone}</span>
-                                        </a>
-                                      )}
-                                      {email && (
-                                        <a
-                                          href={mailtoHref}
-                                          className="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1 hover:underline truncate max-w-[200px]"
-                                          title={`Email ${email}`}
-                                        >
-                                          <Mail className="w-3 h-3 text-indigo-500" />
-                                          <span className="truncate">{email}</span>
-                                        </a>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    venue?.name && (
-                                      <p className="text-[10px] text-slate-400 italic">
-                                        No direct booking contact phone/email on file.
-                                      </p>
-                                    )
-                                  )}
-
-                                  {/* Action Buttons Toolbar right inside that card */}
-                                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-200">
-                                    {phone && (
-                                      <a
-                                        href={telHref}
-                                        className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-black text-[10px] uppercase border border-emerald-300 inline-flex items-center gap-1 transition-colors"
-                                      >
-                                        <Phone className="w-3 h-3" />
-                                        <span>Call Booking</span>
-                                      </a>
-                                    )}
-                                    {email && (
-                                      <a
-                                        href={mailtoHref}
-                                        className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-black text-[10px] uppercase border border-indigo-300 inline-flex items-center gap-1 transition-colors"
-                                      >
-                                        <Mail className="w-3 h-3" />
-                                        <span>Email Venue</span>
-                                      </a>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleToggleVenueStatus(iss.stopIndex, "confirmed")}
-                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase shadow-2xs inline-flex items-center gap-1 cursor-pointer transition-colors"
-                                      title={`Mark only Stop ${iss.stopIndex + 1} (${iss.stopCity}) as Confirmed & Booked`}
-                                    >
-                                      <Check className="w-3 h-3 stroke-[3]" />
-                                      <span>✓ Mark Only This Stop Booked</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Card Footer with stop indicator and 1-click jump button */}
-                            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
-                              <span className="text-[10px] font-bold text-slate-400">
-                                Stop {iss.stopIndex + 1} • {iss.stopCity}
-                              </span>
+                            <div className="flex items-center justify-end gap-2 pt-1">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (iss.actionStep === 3) {
-                                    setActiveStageIndex(iss.stopIndex);
-                                    setWizardStep(3);
-                                  } else if (iss.actionStep === 4) {
-                                    setActiveLodgingIndex(iss.stopIndex);
-                                    setWizardStep(4);
-                                  }
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[11px] shrink-0 border border-indigo-200 cursor-pointer transition-colors"
+                                onClick={handleCancelEditStop}
+                                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold"
                               >
-                                {iss.actionLabel} →
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveEditStop(idx)}
+                                className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-xs flex items-center gap-1"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Save Changes</span>
                               </button>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-emerald-100/60 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Zero roadblocks detected. All venues confirmed, driving transit safe, and overnight accommodations locked.</span>
-                    </div>
-                  )}
-                </div>
+                        )}
 
-                {/* Full Interactive Leaflet Route Map */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-indigo-600" />
-                      <span>Tour Route &amp; Stage Markers (OpenStreetMap)</span>
-                    </h4>
-
-                    <a
-                      href={currentTourPlan.googleMapsDirectionsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>Open in Google Maps</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-
-                  <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-md h-96">
-                    <TourMap
-                      stops={stops}
-                      tourTitle={tourTitle}
-                      totalDistanceMiles={totalDistanceMiles}
-                      totalDriveTime={totalDriveTime}
-                      className="h-full w-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Complete Day-by-Day Run-of-Show Itinerary */}
-                <div className="space-y-4 pt-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-black text-slate-900 tracking-tight">
-                      Master Day-by-Day Run-of-Show
-                    </h4>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const txt = formatPersonalizedItineraryText(currentTourPlan, bandProfile?.name);
-                        navigator.clipboard.writeText(txt);
-                        setCopiedLink(true);
-                        setTimeout(() => setCopiedLink(false), 3000);
-                      }}
-                      className="text-xs font-bold text-slate-700 hover:text-indigo-600 flex items-center gap-1.5 cursor-pointer"
-                    >
-                      {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                      <span>{copiedLink ? "Copied Itinerary!" : "Copy Itinerary Text"}</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {stops.map((stop, i) => (
-                      <div
-                        key={stop.id || i}
-                        className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/80">
-                          <div className="flex items-center gap-2">
-                            <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center">
-                              {stop.dayNumber || i + 1}
-                            </span>
-                            <h5 className="font-black text-slate-900 text-sm">
-                              {stop.city}, {stop.state}
-                            </h5>
-                            <span className="text-xs text-slate-500 font-bold">({stop.date})</span>
-                          </div>
-
-                          <div className="text-xs text-slate-500 flex items-center gap-3">
-                            <span>🚗 {stop.driveTimeFromPrev}</span>
-                            <span>⛽ ~${stop.estimatedGasCost || 0} gas</span>
-                          </div>
-                        </div>
-
-                        {/* Venue details */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[10px] font-black uppercase text-indigo-700 block">
-                                🏢 Live Music Stage &amp; Booking
-                              </span>
-                              {(() => {
-                                const vStat = stop.selectedVenue?.bookingStatus || (stop.selectedVenue?.name ? "unconfirmed" : "unconfirmed");
-                                return (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleVenueStatus(i)}
-                                    className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition-colors ${
-                                      vStat === "confirmed"
-                                        ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
-                                        : vStat === "penciled"
-                                        ? "bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300"
-                                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300"
-                                    }`}
-                                    title="Click to toggle status: Unconfirmed -> Penciled -> Confirmed"
-                                  >
-                                    {vStat === "confirmed" && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                                    <span>{vStat === "confirmed" ? "✓ Confirmed & Booked" : vStat === "penciled" ? "Penciled In" : "Unconfirmed Lead"}</span>
-                                  </button>
-                                );
-                              })()}
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <div className="font-black text-slate-900 text-sm">
-                                {stop.selectedVenue?.name || "Pending Stage Confirmation"}
-                              </div>
-                              {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") && (
-                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1">
-                                  <Lock className="w-2.5 h-2.5 stroke-[2.5]" />
-                                  <span>Private House Show</span>
+                        {/* Two-Column Grid: Stage / Venue (Left) & Overnight Lodging (Right) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                          
+                          {/* ======================================================= */}
+                          {/* STAGE & VENUE CARD                                      */}
+                          {/* ======================================================= */}
+                          <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200 space-y-3 flex flex-col justify-between">
+                            <div className="space-y-2">
+                              {/* Header & Quick-Toggle Status */}
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-black uppercase text-indigo-700 flex items-center gap-1">
+                                  <Building className="w-3.5 h-3.5" />
+                                  <span>Live Stage &amp; Booking</span>
                                 </span>
+
+                                {/* Click-to-Toggle Confirmation & Cycling: ON HOLD -> PENCILED IN -> CONFIRMED */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleCycleVenueStatus(idx)}
+                                  className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1 cursor-pointer transition-colors border shadow-2xs ${
+                                    venueStatus === "confirmed"
+                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-300"
+                                      : venueStatus === "penciled"
+                                      ? "bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300"
+                                      : "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
+                                  }`}
+                                  title={
+                                    venueStatus === "penciled"
+                                      ? "Penciled In: Click to toggle to Confirmed"
+                                      : venueStatus === "confirmed"
+                                      ? "Confirmed: Click to cycle to On Hold"
+                                      : "On Hold: Click to cycle to Penciled In"
+                                  }
+                                >
+                                  {venueStatus === "confirmed" ? (
+                                    <>
+                                      <Check className="w-3 h-3 stroke-[3] text-emerald-600" />
+                                      <span>✓ Confirmed</span>
+                                    </>
+                                  ) : venueStatus === "penciled" ? (
+                                    <>
+                                      <Pencil className="w-3 h-3 text-amber-600" />
+                                      <span>Penciled In</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Clock className="w-3 h-3 text-blue-600" />
+                                      <span>On Hold</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+
+                              {/* Venue Name */}
+                              <div className="font-black text-slate-900 text-sm">
+                                {stop.selectedVenue?.name || "Pending Stage Selection"}
+                              </div>
+
+                              {/* Address */}
+                              <div className="text-slate-600 text-[11px] flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span className="truncate">{stop.selectedVenue?.address || `${stop.city}, ${stop.state}`}</span>
+                              </div>
+
+                              {/* Schedule Times */}
+                              <div className="text-[11px] text-slate-600 pt-0.5 flex flex-wrap gap-x-3 gap-y-1">
+                                <span>Load-in: <strong>{stop.selectedVenue?.loadInTime || "5:00 PM"}</strong></span>
+                                <span>Soundcheck: <strong>{stop.selectedVenue?.soundcheckTime || "6:30 PM"}</strong></span>
+                                <span>Set: <strong>{stop.selectedVenue?.setTime || "9:00 PM"}</strong></span>
+                              </div>
+
+                              {/* Deal / Door / Capacity */}
+                              {(stop.selectedVenue?.doorGuarantee || stop.selectedVenue?.ticketPrice || stop.selectedVenue?.capacity) && (
+                                <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded w-fit border border-emerald-200">
+                                  🎟️ {stop.selectedVenue.ticketPrice || "$12-$15"} {stop.selectedVenue.doorGuarantee ? `• ${stop.selectedVenue.doorGuarantee}` : ""} {stop.selectedVenue.capacity ? `(${stop.selectedVenue.capacity} cap)` : ""}
+                                </div>
+                              )}
+
+                              {/* Contact */}
+                              {(stop.selectedVenue?.contactPhone || stop.selectedVenue?.contactEmail) && (
+                                <div className="text-[11px] text-slate-500 pt-0.5">
+                                  📞 Contact: {stop.selectedVenue.contactPhone || ""} {stop.selectedVenue.contactEmail ? `(${stop.selectedVenue.contactEmail})` : ""}
+                                </div>
                               )}
                             </div>
-                            {stop.selectedVenue?.address && (
-                              <div className="text-slate-500 text-[11px]">
-                                📍 {stop.selectedVenue.address}
-                                {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") && (
-                                  <span className="text-purple-600 font-bold ml-1.5">(Confidential Address)</span>
-                                )}
-                              </div>
-                            )}
-                            <div className="text-[11px] text-slate-600 pt-0.5 flex flex-wrap gap-x-3 gap-y-1">
-                              <span>Load-in: <strong>{stop.selectedVenue?.loadInTime || "5:00 PM"}</strong></span>
-                              <span>Soundcheck: <strong>{stop.selectedVenue?.soundcheckTime || "6:30 PM"}</strong></span>
-                              <span>Set: <strong>{stop.selectedVenue?.setTime || "9:00 PM"}</strong></span>
-                            </div>
-                            {(stop.selectedVenue?.loadInNotes || (stop.selectedVenue?.isPrivate && stop.selectedVenue?.notes)) && (
-                              <div className="text-[11px] text-purple-950 bg-purple-50 p-2 rounded-lg border border-purple-200">
-                                🚪 <strong>Door / Load-In:</strong> {stop.selectedVenue.loadInNotes || stop.selectedVenue.notes}
-                              </div>
-                            )}
-                            {stop.selectedVenue?.suggestedDonation && (
-                              <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded w-fit">
-                                🎟️ Suggested Door/Donation: {stop.selectedVenue.suggestedDonation}
-                              </div>
-                            )}
-                            {(stop.selectedVenue?.doorGuarantee || stop.selectedVenue?.doorSplitPercentage) && !stop.selectedVenue?.suggestedDonation && (
-                              <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded w-fit">
-                                💰 Deal: {stop.selectedVenue.doorGuarantee || ""} {stop.selectedVenue.doorSplitPercentage ? `(${stop.selectedVenue.doorSplitPercentage})` : ""}
-                              </div>
-                            )}
-                            {(stop.selectedVenue?.contactName || stop.selectedVenue?.contactPhone) && (
-                              <div className="text-[11px] text-slate-500">
-                                👤 {(stop.selectedVenue?.isPrivate || stop.selectedVenue?.venueType === "house_show") ? "Host" : "Contact"}: {stop.selectedVenue?.contactName || ""} {stop.selectedVenue?.contactPhone ? `(${stop.selectedVenue.contactPhone})` : ""}
-                              </div>
-                            )}
-                            
-                            {/* Action to design poster */}
-                            {stop.selectedVenue && onSelectVenueForPoster && (
-                              <div className="pt-2">
+
+                            {/* Action to Design Poster */}
+                            {stop.selectedVenue?.name && onSelectVenueForPoster && (
+                              <div className="pt-2 border-t border-slate-200/80">
                                 <button
                                   type="button"
                                   onClick={() => onSelectVenueForPoster(stop.selectedVenue!.name, stop.city)}
-                                  className="text-[11px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                                  className="text-[11px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
                                 >
-                                  <Sparkles className="w-3 h-3 text-amber-500" />
+                                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                                   <span>Design Concert Poster for this Gig →</span>
                                 </button>
                               </div>
                             )}
-                          </div>
 
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[10px] font-black uppercase text-slate-700 block">
-                                🛏️ Lodging &amp; Van Security
-                              </span>
-                              {stop.selectedLodging?.isBooked || stop.selectedLodging?.confirmationNumber ? (
-                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 font-mono">
-                                  <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                  <span>✓ BOOKED &amp; CONFIRMED</span>
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
-                                  <Clock className="w-2.5 h-2.5" />
-                                  <span>Pending Booking</span>
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Property Name */}
-                            <div className="font-black text-slate-900 text-sm">
-                              {stop.selectedLodging?.name || (stop.lodgingOptions && stop.lodgingOptions[0]?.name) || `Hotel in ${stop.city}`}
-                            </div>
-
-                            {/* Street Address */}
-                            {(stop.selectedLodging?.address || stop.lodgingOptions?.[0]?.address) && (
-                              <div className="text-slate-600 text-[11px] flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                                <span>{stop.selectedLodging?.address || stop.lodgingOptions?.[0]?.address}</span>
-                              </div>
-                            )}
-
-                            {/* Front Desk Phone */}
-                            {(stop.selectedLodging?.phone || stop.lodgingOptions?.[0]?.phone || getCityHotelPhone(stop.city, stop.state)) && (
-                              <div className="text-[11px] flex items-center gap-1">
-                                <Phone className="w-3 h-3 text-indigo-500 shrink-0" />
-                                <span className="text-slate-500">Front Desk:</span>
-                                <a
-                                  href={`tel:${(stop.selectedLodging?.phone || stop.lodgingOptions?.[0]?.phone || getCityHotelPhone(stop.city, stop.state)).replace(/[^\d+]/g, "")}`}
-                                  className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline"
-                                  title={`Call front desk`}
-                                >
-                                  {stop.selectedLodging?.phone || stop.lodgingOptions?.[0]?.phone || getCityHotelPhone(stop.city, stop.state)}
-                                </a>
-                              </div>
-                            )}
-
-                            {/* Confirmation Number */}
-                            {stop.selectedLodging?.confirmationNumber && (
-                              <div className="text-[11px] font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded inline-block">
-                                Confirmation #: {stop.selectedLodging.confirmationNumber}
-                              </div>
-                            )}
-
-                            <div className="text-[11px] text-slate-600">
-                              Est. Cost: <strong>${parseNightlyRate(stop.selectedLodging?.cost || 85).toLocaleString()}/night</strong>
-                            </div>
-
-                            {/* Van & Gear Security Notes */}
-                            {(stop.selectedLodging?.gearSecurityNote || stop.selectedLodging?.notes || stop.lodgingNotes) && (
-                              <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200 flex items-start gap-1.5">
-                                <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                <span>
-                                  <strong>Van Security:</strong> {stop.selectedLodging?.gearSecurityNote || stop.selectedLodging?.notes || stop.lodgingNotes}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Lodging Action Toolbar */}
-                            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
+                            {/* Action to Find / Select Venue Options */}
+                            <div className="pt-2 border-t border-slate-200/80">
                               <button
                                 type="button"
-                                onClick={() => handleOpenBookingModal(i)}
-                                className="text-[11px] font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1 cursor-pointer transition-colors"
+                                onClick={() => handleOpenVenueModalForStop(idx)}
+                                disabled={loadingVenueStopIdx === idx}
+                                className="w-full py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 disabled:opacity-60 text-indigo-950 text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer transition-colors border border-indigo-200"
                               >
-                                <Hotel className="w-3.5 h-3.5 text-amber-600" />
-                                <span>{stop.selectedLodging?.name ? "Update Lodging Details →" : "Find Lodging →"}</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleToggleLodgingBooked(i)}
-                                className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg cursor-pointer transition-colors flex items-center gap-1 ${
-                                  stop.selectedLodging?.isBooked
-                                    ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300"
-                                    : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300"
-                                }`}
-                              >
-                                {stop.selectedLodging?.isBooked ? (
+                                {loadingVenueStopIdx === idx ? (
                                   <>
-                                    <Check className="w-3 h-3 stroke-[3]" />
-                                    <span>Marked Booked</span>
+                                    <Loader2 className="w-3.5 h-3.5 text-indigo-700 animate-spin" />
+                                    <span>Querying Stages...</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Clock className="w-3 h-3" />
-                                    <span>Mark as Booked</span>
+                                    <Building className="w-3.5 h-3.5 text-indigo-700" />
+                                    <span>{stop.selectedVenue?.name ? "Change / Find Venue Options →" : "Find Venue Options →"}</span>
                                   </>
                                 )}
                               </button>
                             </div>
                           </div>
-                        </div>
 
-                        {stop.customNotes && (
-                          <div className="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200">
-                            📝 <strong>Notes:</strong> {stop.customNotes}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                          {/* ======================================================= */}
+                          {/* OVERNIGHT LODGING CARD                                  */}
+                          {/* ======================================================= */}
+                          <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200 space-y-3 flex flex-col justify-between">
+                            <div className="space-y-2">
+                              {/* Header & Quick-Toggle Status */}
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-black uppercase text-amber-800 flex items-center gap-1">
+                                  <Hotel className="w-3.5 h-3.5 text-amber-600" />
+                                  <span>Overnight Lodging</span>
+                                </span>
 
-                {/* Accommodations & Overnight Logistics Master Summary Table */}
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5" id="master-lodging-roster">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Hotel className="w-5 h-5 text-indigo-600" />
-                        <h4 className="text-lg font-black text-slate-900 tracking-tight">
-                          Accommodations &amp; Overnight Logistics Roster
-                        </h4>
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        Master overnight schedule for all {stops.length} tour stops with live Expedia &amp; Booking.com pre-filled reservation links.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-start sm:self-auto">
-                      {(() => {
-                        const bookedCount = stops.filter(s => Boolean(s.selectedLodging?.isBooked || s.selectedLodging?.confirmationNumber)).length;
-                        return (
-                          <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            <span>{bookedCount} of {stops.length} Stops Booked</span>
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px] font-black">
-                          <th className="pb-3 pr-3">Stop #</th>
-                          <th className="pb-3 pr-3">City &amp; State</th>
-                          <th className="pb-3 pr-3">Check-In / Out</th>
-                          <th className="pb-3 pr-3">Property / Lodging</th>
-                          <th className="pb-3 pr-3 text-center">Status</th>
-                          <th className="pb-3 text-right">Instant Booking</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {stops.map((st, sIdx) => {
-                          const dates = getTourStopLodgingDates(st.date);
-                          const isBooked = Boolean(st.selectedLodging?.isBooked || st.selectedLodging?.confirmationNumber);
-                          const propertyName = st.selectedLodging?.name || (st.lodgingOptions?.[0]?.name) || `Hotel in ${st.city}`;
-                          const phone = st.selectedLodging?.phone || st.lodgingOptions?.[0]?.phone || getCityHotelPhone(st.city, st.state);
-                          const address = st.selectedLodging?.address || st.lodgingOptions?.[0]?.address || `${st.city}, ${st.state}`;
-                          const links = generateLodgingDeepLinks({
-                            city: st.city,
-                            state: st.state,
-                            checkInDate: dates.checkIn,
-                            checkOutDate: dates.checkOut,
-                            guests: 4,
-                            lodgingName: st.selectedLodging?.name || st.lodgingOptions?.[0]?.name
-                          });
-
-                          return (
-                            <tr key={`roster-${st.id || sIdx}`} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="py-3.5 pr-3 font-black text-slate-800">
-                                Stop {sIdx + 1}
-                              </td>
-                              <td className="py-3.5 pr-3 font-black text-slate-900">
-                                <div>{st.city}, {st.state}</div>
-                                <div className="text-[10px] font-normal text-slate-400">
-                                  {st.selectedVenue?.name || "Stage pending"}
-                                </div>
-                              </td>
-                              <td className="py-3.5 pr-3 text-slate-600">
-                                <div className="font-bold text-slate-800">{dates.checkIn}</div>
-                                <div className="text-[10px] text-slate-400">out: {dates.checkOut}</div>
-                              </td>
-                              <td className="py-3.5 pr-3">
-                                <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                                  <Hotel className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                  <span>{propertyName}</span>
-                                </div>
-                                {address && (
-                                  <div className="text-[10px] text-slate-500">
-                                    📍 {address}
-                                  </div>
-                                )}
-                                {phone && (
-                                  <div className="text-[10px]">
-                                    <a
-                                      href={`tel:${phone.replace(/[^\d+]/g, "")}`}
-                                      className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline inline-flex items-center gap-0.5"
-                                      title={`Call front desk at ${phone}`}
-                                    >
-                                      <Phone className="w-2.5 h-2.5 text-indigo-500" />
-                                      <span>{phone}</span>
-                                    </a>
-                                  </div>
-                                )}
-                                {st.selectedLodging?.confirmationNumber && (
-                                  <div className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-0.5">
-                                    Conf: {st.selectedLodging.confirmationNumber}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="py-3.5 pr-3 text-center">
+                                {/* Quick-Toggle Button Cycling: penciled -> hold -> confirmed -> penciled */}
                                 <button
                                   type="button"
-                                  onClick={() => handleToggleLodgingBooked(sIdx)}
-                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black cursor-pointer transition-all ${
-                                    isBooked
-                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
-                                      : "bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300"
+                                  onClick={() => handleCycleLodgingStatus(idx)}
+                                  className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full flex items-center gap-1 cursor-pointer transition-colors border shadow-2xs ${
+                                    lodgingStatus === "confirmed"
+                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-300"
+                                      : lodgingStatus === "hold"
+                                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
+                                      : "bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300"
                                   }`}
-                                  title="Click to toggle booked status"
+                                  title="Click to cycle status: Penciled -> Hold -> Confirmed"
                                 >
-                                  {isBooked ? (
+                                  {lodgingStatus === "confirmed" ? (
                                     <>
-                                      <Check className="w-3 h-3 stroke-[3]" />
-                                      <span>Booked &amp; Confirmed</span>
+                                      <Check className="w-3 h-3 stroke-[3] text-emerald-600" />
+                                      <span>✓ Confirmed</span>
+                                    </>
+                                  ) : lodgingStatus === "hold" ? (
+                                    <>
+                                      <Clock className="w-3 h-3 text-blue-600" />
+                                      <span>On Hold</span>
                                     </>
                                   ) : (
                                     <>
-                                      <Clock className="w-3 h-3" />
-                                      <span>Pending</span>
+                                      <Pencil className="w-3 h-3 text-amber-600" />
+                                      <span>Penciled In</span>
                                     </>
                                   )}
                                 </button>
-                              </td>
-                              <td className="py-3.5 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <a
-                                    href={links.expediaUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 shadow-2xs transition-colors shrink-0"
-                                    title="Open Expedia reservation with pre-filled gig dates"
-                                  >
-                                    <span>Expedia</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                  <a
-                                    href={links.bookingUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] flex items-center gap-1 transition-colors shrink-0"
-                                    title="Open Booking.com"
-                                  >
-                                    <span>Booking</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
+                              </div>
+
+                              {/* Hotel / Property Name */}
+                              <div className="font-black text-slate-900 text-sm truncate">
+                                {stop.selectedLodging?.name || (stop.lodgingOptions && stop.lodgingOptions[0]?.name) || `Band Hotel in ${stop.city}`}
+                              </div>
+
+                              {/* Address */}
+                              <div className="text-slate-600 text-[11px] flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span className="truncate">{stop.selectedLodging?.address || stop.lodgingOptions?.[0]?.address || `${stop.city}, ${stop.state}`}</span>
+                              </div>
+
+                              {/* Confirmation # or Est. Cost */}
+                              <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                                {stop.selectedLodging?.confirmationNumber && (
+                                  <span className="font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
+                                    Conf: {stop.selectedLodging.confirmationNumber}
+                                  </span>
+                                )}
+                                <span className="text-slate-600">
+                                  Est. Rate: <strong>${parseNightlyRate(stop.selectedLodging?.cost || (stop.lodgingOptions && stop.lodgingOptions[0]?.estPricePerNight) || 85)}/night</strong>
+                                </span>
+                              </div>
+
+                              {/* Van & Gear Security Notes */}
+                              {(stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes || stop.lodgingOptions?.[0]?.gearSecurityNote) && (
+                                <div className="text-[11px] text-amber-950 bg-amber-50 p-2 rounded-xl border border-amber-200 flex items-start gap-1.5">
+                                  <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                  <span className="leading-tight">
+                                    <strong>Van Security:</strong> {stop.selectedLodging?.gearSecurityNote || stop.lodgingNotes || stop.lodgingOptions?.[0]?.gearSecurityNote}
+                                  </span>
                                 </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                              )}
+                            </div>
+
+                            {/* Booking Action Button: Opens TourLodgingModal */}
+                            <div className="pt-2 border-t border-slate-200/80">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenBookingModal(idx)}
+                                className="w-full py-2 px-3 rounded-xl bg-amber-100/80 hover:bg-amber-200 text-amber-950 text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer transition-colors border border-amber-300"
+                              >
+                                <Hotel className="w-3.5 h-3.5 text-amber-700" />
+                                <span>{stop.selectedLodging?.name ? "Update Lodging & Booking →" : "Find Lodging Options →"}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
+
+                        {/* Stop Custom Notes (if any) */}
+                        {stop.customNotes && (
+                          <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                            📝 <strong>Stop Notes:</strong> {stop.customNotes}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Directly below Stop 6 (Medford, OR • Tour Finale): Book Gigs On The Way Home Banner Card */}
+                      {isMedfordFinale && (
+                        <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-indigo-500/10 p-5 rounded-3xl border-2 border-dashed border-amber-300 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 mb-2">
+                          <div className="flex items-center gap-3.5">
+                            <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-sm shrink-0">
+                              <Compass className="w-6 h-6 stroke-[2.5]" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-base font-black text-slate-900">Book Gigs On The Way Home</h4>
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                                  Route Home
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                                Don't drive 400+ deadhead miles back empty-handed! Add northbound tour stops through Roseburg, Eugene, or Portland back toward your home base.
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleAddReturnLegStop}
+                            className="shrink-0 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-95"
+                          >
+                            <Plus className="w-4 h-4 stroke-[3]" />
+                            <span>+ Add Return Stop Toward Home Base</span>
+                          </button>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+
+                {/* Additional option to keep adding return legs if any already present */}
+                {stops.some(s => s.isReturnLeg) && (
+                  <div className="pt-2 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleAddReturnLegStop}
+                      className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-900 border border-slate-200 hover:border-amber-300 text-xs font-black flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[3] text-amber-600" />
+                      <span>+ Add Another Return Stop Toward Home Base</span>
+                    </button>
                   </div>
+                )}
+
+                {/* ================================================================= */}
+                {/* EXECUTION AUDIT & TOUR-READINESS PRE-FLIGHT (RELOCATED TO BOTTOM) */}
+                {/* ================================================================= */}
+                <div 
+                  id="tour-execution-audit-bottom-card"
+                  className={`mt-6 rounded-3xl p-6 sm:p-7 border shadow-md space-y-5 transition-all ${
+                    tourAuditReport.criticalIssuesCount > 0
+                      ? "bg-gradient-to-br from-rose-50/90 via-white to-rose-50/40 border-rose-200 text-rose-950"
+                      : tourAuditReport.warningIssuesCount > 0
+                      ? "bg-gradient-to-br from-amber-50/90 via-white to-amber-50/40 border-amber-200 text-amber-950"
+                      : "bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 border-emerald-200 text-emerald-950"
+                  }`}
+                >
+                  {/* Card Header & Score */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-black/5">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span className={`p-2 rounded-2xl ${
+                          tourAuditReport.criticalIssuesCount > 0
+                            ? "bg-rose-500 text-white"
+                            : tourAuditReport.warningIssuesCount > 0
+                            ? "bg-amber-500 text-white"
+                            : "bg-emerald-500 text-white"
+                        }`}>
+                          <ShieldAlert className="w-5 h-5 stroke-[2.5]" />
+                        </span>
+                        <div>
+                          <h4 className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
+                            <span>Execution Audit</span>
+                            <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
+                              tourAuditReport.criticalIssuesCount > 0
+                                ? "bg-rose-100 text-rose-800 border-rose-300"
+                                : tourAuditReport.warningIssuesCount > 0
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                            }`}>
+                              {tourAuditReport.rating}
+                            </span>
+                          </h4>
+                          <p className="text-xs text-slate-600 font-medium">
+                            Comprehensive pre-flight departure audit across venues, driving fatigue, and lodging.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        <div className="text-[10px] uppercase font-bold text-slate-400">Readiness Score</div>
+                        <div className="font-mono text-2xl font-black text-slate-900">
+                          {tourAuditReport.score}%
+                        </div>
+                      </div>
+                      <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-xs">
+                        <span className={`text-xl font-black font-mono ${
+                          tourAuditReport.score >= 80 ? "text-emerald-600" :
+                          tourAuditReport.score >= 50 ? "text-amber-600" : "text-rose-600"
+                        }`}>
+                          {tourAuditReport.score}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Bar & Progress */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                      <span>{tourAuditReport.summaryText}</span>
+                      <span className="text-[11px] font-semibold text-slate-500">{tourAuditReport.totalStops} Total Stops</span>
+                    </div>
+                    <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-500 rounded-full ${
+                          tourAuditReport.score >= 80 ? "bg-emerald-500" :
+                          tourAuditReport.score >= 50 ? "bg-amber-500" : "bg-rose-500"
+                        }`}
+                        style={{ width: `${Math.max(5, tourAuditReport.score)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status Pills Breakdown */}
+                  <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
+                    {tourAuditReport.criticalIssuesCount > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-100 text-rose-800 border border-rose-300 font-black rounded-xl">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{tourAuditReport.criticalIssuesCount} Critical Blocker{tourAuditReport.criticalIssuesCount > 1 ? "s" : ""}</span>
+                      </span>
+                    )}
+                    {tourAuditReport.warningIssuesCount > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 font-black rounded-xl">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>{tourAuditReport.warningIssuesCount} Advisory Warning{tourAuditReport.warningIssuesCount > 1 ? "s" : ""}</span>
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 border border-slate-300 font-bold rounded-xl">
+                      <Building className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>{tourAuditReport.confirmedVenuesCount} Confirmed • {tourAuditReport.penciledVenuesCount} Penciled • {tourAuditReport.unconfirmedVenuesCount} Unbooked Venues</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 border border-slate-300 font-bold rounded-xl">
+                      <Hotel className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>{tourAuditReport.bookedLodgingCount} / {tourAuditReport.totalStops} Rooms Secured</span>
+                    </span>
+                  </div>
+
+                  {/* Detailed Issues List */}
+                  {tourAuditReport.issues.length > 0 && (
+                    <div className="space-y-2.5 pt-2">
+                      <div className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                        Operational Checklist & Action Items:
+                      </div>
+                      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                        {tourAuditReport.issues.map((issue) => (
+                          <div 
+                            key={issue.id}
+                            className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                              issue.severity === "critical"
+                                ? "bg-rose-50/80 border-rose-200 text-rose-900"
+                                : issue.severity === "warning"
+                                ? "bg-amber-50/80 border-amber-200 text-amber-900"
+                                : "bg-slate-50 border-slate-200 text-slate-800"
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                  issue.severity === "critical"
+                                    ? "bg-rose-600 text-white"
+                                    : issue.severity === "warning"
+                                    ? "bg-amber-500 text-slate-950"
+                                    : "bg-slate-600 text-white"
+                                }`}>
+                                  {issue.severity === "critical" ? "Critical Blocker" : "Advisory"}
+                                </span>
+                                <span className="font-extrabold text-slate-900">
+                                  {issue.title}
+                                </span>
+                              </div>
+                              <p className="text-[11.5px] opacity-90 leading-relaxed">
+                                {issue.message}
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const el = document.getElementById(`master-stop-card-${issue.stopIndex}`);
+                                if (el) {
+                                  el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                  el.classList.add("ring-2", "ring-indigo-500");
+                                  setTimeout(() => el.classList.remove("ring-2", "ring-indigo-500"), 2000);
+                                }
+                              }}
+                              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold border border-slate-300 text-xs shrink-0 cursor-pointer transition-colors shadow-2xs text-center"
+                            >
+                              Jump to Stop #{issue.stopIndex + 1} →
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Step 5 Navigation Controls */}
-                <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setWizardStep(4)}
-                      className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
-                    >
-                      ← Back to Hotel Lodging (Step 4)
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setViewState("history")}
-                      className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black cursor-pointer"
-                    >
-                      View All Saved Tours
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setShowPrintModal(true)}
-                      className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-black flex items-center gap-2 cursor-pointer transition-colors"
-                    >
-                      <Printer className="w-4 h-4" />
-                      <span>Print Sheet</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSaveAndFinishLater(true)}
-                      className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-600/30 flex items-center gap-2 cursor-pointer transition-transform active:scale-98"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Save as Confirmed Tour</span>
-                    </button>
-                  </div>
-                </div>
+              </div>
 
               </div>
 
             </div>
           )}
-
         </div>
       )}
 
@@ -6153,6 +4102,18 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
         </div>
       )}
 
+      {/* Edit Stop Modal */}
+      {editModalStopIndex !== null && stops[editModalStopIndex] && (
+        <EditStopModal
+          stop={stops[editModalStopIndex]}
+          onClose={() => setEditModalStopIndex(null)}
+          onSave={(updated) => {
+            handleSaveEditStopFromModal(editModalStopIndex, updated);
+            setEditModalStopIndex(null);
+          }}
+        />
+      )}
+
       {/* In-App Lodging Booking & Auto-Sync Modal */}
       {bookingModalStopIndex !== null && stops[bookingModalStopIndex] && (
         <TourLodgingModal
@@ -6162,6 +4123,32 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
           stopIndex={bookingModalStopIndex}
           tourStartDate={startDate}
           onCommitReservation={handleCommitLodgingReservation}
+        />
+      )}
+
+      {/* Venue Picker Modal */}
+      {isVenueModalOpen && venueModalStopIndex !== null && stops[venueModalStopIndex] && (
+        <VenuePickerModal
+          key={`venue-modal-${stops[venueModalStopIndex].id || venueModalStopIndex}-${stops[venueModalStopIndex].city}-${stops[venueModalStopIndex].state}`}
+          isOpen={isVenueModalOpen}
+          stop={stops[venueModalStopIndex]}
+          cityName={stops[venueModalStopIndex].city}
+          allVenues={allDirectoryVenues}
+          suggestedVenues={
+            (stops[venueModalStopIndex]?.suggestedVenues && stops[venueModalStopIndex].suggestedVenues.length > 0)
+              ? stops[venueModalStopIndex].suggestedVenues
+              : (cityVenuesMap[`${stops[venueModalStopIndex].city}_${stops[venueModalStopIndex].state}`] || 
+                 cityVenuesMap[stops[venueModalStopIndex].city] || 
+                 [])
+          }
+          loadVenuesForStageCity={loadVenuesForStageCity}
+          onClose={() => {
+            setIsVenueModalOpen(false);
+            setVenueModalStopIndex(null);
+          }}
+          onSave={(selectedVenue) => {
+            handleCommitVenuePicker(venueModalStopIndex, selectedVenue);
+          }}
         />
       )}
 

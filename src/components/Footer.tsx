@@ -42,7 +42,7 @@ export default function Footer({
               <span>© 2026 GigLizard. All rights reserved.</span>
             </p>
             <p className="text-[11px] text-slate-500">
-              Independent live music workspace, stage plotting, and touring directory across the Rockies & West Coast.
+              Nationwide Independent Touring & Stage Directory (Lower 48). Stage plotting, routing, and booking workspace.
             </p>
           </div>
 

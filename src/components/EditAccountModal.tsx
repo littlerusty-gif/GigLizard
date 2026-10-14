@@ -1054,7 +1054,7 @@ export default function EditAccountModal({
                     </span>
                   </div>
                   <p className="text-[10.5px] text-slate-500">
-                    Free access to 600+ West Coast music venues.
+                    Free access to 600+ music venues nationwide (Lower 48).
                   </p>
                 </div>
               </div>

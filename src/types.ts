@@ -158,7 +158,7 @@ export interface TourSelectedVenue {
   doorsTime?: string;
   setTime?: string;
   ticketPrice?: string;
-  bookingStatus?: "unconfirmed" | "penciled" | "confirmed";
+  bookingStatus?: "unconfirmed" | "penciled" | "hold" | "confirmed";
   doorGuarantee?: string; // e.g. "$500 guarantee"
   doorSplitPercentage?: string; // e.g. "80% of door"
   dealNotes?: string;
@@ -186,6 +186,7 @@ export interface TourSelectedLodging {
   gearSecurityNote?: string;
   bookingUrl?: string;
   isBooked?: boolean;
+  bookingStatus?: "unconfirmed" | "penciled" | "hold" | "confirmed";
   bookingPlatform?: "Expedia" | "Booking.com" | "KOA" | "Direct" | string;
   notes?: string;
 }
@@ -205,6 +206,7 @@ export interface TourStop {
   estimatedGasCost?: number;
   lodgingOptions?: TourLodgingOption[];
   lodgingNotes?: string;
+  isReturnLeg?: boolean;
   // Personalized user selections
   selectedVenue?: TourSelectedVenue;
   selectedLodging?: TourSelectedLodging;

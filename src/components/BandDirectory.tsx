@@ -27,6 +27,7 @@ import {
 import { getOwnerBandEdits, getOwnerDeletedBandIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
 import { fetchProfiles, profileToAvailableBand, insertProfile, fetchBandsFromDatabase, saveBandToDatabase } from "../lib/supabase";
 import { updateAndAlphabetizeGenreDropdown, MASTER_GENRES, matchesMasterGenre } from "../utils/genreDropdown";
+import { CONTINENTAL_US_STATES, parseFreeformCityState, POPULAR_NATIONWIDE_HUBS } from "../constants/states";
 
 interface BandDirectoryProps {
   onUpdateAvailableBands?: (bands: AvailableBand[]) => void;
@@ -506,26 +507,14 @@ export default function BandDirectory({
     const matchesGenre = matchesMasterGenre(selectedGenre, band);
     const matchesLevel = selectedLevel === "All" || band.experienceLevel === selectedLevel;
     
-    // State filter (Oregon, Washington, Colorado, Arizona, California, Other)
+    // State filter (All 48 continental states + DC)
     let matchesState = true;
-    if (selectedState === "OR") {
-      matchesState = band.city.includes(", OR") || band.id.startsWith("or-");
-    } else if (selectedState === "WA") {
-      matchesState = band.city.includes(", WA") || band.id.startsWith("wa-");
-    } else if (selectedState === "CO") {
-      matchesState = band.city.includes(", CO") || band.id.startsWith("co-");
-    } else if (selectedState === "AZ") {
-      matchesState = band.city.includes(", AZ") || band.id.startsWith("az-");
-    } else if (selectedState === "CA") {
-      matchesState = band.city.includes(", CA") || band.id.startsWith("ca-");
-    } else if (selectedState === "OTHER") {
-      matchesState = !(
-        band.city.includes(", OR") || band.id.startsWith("or-") ||
-        band.city.includes(", WA") || band.id.startsWith("wa-") ||
-        band.city.includes(", CO") || band.id.startsWith("co-") ||
-        band.city.includes(", AZ") || band.id.startsWith("az-") ||
-        band.city.includes(", CA") || band.id.startsWith("ca-")
-      );
+    if (selectedState !== "All") {
+      const st = selectedState.toUpperCase();
+      matchesState = 
+        band.city.toUpperCase().includes(`, ${st}`) ||
+        band.city.toUpperCase().endsWith(` ${st}`) ||
+        band.id.toLowerCase().startsWith(`${st.toLowerCase()}-`);
     }
 
     const text = `${band.name} ${band.city} ${band.genres.join(" ")} ${band.bio}`.toLowerCase();
@@ -712,7 +701,7 @@ export default function BandDirectory({
             Discover Live Bands & Local Talents
           </h2>
           <p className="text-xs text-slate-350 max-w-2xl leading-relaxed">
-            Browse and connect with verified touring bands, indie projects, and solo artists looking to secure gigs, play co-bills, fill lineup slots, or coordinate independent tours across the Rockies and West Coast.
+            Nationwide Independent Touring & Stage Directory (Lower 48). Browse and connect with verified touring bands, indie projects, and solo artists looking to secure gigs, play co-bills, fill lineup slots, or coordinate independent tours nationwide.
           </p>
         </div>
 
@@ -798,11 +787,17 @@ export default function BandDirectory({
                 <input
                   type="text"
                   required
-                  placeholder="E.g., Seattle, WA"
+                  list="band-hubs-list"
+                  placeholder="E.g., Seattle, WA or Austin, TX"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+                <datalist id="band-hubs-list">
+                  {POPULAR_NATIONWIDE_HUBS.map(h => (
+                    <option key={h} value={h} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
@@ -934,13 +929,12 @@ export default function BandDirectory({
               onChange={(e) => setSelectedState(e.target.value)}
               className="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-800"
             >
-              <option value="All">All States / Regions ({bands.length} Total)</option>
-              <option value="OR">🌲 Oregon ({orCount} Bands)</option>
-              <option value="WA">🌲 Washington ({waCount} Bands)</option>
-              <option value="CO">🏔️ Colorado ({coCount} Bands)</option>
-              <option value="AZ">🌵 Arizona ({azCount} Bands)</option>
-              <option value="CA">☀️ California ({caCount} Bands)</option>
-              <option value="OTHER">🇺🇸 Other / National ({otherCount} Bands)</option>
+              <option value="All">All 48 States (+ DC) - {bands.length} Total</option>
+              {CONTINENTAL_US_STATES.map((st) => (
+                <option key={st.code} value={st.code}>
+                  {st.code} - {st.name}
+                </option>
+              ))}
             </select>
           </div>
 

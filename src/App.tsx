@@ -16,6 +16,7 @@ import PayPalAccessModal from "./components/PayPalAccessModal";
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import UserLoginModal from "./components/UserLoginModal";
 import TermsOfServiceModal from "./components/TermsOfServiceModal";
+import ArtistRegistrationModal from "./components/ArtistRegistrationModal";
 import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
@@ -126,6 +127,7 @@ export default function GigLizardApp() {
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showUserLoginModal, setShowUserLoginModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showArtistRegistrationModal, setShowArtistRegistrationModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState<"login" | "signup" | "forgot">("login");
   const [loginModalEmail, setLoginModalEmail] = useState("");
 
@@ -1106,6 +1108,17 @@ export default function GigLizardApp() {
                 <Users className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span>Bands</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setShowArtistRegistrationModal(true)}
+                id="header-claim-band-btn"
+                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-black cursor-pointer rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+                title="Claim or submit your band to the verified touring directory"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-200 shrink-0" />
+                <span>+ Claim / List Your Band</span>
+              </button>
             </div>
 
             {/* Row 2: Help, Sign In / Edit Account, and optional Owner button */}
@@ -1569,6 +1582,19 @@ export default function GigLizardApp() {
       <TermsOfServiceModal
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
+      />
+
+      {/* Artist Directory Registration Modal */}
+      <ArtistRegistrationModal
+        isOpen={showArtistRegistrationModal}
+        onClose={() => setShowArtistRegistrationModal(false)}
+        onNavigateToBands={() => {
+          setShowArtistRegistrationModal(false);
+          setActiveTab("bands");
+        }}
+        onBandRegistered={() => {
+          setActiveTab("bands");
+        }}
       />
 
       {/* Android Back Button Double-Tap Exit Toast */}

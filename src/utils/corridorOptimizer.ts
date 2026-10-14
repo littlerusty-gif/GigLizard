@@ -65,13 +65,154 @@ export const KNOWN_CORRIDOR_CITIES: CorridorCity[] = [
   { city: "Colorado Springs", state: "CO", label: "Colorado Springs, CO", lat: 38.8339, lng: -104.8214, tier: "Regional Stronghold", sceneHighlight: "Pikes Peak corridor anchor with growing downtown live options." },
   { city: "Albuquerque", state: "NM", label: "Albuquerque, NM", lat: 35.0844, lng: -106.6504, tier: "Regional Stronghold", sceneHighlight: "Route 66 cultural hub with historic theaters and receptive indie scenes." },
 
-  // Texas & Midwest Corridors
+  // Texas & South Central Corridors (I-35, I-10, I-20)
   { city: "Austin", state: "TX", label: "Austin, TX", lat: 30.2672, lng: -97.7431, tier: "Major Hub", sceneHighlight: "Live Music Capital of the World along Red River Cultural District." },
   { city: "San Antonio", state: "TX", label: "San Antonio, TX", lat: 29.4241, lng: -98.4936, tier: "Regional Stronghold", sceneHighlight: "Historic Alamo City with heavy rock and punk enthusiast circuits." },
+  { city: "Houston", state: "TX", label: "Houston, TX", lat: 29.7604, lng: -95.3698, tier: "Major Hub", sceneHighlight: "Vast metropolis with storied clubs in Montrose and the Heights." },
   { city: "Dallas", state: "TX", label: "Dallas, TX", lat: 32.7767, lng: -96.7970, tier: "Major Hub", sceneHighlight: "Deep Ellum historic entertainment epicenter with dense club density." },
+  { city: "Fort Worth", state: "TX", label: "Fort Worth, TX", lat: 32.7555, lng: -97.3308, tier: "Regional Stronghold", sceneHighlight: "Stockyards honky-tonks and lively Magnolia Avenue indie stages." },
+  { city: "Denton", state: "TX", label: "Denton, TX", lat: 33.2148, lng: -97.1331, tier: "College Town", sceneHighlight: "Fertile UNT music hotbed, legendary testing ground for touring acts." },
+  { city: "Waco", state: "TX", label: "Waco, TX", lat: 31.5493, lng: -97.1467, tier: "Connector", sceneHighlight: "I-35 bridge market connecting Dallas and Austin." },
+  { city: "El Paso", state: "TX", label: "El Paso, TX", lat: 31.7619, lng: -106.4850, tier: "Regional Stronghold", sceneHighlight: "I-10 border fortress with rich cross-cultural desert rock roots." },
+  { city: "Amarillo", state: "TX", label: "Amarillo, TX", lat: 35.2220, lng: -101.8313, tier: "Connector", sceneHighlight: "Crucial I-40 Panhandle link between New Mexico and Oklahoma." },
+
+  // Midwest Corridors (I-80, I-90, I-70, I-35)
   { city: "Chicago", state: "IL", label: "Chicago, IL", lat: 41.8781, lng: -87.6298, tier: "Major Hub", sceneHighlight: "Midwest musical giant with renowned neighborhood stages in Wicker Park & Logan Square." },
-  { city: "Minneapolis", state: "MN", label: "Minneapolis, MN", lat: 44.9778, lng: -93.2650, tier: "Major Hub", sceneHighlight: "Twin Cities scene famous for legendary indie rock and DIY grit." }
+  { city: "Minneapolis", state: "MN", label: "Minneapolis, MN", lat: 44.9778, lng: -93.2650, tier: "Major Hub", sceneHighlight: "Twin Cities scene famous for legendary indie rock and First Avenue grit." },
+  { city: "St. Paul", state: "MN", label: "St. Paul, MN", lat: 44.9537, lng: -93.0900, tier: "Regional Stronghold", sceneHighlight: "Twin Cities counterpart with great listening rooms along University Ave." },
+  { city: "Milwaukee", state: "WI", label: "Milwaukee, WI", lat: 43.0389, lng: -87.9065, tier: "Regional Stronghold", sceneHighlight: "Lake Michigan stronghold with vibrant Bay View rooms and Summerfest history." },
+  { city: "Madison", state: "WI", label: "Madison, WI", lat: 43.0731, lng: -89.4012, tier: "College Town", sceneHighlight: "UW-Madison student corridor on State Street and beloved High Noon Saloon." },
+  { city: "Des Moines", state: "IA", label: "Des Moines, IA", lat: 41.5868, lng: -93.6250, tier: "Regional Stronghold", sceneHighlight: "I-35 / I-80 crossroads with electric East Village and downtown venues." },
+  { city: "Iowa City", state: "IA", label: "Iowa City, IA", lat: 41.6611, lng: -91.5302, tier: "College Town", sceneHighlight: "UNESCO City of Literature with storied Mission Creek festival roots." },
+  { city: "Omaha", state: "NE", label: "Omaha, NE", lat: 41.2565, lng: -95.9345, tier: "Regional Stronghold", sceneHighlight: "Saddle Creek indie-rock cradle and Benson neighborhood club strip." },
+  { city: "Lincoln", state: "NE", label: "Lincoln, NE", lat: 40.8136, lng: -96.7026, tier: "College Town", sceneHighlight: "UNL college corridor and Haymarket historic live entertainment district." },
+  { city: "Kansas City", state: "MO", label: "Kansas City, MO", lat: 39.0997, lng: -94.5786, tier: "Major Hub", sceneHighlight: "Historic 18th & Vine jazz cradle and vibrant Crossroads Arts District stages." },
+  { city: "St. Louis", state: "MO", label: "St. Louis, MO", lat: 38.6270, lng: -90.1994, tier: "Major Hub", sceneHighlight: "Gateway to the West with legendary live circuit in The Grove and Cherokee St." },
+  { city: "Columbia", state: "MO", label: "Columbia, MO", lat: 38.9517, lng: -92.3341, tier: "College Town", sceneHighlight: "Mizzou college anchor midway along the I-70 corridor." },
+  { city: "Wichita", state: "KS", label: "Wichita, KS", lat: 37.6872, lng: -97.3301, tier: "Regional Stronghold", sceneHighlight: "Southern plains I-35 anchor with welcoming DIY and theater stages." },
+  { city: "Lawrence", state: "KS", label: "Lawrence, KS", lat: 38.9717, lng: -95.2353, tier: "College Town", sceneHighlight: "Iconic KU college music scene with historic Granada and Bottleneck clubs." },
+  { city: "Indianapolis", state: "IN", label: "Indianapolis, IN", lat: 39.7684, lng: -86.1581, tier: "Major Hub", sceneHighlight: "Crossroads of America with booming Fountain Square and Broad Ripple stages." },
+  { city: "Bloomington", state: "IN", label: "Bloomington, IN", lat: 39.1653, lng: -86.5264, tier: "College Town", sceneHighlight: "IU campus enclave with passionate student crowds and legendary Bluebird nightspot." },
+  { city: "Detroit", state: "MI", label: "Detroit, MI", lat: 42.3314, lng: -83.0458, tier: "Major Hub", sceneHighlight: "Motor City musical powerhouse: birthplace of Motown, techno, and proto-punk." },
+  { city: "Grand Rapids", state: "MI", label: "Grand Rapids, MI", lat: 42.9634, lng: -85.6681, tier: "Regional Stronghold", sceneHighlight: "Thriving western Michigan music community and brewery concert series." },
+  { city: "Cleveland", state: "OH", label: "Cleveland, OH", lat: 41.4993, lng: -81.6944, tier: "Major Hub", sceneHighlight: "Rock and Roll Hall of Fame home with gritty Beachland and Grog Shop stages." },
+  { city: "Columbus", state: "OH", label: "Columbus, OH", lat: 39.9612, lng: -82.9988, tier: "Major Hub", sceneHighlight: "High Street corridor, OSU energy, and prominent independent touring circuit." },
+  { city: "Cincinnati", state: "OH", label: "Cincinnati, OH", lat: 39.1031, lng: -84.5120, tier: "Major Hub", sceneHighlight: "Over-the-Rhine cultural revival and legendary King Records heritage." },
+
+  // Southeast & Gulf Corridors (I-40, I-10, I-65, I-75, I-85, I-95)
+  { city: "Nashville", state: "TN", label: "Nashville, TN", lat: 36.1627, lng: -86.7816, tier: "Major Hub", sceneHighlight: "Music City USA: unmatched songwriter and touring concentration from East Nashville to Broadway." },
+  { city: "Memphis", state: "TN", label: "Memphis, TN", lat: 35.1495, lng: -90.0490, tier: "Major Hub", sceneHighlight: "Beale Street blues, Sun Studio rockabilly, and vibrant Midtown live stages." },
+  { city: "Knoxville", state: "TN", label: "Knoxville, TN", lat: 35.9606, lng: -83.9207, tier: "College Town", sceneHighlight: "Historic Market Square and UT college strip along the I-40 Appalachian corridor." },
+  { city: "Chattanooga", state: "TN", label: "Chattanooga, TN", lat: 35.0456, lng: -85.3097, tier: "Regional Stronghold", sceneHighlight: "Scenic City bridge connecting Nashville, Knoxville, and Atlanta." },
+  { city: "Atlanta", state: "GA", label: "Atlanta, GA", lat: 33.7490, lng: -84.3880, tier: "Major Hub", sceneHighlight: "Southern cultural engine with legendary rooms in Little Five Points, East Atlanta, & Midtown." },
+  { city: "Athens", state: "GA", label: "Athens, GA", lat: 33.9519, lng: -83.3576, tier: "College Town", sceneHighlight: "Historic college-rock capital (R.E.M., B-52's) centered on the 40 Watt Club." },
+  { city: "Savannah", state: "GA", label: "Savannah, GA", lat: 32.0809, lng: -81.0912, tier: "Regional Stronghold", sceneHighlight: "Historic coastal city along I-95 with creative SCAD arts and indie nightlife." },
+  { city: "New Orleans", state: "LA", label: "New Orleans, LA", lat: 29.9511, lng: -90.0715, tier: "Major Hub", sceneHighlight: "World-class musical pilgrimage along Frenchmen Street, Uptown, and the Marigny." },
+  { city: "Baton Rouge", state: "LA", label: "Baton Rouge, LA", lat: 30.4515, lng: -91.1871, tier: "College Town", sceneHighlight: "LSU corridor and riverfront clubs along I-10." },
+  { city: "Lafayette", state: "LA", label: "Lafayette, LA", lat: 30.2241, lng: -92.0198, tier: "Regional Stronghold", sceneHighlight: "Cajun & Zydeco capital with warm, high-participation dance halls." },
+  { city: "Birmingham", state: "AL", label: "Birmingham, AL", lat: 33.5186, lng: -86.8104, tier: "Regional Stronghold", sceneHighlight: "Magic City revival featuring historic Avondale and downtown concert halls." },
+  { city: "Mobile", state: "AL", label: "Mobile, AL", lat: 30.6954, lng: -88.0399, tier: "Connector", sceneHighlight: "Gulf Coast I-10 connector linking New Orleans and the Florida Panhandle." },
+  { city: "Jackson", state: "MS", label: "Jackson, MS", lat: 32.2988, lng: -90.1848, tier: "Regional Stronghold", sceneHighlight: "City with Soul, heart of the Mississippi Blues Trail along I-55." },
+  { city: "Little Rock", state: "AR", label: "Little Rock, AR", lat: 34.7465, lng: -92.2896, tier: "Regional Stronghold", sceneHighlight: "River Market entertainment district anchoring the I-40 corridor across Arkansas." },
+  { city: "Fayetteville", state: "AR", label: "Fayetteville, AR", lat: 36.0822, lng: -94.1719, tier: "College Town", sceneHighlight: "Ozarks cultural gem on Dickson Street next to University of Arkansas." },
+  { city: "Oklahoma City", state: "OK", label: "Oklahoma City, OK", lat: 35.4676, lng: -97.5164, tier: "Major Hub", sceneHighlight: "I-40 / I-35 junction featuring vibrant Bricktown and Plaza District stages." },
+  { city: "Tulsa", state: "OK", label: "Tulsa, OK", lat: 36.1540, lng: -95.9928, tier: "Regional Stronghold", sceneHighlight: "Historic Cain's Ballroom and Brady Arts District live rooms." },
+  { city: "Louisville", state: "KY", label: "Louisville, KY", lat: 38.2527, lng: -85.7585, tier: "Regional Stronghold", sceneHighlight: "Highland neighborhood indie clubs, rich bourbon heritage, and punk legacy." },
+  { city: "Lexington", state: "KY", label: "Lexington, KY", lat: 38.0406, lng: -84.5037, tier: "College Town", sceneHighlight: "UK campus corridor and Bluegrass heartland listening rooms." },
+  { city: "Asheville", state: "NC", label: "Asheville, NC", lat: 35.5951, lng: -82.5515, tier: "Regional Stronghold", sceneHighlight: "Blue Ridge indie/mountain music epicenter: Orange Peel and South Slope breweries." },
+  { city: "Charlotte", state: "NC", label: "Charlotte, NC", lat: 35.2271, lng: -80.8431, tier: "Major Hub", sceneHighlight: "Queen City arts hub anchored by NoDa (North Davidson) arts district stages." },
+  { city: "Raleigh", state: "NC", label: "Raleigh, NC", lat: 35.7796, lng: -78.6382, tier: "Major Hub", sceneHighlight: "Research Triangle live capital with energetic clubs and Hopscotch festival legacy." },
+  { city: "Durham", state: "NC", label: "Durham, NC", lat: 35.9940, lng: -78.8986, tier: "Regional Stronghold", sceneHighlight: "Historic warehouse district and revitalized tobacco mills hosting premier acts." },
+  { city: "Charleston", state: "SC", label: "Charleston, SC", lat: 32.7765, lng: -79.9311, tier: "Regional Stronghold", sceneHighlight: "Lowcountry destination with booming King Street and Upper Meeting concert rooms." },
+  { city: "Columbia", state: "SC", label: "Columbia, SC", lat: 34.0007, lng: -81.0348, tier: "College Town", sceneHighlight: "Five Points college strip and Vista live music venues." },
+  { city: "Jacksonville", state: "FL", label: "Jacksonville, FL", lat: 30.3322, lng: -81.6557, tier: "Major Hub", sceneHighlight: "Gateway to Florida at the I-95 / I-10 junction, historic rock haven in Five Points." },
+  { city: "Orlando", state: "FL", label: "Orlando, FL", lat: 28.5383, lng: -81.3792, tier: "Major Hub", sceneHighlight: "Downtown live scene and Mills 50 indie stronghold with eager crowds." },
+  { city: "Tampa", state: "FL", label: "Tampa, FL", lat: 27.9506, lng: -82.4572, tier: "Major Hub", sceneHighlight: "Historic Ybor City brick-lined music street and death-metal / punk heritage." },
+  { city: "St. Petersburg", state: "FL", label: "St. Petersburg, FL", lat: 27.7676, lng: -82.6403, tier: "Regional Stronghold", sceneHighlight: "Vibrant Central Avenue arts corridor with beloved outdoor venues." },
+  { city: "Miami", state: "FL", label: "Miami, FL", lat: 25.7617, lng: -80.1918, tier: "Major Hub", sceneHighlight: "Global nightlife metropolis with cutting-edge rooms in Wynwood and Little Haiti." },
+  { city: "Fort Lauderdale", state: "FL", label: "Fort Lauderdale, FL", lat: 26.1224, lng: -80.1373, tier: "Regional Stronghold", sceneHighlight: "South Florida coastal strip and downtown live stages." },
+
+  // Mid-Atlantic & Northeast Corridors (I-95, I-80, I-90, I-70)
+  { city: "Pittsburgh", state: "PA", label: "Pittsburgh, PA", lat: 40.4406, lng: -79.9959, tier: "Major Hub", sceneHighlight: "Steel City revival with iconic clubs across the South Side and Lawrenceville." },
+  { city: "Philadelphia", state: "PA", label: "Philadelphia, PA", lat: 39.9526, lng: -75.1652, tier: "Major Hub", sceneHighlight: "Legendary DIY, punk, and indie circuit from Fishtown to South Street." },
+  { city: "Baltimore", state: "MD", label: "Baltimore, MD", lat: 39.2904, lng: -76.6122, tier: "Major Hub", sceneHighlight: "Eccentric, high-energy underground arts and rock rooms in Station North & Fells Point." },
+  { city: "Washington", state: "DC", label: "Washington, DC", lat: 38.9072, lng: -77.0369, tier: "Major Hub", sceneHighlight: "Nation's capital with iconic 9:30 Club, Black Cat, and historic punk / go-go legacy along U Street." },
+  { city: "Richmond", state: "VA", label: "Richmond, VA", lat: 37.5407, lng: -77.4360, tier: "Regional Stronghold", sceneHighlight: "VCU college energy, storied punk/metal hub, and Broad Street arts corridor." },
+  { city: "Norfolk", state: "VA", label: "Norfolk, VA", lat: 36.8508, lng: -76.2859, tier: "Regional Stronghold", sceneHighlight: "Coastal Virginia anchor along the Chesapeake with historic theaters." },
+  { city: "Wilmington", state: "DE", label: "Wilmington, DE", lat: 39.7447, lng: -75.5484, tier: "Connector", sceneHighlight: "I-95 corridor link between Baltimore and Philadelphia." },
+  { city: "Newark", state: "NJ", label: "Newark, NJ", lat: 40.7357, lng: -74.1724, tier: "Regional Stronghold", sceneHighlight: "Ironbound cultural district and gateway to the NYC metropolitan area." },
+  { city: "Asbury Park", state: "NJ", label: "Asbury Park, NJ", lat: 40.2204, lng: -74.0121, tier: "Regional Stronghold", sceneHighlight: "Historic seaside music town: The Stone Pony and boardwalk live circuit." },
+  { city: "New York", state: "NY", label: "New York, NY", lat: 40.7128, lng: -74.0060, tier: "Major Hub", sceneHighlight: "World cultural capital: premier stages throughout Brooklyn, Manhattan, & Queens." },
+  { city: "Brooklyn", state: "NY", label: "Brooklyn, NY", lat: 40.6782, lng: -73.9442, tier: "Major Hub", sceneHighlight: "Williamsburg, Bushwick, and Greenpoint indie vanguard with dense club density." },
+  { city: "Buffalo", state: "NY", label: "Buffalo, NY", lat: 42.8864, lng: -78.8784, tier: "Regional Stronghold", sceneHighlight: "Niagara Frontier music anchor along I-90 with Allen Street and Elmwood live rooms." },
+  { city: "Rochester", state: "NY", label: "Rochester, NY", lat: 43.1566, lng: -77.6088, tier: "Regional Stronghold", sceneHighlight: "East End entertainment district and International Jazz Fest heritage." },
+  { city: "Syracuse", state: "NY", label: "Syracuse, NY", lat: 43.0481, lng: -76.1474, tier: "College Town", sceneHighlight: "Armory Square live music hub at the junction of I-90 and I-81." },
+  { city: "Albany", state: "NY", label: "Albany, NY", lat: 42.6526, lng: -73.7562, tier: "Regional Stronghold", sceneHighlight: "Capital District crossroads connecting New York City, Boston, and Montreal." },
+  { city: "New Haven", state: "CT", label: "New Haven, CT", lat: 41.3083, lng: -72.9279, tier: "College Town", sceneHighlight: "Yale college community and legendary Toad's Place along the I-95 Northeast corridor." },
+  { city: "Hartford", state: "CT", label: "Hartford, CT", lat: 41.7658, lng: -72.6734, tier: "Regional Stronghold", sceneHighlight: "Connecticut River Valley anchor connecting NYC and Boston along I-84." },
+  { city: "Providence", state: "RI", label: "Providence, RI", lat: 41.8240, lng: -71.4128, tier: "College Town", sceneHighlight: "RISD & Brown arts capital with fertile noise-rock and indie history." },
+  { city: "Boston", state: "MA", label: "Boston, MA", lat: 42.3601, lng: -71.0589, tier: "Major Hub", sceneHighlight: "Northeast powerhouse: Cambridge, Allston, and Somerville basement and rock halls." },
+  { city: "Worcester", state: "MA", label: "Worcester, MA", lat: 42.2626, lng: -71.8023, tier: "Regional Stronghold", sceneHighlight: "Central Massachusetts touring staple with the Palladium and heavy music scene." },
+  { city: "Portsmouth", state: "NH", label: "Portsmouth, NH", lat: 43.0718, lng: -70.7626, tier: "Connector", sceneHighlight: "Seacoast arts and listening room stop along the northern I-95 corridor." },
+  { city: "Portland", state: "ME", label: "Portland, ME", lat: 43.6591, lng: -70.2568, tier: "Regional Stronghold", sceneHighlight: "Old Port coastal hub with devoted live music patronage and craft breweries." },
+  { city: "Burlington", state: "VT", label: "Burlington, VT", lat: 44.4759, lng: -73.2121, tier: "College Town", sceneHighlight: "Lake Champlain jam and indie enclave centered on Higher Ground and Church St." }
 ];
+
+/**
+ * Centroid coordinates for all 48 contiguous US states + DC
+ * Guarantees that any municipality entered across the continental US resolves to valid coordinates
+ */
+export const STATE_CENTROIDS: Record<string, { lat: number; lng: number }> = {
+  AL: { lat: 32.8067, lng: -86.7911 },
+  AZ: { lat: 34.0489, lng: -111.0937 },
+  AR: { lat: 34.7465, lng: -92.2896 },
+  CA: { lat: 36.7783, lng: -119.4179 },
+  CO: { lat: 39.5501, lng: -105.7821 },
+  CT: { lat: 41.6032, lng: -73.0877 },
+  DE: { lat: 38.9108, lng: -75.5277 },
+  DC: { lat: 38.9072, lng: -77.0369 },
+  FL: { lat: 27.6648, lng: -81.5158 },
+  GA: { lat: 32.1656, lng: -82.9001 },
+  ID: { lat: 44.0682, lng: -114.7420 },
+  IL: { lat: 40.6331, lng: -89.3985 },
+  IN: { lat: 40.2672, lng: -86.1349 },
+  IA: { lat: 41.8780, lng: -93.0977 },
+  KS: { lat: 38.5266, lng: -96.7265 },
+  KY: { lat: 37.8393, lng: -84.2700 },
+  LA: { lat: 30.9843, lng: -91.9623 },
+  ME: { lat: 45.2538, lng: -69.4455 },
+  MD: { lat: 39.0458, lng: -76.6413 },
+  MA: { lat: 42.4072, lng: -71.3824 },
+  MI: { lat: 44.3148, lng: -85.6024 },
+  MN: { lat: 46.7296, lng: -94.6859 },
+  MS: { lat: 32.3547, lng: -89.3985 },
+  MO: { lat: 37.9643, lng: -91.8318 },
+  MT: { lat: 46.8797, lng: -110.3626 },
+  NE: { lat: 41.4925, lng: -99.9018 },
+  NV: { lat: 38.8026, lng: -116.4194 },
+  NH: { lat: 43.1939, lng: -71.5724 },
+  NJ: { lat: 40.0583, lng: -74.4057 },
+  NM: { lat: 34.5199, lng: -105.8701 },
+  NY: { lat: 40.7128, lng: -74.0060 },
+  NC: { lat: 35.7596, lng: -79.0193 },
+  ND: { lat: 47.5515, lng: -101.0020 },
+  OH: { lat: 40.4173, lng: -82.9071 },
+  OK: { lat: 35.0078, lng: -97.0929 },
+  OR: { lat: 43.8041, lng: -120.5542 },
+  PA: { lat: 41.2033, lng: -77.1945 },
+  RI: { lat: 41.5801, lng: -71.4774 },
+  SC: { lat: 33.8361, lng: -81.1637 },
+  SD: { lat: 43.9695, lng: -99.9018 },
+  TN: { lat: 35.5175, lng: -86.5804 },
+  TX: { lat: 31.9686, lng: -99.9018 },
+  UT: { lat: 39.3210, lng: -111.0937 },
+  VT: { lat: 44.5588, lng: -72.5778 },
+  VA: { lat: 37.4316, lng: -78.6569 },
+  WA: { lat: 47.7511, lng: -120.7401 },
+  WV: { lat: 38.5976, lng: -80.4549 },
+  WI: { lat: 43.7844, lng: -88.7879 },
+  WY: { lat: 43.0760, lng: -107.2903 }
+};
 
 /**
  * Calculates Haversine great-circle distance between two GPS coordinates in miles
@@ -128,15 +269,16 @@ export function calculateGasCost(miles: number): number {
 }
 
 /**
- * Finds or approximates GPS coordinates for a city input
+ * Finds or approximates GPS coordinates for any city input nationwide across Lower 48
  */
 export function findCityCoordinates(cityInput: string): { lat: number; lng: number; city: string; state: string } {
   const clean = cityInput.toLowerCase().trim();
   
-  // Exact match
+  // Exact match from known corridor cities
   const match = KNOWN_CORRIDOR_CITIES.find(c => 
     c.label.toLowerCase() === clean || 
     c.city.toLowerCase() === clean ||
+    clean === `${c.city.toLowerCase()}, ${c.state.toLowerCase()}` ||
     clean.includes(c.city.toLowerCase())
   );
 
@@ -147,20 +289,31 @@ export function findCityCoordinates(cityInput: string): { lat: number; lng: numb
   // State-level approximation fallback
   const parts = cityInput.split(",").map(p => p.trim());
   const cityName = parts[0] || cityInput;
-  const stateCode = (parts[1] || "WA").toUpperCase();
+  const rawState = (parts[1] || "").toUpperCase();
 
-  const stateMatches = KNOWN_CORRIDOR_CITIES.filter(c => c.state === stateCode);
+  // Try matching via state code or state centroids
+  const stateMatches = KNOWN_CORRIDOR_CITIES.filter(c => c.state === rawState);
   if (stateMatches.length > 0) {
     return {
       lat: stateMatches[0].lat + (Math.random() * 0.2 - 0.1),
       lng: stateMatches[0].lng + (Math.random() * 0.2 - 0.1),
       city: cityName,
-      state: stateCode
+      state: rawState
     };
   }
 
-  // Default Pacific Northwest
-  return { lat: 47.6062, lng: -122.3321, city: cityName, state: stateCode };
+  if (STATE_CENTROIDS[rawState]) {
+    const c = STATE_CENTROIDS[rawState];
+    return {
+      lat: c.lat,
+      lng: c.lng,
+      city: cityName,
+      state: rawState
+    };
+  }
+
+  // Default fallback
+  return { lat: 39.8283, lng: -98.5795, city: cityName, state: rawState || "US" };
 }
 
 /**

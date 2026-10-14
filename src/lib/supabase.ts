@@ -857,14 +857,25 @@ export async function fetchVenuesFromDatabaseForCity(cityName: string, stateName
     let query = supabase
       .from("venues")
       .select("*")
-      .ilike("city", `%${cleanCity}%`);
+      .ilike("city", cleanCity);
 
     if (stateName && stateName.trim()) {
       const cleanState = stateName.trim();
-      query = query.or(`state.ilike.%${cleanState}%,state_province.ilike.%${cleanState}%`);
+      query = query.or(`state.ilike.${cleanState},state_province.ilike.${cleanState}`);
     }
 
-    const { data, error } = await query;
+    let { data, error } = await query;
+
+    if (error && (error.code === "42703" || error.message?.includes("city"))) {
+      const res = await supabase.from("venues").select("*").ilike("city_state", `%${cleanCity}%`);
+      data = res.data;
+      error = res.error;
+    } else if ((!data || data.length === 0) && !error) {
+      const csRes = await supabase.from("venues").select("*").ilike("city_state", `%${cleanCity}%`);
+      if (!csRes.error && csRes.data && csRes.data.length > 0) {
+        data = csRes.data;
+      }
+    }
 
     if (!error && data && Array.isArray(data)) {
       return data.map((v: any) => ({

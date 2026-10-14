@@ -30,12 +30,13 @@ import {
   Calendar, Star, Filter, Search, ArrowUpRight, ChevronRight, 
   Send, Lock, KeyRound, AlertTriangle, RefreshCw, BarChart3, 
   Activity, Award, CheckCircle2, FileText, Compass, ExternalLink,
-  Shield, CheckCircle, ShieldAlert, FileSpreadsheet
+  Shield, CheckCircle, ShieldAlert, FileSpreadsheet, Zap, Clock, CalendarCheck
 } from "lucide-react";
 import { sanitizeInputText } from "../utils/antiScrape";
 import AdminBandManager from "./AdminBandManager";
 import AdminVenueManager from "./AdminVenueManager";
 import ExportDirectoryModal from "./ExportDirectoryModal";
+import CalendarIngestModal from "./CalendarIngestModal";
 import { getMergedBandsList, getMergedVenuesList } from "../utils/directoryStore";
 import { downloadSubscribersExcel, downloadMasterContactsCSV } from "../utils/exportSpreadsheet";
 import { fetchProfiles, profileToSubscriber } from "../lib/supabase";
@@ -44,6 +45,11 @@ import {
   downloadEmbeddedBandsAndVenuesCSV,
   MigrationSyncResult 
 } from "../utils/adminMigration";
+import {
+  executeCalendarIngestion,
+  getCalendarSyncStatus,
+  CalendarIngestSummary
+} from "../utils/calendarCrawler";
 
 interface AdminDashboardProps {
   currentAccount: UserAccount | null;
@@ -87,6 +93,13 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
   const [isSyncingSupabase, setIsSyncingSupabase] = useState(false);
   const [syncStatusProgress, setSyncStatusProgress] = useState<string | null>(null);
   const [syncToastMessage, setSyncToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
+
+  // 30-Day Regional Calendar Ingestion State
+  const [isIngestingCalendar, setIsIngestingCalendar] = useState(false);
+  const [calendarIngestProgress, setCalendarIngestProgress] = useState<string | null>(null);
+  const [calendarSummary, setCalendarSummary] = useState<CalendarIngestSummary | null>(null);
+  const [showCalendarSummaryModal, setShowCalendarSummaryModal] = useState(false);
+  const [calendarSyncStatus, setCalendarSyncStatus] = useState(() => getCalendarSyncStatus());
 
   const allBands = useMemo(() => getMergedBandsList(), [refreshKey]);
   const allVenues = useMemo(() => getMergedVenuesList(), [refreshKey]);
@@ -427,6 +440,35 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
     }
   };
 
+  // Manual 30-Day Regional Calendar Ingestion
+  const handleRunCalendarIngest = async () => {
+    if (isIngestingCalendar) return;
+    setIsIngestingCalendar(true);
+    setCalendarIngestProgress("Crawling Verified Club Calendars & Extracting Lineups...");
+    try {
+      const summary = await executeCalendarIngestion((progress) => {
+        setCalendarIngestProgress(progress);
+      });
+      setCalendarSummary(summary);
+      setCalendarSyncStatus(getCalendarSyncStatus());
+      setShowCalendarSummaryModal(true);
+      setSyncToastMessage({
+        text: `⚡ 30-Day Calendar Ingestion Complete! Scanned ${summary.scannedVenuesCount} clubs, added +${summary.newBandsAddedCount} new verified acts to directory.`,
+        type: "success"
+      });
+      setRefreshKey(k => k + 1);
+    } catch (err: any) {
+      console.error("Calendar Ingestion error:", err);
+      setSyncToastMessage({
+        text: `Calendar Ingestion error: ${err?.message || "Please check connection"}`,
+        type: "error"
+      });
+    } finally {
+      setIsIngestingCalendar(false);
+      setCalendarIngestProgress(null);
+    }
+  };
+
   // Owner Password Verification
   const handleUnlockOwner = (e: React.FormEvent) => {
     e.preventDefault();
@@ -603,6 +645,22 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
             {(isOwnerLoggedIn || unlockSuccess) && (
               <button
                 type="button"
+                onClick={handleRunCalendarIngest}
+                disabled={isIngestingCalendar}
+                id="owner-calendar-ingest-top-btn"
+                className={`px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 cursor-pointer ${
+                  isIngestingCalendar ? "opacity-75 cursor-not-allowed animate-pulse" : ""
+                }`}
+                title="⚡ Run 30-Day Calendar Ingest (Venues & Bands)"
+              >
+                <Zap className={`w-4 h-4 text-slate-950 fill-slate-950 ${isIngestingCalendar ? "animate-spin" : ""}`} />
+                <span>{isIngestingCalendar ? "Ingesting..." : "⚡ 30-Day Calendar Ingest"}</span>
+              </button>
+            )}
+
+            {(isOwnerLoggedIn || unlockSuccess) && (
+              <button
+                type="button"
                 onClick={handleExportOfflineCSVs}
                 id="owner-export-offline-csvs-btn"
                 className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 cursor-pointer"
@@ -768,6 +826,100 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Live Music Calendar Crawler & Ingestion Engine */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 border border-amber-500/40 rounded-3xl p-6 sm:p-7 shadow-xl text-white relative overflow-hidden" id="live-music-calendar-crawler-card">
+        {/* Glow accent */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black rounded-full">
+                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                <span>Live Music Calendar Crawler &amp; Ingestion Engine</span>
+              </span>
+
+              {/* Status Badge */}
+              {calendarSyncStatus.isRecommended ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-black rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span>Sync Recommended</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black rounded-full">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Up to Date</span>
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              <span>Automated 30-Day Club Calendar Ingestion</span>
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Crawls verified Pacific Northwest and regional music room calendars, parses concert lineups and Schema.org event feeds, extracts performing artists and dates, and registers newly touring acts straight into the database.
+            </p>
+
+            {/* Timestamps & Info Row */}
+            <div className="flex items-center gap-4 sm:gap-6 pt-1 text-xs text-slate-300 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-slate-400">Last Synced:</span>
+                <strong className="text-white font-mono">{calendarSyncStatus.lastSyncDateText}</strong>
+              </div>
+              <div className="flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
+                <CalendarCheck className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="text-slate-400">Next Recommended Run:</span>
+                <strong className="text-amber-300 font-mono">{calendarSyncStatus.nextRecommendedDateText}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handleRunCalendarIngest}
+              disabled={isIngestingCalendar}
+              id="btn-run-calendar-ingest"
+              className={`px-5 py-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition-all shadow-xl flex items-center justify-center gap-2.5 cursor-pointer active:scale-95 ${
+                isIngestingCalendar ? "opacity-85 cursor-not-allowed" : "hover:scale-[1.02]"
+              }`}
+              title="Crawl verified live music venue calendars across Lower 48 states to ingest new touring artists"
+            >
+              {isIngestingCalendar ? (
+                <>
+                  <RefreshCw className="w-4 h-4 text-slate-950 animate-spin shrink-0" />
+                  <span>Crawling Verified Club Calendars &amp; Extracting Lineups...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 text-slate-950 fill-slate-950 shrink-0" />
+                  <span>⚡ Run 30-Day Calendar Ingest (Venues &amp; Bands)</span>
+                </>
+              )}
+            </button>
+
+            {calendarSummary && (
+              <button
+                type="button"
+                onClick={() => setShowCalendarSummaryModal(true)}
+                className="px-4 py-3.5 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 font-black text-xs rounded-2xl transition-colors cursor-pointer text-center"
+              >
+                View Last Run Report
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Real-time Progress Bar */}
+        {calendarIngestProgress && (
+          <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-3 text-xs text-amber-300 font-mono animate-in fade-in">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
+            <span>{calendarIngestProgress}</span>
+          </div>
+        )}
       </div>
 
       {/* Owner Module Navigation Tabs */}
@@ -1662,6 +1814,17 @@ export default function AdminDashboard({ currentAccount, onSwitchAccount }: Admi
         bands={allBands}
         venues={allVenues}
         userEmail={currentAccount?.contactEmail || ""}
+      />
+
+      {/* 30-Day Regional Calendar Ingestion Summary Modal */}
+      <CalendarIngestModal
+        isOpen={showCalendarSummaryModal}
+        onClose={() => setShowCalendarSummaryModal(false)}
+        summary={calendarSummary}
+        onNavigateToBands={() => {
+          setShowCalendarSummaryModal(false);
+          setDashboardTab("bands");
+        }}
       />
     </div>
   );

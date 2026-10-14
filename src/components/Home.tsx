@@ -765,7 +765,7 @@ export default function Home({
         <div className="space-y-4 max-w-2xl text-center lg:text-left">
           <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 text-[11px] font-extrabold py-1.5 px-3.5 rounded-full border border-indigo-500/30">
             <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
-            Ultimate Live Music Stage Director 
+            Nationwide Independent Touring & Stage Directory (Lower 48)
           </div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
             Connecting Rising Performers & Music Venues
@@ -1230,7 +1230,7 @@ export default function Home({
               <ul className="space-y-1.5 pl-1 pt-1 text-[11.5px]">
                 <li className="flex items-start gap-1.5">
                   <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>100% Free West Coast Venue Directory:</strong> Access all venue addresses, capacities, and booking emails.</span>
+                  <span><strong>100% Free Nationwide Venue Directory:</strong> Access all venue addresses, capacities, and booking emails across all 48 continental states.</span>
                 </li>
                 <li className="flex items-start gap-1.5">
                   <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -1411,7 +1411,7 @@ export default function Home({
               <ul className="space-y-2 text-xs text-gray-650">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span>Browse all music venues across the West Coast with complete addresses and booking emails</span>
+                  <span>Browse all music venues nationwide across the Lower 48 with complete addresses and booking emails</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
@@ -1442,7 +1442,7 @@ export default function Home({
               <ul className="space-y-2 text-xs text-gray-650">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span>Unlock all booking emails and official contacts for 1,300+ West Coast bands</span>
+                  <span>Unlock all booking emails and official contacts for 1,300+ bands nationwide</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
@@ -1450,7 +1450,7 @@ export default function Home({
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span>Filtered genre & city search across BC, WA, OR, and CA artists</span>
+                  <span>Filtered genre & city search across all 48 contiguous states (+DC)</span>
                 </li>
                 <li className="p-3 bg-amber-50/70 border border-amber-200/60 rounded-lg text-[11px] text-amber-950 font-medium flex items-center justify-between">
                   <span><strong>30-Day Access:</strong> $9.99 Pass (+$0.84 fee at checkout)</span>
@@ -1481,7 +1481,7 @@ export default function Home({
           <div className="text-center space-y-1">
             <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Create Free Account Profile</h2>
             <p className="text-xs text-gray-400">
-              Pick your correct role below to get instantly integrated into the West Coast co-bill network.
+              Pick your correct role below to get instantly integrated into the nationwide co-bill network across all 48 lower states.
             </p>
           </div>
 
