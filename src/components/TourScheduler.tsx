@@ -1160,15 +1160,35 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
 
     // 1. Instant In-Memory Filter (0ms Latency)
     const inMemory = allDirectoryVenues && allDirectoryVenues.length > 0 ? allDirectoryVenues : getMergedVenuesList();
-    const inMemMatches = inMemory.filter(v => {
-      const vCity = (v.city || "").trim().toLowerCase();
-      const vState = (v.state || "").trim().toLowerCase();
-      const matchesCity = vCity === cleanCity.toLowerCase() || vCity.replace(/\./g, "") === cleanCity.toLowerCase().replace(/\./g, "");
-      const matchesState = !cleanState || 
-        vState === cleanState.toLowerCase() || 
-        vState === stateCode.toLowerCase() ||
-        (STATE_NAME_TO_CODE_MAP[vState] && STATE_NAME_TO_CODE_MAP[vState].toLowerCase() === stateCode.toLowerCase());
-      return matchesCity && matchesState;
+    const targetCity = cleanCity.toLowerCase();
+    const targetState = cleanState.toLowerCase();
+
+    const inMemMatches = inMemory.filter((v: any) => {
+      const vName = (v.name || '').toLowerCase();
+      // Exclude hardcoded placeholder mock like "Everett Live Stage & Hall"
+      if (vName.includes('live stage & hall')) return false;
+
+      const vCity = (v.city || '').trim().toLowerCase();
+      const vState = (v.state || '').trim().toLowerCase();
+      const vAddress = (v.address || '').trim().toLowerCase();
+
+      const cityMatch = !targetCity || vCity.includes(targetCity) || targetCity.includes(vCity) || vAddress.includes(targetCity);
+      const stateMatch = !targetState || vState === targetState || 
+                         (targetState === 'wa' && (vState === 'washington' || vState === 'wa')) ||
+                         (targetState === 'washington' && (vState === 'wa' || vState === 'washington')) ||
+                         (targetState === 'or' && (vState === 'oregon' || vState === 'or')) ||
+                         (targetState === 'oregon' && (vState === 'or' || vState === 'oregon')) ||
+                         (targetState === 'ca' && (vState === 'california' || vState === 'ca')) ||
+                         (targetState === 'california' && (vState === 'ca' || vState === 'california')) ||
+                         (targetState === 'co' && (vState === 'colorado' || vState === 'co')) ||
+                         (targetState === 'colorado' && (vState === 'co' || vState === 'colorado')) ||
+                         (targetState === 'bc' && (vState === 'bc' || vState === 'british columbia')) ||
+                         (targetState === 'british columbia' && (vState === 'bc' || vState === 'british columbia')) ||
+                         (STATE_NAME_TO_CODE_MAP[vState] && STATE_NAME_TO_CODE_MAP[vState].toLowerCase() === targetState) ||
+                         (STATE_NAME_TO_CODE_MAP[targetState] && STATE_NAME_TO_CODE_MAP[targetState].toLowerCase() === vState) ||
+                         (STATE_NAME_TO_CODE_MAP[targetState] && STATE_NAME_TO_CODE_MAP[vState] && STATE_NAME_TO_CODE_MAP[targetState] === STATE_NAME_TO_CODE_MAP[vState]);
+
+      return cityMatch && stateMatch;
     });
 
     if (inMemMatches.length > 0) {
@@ -1192,28 +1212,29 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
       return inMemMatches;
     }
 
-    // 2. Fallback Network Query with Index Support:
-    // Query Supabase using exact equality first (.eq('state', stateName.trim()).ilike('city', cityName.trim()))
+    // 2. Direct Supabase Query when in-memory has 0 matches:
     setIsLoadingVenues(true);
     try {
       let remoteVenues: Venue[] = [];
       try {
-        const queryState = stateCode || cleanState;
-        let query = supabase.from("venues").select("*");
+        let res = await supabase
+          .from("venues")
+          .select("*")
+          .or(`city.ilike.%${cleanCity}%,city_state.ilike.%${cleanCity}%,address.ilike.%${cleanCity}%`);
 
-        if (queryState) {
-          query = query.eq("state", queryState.trim());
+        if (res.error) {
+          res = await supabase
+            .from("venues")
+            .select("*")
+            .or(`city.ilike.%${cleanCity}%,address.ilike.%${cleanCity}%`);
         }
-        if (cleanCity) {
-          query = query.ilike("city", cleanCity.trim());
-        }
 
-        const { data, error } = await query;
-
-        if (error) {
-          console.error("Supabase venue fetch error:", error);
+        const data = res.data;
+        if (res.error) {
+          console.error("Supabase venue fetch error:", res.error);
         } else if (data && Array.isArray(data)) {
-          remoteVenues = data.map((v: any) => ({
+          const filteredData = data.filter((v: any) => !(v.name || '').toLowerCase().includes('live stage & hall'));
+          remoteVenues = filteredData.map((v: any) => ({
             id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
             name: v.name || "Live Venue",
             city: v.city || cleanCity,
