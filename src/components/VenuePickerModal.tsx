@@ -45,67 +45,22 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
   }, [propAllVenues, propDirectoryVenues]);
 
   const rawCity = (cityName || stop.city || "").trim();
+  const cleanCity = (rawCity.includes(",") ? rawCity.split(",")[0] : rawCity).trim();
   const rawState = (stop.state || "").trim();
-  const parsed = parseFreeformCityState(cityName || `${stop.city || ""}, ${stop.state || ""}`);
-  const targetCityName = (parsed.city || (rawCity.includes(",") ? rawCity.split(",")[0] : rawCity) || "").trim();
-  const targetStateName = (parsed.state || (rawCity.includes(",") ? rawCity.split(",")[1] : rawState) || "").trim();
-  const stateCode = (STATE_NAME_TO_CODE_MAP[targetStateName.toLowerCase()] || targetStateName).trim();
+  const effectiveCity = cleanCity || stop.city || "";
+  const effectiveState = rawState || stop.state || "";
 
-  const targetCity = targetCityName.toLowerCase();
-  const targetState = targetStateName.toLowerCase();
-
-  const effectiveCity = targetCityName || stop.city || "";
-  const effectiveState = targetStateName || stop.state || "";
-
-  // 1. Robust Field Extraction:
-  // When filtering allVenues, inspect all possible location fields: v.city, v.city_state, v.address, and v.state
-  const realMatches = useMemo(() => {
-    if (!allVenues || allVenues.length === 0) return [];
-
-    return allVenues.filter((v: any) => {
-      const vName = (v.name || '').toLowerCase();
-      // Exclude any hardcoded placeholder mock like "Everett Live Stage & Hall"
-      if (vName.includes('live stage & hall')) return false;
-
-      const vCity = (v.city || '').toLowerCase();
-      const vCityState = (v.city_state || '').toLowerCase();
-      const vAddress = (v.address || '').toLowerCase();
-      const vState = (v.state || '').toLowerCase();
-
-      const matchesCity = vCity.includes(targetCity) || 
-                          vCityState.includes(targetCity) || 
-                          vAddress.includes(targetCity);
-
-      const matchesState = !targetState || 
-                           vState.includes(targetState) || 
-                           vCityState.includes(targetState) ||
-                           (targetState === 'wa' && (vState.includes('washington') || vCityState.includes('wa'))) ||
-                           (targetState === 'or' && (vState.includes('oregon') || vCityState.includes('or'))) ||
-                           (targetState === 'ca' && (vState.includes('california') || vCityState.includes('ca'))) ||
-                           (targetState === 'co' && (vState.includes('colorado') || vCityState.includes('co'))) ||
-                           (targetState === 'bc' && (vState.includes('bc') || vCityState.includes('bc')));
-
-      return matchesCity && matchesState;
-    });
-  }, [allVenues, targetCity, targetState]);
-
-  // Suggested venues state with immediate local matching
-  const [suggestedVenuesList, setSuggestedVenuesList] = useState<Venue[]>(() => {
-    if (realMatches && realMatches.length > 0) return realMatches;
-    if (suggestedVenues && suggestedVenues.length > 0) {
-      const filtered = suggestedVenues.filter(v => !(v.name || '').toLowerCase().includes('live stage & hall'));
-      if (filtered.length > 0) return filtered;
-    }
-    if (stop.suggestedVenues && stop.suggestedVenues.length > 0) {
-      const filtered = (stop.suggestedVenues as any[]).filter(v => !(v.name || '').toLowerCase().includes('live stage & hall'));
-      if (filtered.length > 0) return filtered;
-    }
+  // Suggested venues state with direct state binding
+  const [suggestedVenuesList, setSuggestedVenuesList] = useState<any[]>(() => {
+    if (suggestedVenues && suggestedVenues.length > 0) return suggestedVenues;
+    if (stop.suggestedVenues && (stop.suggestedVenues as any[]).length > 0) return stop.suggestedVenues as any[];
     return [];
   });
 
-  // Synchronously set isLoadingSuggested to false if real in-memory matches are already present
+  // Synchronously set isLoadingSuggested to false if suggestedVenues are already present
   const [isLoadingSuggested, setIsLoadingSuggested] = useState<boolean>(() => {
-    if (realMatches && realMatches.length > 0) return false;
+    if (suggestedVenues && suggestedVenues.length > 0) return false;
+    if (stop.suggestedVenues && (stop.suggestedVenues as any[]).length > 0) return false;
     return true;
   });
 
@@ -115,80 +70,32 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
   });
   const [isLoadingDirectory, setIsLoadingDirectory] = useState(false);
 
-  // Synchronous in-memory derivation & fallback network query
+  // 1. Query Strictly by the "city" Column & 2. Direct State Binding Without Client Filtering
   useEffect(() => {
     if (!isOpen) return;
 
-    // If in-memory real matches are available, render immediately with 0ms latency
-    if (realMatches && realMatches.length > 0) {
-      setSuggestedVenuesList(realMatches);
-      setIsLoadingSuggested(false);
-      setActiveTab("suggested");
-      return;
-    }
-
-    // 2. Force Query Supabase if In-Memory List Has 0 Matches:
-    // If realMatches.length === 0, perform a direct fallback query to the database
     let isMounted = true;
+    console.log("Fetching venues for city:", cleanCity);
     setIsLoadingSuggested(true);
 
-    async function loadFallbackVenues() {
+    async function fetchVenues() {
       try {
-        let results: Venue[] = [];
-
-        // Direct query to venues in Supabase checking city, city_state, and address
-        let { data, error } = await supabase
+        const { data, error } = await supabase
           .from('venues')
           .select('*')
-          .or(`city.ilike.%${targetCity}%,city_state.ilike.%${targetCity}%,address.ilike.%${targetCity}%`);
+          .ilike('city', `%${cleanCity}%`);
 
         if (error) {
-          // Fallback if city_state column does not exist on table schema
-          const retryRes = await supabase
-            .from('venues')
-            .select('*')
-            .or(`city.ilike.%${targetCity}%,address.ilike.%${targetCity}%`);
-          data = retryRes.data;
-          error = retryRes.error;
-        }
-
-        if (error) {
-          console.error("Direct Supabase venue query error:", error);
-        } else if (data && Array.isArray(data) && data.length > 0) {
-          // Exclude any hardcoded placeholder mock like "Everett Live Stage & Hall"
-          const filteredData = data.filter((v: any) => !(v.name || '').toLowerCase().includes('live stage & hall'));
-          results = filteredData.map((v: any) => ({
-            id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
-            name: v.name || "Live Venue",
-            city: v.city || effectiveCity,
-            state: v.state || effectiveState,
-            country: (v.state || targetState)?.toUpperCase() === "BC" ? "CA" : "US",
-            address: v.address || `${v.city || effectiveCity}, ${v.state || effectiveState}`.trim(),
-            capacity: Number(v.capacity) || 150,
-            genres: Array.isArray(v.genres_accepted)
-              ? v.genres_accepted
-              : (v.genres_accepted ? String(v.genres_accepted).split(",").map((g: string) => g.trim()) : ["Live Music"]),
-            contactEmail: v.official_email || v.booking_email || v.email || "",
-            official_email: v.official_email || v.booking_email || v.email || "",
-            contactPhone: v.phone || v.contact_phone || "Inquire",
-            website: v.website || undefined,
-            hasPA: true,
-            hasLighting: true,
-            description: v.description || `Live music venue located in ${v.city || effectiveCity}.`
-          }));
-        }
-
-        if (isMounted) {
-          setSuggestedVenuesList(results || []);
-          if (results && results.length > 0) {
+          console.error("Supabase venue fetch error:", error);
+        } else {
+          console.log("Venues returned from Supabase for", cleanCity, data);
+          if (isMounted) {
+            setSuggestedVenuesList(data || []);
             setActiveTab("suggested");
           }
         }
       } catch (err) {
-        console.error("Failed to query fallback venues:", err);
-        if (isMounted) {
-          setSuggestedVenuesList([]);
-        }
+        console.error("Supabase venue fetch error:", err);
       } finally {
         if (isMounted) {
           setIsLoadingSuggested(false);
@@ -196,12 +103,12 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
       }
     }
 
-    loadFallbackVenues();
+    fetchVenues();
 
     return () => {
       isMounted = false;
     };
-  }, [isOpen, realMatches, targetCity, targetState, effectiveCity, effectiveState]);
+  }, [isOpen, cleanCity]);
 
   // Sync background live Supabase directory without blocking user
   useEffect(() => {
@@ -285,22 +192,22 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
     );
   });
 
-  const handleSelectPredefined = (venue: TourVenueStop | Venue) => {
+  const handleSelectPredefined = (venue: TourVenueStop | Venue | any) => {
     onSave({
       id: venue.id,
       name: venue.name,
       address: venue.address || `${stop.city}, ${stop.state}`,
       city: venue.city || stop.city,
-      contactEmail: venue.contactEmail,
-      contactPhone: venue.contactPhone,
-      capacity: venue.capacity,
+      contactEmail: venue.booking_email || venue.official_email || venue.email || venue.contactEmail || "",
+      contactPhone: venue.phone || venue.contact_phone || venue.contactPhone || "Inquire",
+      capacity: Number(venue.capacity) || 150,
       loadInTime: customLoadIn || "5:00 PM",
       soundcheckTime: customSoundcheck || "6:30 PM",
       doorsTime: customDoors || "7:30 PM",
       setTime: customSetTime || "9:00 PM - 10:30 PM",
       ticketPrice: customTicketPrice || "$15 Adv / $18 Door",
       bookingStatus: "penciled",
-      notes: (venue as any).description || customNotes
+      notes: venue.description || customNotes
     });
   };
 
@@ -465,7 +372,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            Suggested ({suggestedVenuesList.length > 0 ? suggestedVenuesList.length : realMatches.length})
+            Suggested ({suggestedVenuesList.length})
           </button>
           <button
             type="button"
@@ -549,7 +456,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
                           )}
                           {v.capacity && (
                             <p className="text-xs text-slate-600 mt-1 font-medium">
-                              Capacity: {v.capacity} guests &bull; {v.genres?.slice(0, 3).join(", ")}
+                              Capacity: {v.capacity} guests {Array.isArray(v.genres_accepted) ? `• ${v.genres_accepted.slice(0, 3).join(", ")}` : (Array.isArray(v.genres) ? `• ${v.genres.slice(0, 3).join(", ")}` : "")}
                             </p>
                           )}
                           {v.description && (

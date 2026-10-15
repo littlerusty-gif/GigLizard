@@ -1089,7 +1089,7 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     );
   };
 
-  // Open Venue Modal: Instant 0ms modal opening without blocking on network
+  // Open Venue Modal: Instant 0ms modal opening and trigger Supabase fetch
   const handleOpenVenueModalForStop = (stopIdx: number) => {
     const targetStop = stops[stopIdx];
     if (!targetStop) return;
@@ -1097,6 +1097,8 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     // Immediately open modal cleanly
     setVenueModalStopIndex(stopIdx);
     setIsVenueModalOpen(true);
+    // Eagerly trigger Supabase venue fetch for this stop's city
+    loadVenuesForStageCity(targetStop.city, targetStop.state);
   };
 
   // Booking Health progress calculations (Stages Booked & Lodging Secured)
@@ -1137,146 +1139,76 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
     }
   };
 
-  // Loads venues for a specific city with fallback to state query
-  // Instant In-Memory Filter (0ms Latency) from memory directory (132 items) + indexed Supabase fallback
+  // Loads venues for a specific city directly from Supabase by querying strictly the "city" column
   const loadVenuesForStageCity = async (cityName: string, stateName?: string): Promise<Venue[]> => {
-    let cleanCity = (cityName || "").trim();
-    let cleanState = (stateName || "").trim();
-
-    if (cleanCity.includes(",")) {
-      const parts = cleanCity.split(",");
-      cleanCity = parts[0].trim();
-      if (!cleanState && parts[1]) {
-        cleanState = parts[1].trim();
-      }
+    let rawCity = (cityName || "").trim();
+    if (rawCity.includes(",")) {
+      rawCity = rawCity.split(",")[0].trim();
     }
-
-    const stateCode = (STATE_NAME_TO_CODE_MAP[cleanState.toLowerCase()] || cleanState).trim();
+    const cleanCity = rawCity.trim();
+    const cleanState = (stateName || "").trim();
     const cacheKey = cleanState ? `${cleanCity}_${cleanState.toUpperCase()}` : cleanCity;
 
-    if (cityVenuesMap[cacheKey] !== undefined) {
+    if (cityVenuesMap[cacheKey] !== undefined && cityVenuesMap[cacheKey].length > 0) {
       return cityVenuesMap[cacheKey];
     }
 
-    // 1. Instant In-Memory Filter (0ms Latency)
-    const inMemory = allDirectoryVenues && allDirectoryVenues.length > 0 ? allDirectoryVenues : getMergedVenuesList();
-    const targetCity = cleanCity.toLowerCase();
-    const targetState = cleanState.toLowerCase();
-
-    const inMemMatches = inMemory.filter((v: any) => {
-      const vName = (v.name || '').toLowerCase();
-      // Exclude hardcoded placeholder mock like "Everett Live Stage & Hall"
-      if (vName.includes('live stage & hall')) return false;
-
-      const vCity = (v.city || '').trim().toLowerCase();
-      const vState = (v.state || '').trim().toLowerCase();
-      const vAddress = (v.address || '').trim().toLowerCase();
-
-      const cityMatch = !targetCity || vCity.includes(targetCity) || targetCity.includes(vCity) || vAddress.includes(targetCity);
-      const stateMatch = !targetState || vState === targetState || 
-                         (targetState === 'wa' && (vState === 'washington' || vState === 'wa')) ||
-                         (targetState === 'washington' && (vState === 'wa' || vState === 'washington')) ||
-                         (targetState === 'or' && (vState === 'oregon' || vState === 'or')) ||
-                         (targetState === 'oregon' && (vState === 'or' || vState === 'oregon')) ||
-                         (targetState === 'ca' && (vState === 'california' || vState === 'ca')) ||
-                         (targetState === 'california' && (vState === 'ca' || vState === 'california')) ||
-                         (targetState === 'co' && (vState === 'colorado' || vState === 'co')) ||
-                         (targetState === 'colorado' && (vState === 'co' || vState === 'colorado')) ||
-                         (targetState === 'bc' && (vState === 'bc' || vState === 'british columbia')) ||
-                         (targetState === 'british columbia' && (vState === 'bc' || vState === 'british columbia')) ||
-                         (STATE_NAME_TO_CODE_MAP[vState] && STATE_NAME_TO_CODE_MAP[vState].toLowerCase() === targetState) ||
-                         (STATE_NAME_TO_CODE_MAP[targetState] && STATE_NAME_TO_CODE_MAP[targetState].toLowerCase() === vState) ||
-                         (STATE_NAME_TO_CODE_MAP[targetState] && STATE_NAME_TO_CODE_MAP[vState] && STATE_NAME_TO_CODE_MAP[targetState] === STATE_NAME_TO_CODE_MAP[vState]);
-
-      return cityMatch && stateMatch;
-    });
-
-    if (inMemMatches.length > 0) {
-      setCityVenuesMap(prev => ({ 
-        ...prev, 
-        [cacheKey]: inMemMatches,
-        [cleanCity]: inMemMatches,
-        [cityName]: inMemMatches
-      }));
-
-      setStops(prev => prev.map(s => {
-        if (s.city.toLowerCase() === cleanCity.toLowerCase() || s.city.toLowerCase() === cityName.toLowerCase()) {
-          return {
-            ...s,
-            suggestedVenues: inMemMatches as any
-          };
-        }
-        return s;
-      }));
-
-      return inMemMatches;
-    }
-
-    // 2. Direct Supabase Query when in-memory has 0 matches:
+    console.log("Fetching venues for city:", cleanCity);
     setIsLoadingVenues(true);
+
     try {
-      let remoteVenues: Venue[] = [];
-      try {
-        let res = await supabase
-          .from("venues")
-          .select("*")
-          .or(`city.ilike.%${cleanCity}%,city_state.ilike.%${cleanCity}%,address.ilike.%${cleanCity}%`);
+      const { data, error } = await supabase
+        .from('venues')
+        .select('*')
+        .ilike('city', `%${cleanCity}%`);
 
-        if (res.error) {
-          res = await supabase
-            .from("venues")
-            .select("*")
-            .or(`city.ilike.%${cleanCity}%,address.ilike.%${cleanCity}%`);
-        }
-
-        const data = res.data;
-        if (res.error) {
-          console.error("Supabase venue fetch error:", res.error);
-        } else if (data && Array.isArray(data)) {
-          const filteredData = data.filter((v: any) => !(v.name || '').toLowerCase().includes('live stage & hall'));
-          remoteVenues = filteredData.map((v: any) => ({
-            id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
-            name: v.name || "Live Venue",
-            city: v.city || cleanCity,
-            state: v.state || cleanState,
-            country: v.state?.toUpperCase() === "BC" ? "CA" : "US",
-            address: v.address || `${v.city || cleanCity}, ${v.state || cleanState}`.trim(),
-            capacity: Number(v.capacity) || 150,
-            genres: Array.isArray(v.genres_accepted) 
-              ? v.genres_accepted 
-              : (v.genres_accepted ? String(v.genres_accepted).split(",").map((g: string) => g.trim()) : ["Live Music"]),
-            contactEmail: v.official_email || v.booking_email || v.email || "",
-            official_email: v.official_email || v.booking_email || v.email || "",
-            contactPhone: v.phone || v.contact_phone || "Inquire",
-            website: v.website || undefined,
-            hasPA: true,
-            hasLighting: true,
-            description: v.description || `Live music venue located in ${v.city || cleanCity}.`
-          }));
-        }
-      } catch (err) {
-        console.error("Supabase venue fetch error:", err);
+      if (error) {
+        console.error("Supabase venue fetch error:", error);
+      } else {
+        console.log("Venues returned from Supabase for", cleanCity, data);
       }
 
+      const venueResults: Venue[] = (data || []).map((v: any) => ({
+        id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
+        name: v.name || "Live Venue",
+        city: v.city || cleanCity,
+        state: v.state || cleanState,
+        country: v.state?.toUpperCase() === "BC" ? "CA" : "US",
+        address: v.address || `${v.city || cleanCity}, ${v.state || cleanState}`.trim(),
+        capacity: Number(v.capacity) || 150,
+        genres: Array.isArray(v.genres_accepted) 
+          ? v.genres_accepted 
+          : (v.genres_accepted ? String(v.genres_accepted).split(",").map((g: string) => g.trim()) : (Array.isArray(v.genres) ? v.genres : ["Live Music"])),
+        contactEmail: v.booking_email || v.official_email || v.email || v.contactEmail || "",
+        official_email: v.booking_email || v.official_email || v.email || v.contactEmail || "",
+        contactPhone: v.phone || v.contact_phone || v.contactPhone || "Inquire",
+        website: v.website || undefined,
+        hasPA: true,
+        hasLighting: true,
+        description: v.description || `Live music venue located in ${v.city || cleanCity}.`
+      }));
+
+      // Direct State Binding Without Client Filtering:
       setCityVenuesMap(prev => ({ 
         ...prev, 
-        [cacheKey]: remoteVenues,
-        [cleanCity]: remoteVenues,
-        [cityName]: remoteVenues
+        [cacheKey]: venueResults,
+        [cleanCity]: venueResults,
+        [cityName]: venueResults
       }));
 
       // Update stop suggested venues in state for this specific city
       setStops(prev => prev.map(s => {
-        if (s.city.toLowerCase() === cleanCity.toLowerCase() || s.city.toLowerCase() === cityName.toLowerCase()) {
+        const sCity = (s.city || "").includes(",") ? s.city.split(",")[0].trim().toLowerCase() : s.city.trim().toLowerCase();
+        if (sCity === cleanCity.toLowerCase() || s.city.toLowerCase() === cityName.toLowerCase()) {
           return {
             ...s,
-            suggestedVenues: remoteVenues as any
+            suggestedVenues: venueResults as any
           };
         }
         return s;
       }));
 
-      return remoteVenues;
+      return venueResults;
     } catch (err) {
       console.error("Failed loading venues for stage city:", err);
       return [];

@@ -850,47 +850,39 @@ export async function deleteTourFromDatabase(tourId: string): Promise<boolean> {
  * Queries venues for a specific city from public.venues in Supabase.
  */
 export async function fetchVenuesFromDatabaseForCity(cityName: string, stateName?: string): Promise<Venue[]> {
-  const cleanCity = cityName.trim();
+  const rawCity = (cityName || "").trim();
+  const cleanCity = rawCity.includes(",") ? rawCity.split(",")[0].trim() : rawCity;
   if (!cleanCity) return [];
 
+  console.log("Fetching venues for city:", cleanCity);
+
   try {
-    let query = supabase
+    const { data, error } = await supabase
       .from("venues")
       .select("*")
-      .ilike("city", cleanCity);
+      .ilike("city", `%${cleanCity}%`);
 
-    if (stateName && stateName.trim()) {
-      const cleanState = stateName.trim();
-      query = query.or(`state.ilike.${cleanState},state_province.ilike.${cleanState}`);
+    if (error) {
+      console.error("Supabase venue fetch error:", error);
+      return [];
     }
 
-    let { data, error } = await query;
+    console.log("Venues returned from Supabase for", cleanCity, data);
 
-    if (error && (error.code === "42703" || error.message?.includes("city"))) {
-      const res = await supabase.from("venues").select("*").ilike("city_state", `%${cleanCity}%`);
-      data = res.data;
-      error = res.error;
-    } else if ((!data || data.length === 0) && !error) {
-      const csRes = await supabase.from("venues").select("*").ilike("city_state", `%${cleanCity}%`);
-      if (!csRes.error && csRes.data && csRes.data.length > 0) {
-        data = csRes.data;
-      }
-    }
-
-    if (!error && data && Array.isArray(data)) {
+    if (data && Array.isArray(data)) {
       return data.map((v: any) => ({
         id: v.id || `venue-db-${v.name?.toLowerCase().replace(/\s+/g, "-")}`,
         name: v.name || "Live Venue",
         city: v.city || cleanCity,
-        state: v.state || v.state_province || stateName,
+        state: v.state || stateName || "",
         country: v.country || (stateName?.toUpperCase() === "BC" ? "CA" : "US"),
         address: v.address || `${cleanCity}, ${v.state || ""}`.trim(),
         capacity: Number(v.capacity) || 150,
         genres: Array.isArray(v.genres_accepted) 
           ? v.genres_accepted 
-          : (v.genres_accepted ? String(v.genres_accepted).split(",").map(g => g.trim()) : ["Live Music"]),
-        contactEmail: v.booking_email || v.email || "",
-        contactPhone: v.phone || "Inquire",
+          : (v.genres_accepted ? String(v.genres_accepted).split(",").map(g => g.trim()) : (Array.isArray(v.genres) ? v.genres : ["Live Music"])),
+        contactEmail: v.booking_email || v.official_email || v.email || v.contactEmail || "",
+        contactPhone: v.phone || v.contactPhone || "Inquire",
         website: v.website || undefined,
         hasPA: true,
         hasLighting: true,
@@ -898,7 +890,7 @@ export async function fetchVenuesFromDatabaseForCity(cityName: string, stateName
       }));
     }
   } catch (err) {
-    console.warn("[Supabase] Failed to query venues for city:", err);
+    console.error("Supabase venue fetch error:", err);
   }
   return [];
 }
