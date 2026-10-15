@@ -31,7 +31,7 @@ import {
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
   Compass, Navigation, ShieldCheck, BarChart3, Crown, LogIn, HelpCircle,
-  RefreshCw, Download, CheckCircle2, AlertTriangle, X
+  RefreshCw, Download, CheckCircle2, AlertTriangle, X, Menu
 } from "lucide-react";
 
 // Default preset values for first-load
@@ -55,6 +55,8 @@ export default function GigLizardApp() {
   type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "admin";
   const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "admin"];
 
+  // Mobile navigation drawer toggle state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Android back-swipe / double-tap exit state
   const [showExitToast, setShowExitToast] = useState(false);
   const lastBackPressTimeRef = useRef<number>(0);
@@ -1010,7 +1012,7 @@ export default function GigLizardApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans relative" id="applet-viewport">
+    <div className="min-h-screen max-w-full overflow-x-hidden bg-slate-50 text-slate-800 flex flex-col font-sans relative" id="applet-viewport">
       {/* In-app loading splash screen overlay (fades out as soon as initial auth check finishes) */}
       {isAuthLoading && (
         <div 
@@ -1052,14 +1054,14 @@ export default function GigLizardApp() {
       )}
 
       {/* Visual Workspace Bar Header */}
-      <header className="bg-white border-b border-gray-200/60 sticky top-0 z-50 py-2 sm:py-3 md:py-4 px-3 sm:px-6 md:px-8" id="main-header">
+      <header className="bg-white border-b border-gray-200/60 sticky top-0 z-50 py-2 sm:py-3 md:py-4 px-3 sm:px-6 md:px-8 max-w-full overflow-x-hidden" id="main-header">
         <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 sm:gap-4" id="header-inner">
           
           {/* Logo pinned on the far left */}
           <div className="flex items-center shrink-0" id="logo-row">
             <button
               type="button"
-              onClick={() => setActiveTab("home")}
+              onClick={() => { setActiveTab("home"); setIsMobileMenuOpen(false); }}
               className="flex items-center cursor-pointer text-left focus:outline-hidden group"
               id="header-brand-link"
               title="GigLizard Home"
@@ -1067,7 +1069,7 @@ export default function GigLizardApp() {
               <img
                 src={gigLizardLogo || "/giglizard_logo.png"}
                 alt="GigLizard"
-                className="h-16 sm:h-20 md:h-24 lg:h-30 xl:h-36 max-w-[220px] sm:max-w-[260px] md:max-w-[380px] lg:max-w-[460px] w-auto object-contain flex-shrink-0 transition-transform group-hover:scale-102"
+                className="h-10 sm:h-14 md:h-20 lg:h-24 max-w-[140px] sm:max-w-[200px] md:max-w-[320px] lg:max-w-[420px] w-auto object-contain flex-shrink-0 transition-transform group-hover:scale-102"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   if (e.currentTarget.src !== window.location.origin + "/giglizard_logo.png") {
@@ -1079,129 +1081,256 @@ export default function GigLizardApp() {
             </button>
           </div>
 
-          {/* Navigation Bar: Compact 2-row layout on mobile, clean horizontal flex on md+ */}
-          <nav className="flex flex-col md:flex-row items-end md:items-center gap-1 md:gap-1.5 bg-slate-100/90 p-1 md:p-1.5 rounded-2xl border border-slate-200/60 shadow-2xs shrink-0" id="main-nav">
-            {/* Row 1: Venues and Bands links */}
-            <div className="flex items-center justify-end gap-1 md:gap-1.5 w-full md:w-auto" id="nav-row-1">
+          {/* Mobile Right Controls: Compact + Claim Pill + Hamburger Menu (< md) */}
+          <div className="flex md:hidden items-center gap-1.5 shrink-0" id="header-mobile-controls">
+            <button
+              type="button"
+              onClick={() => { setShowArtistRegistrationModal(true); setIsMobileMenuOpen(false); }}
+              id="header-claim-band-btn-mobile"
+              className="flex items-center justify-center gap-1 px-2.5 py-1.5 text-[11px] font-black cursor-pointer rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 text-white shadow-xs transition-all active:scale-95 shrink-0"
+              title="Claim or submit your band"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-200 shrink-0" />
+              <span>+ Claim</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(prev => !prev)}
+              aria-label="Toggle Navigation Menu"
+              className="p-1.5 sm:p-2 text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200/80 cursor-pointer transition-colors shrink-0"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-slate-800" /> : <Menu className="w-5 h-5 text-slate-800" />}
+            </button>
+          </div>
+
+          {/* Desktop Navigation Bar (md+): Clean horizontal bar */}
+          <nav className="hidden md:flex flex-row items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/60 shadow-2xs shrink-0" id="main-nav">
+            <button
+              onClick={() => setActiveTab("venues")}
+              id="tab-btn-venues"
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+                activeTab === "venues"
+                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
+                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Venues</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("bands")}
+              id="tab-btn-bands"
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+                activeTab === "bands"
+                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
+                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
+              }`}
+            >
+              <Users className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>Bands</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("tour")}
+              id="tab-btn-tour"
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+                activeTab === "tour"
+                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
+                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Tour</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowArtistRegistrationModal(true)}
+              id="header-claim-band-btn"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black cursor-pointer rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+              title="Claim or submit your band to the verified touring directory"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-200 shrink-0" />
+              <span>+ Claim / List Your Band</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("advisor")}
+              id="tab-btn-advisor"
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+                activeTab === "advisor"
+                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
+                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+              <span>Help</span>
+            </button>
+
+            {/* Owner & Private Analytics Dashboard Button - strictly visible to littlerusty@gmail.com only */}
+            {currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" && (
               <button
-                onClick={() => setActiveTab("venues")}
-                id="tab-btn-venues"
-                className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                  activeTab === "venues"
-                    ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                    : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
+                onClick={() => setActiveTab("admin")}
+                id="tab-btn-admin"
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs ${
+                  activeTab === "admin"
+                    ? "bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-300"
+                    : "bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200"
                 }`}
+                title="Private Owner Analytics & Subscriber Contact Hub (littlerusty@gmail.com)"
               >
-                <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span>Venues</span>
+                <Crown className={`w-3.5 h-3.5 ${activeTab === "admin" ? "text-slate-950" : "text-amber-600"}`} />
+                <span>Owner</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               </button>
+            )}
 
-              <button
-                onClick={() => setActiveTab("bands")}
-                id="tab-btn-bands"
-                className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                  activeTab === "bands"
-                    ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                    : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-                }`}
-              >
-                <Users className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>Bands</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowArtistRegistrationModal(true)}
-                id="header-claim-band-btn"
-                className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-black cursor-pointer rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
-                title="Claim or submit your band to the verified touring directory"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-200 shrink-0" />
-                <span>+ Claim / List Your Band</span>
-              </button>
-            </div>
-
-            {/* Row 2: Help, Sign In / Edit Account, and optional Owner button */}
-            <div className="flex items-center justify-end gap-1 md:gap-1.5 w-full md:w-auto" id="nav-row-2">
-              <button
-                onClick={() => setActiveTab("advisor")}
-                id="tab-btn-advisor"
-                className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                  activeTab === "advisor"
-                    ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                    : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-                }`}
-              >
-                <HelpCircle className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                <span>Help</span>
-              </button>
-
-              {/* Owner & Private Analytics Dashboard Button - strictly visible to littlerusty@gmail.com only */}
-              {currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" && (
-                <button
-                  onClick={() => setActiveTab("admin")}
-                  id="tab-btn-admin"
-                  className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs ${
-                    activeTab === "admin"
-                      ? "bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-300"
-                      : "bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200"
-                  }`}
-                  title="Private Owner Analytics & Subscriber Contact Hub (littlerusty@gmail.com)"
+            {/* Dynamic Account Action Button: Edit Account if authenticated, Sign In if guest */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-1.5" id="header-authenticated-actions">
+                <span 
+                  id="header-user-display-badge"
+                  className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-slate-800 bg-white border border-slate-200/90 rounded-xl shadow-2xs"
+                  title={`Active account: ${isOwnerUser ? "Dr Hadit" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}`}
                 >
-                  <Crown className={`w-3.5 h-3.5 ${activeTab === "admin" ? "text-slate-950" : "text-amber-600"}`} />
-                  <span className="hidden sm:inline">Owner</span>
-                  <span className="sm:hidden">Owner</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                </button>
-              )}
-
-              {/* Dynamic Account Action Button: Edit Account if authenticated, Sign In if guest */}
-              {isAuthenticated ? (
-                <div className="flex items-center gap-1 sm:gap-1.5" id="header-authenticated-actions">
-                  <span 
-                    id="header-user-display-badge"
-                    className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-slate-800 bg-white border border-slate-200/90 rounded-xl shadow-2xs"
-                    title={`Active account: ${isOwnerUser ? "Dr Hadit" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                    <span className="truncate max-w-[120px] text-slate-900 font-extrabold">
-                      {isOwnerUser ? "Dr Hadit" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}
-                    </span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="truncate max-w-[120px] text-slate-900 font-extrabold">
+                    {isOwnerUser ? "Dr Hadit" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowEditAccountModal(true)}
-                    id="tab-btn-edit-account"
-                    className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 whitespace-nowrap"
-                    title="Edit your account password, view status, or update your band or venue page"
-                  >
-                    <Settings className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    <span>Account</span>
-                  </button>
-                </div>
-              ) : (
+                </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    setLoginModalMode("login");
-                    setShowUserLoginModal(true);
-                  }}
-                  id="tab-btn-sign-in"
-                  className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-600 hover:bg-indigo-500 text-white whitespace-nowrap"
-                  title="Sign in or register your GigLizard profile"
+                  onClick={() => setShowEditAccountModal(true)}
+                  id="tab-btn-edit-account"
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 whitespace-nowrap"
+                  title="Edit your account password, view status, or update your band or venue page"
                 >
-                  <LogIn className="w-3.5 h-3.5 shrink-0" />
-                  <span>Sign In</span>
+                  <Settings className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                  <span>Account</span>
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginModalMode("login");
+                  setShowUserLoginModal(true);
+                }}
+                id="tab-btn-sign-in"
+                className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-600 hover:bg-indigo-500 text-white whitespace-nowrap"
+                title="Sign in or register your GigLizard profile"
+              >
+                <LogIn className="w-3.5 h-3.5 shrink-0" />
+                <span>Sign In</span>
+              </button>
+            )}
           </nav>
 
         </div>
+
+        {/* Mobile Navigation Dropdown Menu (< md) */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200/80 bg-white/98 backdrop-blur-md px-4 py-3 space-y-2.5 animate-in slide-in-from-top-2 duration-150 shadow-xl" id="mobile-nav-dropdown">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => { setActiveTab("venues"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "venues" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <MapPin className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Venues</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab("bands"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "bands" ? "bg-amber-50 text-amber-900 border border-amber-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <Users className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Bands</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab("tour"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "tour" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <Compass className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Tour Master</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab("advisor"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "advisor" ? "bg-purple-50 text-purple-900 border border-purple-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <HelpCircle className="w-4 h-4 text-purple-600 shrink-0" />
+                <span>Help & FAQ</span>
+              </button>
+            </div>
+
+            {/* Full Claim CTA button in mobile menu */}
+            <button
+              type="button"
+              onClick={() => { setShowArtistRegistrationModal(true); setIsMobileMenuOpen(false); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 text-white text-xs font-black shadow-xs cursor-pointer active:scale-98 transition-all"
+            >
+              <Sparkles className="w-4 h-4 text-amber-200 shrink-0" />
+              <span>+ Claim / List Your Band in Directory</span>
+            </button>
+
+            {/* Dynamic Account / Auth Row in mobile menu */}
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+              {isAuthenticated ? (
+                <>
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 truncate">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                    <span className="truncate">{isOwnerUser ? "Dr Hadit (Owner)" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setShowEditAccountModal(true); setIsMobileMenuOpen(false); }}
+                    className="px-3 py-1.5 text-xs font-black rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1.5 shrink-0"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Account</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setLoginModalMode("login"); setShowUserLoginModal(true); setIsMobileMenuOpen(false); }}
+                  className="w-full py-2 text-xs font-black rounded-xl bg-indigo-600 text-white flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Sign In to GigLizard</span>
+                </button>
+              )}
+
+              {currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" && (
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab("admin"); setIsMobileMenuOpen(false); }}
+                  className="px-3 py-1.5 text-xs font-black rounded-xl bg-amber-500 text-slate-950 flex items-center gap-1 shrink-0"
+                >
+                  <Crown className="w-3.5 h-3.5" />
+                  <span>Owner</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Core Tab Workspace Grid */}
-      <main className="flex-grow p-4 md:p-8 max-w-7xl w-full mx-auto space-y-6" id="main-content-layout">
+      <main className="flex-grow p-3 sm:p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6 max-w-full overflow-x-hidden" id="main-content-layout">
 
         {/* Real-time Toast Feedback Banner */}
         {syncToastMessage && (

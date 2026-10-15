@@ -6,6 +6,11 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 /* Custom gorgeous display fonts */
 .SpaceGrotesk {
   font-family: 'Space Grotesk', sans-serif;

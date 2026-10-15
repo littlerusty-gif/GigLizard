@@ -658,11 +658,14 @@ export const TourMap: React.FC<TourMapProps> = ({
       )}
 
       {/* Leaflet Map Canvas */}
-      <div className={`w-full relative bg-slate-100 ${isFullscreen ? "flex-1 min-h-[500px]" : "h-96 sm:h-[450px]"}`}>
+      <div 
+        className={`w-full relative bg-slate-100 ${isFullscreen ? "flex-1 min-h-[500px]" : "h-64 sm:h-80 md:h-96"}`}
+        style={{ touchAction: "pan-x pan-y" }}
+      >
         <div 
           ref={mapContainerRef} 
           className="w-full h-full z-0" 
-          style={{ minHeight: "380px" }}
+          style={{ touchAction: "pan-x pan-y" }}
         />
 
         {/* Legend / Route Summary Overlay */}

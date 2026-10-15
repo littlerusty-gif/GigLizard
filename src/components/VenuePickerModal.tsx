@@ -326,8 +326,8 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full max-w-lg mx-auto sm:my-8 inset-x-0 bottom-0 sm:bottom-auto rounded-t-2xl sm:rounded-2xl max-h-[92vh] flex flex-col bg-white shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
         
         {/* Header */}
         <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
@@ -455,11 +455,11 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
         </div>
 
         {/* Tab Selection */}
-        <div className="flex border-b border-slate-200 bg-slate-50 px-4 pt-3 gap-2 text-xs font-bold">
+        <div className="flex border-b border-slate-200 bg-slate-50 px-3 sm:px-4 pt-2.5 gap-2 text-xs font-bold overflow-x-auto whitespace-nowrap scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab("suggested")}
-            className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer ${
+            className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === "suggested" 
                 ? "border-indigo-600 text-indigo-700 font-extrabold" 
                 : "border-transparent text-slate-500 hover:text-slate-800"
@@ -470,7 +470,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab("directory")}
-            className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer ${
+            className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === "directory" 
                 ? "border-indigo-600 text-indigo-700 font-extrabold" 
                 : "border-transparent text-slate-500 hover:text-slate-800"
@@ -481,13 +481,13 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab("custom")}
-            className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer ${
+            className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === "custom" 
                 ? "border-indigo-600 text-indigo-700 font-extrabold" 
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            Custom Venue &amp; Run-of-Show
+            Custom Stage &amp; Run-of-Show
           </button>
         </div>
 
