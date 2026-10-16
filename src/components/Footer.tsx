@@ -8,6 +8,7 @@ interface FooterProps {
   onOpenContact?: () => void;
   onOpenAbout?: () => void;
   onOpenGuarantee?: () => void;
+  onOpenPricing?: () => void;
   userEmail?: string;
   userName?: string;
 }
@@ -18,6 +19,7 @@ export default function Footer({
   onOpenContact,
   onOpenAbout,
   onOpenGuarantee,
+  onOpenPricing,
   userEmail,
   userName
 }: FooterProps) {
@@ -55,6 +57,21 @@ export default function Footer({
 
           {/* Legal Navigation Links */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-semibold" id="footer-legal-links">
+            {onOpenPricing && (
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenPricing}
+                  className="text-slate-300 hover:text-emerald-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900 font-bold"
+                  id="footer-btn-pricing"
+                >
+                  <span className="text-emerald-400 font-mono font-black">$</span>
+                  <span>Pricing & Tiers</span>
+                </button>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
             {onOpenAbout && (
               <>
                 <button

@@ -19,6 +19,7 @@ import TermsOfServiceModal from "./components/TermsOfServiceModal";
 import ArtistRegistrationModal from "./components/ArtistRegistrationModal";
 import AboutMissionModal from "./components/AboutMissionModal";
 import SatisfactionGuaranteeModal from "./components/SatisfactionGuaranteeModal";
+import PricingPage from "./components/PricingPage";
 import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
@@ -33,7 +34,7 @@ import {
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
   Compass, Navigation, ShieldCheck, BarChart3, Crown, LogIn, HelpCircle,
-  RefreshCw, Download, CheckCircle2, AlertTriangle, X, Menu
+  RefreshCw, Download, CheckCircle2, AlertTriangle, X, Menu, DollarSign
 } from "lucide-react";
 
 // Default preset values for first-load
@@ -54,8 +55,8 @@ const INITIAL_RIDER_INPUTS = [
 ];
 
 export default function GigLizardApp() {
-  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "admin";
-  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "admin"];
+  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin";
+  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin"];
 
   // Mobile navigation drawer toggle state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -437,11 +438,8 @@ export default function GigLizardApp() {
       }, 150);
       return true;
     }
-    if (clean === "pricing" || clean === "tiers") {
-      setActiveTabState("home");
-      setTimeout(() => {
-        document.getElementById("tiers-comparer-block")?.scrollIntoView({ behavior: "smooth" });
-      }, 150);
+    if (clean === "pricing" || clean === "tiers" || clean === "rates") {
+      setActiveTabState("pricing");
       return true;
     }
     return false;
@@ -1205,6 +1203,19 @@ export default function GigLizardApp() {
             </button>
 
             <button
+              onClick={() => setActiveTab("pricing")}
+              id="tab-btn-pricing"
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+                activeTab === "pricing"
+                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
+                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
+              }`}
+            >
+              <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Pricing</span>
+            </button>
+
+            <button
               type="button"
               onClick={() => setShowArtistRegistrationModal(true)}
               id="header-claim-band-btn"
@@ -1322,6 +1333,16 @@ export default function GigLizardApp() {
               >
                 <Compass className="w-4 h-4 text-indigo-600 shrink-0" />
                 <span>Tour Master</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab("pricing"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "pricing" ? "bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <DollarSign className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Pricing</span>
               </button>
               <button
                 type="button"
@@ -1605,6 +1626,17 @@ export default function GigLizardApp() {
           </div>
         )}
 
+        {activeTab === "pricing" && (
+          <div className="space-y-6" id="view-pricing-wrapper">
+            <PricingPage 
+              currentAccount={currentAccount}
+              onSelectTab={setActiveTab}
+              onOpenCheckout={() => setShowPayPalModal(true)}
+              onOpenRegister={() => setShowArtistRegistrationModal(true)}
+            />
+          </div>
+        )}
+
         {activeTab === "admin" && (
           currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" ? (
             <div className="space-y-6" id="view-admin-wrapper">
@@ -1678,6 +1710,7 @@ export default function GigLizardApp() {
         onOpenSecurity={() => setShowSecurityModal(true)} 
         onOpenAbout={() => setShowAboutModal(true)}
         onOpenGuarantee={() => setShowGuaranteeModal(true)}
+        onOpenPricing={() => setActiveTab("pricing")}
         userEmail={currentAccount?.contactEmail || currentUser?.email || ""}
         userName={currentAccount?.name || ""}
       />

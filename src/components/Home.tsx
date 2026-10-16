@@ -6,12 +6,21 @@ import {
   HelpCircle, UserCheck, LogOut, ArrowRight, Lock, LogIn,
   Compass, Navigation, CheckCircle, X, ShieldCheck, Clock, CheckCircle2,
   KeyRound, Eye, EyeOff, Headphones, ExternalLink, Settings, AlertCircle, RefreshCw,
-  RotateCcw, Heart, Award, ThumbsUp
+  RotateCcw, Heart, Award, ThumbsUp, ChevronDown, ChevronUp
 } from "lucide-react";
 import CaptchaChallenge from "./CaptchaChallenge";
 import PayPalAccessModal from "./PayPalAccessModal";
 import AboutMissionModal from "./AboutMissionModal";
 import SatisfactionGuaranteeModal from "./SatisfactionGuaranteeModal";
+import { 
+  VenueDirectoryScreenshot, 
+  StagePlotScreenshot, 
+  TechRiderScreenshot, 
+  PosterScreenshot, 
+  TourPlannerScreenshot,
+  FounderAvatar,
+  BandVisualBadge
+} from "./ProductPreviews";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { isAccessActive, getAccessStatusDetails, isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
 import { recordLiveSignup } from "../utils/analyticsStore";
@@ -88,6 +97,7 @@ export default function Home({
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showGuaranteeModal, setShowGuaranteeModal] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const activeAccess = isAccessActive(currentAccount);
   const accessDetails = getAccessStatusDetails(currentAccount);
@@ -796,6 +806,11 @@ export default function Home({
               Browse Active Bands (Premium)
             </button>
           </div>
+
+          {/* Real Product Screenshot Preview of Venue Directory in Hero */}
+          <div className="pt-3 max-w-xl">
+            <VenueDirectoryScreenshot className="border border-slate-800 shadow-2xl" />
+          </div>
         </div>
 
         {/* Dynamic Account Visual Block on Hero */}
@@ -1332,10 +1347,11 @@ export default function Home({
       )}
 
       {/* The Three Core Features Grid - Labeled EXACTLY as requested */}
-      <section className="space-y-4" id="home-featured-matrix-section">
+      {/* The Core Production & Touring Features Grid */}
+      <section className="space-y-6" id="home-featured-matrix-section">
         <div className="text-center md:text-left">
-          <h3 className="text-sm font-black uppercase tracking-widest text-indigo-600">Our Suite Directives</h3>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">Explore Professional Stage Utilities</h2>
+          <h3 className="text-sm font-black uppercase tracking-widest text-indigo-600">Everything you need for the gig</h3>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Book the gig. Route the van. Show up looking pro.</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="four-core-elements-row">
@@ -1343,22 +1359,34 @@ export default function Home({
           {/* Element 1: responsive stage arrangement */}
           <div 
             onClick={() => onSelectTab("plot")}
-            className="group bg-white rounded-2xl border border-gray-100 hover:border-orange-200 p-6 space-y-4 transition-all hover:shadow-md cursor-pointer block relative overflow-hidden" 
+            className="group bg-white rounded-2xl border border-gray-100 hover:border-orange-300 p-5 space-y-4 transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between relative overflow-hidden" 
             id="element-responsive-stage"
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -z-10 group-hover:bg-orange-100 transition-all" />
-            <div className="bg-orange-500 text-white p-3 rounded-xl w-12 h-12 flex items-center justify-center shadow-xs">
-              <Sliders className="w-5.5 h-5.5" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="bg-orange-500 text-white p-2.5 rounded-xl w-10 h-10 flex items-center justify-center shadow-xs">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-black tracking-widest text-orange-600 font-mono bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                  Stage plot canvas
+                </span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 capitalize group-hover:text-orange-600 transition-all">
+                  Stage Plot Designer
+                </h3>
+                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                  Interactive canvas to map drum modules, monitor wedges, pedalboards, and mic booms. Responsive across laptop, tablet, and phone.
+                </p>
+              </div>
+
+              {/* Visual Preview Screenshot */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.02] transition-transform">
+                <StagePlotScreenshot />
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] uppercase font-black tracking-widest text-orange-600 font-mono">Stage Layout canvas</p>
-              <h3 className="text-base font-black text-slate-900 mt-1 capitalize group-hover:text-indigo-600 transition-all">
-                Stage Plot Designer
-              </h3>
-              <p className="text-xs text-gray-500 mt-2.5 leading-relaxed">
-                Map interactive equipment positions—drum modules, monitor wedges, key boards, and mic booms.
-              </p>
-            </div>
+
             <div className="pt-2 text-xs font-bold text-orange-600 flex items-center gap-1 group-hover:translate-x-1 transition-all">
               Launch Plot Designer <ArrowRight className="w-3.5 h-3.5" />
             </div>
@@ -1367,25 +1395,34 @@ export default function Home({
           {/* Element 2: professional tech delivery */}
           <div 
             onClick={() => onSelectTab("rider")}
-            className="group bg-white rounded-2xl border border-gray-100 hover:border-blue-200 p-6 space-y-4 transition-all hover:shadow-md cursor-pointer block relative overflow-hidden" 
+            className="group bg-white rounded-2xl border border-gray-100 hover:border-blue-300 p-5 space-y-4 transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between relative overflow-hidden" 
             id="element-professional-tech"
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-10 group-hover:bg-blue-100 transition-all" />
-            <div className="bg-blue-600 text-white p-3 rounded-xl w-12 h-12 flex items-center justify-center shadow-xs">
-              <FileText className="w-5.5 h-5.5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-[10px] uppercase font-black tracking-widest text-blue-600 font-mono">Patch list & ascii</p>
-                <span className="bg-blue-100 text-blue-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md">Beginner Friendly</span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="bg-blue-600 text-white p-2.5 rounded-xl w-10 h-10 flex items-center justify-center shadow-xs">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <span className="bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-blue-200 font-mono">
+                  Beginner Friendly
+                </span>
               </div>
-              <h3 className="text-base font-black text-slate-900 mt-1 capitalize group-hover:text-indigo-600 transition-all">
-                Tech Rider Builder
-              </h3>
-              <p className="text-xs text-gray-500 mt-2.5 leading-relaxed">
-                Compile dynamic channels, mic choices, active +48V phantom switches, and export formatted tech riders. Beginner Friendly.
-              </p>
+              <div>
+                <h3 className="text-base font-black text-slate-900 capitalize group-hover:text-blue-600 transition-all">
+                  Tech Rider Builder
+                </h3>
+                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                  Compile dynamic channels, mic choices, +48V phantom switches, and export formatted tech riders with ASCII patch list output.
+                </p>
+              </div>
+
+              {/* Visual Preview Screenshot */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.02] transition-transform">
+                <TechRiderScreenshot />
+              </div>
             </div>
+
             <div className="pt-2 text-xs font-bold text-blue-700 flex items-center gap-1 group-hover:translate-x-1 transition-all">
               Make Tech Rider <ArrowRight className="w-3.5 h-3.5" />
             </div>
@@ -1394,22 +1431,34 @@ export default function Home({
           {/* Element 3: distinguished promo poster layouts */}
           <div 
             onClick={() => onSelectTab("poster")}
-            className="group bg-white rounded-2xl border border-gray-100 hover:border-emerald-200 p-6 space-y-4 transition-all hover:shadow-md cursor-pointer block relative overflow-hidden" 
+            className="group bg-white rounded-2xl border border-gray-100 hover:border-emerald-300 p-5 space-y-4 transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between relative overflow-hidden" 
             id="element-promo-poster"
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -z-10 group-hover:bg-emerald-100 transition-all" />
-            <div className="bg-emerald-600 text-white p-3 rounded-xl w-12 h-12 flex items-center justify-center shadow-xs">
-              <Image className="w-5.5 h-5.5" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="bg-emerald-600 text-white p-2.5 rounded-xl w-10 h-10 flex items-center justify-center shadow-xs">
+                  <Image className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-black tracking-widest text-emerald-700 font-mono bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  Flyers & Promo
+                </span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 capitalize group-hover:text-emerald-600 transition-all">
+                  Concert Poster Designer
+                </h3>
+                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                  Design vintage and modern gig flyers with retro themes, ticket stamps, custom fonts, neon grid aesthetics, and AI promo taglines.
+                </p>
+              </div>
+
+              {/* Visual Preview Screenshot */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.02] transition-transform">
+                <PosterScreenshot />
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] uppercase font-black tracking-widest text-emerald-600 font-mono">Flyers & Promotion</p>
-              <h3 className="text-base font-black text-slate-900 mt-1 capitalize group-hover:text-indigo-600 transition-all">
-                Concert Poster Designer
-              </h3>
-              <p className="text-xs text-gray-500 mt-2.5 leading-relaxed">
-                Design vintage and modern gig flyers with retro themes, ticket stamps, and AI promo taglines.
-              </p>
-            </div>
+
             <div className="pt-2 text-xs font-bold text-emerald-600 flex items-center gap-1 group-hover:translate-x-1 transition-all">
               Open Flyer Editor <ArrowRight className="w-3.5 h-3.5" />
             </div>
@@ -1418,22 +1467,34 @@ export default function Home({
           {/* Element 4: Smart Tour Planner */}
           <div 
             onClick={() => onSelectTab("tour")}
-            className="group bg-white rounded-2xl border border-gray-100 hover:border-rose-200 p-6 space-y-4 transition-all hover:shadow-md cursor-pointer block relative overflow-hidden" 
+            className="group bg-white rounded-2xl border border-gray-100 hover:border-rose-300 p-5 space-y-4 transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between relative overflow-hidden" 
             id="element-ai-tour-scheduler"
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-bl-full -z-10 group-hover:bg-rose-100 transition-all" />
-            <div className="bg-rose-600 text-white p-3 rounded-xl w-12 h-12 flex items-center justify-center shadow-xs">
-              <Compass className="w-5.5 h-5.5" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="bg-rose-600 text-white p-2.5 rounded-xl w-10 h-10 flex items-center justify-center shadow-xs">
+                  <Compass className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-black tracking-widest text-rose-700 font-mono bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                  Google Maps
+                </span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 capitalize group-hover:text-rose-600 transition-all">
+                  Smart Tour Planner
+                </h3>
+                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                  Calculate drive times, corridor stop cities, band-friendly lodging options, gas estimates, and bookable venues along the route.
+                </p>
+              </div>
+
+              {/* Visual Preview Screenshot */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.02] transition-transform">
+                <TourPlannerScreenshot />
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] uppercase font-black tracking-widest text-rose-600 font-mono">Smart Tour Planner</p>
-              <h3 className="text-base font-black text-slate-900 mt-1 capitalize group-hover:text-indigo-600 transition-all">
-                Smart Tour Planner
-              </h3>
-              <p className="text-xs text-gray-500 mt-2.5 leading-relaxed">
-                Calculate drive times, corridor stop cities, band-friendly lodging options, gas estimates, and bookable venues along the way using Google Maps.
-              </p>
-            </div>
+
             <div className="pt-2 text-xs font-bold text-rose-600 flex items-center gap-1 group-hover:translate-x-1 transition-all">
               Plan Tour Route <ArrowRight className="w-3.5 h-3.5" />
             </div>
