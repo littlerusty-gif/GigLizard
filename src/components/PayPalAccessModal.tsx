@@ -368,6 +368,32 @@ export default function PayPalAccessModal({
           </div>
         )}
 
+        {/* 100% Artist Satisfaction Guarantee & Trust Banner */}
+        <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-slate-200 text-[11px] font-semibold">
+              <strong>100% Artist Satisfaction Guarantee:</strong> 7-day money-back refund if you cannot find active bands or rooms.
+            </span>
+          </div>
+          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 shrink-0 font-bold">
+            Zero Risk
+          </span>
+        </div>
+
+        {/* Accepted Payment Processors & Cards */}
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-400">
+          <span className="font-semibold text-slate-300">Accepted Payment Methods:</span>
+          <div className="flex items-center gap-1.5 font-bold text-[10px] text-slate-300">
+            <span className="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">Visa</span>
+            <span className="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">Mastercard</span>
+            <span className="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">Amex</span>
+            <span className="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">Discover</span>
+            <span className="px-1.5 py-0.5 bg-indigo-900/60 text-indigo-300 rounded border border-indigo-700/60">PayPal</span>
+            <span className="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">Apple Pay</span>
+          </div>
+        </div>
+
         {/* PayPal SDK Checkout Integration */}
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between">
@@ -375,7 +401,7 @@ export default function PayPalAccessModal({
               Select Payment Method:
             </label>
             <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
-              <Shield className="w-3 h-3 text-emerald-400" /> PayPal & Cards Supported
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Instant Pass Activation
             </span>
           </div>
 

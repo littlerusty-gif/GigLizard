@@ -6,6 +6,8 @@ interface FooterProps {
   onOpenTerms: () => void;
   onOpenSecurity?: () => void;
   onOpenContact?: () => void;
+  onOpenAbout?: () => void;
+  onOpenGuarantee?: () => void;
   userEmail?: string;
   userName?: string;
 }
@@ -14,6 +16,8 @@ export default function Footer({
   onOpenTerms, 
   onOpenSecurity,
   onOpenContact,
+  onOpenAbout,
+  onOpenGuarantee,
   userEmail,
   userName
 }: FooterProps) {
@@ -34,20 +38,53 @@ export default function Footer({
         className="border-t border-slate-800 bg-slate-950 text-slate-400 py-8 px-4 md:px-8 text-xs select-none" 
         id="main-footer"
       >
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           
           {/* Copyright & Core Identity */}
           <div className="space-y-1">
             <p className="font-bold text-slate-200 tracking-tight flex items-center justify-center md:justify-start gap-1.5" id="footer-copyright">
               <span>© 2026 GigLizard. All rights reserved.</span>
             </p>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-slate-400">
               Nationwide Independent Touring & Stage Directory (Lower 48). Stage plotting, routing, and booking workspace.
+            </p>
+            <p className="text-[10.5px] text-slate-400">
+              Operated by GigLizard Independent Touring Network • Seattle, WA • Support: <a href="mailto:giglizard.us@gmail.com" className="text-indigo-400 hover:underline">giglizard.us@gmail.com</a>
             </p>
           </div>
 
           {/* Legal Navigation Links */}
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold" id="footer-legal-links">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-semibold" id="footer-legal-links">
+            {onOpenAbout && (
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenAbout}
+                  className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+                  id="footer-btn-about-mission"
+                >
+                  <Heart className="w-3.5 h-3.5 text-rose-400" />
+                  <span>About & Mission</span>
+                </button>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
+            {onOpenGuarantee && (
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenGuarantee}
+                  className="text-slate-400 hover:text-emerald-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+                  id="footer-btn-satisfaction-guarantee"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>7-Day Guarantee</span>
+                </button>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
             <button
               type="button"
               onClick={onOpenTerms}

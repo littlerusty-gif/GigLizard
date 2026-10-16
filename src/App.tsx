@@ -17,6 +17,8 @@ import ResetPasswordModal from "./components/ResetPasswordModal";
 import UserLoginModal from "./components/UserLoginModal";
 import TermsOfServiceModal from "./components/TermsOfServiceModal";
 import ArtistRegistrationModal from "./components/ArtistRegistrationModal";
+import AboutMissionModal from "./components/AboutMissionModal";
+import SatisfactionGuaranteeModal from "./components/SatisfactionGuaranteeModal";
 import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
@@ -130,6 +132,8 @@ export default function GigLizardApp() {
   const [showUserLoginModal, setShowUserLoginModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showArtistRegistrationModal, setShowArtistRegistrationModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showGuaranteeModal, setShowGuaranteeModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState<"login" | "signup" | "forgot">("login");
   const [loginModalEmail, setLoginModalEmail] = useState("");
 
@@ -400,6 +404,56 @@ export default function GigLizardApp() {
     recordLiveVisit();
   }, [activeTab]);
 
+  // Check direct URL routes (e.g. /about, /features, /customers, /pricing, /guarantee, /security)
+  const resolveTargetRoute = (targetStr: string): boolean => {
+    const clean = targetStr.replace(/^[/#]+/, "").toLowerCase();
+    if (!clean) return false;
+
+    if (clean === "about" || clean === "mission") {
+      setShowAboutModal(true);
+      setActiveTabState("home");
+      return true;
+    }
+    if (clean === "guarantee" || clean === "refund") {
+      setShowGuaranteeModal(true);
+      setActiveTabState("home");
+      return true;
+    }
+    if (clean === "security" || clean === "anti-scraping") {
+      setShowSecurityModal(true);
+      return true;
+    }
+    if (clean === "customers" || clean === "stories" || clean === "testimonials") {
+      setActiveTabState("home");
+      setTimeout(() => {
+        document.getElementById("stories-from-the-road")?.scrollIntoView({ behavior: "smooth" });
+      }, 150);
+      return true;
+    }
+    if (clean === "features" || clean === "tools") {
+      setActiveTabState("home");
+      setTimeout(() => {
+        document.getElementById("home-featured-matrix-section")?.scrollIntoView({ behavior: "smooth" });
+      }, 150);
+      return true;
+    }
+    if (clean === "pricing" || clean === "tiers") {
+      setActiveTabState("home");
+      setTimeout(() => {
+        document.getElementById("tiers-comparer-block")?.scrollIntoView({ behavior: "smooth" });
+      }, 150);
+      return true;
+    }
+    return false;
+  };
+
+  // Check URL path/hash on initial mount
+  useEffect(() => {
+    const rawPath = window.location.pathname;
+    const rawHash = window.location.hash;
+    resolveTargetRoute(rawHash) || resolveTargetRoute(rawPath);
+  }, []);
+
   // Listen to browser hash changes (e.g. back/forward or direct URL clicks)
   useEffect(() => {
     const handleHashChange = () => {
@@ -410,8 +464,13 @@ export default function GigLizardApp() {
         return;
       }
 
-      const isOwner = currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com";
       const rawHash = window.location.hash.replace("#", "").toLowerCase();
+      const rawPath = window.location.pathname.replace(/^\//, "").toLowerCase();
+      if (resolveTargetRoute(rawHash) || resolveTargetRoute(rawPath)) {
+        return;
+      }
+
+      const isOwner = currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com";
       if (rawHash === "dashboard" || rawHash === "admin") {
         if (isOwner) {
           setActiveTabState("admin");
@@ -1617,8 +1676,33 @@ export default function GigLizardApp() {
       <Footer 
         onOpenTerms={() => setShowTermsModal(true)} 
         onOpenSecurity={() => setShowSecurityModal(true)} 
+        onOpenAbout={() => setShowAboutModal(true)}
+        onOpenGuarantee={() => setShowGuaranteeModal(true)}
         userEmail={currentAccount?.contactEmail || currentUser?.email || ""}
         userName={currentAccount?.name || ""}
+      />
+
+      {/* About & Origin Story Modal */}
+      <AboutMissionModal
+        isOpen={showAboutModal}
+        onClose={() => setShowAboutModal(false)}
+        onSelectTab={setActiveTab}
+      />
+
+      {/* 100% Artist Satisfaction Guarantee Modal */}
+      <SatisfactionGuaranteeModal
+        isOpen={showGuaranteeModal}
+        onClose={() => setShowGuaranteeModal(false)}
+        onOpenCheckout={() => {
+          if (currentAccount) {
+            setShowPayPalModal(true);
+          } else {
+            setActiveTab("home");
+            setTimeout(() => {
+              document.getElementById("registration-block")?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
+          }
+        }}
       />
 
       {/* Security & Anti-Scraping Diagnostics Modal */}
