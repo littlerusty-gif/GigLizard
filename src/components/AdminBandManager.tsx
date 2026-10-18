@@ -13,10 +13,11 @@ import {
   Search, Edit3, Trash2, Plus, Music, MapPin, Mail, Phone, 
   Globe, Sparkles, Check, X, ShieldCheck, AlertCircle, RefreshCw,
   Award, Filter, ChevronLeft, ChevronRight, AlertTriangle,
-  Headphones, FileText, ExternalLink, FileSpreadsheet, Download, Lock, Video, Users
+  Headphones, FileText, ExternalLink, FileSpreadsheet, Download, Lock, Video, Users, Building
 } from "lucide-react";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { resolveMostRelevantBandLink } from "../utils/musicLinks";
+import { POPULAR_BOOKING_AGENCIES, resolveBandAgency } from "../utils/bookingAgencies";
 import ExportDirectoryModal from "./ExportDirectoryModal";
 
 interface AdminBandManagerProps {
@@ -48,7 +49,13 @@ export default function AdminBandManager({ userEmail }: AdminBandManagerProps) {
     contactPhone: "",
     website: "",
     epkUrl: "",
-    musicUrl: ""
+    musicUrl: "",
+    hasBookingAgency: false,
+    bookingAgency: "",
+    bookingAgentName: "",
+    bookingAgencyEmail: "",
+    bookingAgencyPhone: "",
+    bookingAgencyWebsite: ""
   });
 
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -150,6 +157,7 @@ export default function AdminBandManager({ userEmail }: AdminBandManagerProps) {
   const handleOpenEdit = (band: AvailableBand) => {
     setIsNewBand(false);
     setEditingBand(band);
+    const agency = resolveBandAgency(band);
     setEditFormData({
       id: band.id,
       name: band.name,
@@ -161,7 +169,13 @@ export default function AdminBandManager({ userEmail }: AdminBandManagerProps) {
       contactPhone: band.contactPhone || "",
       website: band.website || "",
       epkUrl: band.epkUrl || "",
-      musicUrl: band.musicUrl || ""
+      musicUrl: band.musicUrl || "",
+      hasBookingAgency: !!(band.hasBookingAgency || band.bookingAgency || agency),
+      bookingAgency: band.bookingAgency || agency?.agencyName || "",
+      bookingAgentName: band.bookingAgentName || agency?.agentName || "",
+      bookingAgencyEmail: band.bookingAgencyEmail || agency?.email || "",
+      bookingAgencyPhone: band.bookingAgencyPhone || agency?.phone || "",
+      bookingAgencyWebsite: band.bookingAgencyWebsite || agency?.website || ""
     });
     setStatusMessage(null);
   };
@@ -192,7 +206,13 @@ export default function AdminBandManager({ userEmail }: AdminBandManagerProps) {
       contactPhone: "(206) 555-0199",
       website: "",
       epkUrl: "",
-      musicUrl: ""
+      musicUrl: "",
+      hasBookingAgency: false,
+      bookingAgency: "",
+      bookingAgentName: "",
+      bookingAgencyEmail: "",
+      bookingAgencyPhone: "",
+      bookingAgencyWebsite: ""
     });
     setStatusMessage(null);
   };
@@ -235,7 +255,13 @@ export default function AdminBandManager({ userEmail }: AdminBandManagerProps) {
       contactPhone: cleanPhone || "(206) 555-0199",
       website: cleanWebsite || undefined,
       epkUrl: cleanEpkUrl || undefined,
-      musicUrl: cleanMusicUrl || undefined
+      musicUrl: cleanMusicUrl || undefined,
+      hasBookingAgency: editFormData.hasBookingAgency,
+      bookingAgency: editFormData.hasBookingAgency ? editFormData.bookingAgency.trim() || null : undefined,
+      bookingAgentName: editFormData.hasBookingAgency ? editFormData.bookingAgentName.trim() || null : undefined,
+      bookingAgencyEmail: editFormData.hasBookingAgency ? editFormData.bookingAgencyEmail.trim().toLowerCase() || null : undefined,
+      bookingAgencyPhone: editFormData.hasBookingAgency ? editFormData.bookingAgencyPhone.trim() || null : undefined,
+      bookingAgencyWebsite: editFormData.hasBookingAgency ? editFormData.bookingAgencyWebsite.trim() || null : undefined
     };
 
     const res = saveOwnerBandEdit(updatedBandObj, userEmail);
@@ -541,16 +567,30 @@ export default function AdminBandManager({ userEmail }: AdminBandManagerProps) {
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <div className="space-y-0.5 font-mono text-[11px]">
-                        {band.contactEmail ? (
-                          <div className="flex items-center gap-1 text-indigo-600">
-                            <Mail className="w-3 h-3 shrink-0" />
-                            <span className="truncate max-w-[180px]">{band.contactEmail}</span>
+                      {(() => {
+                        const agency = resolveBandAgency(band);
+                        const effectiveEmail = agency ? agency.email : band.contactEmail;
+                        return (
+                          <div className="space-y-1">
+                            {agency && (
+                              <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[9.5px] font-black">
+                                <Building className="w-3 h-3 text-amber-700 shrink-0" />
+                                <span>{agency.agencyName}</span>
+                              </div>
+                            )}
+                            <div className="space-y-0.5 font-mono text-[11px]">
+                              {effectiveEmail ? (
+                                <div className="flex items-center gap-1 text-indigo-600">
+                                  <Mail className="w-3 h-3 shrink-0" />
+                                  <span className="truncate max-w-[180px]">{effectiveEmail}</span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 italic">No email listed</span>
+                              )}
+                            </div>
                           </div>
-                        ) : (
-                          <span className="text-slate-400 italic">No email listed</span>
-                        )}
-                      </div>
+                        );
+                      })()}
                     </td>
 
                     <td className="py-3.5 px-4 text-right">

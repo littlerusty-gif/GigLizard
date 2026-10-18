@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import { AvailableBand, Venue } from "../types";
 import { SubscriberMember } from "./analyticsStore";
+import { resolveBandAgency } from "./bookingAgencies";
 
 /**
  * Builds the dual-tab Excel Workbook containing:
@@ -12,13 +13,19 @@ export function buildDirectoryWorkbook(bands: AvailableBand[], venues: Venue[]) 
   const wb = XLSX.utils.book_new();
 
   // Tab 1: Bands
-  // Tab 1: Bands (Phone numbers removed from band listings)
   const bandRows = bands.map((b, index) => {
     const genres = Array.isArray(b.genres) ? b.genres.join(", ") : (b.genres || "Rock");
+    const agency = resolveBandAgency(b);
+    const effectiveEmail = agency ? agency.email : (b.contactEmail || "Not Listed");
+
     return {
       "No.": index + 1,
       "Band Name": b.name || "Unnamed Artist",
-      "Contact Email": b.contactEmail || "Not Listed",
+      "Booking Representation": agency ? agency.agencyName : "Self-Represented / Direct",
+      "Booking Contact Email": effectiveEmail,
+      "Assigned Agent": agency?.agentName || "Direct Contact",
+      "Agency Phone": agency?.phone || "N/A",
+      "Agency Website": agency?.website || "N/A",
       "City / Location": b.city || "Pacific Northwest",
       "Primary Genres": genres,
       "Experience Level": b.experienceLevel || "Regional Touring",
@@ -34,10 +41,14 @@ export function buildDirectoryWorkbook(bands: AvailableBand[], venues: Venue[]) 
   // Column width formatting
   wsBands["!cols"] = [
     { wch: 6 },  // No.
-    { wch: 30 }, // Band Name
-    { wch: 32 }, // Contact Email
+    { wch: 28 }, // Band Name
+    { wch: 30 }, // Representation
+    { wch: 32 }, // Booking Email
+    { wch: 24 }, // Assigned Agent
+    { wch: 18 }, // Agency Phone
+    { wch: 26 }, // Agency Website
     { wch: 22 }, // City / Location
-    { wch: 30 }, // Primary Genres
+    { wch: 26 }, // Primary Genres
     { wch: 18 }, // Experience Level
     { wch: 28 }, // Official Website
     { wch: 36 }, // EPK
@@ -327,17 +338,21 @@ export function downloadBandsPDF(
     const genres = Array.isArray(b.genres) ? b.genres.slice(0, 4).join(", ") : (b.genres || "Rock");
     doc.text(`Genres: ${genres} | Level: ${b.experienceLevel || "Regional"} | Location: ${b.city || "Pacific Northwest"}`, margin + 6, y + 10.5);
 
-    // Contact Email
+    const agency = resolveBandAgency(b);
+    const effectiveEmail = agency ? agency.email : (b.contactEmail || "Not Listed");
+
+    // Contact Email & Agency Routing
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.setTextColor(5, 150, 105); // emerald-600
-    doc.text(`Email: ${b.contactEmail || "Not Listed"}`, margin + 6, y + 15.5);
+    doc.text(`Booking: ${effectiveEmail}${agency ? ` (${agency.agencyName})` : ""}`, margin + 6, y + 15.5);
 
-    // Official Website & Links (Phone removed from band listings)
+    // Official Website & Links
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(71, 85, 105);
-    doc.text(`Official Web: ${b.website || "Not Listed"}${b.epkUrl ? ` | EPK: ${b.epkUrl}` : ""}`, margin + 6, y + 19.5);
+    const webDisplay = agency?.website || b.website || "Not Listed";
+    doc.text(`Web: ${webDisplay}${b.epkUrl ? ` | EPK: ${b.epkUrl}` : ""}`, margin + 6, y + 19.5);
 
     y += 25.5;
   });
@@ -397,13 +412,15 @@ export function getMasterContacts(bands: AvailableBand[], venues: Venue[]): Mast
 
   // Extract from bands
   for (const b of bands) {
-    if (b && isValidMasterContactEmail(b.contactEmail)) {
+    const agency = resolveBandAgency(b);
+    const effectiveEmail = agency ? agency.email : b.contactEmail;
+    if (b && isValidMasterContactEmail(effectiveEmail)) {
       list.push({
-        name: b.name?.trim() || "Unnamed Band",
+        name: agency ? `${b.name?.trim()} (c/o ${agency.agencyName})` : (b.name?.trim() || "Unnamed Band"),
         category: "Band",
-        email: b.contactEmail.trim(),
+        email: effectiveEmail.trim(),
         location: formatMasterLocation(b.city),
-        primaryLink: (b.website || b.musicUrl || b.epkUrl || "").trim()
+        primaryLink: (agency?.website || b.website || b.musicUrl || b.epkUrl || "").trim()
       });
     }
   }

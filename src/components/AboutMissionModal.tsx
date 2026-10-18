@@ -3,6 +3,7 @@ import {
   X, Shield, Heart, MapPin, Music, Building, Users, 
   Sparkles, Award, CheckCircle2, Mail, ExternalLink, ShieldCheck 
 } from "lucide-react";
+import { FounderAvatar } from "./ProductPreviews";
 
 interface AboutMissionModalProps {
   isOpen: boolean;
@@ -34,18 +35,38 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header */}
-        <div className="space-y-2 text-center md:text-left pr-8">
-          <div className="inline-flex items-center gap-1.5 bg-indigo-500/15 text-indigo-300 text-[11px] font-extrabold py-1 px-3 rounded-full border border-indigo-500/30">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>The GigLizard Mission & Origin</span>
+        {/* Founder Header */}
+        <div className="space-y-3 text-center md:text-left pr-8">
+          <div className="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-300 text-[11px] font-extrabold py-1 px-3 rounded-full border border-amber-500/30">
+            <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
+            <span>Built by Little Rusty from Seattle</span>
           </div>
-          <h2 className="text-2xl font-black text-white tracking-tight">
-            Built by Touring Musicians, for Independent Artists
-          </h2>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            GigLizard was founded in Seattle, WA by working DIY artists who experienced firsthand how broken, gatekept, and exhausting independent touring has become.
+          
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+            <FounderAvatar size="lg" className="shrink-0" />
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-white tracking-tight">
+                "I Built This Because Touring Shouldn't Be Gatekept"
+              </h2>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Hi, I'm <strong>Little Rusty</strong> from Seattle, WA. I'm a working Pacific Northwest DIY musician and live audio engineer. I created GigLizard to solve the exact headaches I faced loading vans and booking club dates across the Northwest and nationwide.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Founder Letter Quote */}
+        <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-2.5 text-xs text-slate-300 leading-relaxed italic">
+          <p>
+            "For years, indie bands have been forced to choose between stale, outdated venue spreadsheets or corporate middleman apps that charge $25 to $35 a month just to message a club promoter. That model bleeds touring bands dry."
           </p>
+          <p>
+            "My promise with GigLizard: <strong>Venue discovery is 100% free forever.</strong> Anyone can search 4,800+ music clubs, see sound specs, and book directly. The only small charge is a $9.99 30-day pass for band contacts — strictly to keep spam bots and scraper farms from harvesting our peers' inboxes."
+          </p>
+          <div className="pt-2 border-t border-slate-800 not-italic flex items-center justify-between text-[11px] text-slate-400 font-sans">
+            <span className="font-bold text-amber-400">— Little Rusty, Creator & Musician</span>
+            <span className="text-slate-400">Seattle, WA</span>
+          </div>
         </div>
 
         {/* Core Pillars */}
@@ -91,19 +112,19 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
           </div>
         </div>
 
-        {/* Operator & Transparency Disclosure */}
+        {/* Operator & Direct Contact Guarantee */}
         <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2 text-xs">
           <h4 className="font-bold text-slate-200 flex items-center gap-2">
             <Award className="w-4 h-4 text-amber-400" />
-            <span>Platform Operator & Contact Guarantee</span>
+            <span>Direct Founder Contact Guarantee</span>
           </h4>
           <p className="text-slate-400 text-[11.5px] leading-relaxed">
-            GigLizard is operated by the <strong>GigLizard Independent Touring Network</strong> based in Seattle, Washington (Pacific Northwest). We operate with a grassroots DIY ethos aligned with independent music community values.
+            GigLizard is built and personally run by <strong>Little Rusty</strong> in Seattle, WA. No call centers, no outsourced support tickets. If you need a venue corrected, an account updated, or tour advice, email me directly.
           </p>
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80 text-[11px]">
             <div className="flex items-center gap-2 text-slate-300">
               <Mail className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Official Support: <strong className="text-white">giglizard.us@gmail.com</strong></span>
+              <span>Direct Email: <strong className="text-white font-mono">littlerusty@gmail.com</strong></span>
             </div>
             <span className="text-emerald-400 font-medium">Guaranteed response within 4 hours</span>
           </div>

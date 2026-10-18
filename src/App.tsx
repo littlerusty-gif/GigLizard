@@ -20,6 +20,12 @@ import ArtistRegistrationModal from "./components/ArtistRegistrationModal";
 import AboutMissionModal from "./components/AboutMissionModal";
 import SatisfactionGuaranteeModal from "./components/SatisfactionGuaranteeModal";
 import PricingPage from "./components/PricingPage";
+import ComparisonPage from "./components/ComparisonPage";
+import AboutPage from "./components/AboutPage";
+import FeaturesPage from "./components/FeaturesPage";
+import TouringGuidePage from "./components/TouringGuidePage";
+import ChangelogPage from "./components/ChangelogPage";
+import { CustomersPage } from "./components/CustomersPage";
 import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
@@ -34,7 +40,8 @@ import {
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
   Compass, Navigation, ShieldCheck, BarChart3, Crown, LogIn, HelpCircle,
-  RefreshCw, Download, CheckCircle2, AlertTriangle, X, Menu, DollarSign
+  RefreshCw, Download, CheckCircle2, AlertTriangle, X, Menu, DollarSign, Scale,
+  UserCheck, Building, Clock
 } from "lucide-react";
 
 // Default preset values for first-load
@@ -55,8 +62,8 @@ const INITIAL_RIDER_INPUTS = [
 ];
 
 export default function GigLizardApp() {
-  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin";
-  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin"];
+  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin" | "compare" | "about" | "features" | "guide" | "changelog" | "customers";
+  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin", "compare", "about", "features", "guide", "changelog", "customers"];
 
   // Mobile navigation drawer toggle state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -103,9 +110,33 @@ export default function GigLizardApp() {
       if (getInitialStagePlotBandId()) return "plot";
 
       const isOwner = isStoredAccountOwner();
+
+      // Check path first
+      const cleanPath = window.location.pathname.toLowerCase().replace(/\/$/, "");
+      if (cleanPath === "/pricing") return "pricing";
+      if (cleanPath === "/compare" || cleanPath.startsWith("/vs")) return "compare";
+      if (cleanPath === "/about" || cleanPath === "/mission") return "about";
+      if (cleanPath === "/features" || cleanPath === "/tools") return "features";
+      if (cleanPath === "/changelog" || cleanPath === "/updates") return "changelog";
+      if (cleanPath === "/customers" || cleanPath === "/stories" || cleanPath === "/case-studies") return "customers";
+      if (cleanPath === "/guide" || cleanPath.includes("touring-guide") || cleanPath.includes("tour-guide") || cleanPath.includes("playbook")) return "guide";
+      if (cleanPath === "/venues") return "venues";
+      if (cleanPath === "/bands") return "bands";
+      if (cleanPath === "/tour") return "tour";
+      if (cleanPath === "/plot" || cleanPath === "/stage-plot") return "plot";
+      if (cleanPath === "/rider" || cleanPath === "/tech-rider") return "rider";
+      if (cleanPath === "/poster") return "poster";
+      if (cleanPath === "/advisor" || cleanPath === "/help" || cleanPath === "/faq") return "advisor";
+
       const rawHash = window.location.hash.replace("#", "").toLowerCase();
       if (rawHash === "dashboard" || rawHash === "admin") return isOwner ? "admin" : "home";
       if (rawHash.startsWith("stage-plot")) return "plot";
+      if (rawHash === "compare" || rawHash === "vs" || rawHash === "comparison") return "compare";
+      if (rawHash === "about" || rawHash === "mission") return "about";
+      if (rawHash === "features" || rawHash === "tools") return "features";
+      if (rawHash === "changelog" || rawHash === "updates") return "changelog";
+      if (rawHash === "customers" || rawHash === "stories" || rawHash === "case-studies") return "customers";
+      if (rawHash === "guide" || rawHash.includes("touring-guide")) return "guide";
       if (validTabs.includes(rawHash as TabType)) {
         if (rawHash === "admin" && !isOwner) return "home";
         return rawHash as TabType;
@@ -114,6 +145,12 @@ export default function GigLizardApp() {
       const urlParams = new URLSearchParams(window.location.search);
       const rawParam = urlParams.get("tab")?.toLowerCase() || "";
       if (rawParam === "dashboard" || rawParam === "admin") return isOwner ? "admin" : "home";
+      if (rawParam === "compare" || rawParam === "vs" || rawParam === "comparison") return "compare";
+      if (rawParam === "about") return "about";
+      if (rawParam === "features") return "features";
+      if (rawParam === "changelog") return "changelog";
+      if (rawParam === "customers") return "customers";
+      if (rawParam === "guide" || rawParam.includes("touring-guide")) return "guide";
       if (validTabs.includes(rawParam as TabType)) {
         if (rawParam === "admin" && !isOwner) return "home";
         return rawParam as TabType;
@@ -395,29 +432,92 @@ export default function GigLizardApp() {
     }
   }, [currentAccount, activeTab]);
 
-  // Set document title on mount
+  // Set keyword-rich document title & self-canonical dynamically per active view/tab (D5.1)
   useEffect(() => {
-    document.title = "GigLizard";
-  }, []);
+    const titles: Record<string, string> = {
+      home: "GigLizard - Free Venue Directory & DIY Tour Tools",
+      venues: "Free Venue Directory (4,800+ Clubs) | GigLizard",
+      bands: "Touring Bands & Co-Bills ($9.99 Pass) | GigLizard",
+      plot: "Free Stage Plot Designer & Gear Canvas | GigLizard",
+      rider: "Tech Rider & Soundboard Patch Builder | GigLizard",
+      poster: "Concert Poster Designer & Gig Flyers | GigLizard",
+      tour: "AI Tour Route Planner & Gas Calculator | GigLizard",
+      pricing: "GigLizard Pricing - Free Venues, $9.99 Band Contacts Pass",
+      compare: "GigLizard vs Rivals - Sonicbids, Prism & Spreadsheets",
+      about: "About GigLizard - Built by DIY Musicians in Seattle",
+      features: "GigLizard Features - Free Tour Planner, Plots & Riders",
+      changelog: "GigLizard Changelog - Shipped Product Updates",
+      customers: "GigLizard Case Studies - How DIY Bands Book Tours",
+      faq: "Tour Booking & Directory FAQ | GigLizard",
+      guide: "DIY Tour Playbook - How to Book & Route Live Shows",
+      admin: "Owner Dashboard | GigLizard"
+    };
+
+    const canonicals: Record<string, string> = {
+      home: "https://www.giglizard.us/",
+      venues: "https://www.giglizard.us/venues",
+      bands: "https://www.giglizard.us/bands",
+      plot: "https://www.giglizard.us/plot",
+      rider: "https://www.giglizard.us/rider",
+      poster: "https://www.giglizard.us/poster",
+      tour: "https://www.giglizard.us/tour",
+      pricing: "https://www.giglizard.us/pricing",
+      compare: "https://www.giglizard.us/compare",
+      about: "https://www.giglizard.us/about",
+      features: "https://www.giglizard.us/features",
+      changelog: "https://www.giglizard.us/changelog",
+      customers: "https://www.giglizard.us/customers",
+      guide: "https://www.giglizard.us/touring-guide",
+      advisor: "https://www.giglizard.us/faq",
+      admin: "https://www.giglizard.us/admin"
+    };
+
+    document.title = titles[activeTab] || "GigLizard - Free Venue Directory & DIY Tour Tools";
+
+    try {
+      const canonicalHref = canonicals[activeTab] || "https://www.giglizard.us/";
+      let linkCanonical = document.querySelector('link[rel="canonical"]');
+      if (!linkCanonical) {
+        linkCanonical = document.createElement("link");
+        linkCanonical.setAttribute("rel", "canonical");
+        document.head.appendChild(linkCanonical);
+      }
+      linkCanonical.setAttribute("href", canonicalHref);
+    } catch (_) {}
+  }, [activeTab]);
 
   // Track page visit on mount and tab switch
   useEffect(() => {
     recordLiveVisit();
   }, [activeTab]);
 
-  // Check direct URL routes (e.g. /about, /features, /customers, /pricing, /guarantee, /security)
+  // Check direct URL routes (e.g. /about, /features, /pricing, /compare, /guide, /guarantee, /security)
   const resolveTargetRoute = (targetStr: string): boolean => {
     const clean = targetStr.replace(/^[/#]+/, "").toLowerCase();
     if (!clean) return false;
 
     if (clean === "about" || clean === "mission") {
-      setShowAboutModal(true);
-      setActiveTabState("home");
+      setActiveTabState("about");
+      return true;
+    }
+    if (clean === "features" || clean === "tools") {
+      setActiveTabState("features");
+      return true;
+    }
+    if (clean === "pricing" || clean === "tiers" || clean === "rates") {
+      setActiveTabState("pricing");
+      return true;
+    }
+    if (clean === "compare" || clean === "vs" || clean.includes("sonicbids") || clean === "comparison") {
+      setActiveTabState("compare");
+      return true;
+    }
+    if (clean === "guide" || clean.includes("touring-guide") || clean.includes("tour-guide") || clean.includes("playbook")) {
+      setActiveTabState("guide");
       return true;
     }
     if (clean === "guarantee" || clean === "refund") {
       setShowGuaranteeModal(true);
-      setActiveTabState("home");
       return true;
     }
     if (clean === "security" || clean === "anti-scraping") {
@@ -429,17 +529,6 @@ export default function GigLizardApp() {
       setTimeout(() => {
         document.getElementById("stories-from-the-road")?.scrollIntoView({ behavior: "smooth" });
       }, 150);
-      return true;
-    }
-    if (clean === "features" || clean === "tools") {
-      setActiveTabState("home");
-      setTimeout(() => {
-        document.getElementById("home-featured-matrix-section")?.scrollIntoView({ behavior: "smooth" });
-      }, 150);
-      return true;
-    }
-    if (clean === "pricing" || clean === "tiers" || clean === "rates") {
-      setActiveTabState("pricing");
       return true;
     }
     return false;
@@ -1161,10 +1250,11 @@ export default function GigLizardApp() {
             </button>
           </div>
 
-          {/* Desktop Navigation Bar (md+): Clean horizontal bar */}
+          {/* Desktop Navigation Bar (md+): Clean horizontal bar with crawler-visible hrefs (D5.3, D2.4) */}
           <nav className="hidden md:flex flex-row items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/60 shadow-2xs shrink-0" id="main-nav">
-            <button
-              onClick={() => setActiveTab("venues")}
+            <a
+              href="/venues"
+              onClick={(e) => { e.preventDefault(); setActiveTab("venues"); window.history.pushState(null, '', '/venues'); }}
               id="tab-btn-venues"
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
                 activeTab === "venues"
@@ -1174,10 +1264,11 @@ export default function GigLizardApp() {
             >
               <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <span>Venues</span>
-            </button>
+            </a>
 
-            <button
-              onClick={() => setActiveTab("bands")}
+            <a
+              href="/bands"
+              onClick={(e) => { e.preventDefault(); setActiveTab("bands"); window.history.pushState(null, '', '/bands'); }}
               id="tab-btn-bands"
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
                 activeTab === "bands"
@@ -1187,10 +1278,11 @@ export default function GigLizardApp() {
             >
               <Users className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span>Bands</span>
-            </button>
+            </a>
 
-            <button
-              onClick={() => setActiveTab("tour")}
+            <a
+              href="/tour"
+              onClick={(e) => { e.preventDefault(); setActiveTab("tour"); window.history.pushState(null, '', '/tour'); }}
               id="tab-btn-tour"
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
                 activeTab === "tour"
@@ -1200,10 +1292,11 @@ export default function GigLizardApp() {
             >
               <Compass className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <span>Tour</span>
-            </button>
+            </a>
 
-            <button
-              onClick={() => setActiveTab("pricing")}
+            <a
+              href="/pricing"
+              onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); window.history.pushState(null, '', '/pricing'); }}
               id="tab-btn-pricing"
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
                 activeTab === "pricing"
@@ -1213,7 +1306,22 @@ export default function GigLizardApp() {
             >
               <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span>Pricing</span>
-            </button>
+            </a>
+
+            <a
+              href="/compare"
+              onClick={(e) => { e.preventDefault(); setActiveTab("compare"); window.history.pushState(null, '', '/compare'); }}
+              id="tab-btn-compare"
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+                activeTab === "compare"
+                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
+                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
+              }`}
+              title="Compare GigLizard against Sonicbids, Prism.fm, Gigwell & Spreadsheets"
+            >
+              <Scale className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Compare</span>
+            </a>
 
             <button
               type="button"
@@ -1226,8 +1334,9 @@ export default function GigLizardApp() {
               <span>+ Claim / List Your Band</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab("advisor")}
+            <a
+              href="/advisor"
+              onClick={(e) => { e.preventDefault(); setActiveTab("advisor"); window.history.pushState(null, '', '/advisor'); }}
               id="tab-btn-advisor"
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
                 activeTab === "advisor"
@@ -1237,7 +1346,7 @@ export default function GigLizardApp() {
             >
               <HelpCircle className="w-3.5 h-3.5 text-purple-500 shrink-0" />
               <span>Help</span>
-            </button>
+            </a>
 
             {/* Owner & Private Analytics Dashboard Button - strictly visible to littlerusty@gmail.com only */}
             {currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" && (
@@ -1304,56 +1413,106 @@ export default function GigLizardApp() {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200/80 bg-white/98 backdrop-blur-md px-4 py-3 space-y-2.5 animate-in slide-in-from-top-2 duration-150 shadow-xl" id="mobile-nav-dropdown">
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => { setActiveTab("venues"); setIsMobileMenuOpen(false); }}
+              <a
+                href="/venues"
+                onClick={(e) => { e.preventDefault(); setActiveTab("venues"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/venues'); }}
                 className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "venues" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
               >
                 <MapPin className="w-4 h-4 text-indigo-600 shrink-0" />
                 <span>Venues</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setActiveTab("bands"); setIsMobileMenuOpen(false); }}
+              </a>
+              <a
+                href="/bands"
+                onClick={(e) => { e.preventDefault(); setActiveTab("bands"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/bands'); }}
                 className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "bands" ? "bg-amber-50 text-amber-900 border border-amber-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
               >
                 <Users className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>Bands</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setActiveTab("tour"); setIsMobileMenuOpen(false); }}
+              </a>
+              <a
+                href="/tour"
+                onClick={(e) => { e.preventDefault(); setActiveTab("tour"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/tour'); }}
                 className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "tour" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
               >
                 <Compass className="w-4 h-4 text-indigo-600 shrink-0" />
                 <span>Tour Master</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setActiveTab("pricing"); setIsMobileMenuOpen(false); }}
+              </a>
+              <a
+                href="/pricing"
+                onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/pricing'); }}
                 className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "pricing" ? "bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
               >
                 <DollarSign className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Pricing</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setActiveTab("advisor"); setIsMobileMenuOpen(false); }}
-                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+              </a>
+              <a
+                href="/compare"
+                onClick={(e) => { e.preventDefault(); setActiveTab("compare"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/compare'); }}
+                className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "compare" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <Scale className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Compare</span>
+              </a>
+              <a
+                href="/features"
+                onClick={(e) => { e.preventDefault(); setActiveTab("features"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/features'); }}
+                className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "features" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Features</span>
+              </a>
+              <a
+                href="/customers"
+                onClick={(e) => { e.preventDefault(); setActiveTab("customers"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/customers'); }}
+                className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "customers" ? "bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Case Studies</span>
+              </a>
+              <a
+                href="/about"
+                onClick={(e) => { e.preventDefault(); setActiveTab("about"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/about'); }}
+                className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "about" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <Building className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>About</span>
+              </a>
+              <a
+                href="/changelog"
+                onClick={(e) => { e.preventDefault(); setActiveTab("changelog"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/changelog'); }}
+                className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "changelog" ? "bg-slate-200 text-slate-900 border border-slate-300 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <Clock className="w-4 h-4 text-slate-600 shrink-0" />
+                <span>Changelog</span>
+              </a>
+              <a
+                href="/advisor"
+                onClick={(e) => { e.preventDefault(); setActiveTab("advisor"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/advisor'); }}
+                className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
                   activeTab === "advisor" ? "bg-purple-50 text-purple-900 border border-purple-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
               >
                 <HelpCircle className="w-4 h-4 text-purple-600 shrink-0" />
                 <span>Help & FAQ</span>
-              </button>
+              </a>
             </div>
 
             {/* Full Claim CTA button in mobile menu */}
@@ -1637,6 +1796,59 @@ export default function GigLizardApp() {
           </div>
         )}
 
+        {activeTab === "compare" && (
+          <div className="space-y-6" id="view-compare-wrapper">
+            <ComparisonPage 
+              onSelectTab={setActiveTab}
+              onOpenCheckout={() => setShowPayPalModal(true)}
+              onOpenRegister={() => setShowArtistRegistrationModal(true)}
+            />
+          </div>
+        )}
+
+        {activeTab === "about" && (
+          <div className="space-y-6" id="view-about-wrapper">
+            <AboutPage 
+              onSelectTab={setActiveTab} 
+              onOpenRegister={() => setShowArtistRegistrationModal(true)} 
+            />
+          </div>
+        )}
+
+        {activeTab === "features" && (
+          <div className="space-y-6" id="view-features-wrapper">
+            <FeaturesPage onSelectTab={setActiveTab} />
+          </div>
+        )}
+
+        {activeTab === "guide" && (
+          <div className="space-y-6" id="view-guide-wrapper">
+            <TouringGuidePage 
+              onSelectTab={setActiveTab} 
+              onOpenRegister={() => setShowArtistRegistrationModal(true)} 
+            />
+          </div>
+        )}
+
+        {activeTab === "changelog" && (
+          <div className="space-y-6" id="view-changelog-wrapper">
+            <ChangelogPage 
+              onSelectTab={setActiveTab} 
+              onOpenRegister={() => setShowArtistRegistrationModal(true)} 
+            />
+          </div>
+        )}
+
+        {activeTab === "customers" && (
+          <div className="space-y-6" id="view-customers-wrapper">
+            <CustomersPage 
+              onSelectTab={setActiveTab} 
+              onOpenRegister={() => setShowArtistRegistrationModal(true)} 
+              onOpenCheckout={() => setShowPayPalModal(true)}
+            />
+          </div>
+        )}
+
         {activeTab === "admin" && (
           currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" ? (
             <div className="space-y-6" id="view-admin-wrapper">
@@ -1675,30 +1887,30 @@ export default function GigLizardApp() {
           <div className="space-y-2 text-xs" id="fact-stage">
             <h4 className="font-extrabold text-slate-900 flex items-center gap-1.5" id="title-stage-fact">
               <Sliders className="w-4 h-4 text-indigo-500" />
-              Responsive Stage Arrangement
+              Stage Plot Canvas
             </h4>
             <p className="text-slate-500 leading-normal" id="desc-stage-fact">
-              Our interactive Stage Plot canvas utilizes robust percentage calculations. Gear arrangements remain structurally clean on laptop, tablet, or smartphone previews to handle live gig updates beautifully.
+              Interactive drag-and-drop gear canvas to map drums, amps, monitor wedges, and vocal mics. Automatically scales so house sound engineers know what to mic before load-in.
             </p>
           </div>
 
           <div className="space-y-2 text-xs" id="fact-rider">
             <h4 className="font-extrabold text-slate-900 flex items-center gap-1.5" id="title-rider-fact">
               <FileText className="w-4 h-4 text-emerald-500" />
-              Professional Tech Delivery
+              Tech Rider & Soundboard Patch List
             </h4>
             <p className="text-slate-500 leading-normal" id="desc-rider-fact">
-              Generate structured, dynamic ASCII stage patches in seconds. Tap presets to instantly map drum snares, kick, guitars, keys, or vocals. Instantly copy to stage clipboard or download direct text configurations.
+              Generate dynamic channel lists, mic preferences, and +48V phantom power switches. Instant PDF and clean ASCII export for Front of House engineers.
             </p>
           </div>
 
           <div className="space-y-2 text-xs" id="fact-poster">
             <h4 className="font-extrabold text-slate-900 flex items-center gap-1.5" id="title-poster-fact">
-              <Image className="w-4 h-4 text-purple-505" />
-              Distinguished Promo Poster Layouts
+              <Image className="w-4 h-4 text-purple-500" />
+              Gig Posters & Tour Flyers
             </h4>
             <p className="text-slate-500 leading-normal" id="desc-poster-fact">
-              Export concert templates styled using custom fonts, neon grid aesthetics, acoustic leaf details, or distressed grunge colorways. Directly customize price lists, food icons, 21+ limit warnings, and AI generated taglines.
+              Create retro halftone and neon flyers with tour dates, ticket prices, and door times ready for Instagram and club telephone poles without Canva subscriptions.
             </p>
           </div>
         </div>
@@ -1708,9 +1920,13 @@ export default function GigLizardApp() {
       <Footer 
         onOpenTerms={() => setShowTermsModal(true)} 
         onOpenSecurity={() => setShowSecurityModal(true)} 
-        onOpenAbout={() => setShowAboutModal(true)}
+        onOpenAbout={() => setActiveTab("about")}
         onOpenGuarantee={() => setShowGuaranteeModal(true)}
         onOpenPricing={() => setActiveTab("pricing")}
+        onOpenCompare={() => setActiveTab("compare")}
+        onOpenFeatures={() => setActiveTab("features")}
+        onOpenGuide={() => setActiveTab("guide")}
+        onOpenChangelog={() => setActiveTab("changelog")}
         userEmail={currentAccount?.contactEmail || currentUser?.email || ""}
         userName={currentAccount?.name || ""}
       />

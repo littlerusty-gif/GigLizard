@@ -1,7 +1,7 @@
 import React from "react";
 import { 
   Building, ShieldCheck, Music, Users, Award, 
-  Mail, MapPin, Sparkles, CheckCircle2, ArrowRight, Heart 
+  Mail, MapPin, Sparkles, CheckCircle2, ArrowRight, Heart, ExternalLink 
 } from "lucide-react";
 import { FounderAvatar } from "./ProductPreviews";
 
@@ -21,7 +21,7 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
           <span>The GigLizard Origin Story</span>
         </div>
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-          Built in the Pacific Northwest by Working DIY Musicians
+          Built in the Pacific Northwest by Little Rusty from Seattle
         </h1>
         <p className="text-sm text-gray-600 leading-relaxed max-w-xl mx-auto">
           Independent live music touring shouldn't be gatekept behind $30/month corporate agency tools or dead-end scrapers.
@@ -32,22 +32,38 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
       <div className="bg-slate-950 text-white rounded-3xl p-6 md:p-10 border border-slate-900 shadow-2xl relative overflow-hidden space-y-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-800">
           <div className="flex items-center gap-4">
-            <FounderAvatar className="shrink-0" />
+            <FounderAvatar size="lg" className="shrink-0" />
             <div>
               <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                Rusty "Dr Hadit"
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/40 font-mono">Founder & Lead Engineer</span>
+                Little Rusty
+                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/40 font-mono">Founder & Touring Musician</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                Seattle, WA • Touring Musician & Sound Engineer
+                Seattle, WA • Pacific Northwest DIY Musician & Live Sound Engineer
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
-            <Mail className="w-4 h-4 text-indigo-400" />
-            <span>Direct Line: <strong className="text-white font-mono">giglizard.us@gmail.com</strong></span>
+          <div className="flex flex-wrap items-center gap-2">
+            <a 
+              href="mailto:littlerusty@gmail.com"
+              className="flex items-center gap-2 text-xs bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300 transition-colors"
+              title="Direct email to Little Rusty"
+            >
+              <Mail className="w-4 h-4 text-indigo-400" />
+              <span>Direct Line: <strong className="text-white font-mono">littlerusty@gmail.com</strong></span>
+            </a>
+            <a
+              href="https://www.linkedin.com/in/littlerusty"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-800 text-indigo-300 hover:text-white transition-colors"
+              title="Little Rusty's Profile (Verified Platform Operator)"
+            >
+              <span>Operator Profile</span>
+              <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+            </a>
           </div>
         </div>
 

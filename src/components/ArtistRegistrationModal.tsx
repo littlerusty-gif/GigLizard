@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { X, Music, MapPin, Mail, Globe, CheckCircle2, AlertCircle, Check, Loader2, Sparkles, Radio } from "lucide-react";
+import { X, Music, MapPin, Mail, Globe, CheckCircle2, AlertCircle, Check, Loader2, Sparkles, Radio, Building, Phone } from "lucide-react";
 import { supabase, insertProfile, saveBandToDatabase } from "../lib/supabase";
 import { AvailableBand } from "../types";
 import { CONTINENTAL_US_STATES, POPULAR_NATIONWIDE_HUBS, parseFreeformCityState } from "../constants/states";
+import { POPULAR_BOOKING_AGENCIES } from "../utils/bookingAgencies";
 
 export interface ArtistRegistrationModalProps {
   isOpen: boolean;
@@ -59,6 +60,14 @@ export default function ArtistRegistrationModal({
   const [website, setWebsite] = useState("");
   const [musicUrl, setMusicUrl] = useState("");
   const [touringTier, setTouringTier] = useState<"Local" | "Regional Tour" | "National Act">("Regional Tour");
+
+  // Booking Agency Representation
+  const [hasBookingAgency, setHasBookingAgency] = useState(false);
+  const [bookingAgency, setBookingAgency] = useState("");
+  const [bookingAgentName, setBookingAgentName] = useState("");
+  const [bookingAgencyEmail, setBookingAgencyEmail] = useState("");
+  const [bookingAgencyPhone, setBookingAgencyPhone] = useState("");
+  const [bookingAgencyWebsite, setBookingAgencyWebsite] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -176,7 +185,13 @@ export default function ArtistRegistrationModal({
         epkUrl: cleanMusic,
         genres: selectedGenres,
         experienceLevel: touringTier === "National Act" ? "National Act" : (touringTier === "Regional Tour" ? "Regional Tour" : "Local"),
-        bio: `${cleanName} is a verified ${touringTier} artist from ${cleanCity}. Genres: ${selectedGenres.join(", ")}.`
+        bio: `${cleanName} is a verified ${touringTier} artist from ${cleanCity}. Genres: ${selectedGenres.join(", ")}.`,
+        hasBookingAgency,
+        bookingAgency: hasBookingAgency ? bookingAgency.trim() || null : undefined,
+        bookingAgentName: hasBookingAgency ? bookingAgentName.trim() || null : undefined,
+        bookingAgencyEmail: hasBookingAgency ? bookingAgencyEmail.trim().toLowerCase() || null : undefined,
+        bookingAgencyPhone: hasBookingAgency ? bookingAgencyPhone.trim() || null : undefined,
+        bookingAgencyWebsite: hasBookingAgency ? bookingAgencyWebsite.trim() || null : undefined
       };
 
       try {
@@ -534,6 +549,121 @@ export default function ArtistRegistrationModal({
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Booking Agency Representation */}
+              <div className="pt-2 border-t border-slate-200/80 space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50/70 border border-amber-200">
+                  <div className="space-y-0.5">
+                    <label className="text-xs font-black text-amber-950 flex items-center gap-1.5 cursor-pointer" htmlFor="reg-agency-toggle">
+                      <Building className="w-4 h-4 text-amber-600" />
+                      <span>Managed by a Booking Agency?</span>
+                    </label>
+                    <p className="text-[10.5px] text-amber-800/80">
+                      If your band is represented by an agency (e.g. Intrepid Artists), booking requests route directly to your agency.
+                    </p>
+                  </div>
+                  <input
+                    id="reg-agency-toggle"
+                    type="checkbox"
+                    checked={hasBookingAgency}
+                    onChange={(e) => setHasBookingAgency(e.target.checked)}
+                    className="w-4 h-4 accent-amber-600 rounded cursor-pointer"
+                  />
+                </div>
+
+                {hasBookingAgency && (
+                  <div className="p-3.5 rounded-2xl bg-white border border-amber-300 space-y-3 shadow-xs animate-fade-in">
+                    <div className="flex items-center justify-between text-xs text-amber-900 font-extrabold pb-1.5 border-b border-amber-100">
+                      <span>Agency Routing Setup</span>
+                      <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-mono font-black">Agency Directed</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700">
+                        Choose Premier Agency Preset
+                      </label>
+                      <select
+                        onChange={(e) => {
+                          const preset = POPULAR_BOOKING_AGENCIES.find(a => a.name === e.target.value);
+                          if (preset) {
+                            setBookingAgency(preset.name);
+                            setBookingAgentName(preset.agentName || "");
+                            setBookingAgencyEmail(preset.email);
+                            setBookingAgencyPhone(preset.phone);
+                            setBookingAgencyWebsite(preset.website);
+                          }
+                        }}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium"
+                      >
+                        <option value="">-- Select Agency Preset (or enter below) --</option>
+                        {POPULAR_BOOKING_AGENCIES.map(a => (
+                          <option key={a.name} value={a.name}>{a.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Agency Name *
+                        </label>
+                        <input
+                          type="text"
+                          required={hasBookingAgency}
+                          value={bookingAgency}
+                          onChange={(e) => setBookingAgency(e.target.value)}
+                          placeholder="e.g. Intrepid Artists International"
+                          className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Agent Name
+                        </label>
+                        <input
+                          type="text"
+                          value={bookingAgentName}
+                          onChange={(e) => setBookingAgentName(e.target.value)}
+                          placeholder="e.g. Rick Booth"
+                          className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Agency Booking Email *
+                        </label>
+                        <input
+                          type="email"
+                          required={hasBookingAgency}
+                          value={bookingAgencyEmail}
+                          onChange={(e) => setBookingAgencyEmail(e.target.value)}
+                          placeholder="e.g. staff@intrepidartists.com"
+                          className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium outline-none focus:ring-2 focus:ring-amber-500 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Agency Phone
+                        </label>
+                        <input
+                          type="text"
+                          value={bookingAgencyPhone}
+                          onChange={(e) => setBookingAgencyPhone(e.target.value)}
+                          placeholder="e.g. (704) 358-4501"
+                          className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                    </div>
+
+                    <p className="text-[10.5px] text-amber-900 font-medium leading-relaxed italic">
+                      ✓ Directing inquiries: In the directory, concert booking inquiries will be directed to your agency ({bookingAgency || "Intrepid Artists"}), not your personal inbox.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}

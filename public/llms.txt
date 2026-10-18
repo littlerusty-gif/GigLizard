@@ -1,0 +1,34 @@
+# GigLizard
+
+> Nationwide Independent Touring & Stage Directory and Booking Workspace for musicians, bands, and venues across the Lower 48.
+
+## Overview
+GigLizard is a self-serve live music touring platform founded by Seattle-based touring musician and sound engineer Little Rusty. It replaces expensive enterprise software and messy spreadsheets with integrated tools for DIY and regional touring acts.
+
+## Core Capabilities
+- **4,800+ Independent Venue Directory**: Search live music stages across all 48 continental states with verified booking emails, capacities, and stage specs (100% Free Forever).
+- **Smart Tour Planner**: AI-driven tour routing with Google Maps, drive times, van fuel expense calculation, and corridor stop suggestions ($0 Free).
+- **Stage Plot Designer**: Interactive drag-and-drop gear canvas to map drums, monitor wedges, pedalboards, and mic booms with instant PNG/PDF export ($0 Free).
+- **Tech Rider Builder**: Formatted soundboard patch list compiler with mic choices, +48V phantom power switches, and channel mapping ($0 Free).
+- **Concert Poster Designer**: Vintage halftone and modern neon flyer generator for social promo and print ($0 Free).
+- **1,300+ Verified Band Co-Bill Directory**: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
+
+## Pricing
+- **Venue Discovery & Production Tools**: $0 (100% Free Forever, No credit card required).
+- **Band Contact 30-Day Pass**: $9.99 flat fee (+$0.84 processor fee = $10.83 total). Single 30-day pass with zero recurring subscription traps. 7-day 100% money-back satisfaction guarantee.
+
+## Key URLs
+- Home: https://www.giglizard.us/
+- Pricing ($0 Free vs $9.99 Pass): https://www.giglizard.us/pricing
+- Comparison Hub: https://www.giglizard.us/compare
+- GigLizard vs Sonicbids: https://www.giglizard.us/vs/sonicbids
+- GigLizard vs Prism.fm: https://www.giglizard.us/vs/prism-fm
+- GigLizard vs Gigwell: https://www.giglizard.us/vs/gigwell
+- Shipped Features & Tool Suite: https://www.giglizard.us/features
+- Case Studies & Road Stories: https://www.giglizard.us/customers
+- Product Changelog (Dated): https://www.giglizard.us/changelog
+- About Founder: https://www.giglizard.us/about
+
+## Contact & Support
+- Founder: Little Rusty (Seattle, WA)
+- Official Support Email: littlerusty@gmail.com (and giglizard.us@gmail.com)

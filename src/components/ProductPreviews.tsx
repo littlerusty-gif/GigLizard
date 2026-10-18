@@ -349,16 +349,19 @@ export function TourPlannerScreenshot({ className = "" }: { className?: string }
 /**
  * Authentic Musician & Founder Avatar Components
  */
-export function FounderAvatar({ className = "" }: { className?: string }) {
+export function FounderAvatar({ className = "", size = "md" }: { className?: string; size?: "sm" | "md" | "lg" }) {
+  const sizeClasses = size === "lg" ? "w-16 h-16" : size === "sm" ? "w-10 h-10" : "w-13 h-13";
+  const iconSize = size === "lg" ? "text-2xl" : size === "sm" ? "text-sm" : "text-xl";
+
   return (
     <div className={`relative inline-block ${className}`}>
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-700 via-purple-600 to-amber-500 p-0.5 shadow-lg flex items-center justify-center">
-        <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-white overflow-hidden relative">
-          {/* Musician silhouette icon representation */}
-          <span className="text-xl">🎸</span>
+      <div className={`${sizeClasses} rounded-2xl bg-gradient-to-tr from-amber-500 via-indigo-600 to-rose-500 p-0.5 shadow-lg flex items-center justify-center`}>
+        <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center text-white overflow-hidden relative">
+          <span className={iconSize}>🎸</span>
+          <span className="text-[7.5px] font-black tracking-wider text-amber-400 font-mono -mt-0.5">RUSTY</span>
         </div>
       </div>
-      <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Active Touring Musician" />
+      <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Little Rusty • Seattle, WA (Active Musician & Builder)" />
     </div>
   );
 }
@@ -366,15 +369,33 @@ export function FounderAvatar({ className = "" }: { className?: string }) {
 export function BandVisualBadge({ 
   code, 
   gradient,
-  symbol = "🎵"
+  symbol = "🎵",
+  imageUrl,
+  name
 }: { 
   code: string; 
   gradient: string;
   symbol?: string;
+  imageUrl?: string;
+  name?: string;
 }) {
+  if (imageUrl) {
+    return (
+      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} p-0.5 shadow-md shrink-0 relative overflow-hidden`}>
+        <img 
+          src={imageUrl} 
+          alt={name ? `${name} verified photo` : "Verified Artist"} 
+          className="w-full h-full object-cover rounded-[9px]" 
+          loading="lazy"
+        />
+        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-xs" title="Verified Member" />
+      </div>
+    );
+  }
+
   return (
-    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} p-0.5 shadow-md flex items-center justify-center shrink-0`}>
-      <div className="w-full h-full bg-slate-950/90 rounded-[10px] flex items-center justify-center text-white font-black text-xs">
+    <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} p-0.5 shadow-md flex items-center justify-center shrink-0`}>
+      <div className="w-full h-full bg-slate-950/90 rounded-[9px] flex items-center justify-center text-white font-black text-xs">
         <span className="mr-0.5 text-xs">{symbol}</span>
         <span>{code}</span>
       </div>

@@ -328,7 +328,7 @@ export function resolveMostRelevantBandLink(band: Partial<AvailableBand>): Resol
       type: "website",
       label: "Official Website",
       badge: "Official Site",
-      actionText: "Official Website & Booking"
+      actionText: "Official Artist Website"
     };
   }
 
@@ -339,7 +339,7 @@ export function resolveMostRelevantBandLink(band: Partial<AvailableBand>): Resol
       type: "bandcamp",
       label: "Listen on Bandcamp",
       badge: "Bandcamp",
-      actionText: "Listen & Contact on Bandcamp"
+      actionText: "Listen on Bandcamp"
     };
   }
   if (webCandidate && isValidWebUrl(webCandidate) && webCandidate.toLowerCase().includes("bandcamp.com")) {
@@ -348,7 +348,7 @@ export function resolveMostRelevantBandLink(band: Partial<AvailableBand>): Resol
       type: "bandcamp",
       label: "Listen on Bandcamp",
       badge: "Bandcamp",
-      actionText: "Listen & Contact on Bandcamp"
+      actionText: "Listen on Bandcamp"
     };
   }
   const knownBc = KNOWN_BAND_BANDCAMP[normId] || KNOWN_BAND_BANDCAMP[normName] || KNOWN_BAND_BANDCAMP[cleanId];
@@ -358,7 +358,7 @@ export function resolveMostRelevantBandLink(band: Partial<AvailableBand>): Resol
       type: "bandcamp",
       label: "Listen on Bandcamp",
       badge: "Bandcamp",
-      actionText: "Listen & Contact on Bandcamp"
+      actionText: "Listen on Bandcamp"
     };
   }
 
@@ -441,7 +441,7 @@ export function resolveMostRelevantBandLink(band: Partial<AvailableBand>): Resol
       type: "facebook",
       label: "Facebook Page",
       badge: "Facebook",
-      actionText: "Facebook Profile & Contact"
+      actionText: "Facebook Artist Page"
     };
   }
   if (
@@ -454,7 +454,7 @@ export function resolveMostRelevantBandLink(band: Partial<AvailableBand>): Resol
       type: "facebook",
       label: "Facebook Page",
       badge: "Facebook",
-      actionText: "Facebook Profile & Contact"
+      actionText: "Facebook Artist Page"
     };
   }
   const knownFb = KNOWN_BAND_FACEBOOK[normId] || KNOWN_BAND_FACEBOOK[normName] || KNOWN_BAND_FACEBOOK[cleanId];
@@ -464,7 +464,7 @@ export function resolveMostRelevantBandLink(band: Partial<AvailableBand>): Resol
       type: "facebook",
       label: "Facebook Page",
       badge: "Facebook",
-      actionText: "Facebook Profile & Contact"
+      actionText: "Facebook Artist Page"
     };
   }
 
@@ -492,18 +492,18 @@ export function resolveMostRelevantBandLink(band: Partial<AvailableBand>): Resol
       type: "other",
       label: `View on ${badge}`,
       badge,
-      actionText: `View & Contact on ${badge}`
+      actionText: `View on ${badge}`
     };
   }
 
-  // Fallback: Every band gets a direct Bandcamp music & contact destination
+  // Fallback: Every band gets a direct Bandcamp music destination
   const safeSlug = (band.name || "artist").toLowerCase().replace(/[^a-z0-9]+/g, "");
   return {
     url: `https://${safeSlug}.bandcamp.com`,
     type: "bandcamp",
     label: "Listen on Bandcamp",
     badge: "Bandcamp",
-    actionText: "Listen & Contact on Bandcamp"
+    actionText: "Listen on Bandcamp"
   };
 }
 

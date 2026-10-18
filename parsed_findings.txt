@@ -1,0 +1,77 @@
+Total findings found: 25
+
+=== D1.1: Hook  (3/6, Partial) ===
+The h1 “Connecting Rising Performers & Music Venues” names the category loosely and the eyebrow “Nationwide Independent Touring & Stage Directory (Lower 48)” names the geography, but neither headline names the DIY/regional touring band explicitly, and no bigger goal (“fill the middle dates of your tour”) is surfaced above the fold.
+
+=== D1.2: Pain match  (4/5, Partial) ===
+The dominant pains land: “no cold-email black holes”, “Finding venues that actually reply is usually brutal” (own testimonial card), and the paid tier’s “Co-Bill & Show Swaps: Coordinate shared bills with local draws in your corridor cities to fill rooms” speaks directly to the middle-date-gap problem the audience names (“a lot of the middle has been pretty wishy washy”). The primary pain is addressed, but never stated as the visitor’s problem in the hero itself.
+
+=== D1.3: JTBD coverage  (3/4, Partial) ===
+Top jobs are covered in near-job framing: filling dates (“no dead ends”), routing and budgeting (“Calculate drive times, corridor stop cities, band-friendly lodging options, gas estimates”), and looking professional (“professional stage plots, band riders & posters instantly”). The emotional job (control over the tour) appears only inside testimonial copy, not as product framing.
+
+=== D1.4: Objection handling  (2/3, Partial) ===
+The audience research returned no direct objections from this segment (marked inference-only), so this scores at the middle bracket with a NEEDS-USER-VERIFICATION flag: the site does address data-freshness partially (“finances ongoing human verification”, “Verified Booking Emails”) and subscription fear (“No Recurring Subscription Traps”), but there is no FAQ that directly answers “are these contacts still current?”.
+
+=== D1.5: Desired-result visualization  (1/3, Fail) ===
+No product screenshot exists anywhere in the pages supplied: the four feature cards are text-only cards with empty icon containers, the hero shows only a guest-status widget, and testimonial avatars are initials (“ST”, “NR”, “BV”, “DS”) rather than photos or artifacts. A visitor never sees the stage plot canvas, the tour route map, or a finished rider - the after-state is described, not shown.
+
+=== D1.6: Audience language  (3/4, Partial) ===
+The working-musician vocabulary is strong and matches the audience pool: co-bill, tech rider, stage plot, EPK, corridor cities, dive bars, +48V phantom, drive times. But section headers slip into marketing-speak the audience never uses: “Our Suite Directives”, “Explore Professional Stage Utilities”, and “Stage Layout canvas” as the eyebrow over “Stage Plot Designer”.
+
+=== D2.1: 5-second comprehension  (5/7, Partial) ===
+The above-fold unit works: h1 “Connecting Rising Performers & Music Venues”, subhead “Find music venues for free, calculate AI tour routes with drive times & Google Maps, create professional stage plots, band riders & posters instantly”, and CTAs “Browse Venues (Free)” / “Browse Active Bands (Premium)” tell any visitor what this is and who it serves. What holds it back: the h1 itself is the vaguest element in the unit, and the hero carries no product visual to confirm the claim.
+
+=== D2.2: CTA hierarchy  (4/5, Partial) ===
+A clear primary (“Browse Venues (Free)”, indigo, filled) and a distinct secondary (“Browse Active Bands (Premium)”, dark) plus a “Register Free Now ↓” link in the status widget. The label “Premium” on the secondary does not preview that it costs $9.99/30 days, which is the one ambiguity.
+
+=== D2.3: Visual hierarchy and scroll flow  (3/5, Partial) ===
+The section order is sensible (hero, proof metrics, features, stories, pricing, mission, registration), but body copy runs at 10-11px sizing throughout (text-[10px], text-[11px]), which makes the page read dense, and several sections stack equal-weight cards.
+
+=== D2.4: Friction and navigation  (2/4, Partial) ===
+The nav is clean and categorical (Venues, Bands, Tour, Help, Sign In), and the sign-up form asks only band-name, hometown, booking email and password as required. But there is no “Pricing” item in the nav or footer; the /pricing route was not linked from the home page and renders the identical homepage, so pricing is reachable only by scrolling the homepage.
+
+=== D2.5: Mobile experience  (2/4, Partial) ===
+Markup signals are mostly good: responsive breakpoints (md:/lg:), a hamburger toggle with aria-label, and stacked grids (grid-cols-1 md:grid-cols-2) suggest mobile-aware layout. The viewport meta sets user-scalable=no, maximum-scale=1.0, which blocks pinch-zoom and hurts accessibility. Real device emulation was not possible in this run, so the six device checks are not verifiable from the fetched pages.
+
+=== D3.1: Quantity proof  (2/4, Partial) ===
+A dedicated metrics banner shows four numbers with sub-labels: “4,800+ Independent Venues”, “1,300+ Touring & Regional Acts”, “50,000+ Tour Miles Mapped”, “4.9 Musician Satisfaction - 380+ Touring Artists & Talent Buyers”. The numbers have visual treatment (the markup styles them large and colored) but no avatars, live counters, or activity feed substantiate any of them.
+
+=== D3.2: Story proof  (3/5, Partial) ===
+Four “Verified Stories from the Road” cards carry named acts and venues with genre, city, and specific outcomes (“6 confirmed club dates across Texas and Louisiana”, “routed our entire 10-city Pacific Northwest run in 20 minutes”). But every avatar is an initials circle, not a photo, and the audience research explicitly classifies these as vendor copy, not user voice, so they cannot carry full story-proof weight.
+
+=== D3.3: Founder-led trust  (1/4, Fail) ===
+No founder or team member is named on any page supplied: the origin modal says “founded in Seattle, WA by working DIY artists” and the operator is “GigLizard Independent Touring Network”, with only a Gmail support address (giglizard.us@gmail.com) and a 4-hour reply promise. No photo, no name, no LinkedIn/X link anywhere in the pages we read.
+
+=== D3.4: Transactional trust  (3/4, Partial) ===
+Strong for this stage: “7-Day Money-Back Guarantee” with a “Guarantee Details” link one click from the price, “Encrypted merchant pipeline processed via PayPal & Stripe”, card-brand badges, and “No Recurring Subscription Traps: Single 30-day pass, no auto-renewal unless explicitly chosen”. Missing: any “no credit card required” language on the free path.
+
+=== D3.5: Third-party and recency signals  (0/3, Fail) ===
+None of the pages supplied shows any external validation - no Product Hunt badge, no review-platform rating, no press, no partnership marks. The 4.9/5 score is the site grading itself.
+
+=== D4.1: Location and accessibility  (1/2, Partial) ===
+Pricing is a full homepage section (“Access to Venues - FREE / Access to Band Contacts - $9.99 / 30-Day Pass”), but there is no “Pricing” label in the nav or footer; the probed /pricing route was not linked from the home page and renders the same homepage.
+
+=== D4.2: Tier and offer design  (3/4, Partial) ===
+Two descriptive tiers with clear deltas: “Free Features & Venues” vs “Band Contacts Subscription”, each with four concrete bullet unlocks. Two issues: the paid tier is named “Subscription” while the page simultaneously promises “no auto-renewal unless explicitly chosen” (the word contradicts the mechanic), and a one-time 30-day pass has no renewal-terms statement beyond that line. The free path exists and matches the category norm (Muzeek and TYFRA both show free tiers). No comparison-table bonus: with 2 tiers a table is optional, and none is present.
+
+=== D4.3: Paywall and conversion mechanics  (3/5, Partial) ===
+Checks: mechanical clarity pass (free vs paid unambiguous, the $0.84 fee stated: “$9.99 + $0.84 secure payment processing fee = $10.83 total”) 1.5/1.5; period uniformity pass (single billing period) 0.5/0.5; pre-selected default tier pass (the paid card carries a thicker border and highlight styling) 0.5/0.5; badge pass (“Popular with Touring Bands”) 0.5/0.5; discount mechanic fail (no promo, no annual option, no launch offer) 0/1; value anchoring fail near the price (the only value framing, “Paid for itself on day one”, sits in a testimonial far above) 0/1.
+
+=== D4.4: Pricing vs competitors  (4/4, Pass) ===
+Model match: the flat 30-day pass deviates from the category’s per-seat subscription norm (Gigwell from $33/mo annual-only; Muzeek freemium; Prism sales-led) but is explicitly explained on the page (“No Recurring Subscription Traps”, “Why Band Contacts Need a Pass”). Entry price band: $9.99 sits below every rival’s entry (Gigwell $33/mo; Sonicbids low tens of dollars, best-known) and the low price is the site’s own stated position (“Transparent Pricing • Zero Hidden Traps”), so deliberate below-band placement with reasoning earns full marks.
+
+=== D5.1: Title and meta description  (1/3, Fail) ===
+The page title is just “GigLizard” - the brand name alone with no category, no keywords, and no value proposition in the most valuable line of the search result. The meta description is genuinely good and keyword-aware: “GigLizard: Live music booking directories, AI tour routing, custom stage plots, tech riders, and concert poster designs for independent bands and venues.” The waste is entirely in the title.
+
+=== D5.2: Heading structure  (2/2, Pass) ===
+Each rendered page carries exactly one h1 (“Connecting Rising Performers & Music Venues”), with descriptive h2/h3/h4 subheadings beneath (feature names, section titles) and no skipped levels or image-rendered headings.
+
+=== D5.3: Indexable content, /vs pages, internal linking  (1/4, Fail) ===
+Indexable content is compromised: the served HTML is only a loading splash, so all ranking content is client-rendered; robots.txt and sitemap.xml could not be read in this run (both returned JavaScript shells), so their state is not verifiable from the fetched pages. No /vs or category landing pages exist on any page supplied, in a category where Prism.fm ships dedicated category pages (“Live Music Managers Software”). Internal linking is thin: the nav offers only Venues/Bands/Tour/Help, and the probed /about, /features and /customers routes each render the identical homepage rather than distinct content.
+
+=== D5.4: Page speed  (3/3, Pass) ===
+The homepage responded in 338 ms (about 330-440 ms across all probed pages), and the served document is tiny (a splash shell plus one stylesheet), well inside the under-800-ms / under-1.5 MB best band. No autoplay media or heavy asset is present in the served markup.
+
+=== D5.5: AI-driven discovery and structured data  (1/3, Fail) ===
+Open Graph and Twitter card tags are present and populated (og:title, og:description, og:image, twitter:card summary_large_image) for 0.5. No JSON-LD structured data of any kind appears in the served head (which is authoritative for it): no Organization, no Product, no FAQ schema. Alt text exists but is thin (the logo’s alt is just “GigLizard”) and there are no product screenshots to describe. llms.txt returned a JavaScript shell and its content is not verifiable from the fetched pages.
+

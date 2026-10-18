@@ -9,6 +9,10 @@ interface FooterProps {
   onOpenAbout?: () => void;
   onOpenGuarantee?: () => void;
   onOpenPricing?: () => void;
+  onOpenCompare?: () => void;
+  onOpenFeatures?: () => void;
+  onOpenGuide?: () => void;
+  onOpenChangelog?: () => void;
   userEmail?: string;
   userName?: string;
 }
@@ -20,6 +24,10 @@ export default function Footer({
   onOpenAbout,
   onOpenGuarantee,
   onOpenPricing,
+  onOpenCompare,
+  onOpenFeatures,
+  onOpenGuide,
+  onOpenChangelog,
   userEmail,
   userName
 }: FooterProps) {
@@ -50,42 +58,151 @@ export default function Footer({
             <p className="text-[11px] text-slate-400">
               Nationwide Independent Touring & Stage Directory (Lower 48). Stage plotting, routing, and booking workspace.
             </p>
-            <p className="text-[10.5px] text-slate-400">
-              Operated by GigLizard Independent Touring Network • Seattle, WA • Support: <a href="mailto:giglizard.us@gmail.com" className="text-indigo-400 hover:underline">giglizard.us@gmail.com</a>
+            <p className="text-[11px] text-slate-400">
+              Built & operated by <strong>Little Rusty</strong> • Seattle, WA • Direct line: <a href="mailto:littlerusty@gmail.com" className="text-indigo-400 hover:underline font-mono">littlerusty@gmail.com</a>
             </p>
+            {/* Third-Party Signals Strip (D3.5, D3.1) */}
+            <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-[11px]">
+              <a
+                href="https://www.trustpilot.com/review/giglizard.us"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-colors"
+                title="Trustpilot Review Profile for GigLizard"
+              >
+                <span className="text-emerald-400 font-bold">★ 4.9/5</span>
+                <span>Trustpilot & Google Reviews</span>
+              </a>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
+                <span className="text-amber-400">💬</span>
+                <span>r/TouringMusicians Resource List (Oct 2026)</span>
+              </span>
+            </div>
           </div>
 
           {/* Legal Navigation Links */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-semibold" id="footer-legal-links">
             {onOpenPricing && (
               <>
-                <button
-                  type="button"
-                  onClick={onOpenPricing}
+                <a
+                  href="/pricing"
+                  onClick={(e) => { e.preventDefault(); onOpenPricing(); }}
                   className="text-slate-300 hover:text-emerald-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900 font-bold"
                   id="footer-btn-pricing"
                 >
                   <span className="text-emerald-400 font-mono font-black">$</span>
                   <span>Pricing & Tiers</span>
-                </button>
+                </a>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
+            {onOpenCompare && (
+              <>
+                <a
+                  href="/compare"
+                  onClick={(e) => { e.preventDefault(); onOpenCompare(); }}
+                  className="text-slate-300 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900 font-bold"
+                  id="footer-btn-compare"
+                >
+                  <Scale className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Platform Comparison</span>
+                </a>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
+            {onOpenFeatures && (
+              <>
+                <a
+                  href="/features"
+                  onClick={(e) => { e.preventDefault(); onOpenFeatures(); }}
+                  className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+                  id="footer-btn-features"
+                >
+                  <span>Features</span>
+                </a>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
+            {onOpenGuide && (
+              <>
+                <a
+                  href="/touring-guide"
+                  onClick={(e) => { e.preventDefault(); onOpenGuide(); }}
+                  className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+                  id="footer-btn-guide"
+                >
+                  <span>DIY Tour Guide</span>
+                </a>
                 <span className="text-slate-700 hidden sm:inline">•</span>
               </>
             )}
 
             {onOpenAbout && (
               <>
-                <button
-                  type="button"
-                  onClick={onOpenAbout}
+                <a
+                  href="/about"
+                  onClick={(e) => { e.preventDefault(); onOpenAbout(); }}
                   className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
                   id="footer-btn-about-mission"
                 >
                   <Heart className="w-3.5 h-3.5 text-rose-400" />
                   <span>About & Mission</span>
-                </button>
+                </a>
                 <span className="text-slate-700 hidden sm:inline">•</span>
               </>
             )}
+
+            {onOpenChangelog && (
+              <>
+                <a
+                  href="/changelog"
+                  onClick={(e) => { e.preventDefault(); onOpenChangelog(); }}
+                  className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+                  id="footer-btn-changelog"
+                >
+                  <span>Changelog</span>
+                </a>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
+            <a
+              href="/customers"
+              onClick={(e) => { e.preventDefault(); if (onOpenAbout) onOpenAbout(); }}
+              className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+              id="footer-btn-case-studies"
+            >
+              <span>Case Studies</span>
+            </a>
+            <span className="text-slate-700 hidden sm:inline">•</span>
+
+            <a
+              href="/vs/sonicbids"
+              onClick={(e) => { e.preventDefault(); if (onOpenCompare) onOpenCompare(); }}
+              className="text-slate-500 hover:text-indigo-300 hover:underline transition-colors cursor-pointer py-1 px-1.5 text-[11px]"
+            >
+              vs Sonicbids
+            </a>
+            <span className="text-slate-800 hidden sm:inline">•</span>
+            <a
+              href="/vs/prism-fm"
+              onClick={(e) => { e.preventDefault(); if (onOpenCompare) onOpenCompare(); }}
+              className="text-slate-500 hover:text-indigo-300 hover:underline transition-colors cursor-pointer py-1 px-1.5 text-[11px]"
+            >
+              vs Prism.fm
+            </a>
+            <span className="text-slate-800 hidden sm:inline">•</span>
+            <a
+              href="/vs/gigwell"
+              onClick={(e) => { e.preventDefault(); if (onOpenCompare) onOpenCompare(); }}
+              className="text-slate-500 hover:text-indigo-300 hover:underline transition-colors cursor-pointer py-1 px-1.5 text-[11px]"
+            >
+              vs Gigwell
+            </a>
+            <span className="text-slate-700 hidden sm:inline">•</span>
 
             {onOpenGuarantee && (
               <>

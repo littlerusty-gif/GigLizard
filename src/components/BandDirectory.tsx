@@ -5,7 +5,8 @@ import {
   Search, MapPin, Mail, Globe, Shield, Users, PlusCircle, 
   Check, HelpCircle, BadgeCheck, Star, Lock, ChevronLeft, 
   ChevronRight, ShieldCheck, Sparkles, AlertCircle, CheckCircle2, Clock, Zap,
-  MessageSquare, Headphones, FileText, ExternalLink, Music, LogIn, UserCheck, Video
+  MessageSquare, Headphones, FileText, ExternalLink, Music, LogIn, UserCheck, Video,
+  Building, Phone
 } from "lucide-react";
 import ProtectedContact from "./ProtectedContact";
 import PayPalAccessModal from "./PayPalAccessModal";
@@ -15,6 +16,7 @@ import ReviewsModal from "./ReviewsModal";
 import { getRatingStats } from "../utils/reviewsManager";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { resolveMostRelevantBandLink, categorizeUserMusicLink } from "../utils/musicLinks";
+import { resolveBandAgency } from "../utils/bookingAgencies";
 import { 
   isAccessActive, 
   isUserLoggedIn,
@@ -56,6 +58,7 @@ export default function BandDirectory({
   const [selectedState, setSelectedState] = useState("All");
   const [selectedLevel, setSelectedLevel] = useState("All");
   const [selectedRatingFilter, setSelectedRatingFilter] = useState("All");
+  const [selectedAgencyFilter, setSelectedAgencyFilter] = useState<"All" | "Agency" | "Direct">("All");
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -166,7 +169,7 @@ export default function BandDirectory({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedGenre, selectedState, selectedLevel, selectedRatingFilter]);
+  }, [searchTerm, selectedGenre, selectedState, selectedLevel, selectedRatingFilter, selectedAgencyFilter]);
 
 
   // New band form fields state
@@ -296,19 +299,36 @@ export default function BandDirectory({
         const isUserAuthorized = canViewBandContacts(currentAccount);
         const processedBands = deduplicatedBands.map((b) => {
           const sanitizedPhone = sanitizeBandPhoneNumber(b.contactPhone);
+          const agency = resolveBandAgency(b);
+          const effectiveEmail = agency ? agency.email : b.contactEmail;
+          const effectivePhone = agency?.phone || sanitizedPhone;
+
           if (!isUserAuthorized) {
             return {
               ...b,
+              hasBookingAgency: Boolean(agency),
+              bookingAgency: agency?.agencyName || b.bookingAgency,
+              bookingAgentName: agency?.agentName || b.bookingAgentName,
+              bookingAgencyEmail: agency?.email || b.bookingAgencyEmail,
+              bookingAgencyPhone: agency?.phone || b.bookingAgencyPhone,
+              bookingAgencyWebsite: agency?.website || b.bookingAgencyWebsite,
               contactPhone: "",
               contactEmail: "--****",
-              website: b.website ? "[Protected — Active Subscription Required]" : undefined,
+              website: undefined,
               epkUrl: undefined,
               musicUrl: undefined
             } as AvailableBand;
           }
           return {
             ...b,
-            contactPhone: sanitizedPhone
+            hasBookingAgency: Boolean(agency),
+            bookingAgency: agency?.agencyName || b.bookingAgency,
+            bookingAgentName: agency?.agentName || b.bookingAgentName,
+            bookingAgencyEmail: agency?.email || b.bookingAgencyEmail,
+            bookingAgencyPhone: agency?.phone || b.bookingAgencyPhone,
+            bookingAgencyWebsite: agency?.website || b.bookingAgencyWebsite,
+            contactEmail: effectiveEmail,
+            contactPhone: effectivePhone
           } as AvailableBand;
         });
 
@@ -526,6 +546,14 @@ export default function BandDirectory({
       const stats = getRatingStats(band.id, band.name, "band");
       const minRating = parseFloat(selectedRatingFilter);
       if (stats.average < minRating) return false;
+    }
+
+    if (selectedAgencyFilter === "Agency") {
+      const isAgency = Boolean(resolveBandAgency(band));
+      if (!isAgency) return false;
+    } else if (selectedAgencyFilter === "Direct") {
+      const isAgency = Boolean(resolveBandAgency(band));
+      if (isAgency) return false;
     }
 
     return true;
@@ -983,12 +1011,53 @@ export default function BandDirectory({
             </select>
           </div>
         </div>
+
+        {/* Quick Filter: Booking Representation (Agency Managed vs DIY) */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+          <span className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Representation:</span>
+          <button
+            type="button"
+            onClick={() => setSelectedAgencyFilter("All")}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              selectedAgencyFilter === "All"
+                ? "bg-slate-900 text-white shadow-2xs"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            All Acts ({bands.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedAgencyFilter("Agency")}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              selectedAgencyFilter === "Agency"
+                ? "bg-amber-400 text-slate-950 font-black shadow-2xs ring-2 ring-amber-300"
+                : "bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200"
+            }`}
+          >
+            <Building className="w-3.5 h-3.5 text-amber-700" />
+            <span>Booking Agency Managed (Intrepid, etc.)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedAgencyFilter("Direct")}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              selectedAgencyFilter === "Direct"
+                ? "bg-indigo-600 text-white shadow-2xs"
+                : "bg-indigo-50 text-indigo-900 hover:bg-indigo-100 border border-indigo-200"
+            }`}
+          >
+            Direct DIY / Self-Represented
+          </button>
+        </div>
       </div>
 
       {/* Core Band grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="bands-listing-grid">
         {paginatedBands.map((band) => {
           const stats = getRatingStats(band.id, band.name, "band");
+          const agencyInfo = resolveBandAgency(band);
+
           return (
           <div
             key={band.id}
@@ -1012,16 +1081,32 @@ export default function BandDirectory({
                   </p>
                 </div>
 
-                <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border ${
-                  band.experienceLevel === "National Act"
-                    ? "bg-amber-50 text-amber-800 border-amber-200"
-                    : band.experienceLevel === "Regional Tour"
-                    ? "bg-indigo-50 text-indigo-800 border-indigo-200"
-                    : "bg-slate-50 text-slate-800 border-slate-200"
-                }`}>
-                  {band.experienceLevel}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`text-[9px] font-black uppercase px-2 py-1 rounded border ${
+                    band.experienceLevel === "National Act"
+                      ? "bg-amber-50 text-amber-800 border-amber-200"
+                      : band.experienceLevel === "Regional Tour"
+                      ? "bg-indigo-50 text-indigo-800 border-indigo-200"
+                      : "bg-slate-50 text-slate-800 border-slate-200"
+                  }`}>
+                    {band.experienceLevel}
+                  </span>
+                </div>
               </div>
+
+              {/* Agency Representation Badge if managed through a booking agency (e.g. Intrepid Artists) */}
+              {agencyInfo && (
+                <div className="flex items-center justify-between p-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200 text-amber-950 text-xs font-bold shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span className="font-black text-[11px] tracking-tight">Agency Representation:</span>
+                    <span className="font-extrabold text-[11.5px] text-amber-900">{agencyInfo.agencyName}</span>
+                  </div>
+                  <span className="text-[9.5px] uppercase font-mono font-black text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded">
+                    Agency Managed Act
+                  </span>
+                </div>
+              )}
 
               {/* 5-Star Rating Badge & Review Launcher */}
               <div className="flex items-center justify-between bg-amber-50/60 border border-amber-200/60 px-3 py-1.5 rounded-lg">
@@ -1059,68 +1144,145 @@ export default function BandDirectory({
                 "{band.bio}"
               </p>
 
-              {/* Single Most Relevant Band Link (Priority: EPK > Website > Bandcamp > YouTube > Spotify > Facebook > Other) */}
+              {/* Primary Band Link (Bandcamp, EPK, Website, Spotify, etc.) */}
+              {/* IMPORTANT: Gated when not subscribed because Bandcamp, Spotify, YouTube, EPKs, and websites expose direct contact info! */}
               {(() => {
                 const primaryLink = resolveMostRelevantBandLink(band);
+                // When contact info is hidden, ALL external links must be gated to prevent bypassing paywall
+                const isLinkGated = !(isLoggedIn && isSubscriptionActive);
+
                 return (
                   <div className="p-2.5 bg-gradient-to-r from-slate-50 to-indigo-50/40 rounded-xl border border-slate-200/80">
-                    <a
-                      href={primaryLink.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`w-full inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black shadow-2xs hover:shadow-xs transition-all cursor-pointer ${
-                        primaryLink.type === "epk"
-                          ? "text-indigo-950 bg-white hover:bg-indigo-50/90 border border-indigo-200"
-                          : primaryLink.type === "website"
-                          ? "text-blue-950 bg-white hover:bg-blue-50/90 border border-blue-200"
-                          : primaryLink.type === "bandcamp"
-                          ? "text-cyan-950 bg-cyan-50/90 hover:bg-cyan-100/80 border border-cyan-300"
-                          : primaryLink.type === "youtube"
-                          ? "text-rose-950 bg-rose-50/90 hover:bg-rose-100/80 border border-rose-300"
-                          : primaryLink.type === "spotify"
-                          ? "text-emerald-950 bg-emerald-50/90 hover:bg-emerald-100/80 border border-emerald-300"
-                          : primaryLink.type === "facebook"
-                          ? "text-sky-950 bg-sky-50/90 hover:bg-sky-100/80 border border-sky-300"
-                          : "text-slate-900 bg-white hover:bg-slate-50 border border-slate-200"
-                      }`}
-                      title={`Open ${band.name}'s ${primaryLink.badge} link`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {primaryLink.type === "epk" && <FileText className="w-4 h-4 text-indigo-600 shrink-0" />}
-                        {primaryLink.type === "website" && <Globe className="w-4 h-4 text-blue-600 shrink-0" />}
-                        {primaryLink.type === "bandcamp" && <Headphones className="w-4 h-4 text-cyan-700 shrink-0" />}
-                        {primaryLink.type === "youtube" && <Video className="w-4 h-4 text-rose-600 shrink-0" />}
-                        {primaryLink.type === "spotify" && <Music className="w-4 h-4 text-emerald-600 shrink-0" />}
-                        {primaryLink.type === "facebook" && <Users className="w-4 h-4 text-sky-600 shrink-0" />}
-                        {primaryLink.type === "other" && <ExternalLink className="w-4 h-4 text-slate-600 shrink-0" />}
-                        <span className="truncate">{primaryLink.actionText}</span>
+                    {isLinkGated ? (
+                      /* Protected Link State: Free users cannot click out to harvest contact info on Bandcamp/Websites */
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDrmWarning(
+                            `🔒 Artist Privacy Protected: Direct ${primaryLink.badge} and external streaming links contain booking emails and contact forms. Active 30-day pass ($9.99) required to access.`
+                          );
+                          if (!isLoggedIn) {
+                            setShowLoginModal(true);
+                          } else {
+                            setShowPayPalModal(true);
+                          }
+                        }}
+                        className="w-full inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black shadow-2xs transition-all cursor-pointer bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-950 border border-slate-300 hover:border-amber-300 group"
+                        title={`External ${primaryLink.badge} link is protected to prevent scraper harvesting`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
+                          <span className="truncate">{primaryLink.actionText}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-amber-100 text-amber-900 border-amber-300 font-mono">
+                            🔒 Pass Required
+                          </span>
+                        </div>
+                      </button>
+                    ) : agencyInfo ? (
+                      /* Unlocked Agency-Represented Band: Primary is official agency booking portal; secondary is streaming music marked as agency routed */
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[11px] bg-amber-100/70 border border-amber-300/80 px-2.5 py-1.5 rounded-lg text-amber-950">
+                          <span className="font-extrabold flex items-center gap-1.5 truncate">
+                            <Building className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                            <span className="truncate">Booking Managed by {agencyInfo.agencyName}</span>
+                          </span>
+                          <span className="text-[9.5px] font-mono font-black text-amber-900 bg-amber-200/90 px-1.5 py-0.5 rounded shrink-0">
+                            Agency Routed
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <a
+                            href={agencyInfo.website || "https://intrepidartists.com"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-black bg-amber-600 hover:bg-amber-500 text-white shadow-2xs transition-all cursor-pointer"
+                            title={`Visit official agency booking desk at ${agencyInfo.agencyName}`}
+                          >
+                            <div className="flex items-center gap-1.5 truncate">
+                              <Building className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">Agency Booking Desk</span>
+                            </div>
+                            <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-80" />
+                          </a>
+                          <a
+                            href={primaryLink.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-bold bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 shadow-2xs transition-all cursor-pointer"
+                            title={`Listen to ${band.name} on ${primaryLink.badge} (Note: Direct bookings must go through ${agencyInfo.agencyName})`}
+                          >
+                            <div className="flex items-center gap-1.5 truncate">
+                              <Headphones className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                              <span className="truncate">{primaryLink.actionText}</span>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                              Music Only
+                            </span>
+                          </a>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                    ) : (
+                      /* Unlocked Independent / DIY Band Link */
+                      <a
+                        href={primaryLink.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black shadow-2xs hover:shadow-xs transition-all cursor-pointer ${
                           primaryLink.type === "epk"
-                            ? "bg-indigo-100 text-indigo-800 border-indigo-200"
+                            ? "text-indigo-950 bg-white hover:bg-indigo-50/90 border border-indigo-200"
                             : primaryLink.type === "website"
-                            ? "bg-blue-100 text-blue-800 border-blue-200"
+                            ? "text-blue-950 bg-white hover:bg-blue-50/90 border border-blue-200"
                             : primaryLink.type === "bandcamp"
-                            ? "bg-cyan-200/70 text-cyan-900 border-cyan-300"
+                            ? "text-cyan-950 bg-cyan-50/90 hover:bg-cyan-100/80 border border-cyan-300"
                             : primaryLink.type === "youtube"
-                            ? "bg-rose-200/70 text-rose-900 border-rose-300"
+                            ? "text-rose-950 bg-rose-50/90 hover:bg-rose-100/80 border border-rose-300"
                             : primaryLink.type === "spotify"
-                            ? "bg-emerald-200/70 text-emerald-900 border-emerald-300"
+                            ? "text-emerald-950 bg-emerald-50/90 hover:bg-emerald-100/80 border border-emerald-300"
                             : primaryLink.type === "facebook"
-                            ? "bg-sky-200/70 text-sky-900 border-sky-300"
-                            : "bg-slate-100 text-slate-700 border-slate-200"
-                        }`}>
-                          {primaryLink.badge}
-                        </span>
-                        <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-                      </div>
-                    </a>
+                            ? "text-sky-950 bg-sky-50/90 hover:bg-sky-100/80 border border-sky-300"
+                            : "text-slate-900 bg-white hover:bg-slate-50 border border-slate-200"
+                        }`}
+                        title={`Open ${band.name}'s verified ${primaryLink.badge}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {primaryLink.type === "epk" && <FileText className="w-4 h-4 text-indigo-600 shrink-0" />}
+                          {primaryLink.type === "website" && <Globe className="w-4 h-4 text-blue-600 shrink-0" />}
+                          {primaryLink.type === "bandcamp" && <Headphones className="w-4 h-4 text-cyan-700 shrink-0" />}
+                          {primaryLink.type === "youtube" && <Video className="w-4 h-4 text-rose-600 shrink-0" />}
+                          {primaryLink.type === "spotify" && <Music className="w-4 h-4 text-emerald-600 shrink-0" />}
+                          {primaryLink.type === "facebook" && <Users className="w-4 h-4 text-sky-600 shrink-0" />}
+                          {primaryLink.type === "other" && <ExternalLink className="w-4 h-4 text-slate-600 shrink-0" />}
+                          <span className="truncate">{primaryLink.actionText}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            primaryLink.type === "epk"
+                              ? "bg-indigo-100 text-indigo-800 border-indigo-200"
+                              : primaryLink.type === "website"
+                              ? "bg-blue-100 text-blue-800 border-blue-200"
+                              : primaryLink.type === "bandcamp"
+                              ? "bg-cyan-200/70 text-cyan-900 border-cyan-300"
+                              : primaryLink.type === "youtube"
+                              ? "bg-rose-200/70 text-rose-900 border-rose-300"
+                              : primaryLink.type === "spotify"
+                              ? "bg-emerald-200/70 text-emerald-900 border-emerald-300"
+                              : primaryLink.type === "facebook"
+                              ? "bg-sky-200/70 text-sky-900 border-sky-300"
+                              : "bg-slate-100 text-slate-700 border-slate-200"
+                          }`}>
+                            {primaryLink.badge} ✓
+                          </span>
+                          <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                        </div>
+                      </a>
+                    )}
                   </div>
                 );
               })()}
 
-              {/* Band Member Contact Gating (Protected Booking Email) */}
+              {/* Band Contact Gating & Booking Agency Routing */}
               {isLoggedIn && isSubscriptionActive ? (
                 /* Active Access State: Clear unmasked contact details exclusively for paid subscribers */
                 <div 
@@ -1132,16 +1294,89 @@ export default function BandDirectory({
                   }}
                   onContextMenu={(e) => e.preventDefault()}
                 >
-                  <div className="bg-slate-50/95 p-3.5 rounded-xl text-xs space-y-2 border border-slate-200">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Booking Email (Unmasked):</span>
-                      <ProtectedContact
-                        type="email"
-                        value={band.contactEmail}
-                        isUnlocked={true}
-                      />
+                  {agencyInfo ? (
+                    /* CASE A: Band is represented by a Booking Agency like Intrepid Artists */
+                    <div className="bg-amber-50/90 p-3.5 rounded-xl text-xs space-y-3 border border-amber-300/80 shadow-2xs">
+                      <div className="flex items-center justify-between pb-1.5 border-b border-amber-200 text-[10.5px] uppercase font-black text-amber-900">
+                        <span className="flex items-center gap-1.5">
+                          <Building className="w-4 h-4 text-amber-600" />
+                          Official Booking Agency Contact (Unmasked)
+                        </span>
+                        <span className="bg-amber-200 text-amber-950 px-2 py-0.5 rounded font-mono text-[9px] font-black">
+                          Agency Routed
+                        </span>
+                      </div>
+
+                      <div className="p-2 bg-amber-100/70 rounded-lg border border-amber-300/70 text-[11px] text-amber-950 leading-relaxed font-medium">
+                        📌 <strong>Booking Representative Notice:</strong> {band.name} is managed exclusively through <strong>{agencyInfo.agencyName}</strong>. All live dates, co-bills, festival offers, and contract inquiries must go to their agency agent below, not directly to the artist.
+                      </div>
+
+                      <div className="space-y-1.5 pt-0.5">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-600 font-bold">Booking Agency:</span>
+                          <span className="font-black text-slate-900">{agencyInfo.agencyName}</span>
+                        </div>
+
+                        {agencyInfo.agentName && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-600 font-bold">Assigned Agent:</span>
+                            <span className="font-bold text-slate-800">{agencyInfo.agentName}</span>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-1 pt-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-500">Agency Booking Email (Unmasked):</span>
+                          <ProtectedContact
+                            type="email"
+                            value={agencyInfo.email}
+                            isUnlocked={true}
+                          />
+                        </div>
+
+                        {agencyInfo.phone && (
+                          <div className="flex items-center justify-between text-[11px] pt-1">
+                            <span className="text-slate-600 font-bold">Agency Phone:</span>
+                            <a href={`tel:${agencyInfo.phone.replace(/[^0-9]/g, "")}`} className="font-mono text-indigo-700 hover:underline font-extrabold flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-indigo-500" />
+                              {agencyInfo.phone}
+                            </a>
+                          </div>
+                        )}
+
+                        {agencyInfo.website && (
+                          <div className="flex items-center justify-between text-[11px] pt-1">
+                            <span className="text-slate-600 font-bold">Agency Web:</span>
+                            <a href={agencyInfo.website} target="_blank" rel="noopener noreferrer" className="text-indigo-700 hover:underline flex items-center gap-1 font-bold">
+                              <span>{agencyInfo.website.replace(/^https?:\/\/(www\.)?/, "")}</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-2 border-t border-amber-200">
+                        <a
+                          href={`mailto:${agencyInfo.email}?subject=${encodeURIComponent(`[GigLizard Booking Inquiry] - ${band.name}`)}&body=${encodeURIComponent(`Hello ${agencyInfo.agentName || agencyInfo.agencyName},\n\nWe are submitting a show booking inquiry for ${band.name}.\n\nDate Requested:\nVenue / Event:\nCity, State:\nVenue Capacity:\nProposed Deal / Budget:\n\nContact Name:\nPhone / Email:\n\nSent via GigLizard Touring Directory`)}`}
+                          className="w-full py-2.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Email {agencyInfo.agencyName} to Book {band.name}</span>
+                        </a>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    /* CASE B: Self-Represented / DIY Artist */
+                    <div className="bg-slate-50/95 p-3.5 rounded-xl text-xs space-y-2 border border-slate-200">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Direct Artist Booking Email (Unmasked):</span>
+                        <ProtectedContact
+                          type="email"
+                          value={band.contactEmail}
+                          isUnlocked={true}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
                     <button
@@ -1161,7 +1396,9 @@ export default function BandDirectory({
                     <div className="flex items-center justify-between pb-1.5 border-b border-slate-800 text-[10px] uppercase font-bold text-amber-400">
                       <span className="flex items-center gap-1">
                         <Lock className="w-3 h-3 text-amber-400" />
-                        {!isLoggedIn ? "Account Sign In Required" : "Paid Subscribers Only"}
+                        {agencyInfo 
+                          ? `Agency: ${agencyInfo.agencyName}` 
+                          : (!isLoggedIn ? "Account Sign In Required" : "Paid Subscribers Only")}
                       </span>
                       <span className="text-slate-400 font-mono">
                         {!isLoggedIn ? "Not Logged In" : (accessDetails.isExpired ? "Expired" : "Free Tier")}
@@ -1169,15 +1406,23 @@ export default function BandDirectory({
                     </div>
 
                     <p className="text-[11px] text-slate-300 leading-normal">
-                      {!isLoggedIn 
-                        ? "Band contact info is hidden for users who are not logged in. Log into an account with an active paid subscription to view." 
-                        : "Band booking emails are hidden. Active paid subscription required to unmask contacts."}
+                      {agencyInfo ? (
+                        <>
+                          <strong>{band.name}</strong> is managed by <strong>{agencyInfo.agencyName}</strong>. Official agency booking agent email and phone contacts are protected. Active 30-day pass required to unmask agency booking desk.
+                        </>
+                      ) : !isLoggedIn ? (
+                        "Band contact info is hidden for users who are not logged in. Log into an account with an active paid subscription to view." 
+                      ) : (
+                        "Band booking emails are hidden. Active paid subscription required to unmask contacts."
+                      )}
                     </p>
 
                     <div className="flex items-center justify-between pt-0.5">
-                      <span className="text-[11px] font-medium text-slate-400">Booking Email:</span>
+                      <span className="text-[11px] font-medium text-slate-400">
+                        {agencyInfo ? "Agency Booking Email:" : "Booking Email:"}
+                      </span>
                       <span className="font-mono text-slate-300 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-[11px]">
-                        --****
+                        {agencyInfo ? `••••••••@${agencyInfo.email.split('@')[1] || 'agency.com'}` : "--****"}
                       </span>
                     </div>
                   </div>

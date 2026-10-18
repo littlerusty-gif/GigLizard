@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -8,6 +9,7 @@ import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 import { INITIAL_AVAILABLE_BANDS, sanitizeBandPhoneNumber } from "./src/data/availableBands";
 import { MUSIC_VENUES } from "./src/data/venues";
+import { resolveBandAgency } from "./src/utils/bookingAgencies";
 
 dotenv.config();
 
@@ -44,8 +46,10 @@ app.use((req, res, next) => {
   res.setHeader("X-XSS-Protection", "1; mode=block");
   // Referrer policy
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  // Anti-Scraping Robots Directive (prevents bulk crawler indexing / caching of sensitive pages)
-  res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet, noimageindex");
+  // Anti-Scraping Robots Directive (prevents bulk crawler indexing / caching of sensitive API endpoints)
+  if (req.path.startsWith("/api/")) {
+    res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet, noimageindex");
+  }
   next();
 });
 
@@ -126,16 +130,132 @@ app.use("/api/", (req, res, next) => {
   next();
 });
 
-// 4. robots.txt Endpoint to instruct web crawlers to not scrape data
+// 4. Crawlers & SEO Endpoints (robots.txt, sitemap.xml, llms.txt)
 app.get("/robots.txt", (req, res) => {
   res.type("text/plain");
   res.send(`User-agent: *
+Allow: /
 Disallow: /api/
-Disallow: /trap-bot-detected
 Disallow: /admin/
-Crawl-delay: 10
+Disallow: /trap-bot-detected
 
-# All automated scraping, bulk data harvesting, and AI training crawlers are strictly prohibited.
+Sitemap: https://www.giglizard.us/sitemap.xml
+`);
+});
+
+app.get("/sitemap.xml", (req, res) => {
+  res.type("application/xml");
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.giglizard.us/</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/pricing</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/compare</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/vs/sonicbids</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/vs/prism-fm</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/vs/gigwell</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/features</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/about</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/changelog</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/customers</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/touring-guide</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.giglizard.us/faq</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>`);
+});
+
+app.get("/llms.txt", (req, res) => {
+  res.type("text/plain");
+  res.send(`# GigLizard
+
+> Nationwide Independent Touring & Stage Directory and Booking Workspace for musicians, bands, and venues across the Lower 48.
+
+## Overview
+GigLizard is a self-serve live music touring platform founded by Seattle-based touring musician and sound engineer Little Rusty (frontman of Dr Hadit). It replaces expensive enterprise software and messy spreadsheets with integrated tools for DIY and regional touring acts.
+
+## Core Capabilities
+- 4,800+ Independent Venue Directory: Search live music stages across all 48 continental states with verified booking emails, capacities, and stage specs (100% Free Forever, No credit card required).
+- Smart Tour Planner: AI-driven tour routing with Google Maps, drive times, van fuel expense calculation, and corridor stop suggestions ($0 Free).
+- Stage Plot Designer: Interactive drag-and-drop gear canvas to map drums, monitor wedges, pedalboards, and mic booms with instant PNG/PDF export ($0 Free).
+- Tech Rider Builder: Formatted soundboard patch list compiler with mic choices, +48V phantom power switches, and channel mapping ($0 Free).
+- Concert Poster Designer: Vintage halftone and modern neon flyer generator for social promo and print ($0 Free).
+- 1,300+ Verified Band Co-Bill Directory: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
+
+## Pricing
+- Venue Discovery & Production Tools: $0 (100% Free Forever, No credit card required).
+- Band Contact 30-Day Pass: $9.99 flat fee (+$0.84 processor fee = $10.83 total). Single 30-day pass with zero recurring subscription traps. 7-day 100% money-back satisfaction guarantee.
+
+## Key URLs
+- Home: https://www.giglizard.us/
+- Pricing: https://www.giglizard.us/pricing
+- Comparison Matrix: https://www.giglizard.us/compare
+- GigLizard vs Sonicbids: https://www.giglizard.us/vs/giglizard-vs-sonicbids
+- DIY Touring Guide: https://www.giglizard.us/touring-guide
+- Features: https://www.giglizard.us/features
+- About: https://www.giglizard.us/about
+- FAQ: https://www.giglizard.us/faq
+
+## Contact & Support
+- Founder: Little Rusty (Seattle, WA • littlerusty@gmail.com)
+- Official Support Email: littlerusty@gmail.com (and giglizard.us@gmail.com)
 `);
 });
 
@@ -386,17 +506,32 @@ function getProcessedBandsList() {
 
   const seen = new Set<string>();
   const result: any[] = [];
-  for (const b of allCurrentBands) {
+  for (let b of allCurrentBands) {
     const key = b.name?.trim().toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
 
     const override = serverBandOverrides[b.id] || serverBandOverrides[key];
     if (override) {
-      result.push({ ...b, ...override });
-    } else {
-      result.push(b);
+      b = { ...b, ...override };
     }
+
+    // Direct contact info for agency-managed acts (e.g. Intrepid Artists) to the agency
+    const agency = resolveBandAgency(b);
+    if (agency) {
+      b = {
+        ...b,
+        hasBookingAgency: true,
+        bookingAgency: agency.agencyName,
+        bookingAgentName: agency.agentName || "Booking Agent",
+        bookingAgencyEmail: agency.email,
+        bookingAgencyPhone: agency.phone,
+        bookingAgencyWebsite: agency.website,
+        contactEmail: agency.email
+      };
+    }
+
+    result.push(b);
   }
   return result;
 }
@@ -461,15 +596,18 @@ app.get("/api/bands", (req, res) => {
       bands: bandsWithSanitizedContacts
     });
   } else {
-    // Redact contact fields and EPK/Listen links for non-logged-in users, free tier non-subscribers, or expired accounts
+    // Redact contact fields and all external Bandcamp/music/EPK/website links for non-subscribers
     const redactedBands = allCurrentBands.map((b) => {
-      const { contactPhone, epkUrl, musicUrl, audioPreviewUrl, spotifyUrl, bandcampUrl, ...rest } = b as any;
+      const { contactPhone, epkUrl, musicUrl, audioPreviewUrl, spotifyUrl, bandcampUrl, website, ...rest } = b as any;
       return {
         ...rest,
         contactEmail: "--****",
-        website: b.website ? "[Protected — Active Subscription Required]" : undefined,
+        website: undefined,
         epkUrl: undefined,
         musicUrl: undefined,
+        spotifyUrl: undefined,
+        bandcampUrl: undefined,
+        audioPreviewUrl: undefined
       };
     });
     res.json({
@@ -524,13 +662,16 @@ app.post("/api/bands", (req, res) => {
     });
   } else {
     const redactedBands = allCurrentBands.map((b) => {
-      const { contactPhone, epkUrl, musicUrl, audioPreviewUrl, spotifyUrl, bandcampUrl, ...rest } = b as any;
+      const { contactPhone, epkUrl, musicUrl, audioPreviewUrl, spotifyUrl, bandcampUrl, website, ...rest } = b as any;
       return {
         ...rest,
         contactEmail: "--****",
-        website: b.website ? "[Protected — Active Subscription Required]" : undefined,
+        website: undefined,
         epkUrl: undefined,
         musicUrl: undefined,
+        spotifyUrl: undefined,
+        bandcampUrl: undefined,
+        audioPreviewUrl: undefined
       };
     });
     res.json({
@@ -1478,21 +1619,170 @@ app.post("/api/tour/email-itinerary", async (req, res) => {
 export { app };
 export default app;
 
+interface RouteMetadata {
+  title: string;
+  description: string;
+  canonical: string;
+  heading: string;
+  subhead: string;
+}
+
+const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
+  "/": {
+    title: "GigLizard - Free Venue Directory & DIY Tour Tools",
+    description: "Find 4,800+ music venues for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
+    canonical: "https://www.giglizard.us/",
+    heading: "Find Venues, Book Shows - 4,800+ Bookable Venues Across the Lower 48",
+    subhead: "Find music venues for free, calculate AI tour routes with drive times & van gas budgets, and build pro stage plots & riders for $0 — stop watching wishy-washy middle dates stay open on your tour calendar."
+  },
+  "/pricing": {
+    title: "GigLizard Pricing - Free Venues, $9.99 Band Contacts Pass",
+    description: "Transparent DIY tour pricing: 4,800+ venues and stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.",
+    canonical: "https://www.giglizard.us/pricing",
+    heading: "Access to Venues - FREE / Access to Band Contacts - $9.99",
+    subhead: "Venues and production tools are 100% free for all bands forever. Get a flat 30-day all-access pass for $9.99 with zero recurring billing traps."
+  },
+  "/about": {
+    title: "About GigLizard - Built by DIY Musicians in Seattle",
+    description: "GigLizard was founded in Seattle by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
+    canonical: "https://www.giglizard.us/about",
+    heading: "Built in the Pacific Northwest by Little Rusty from Seattle",
+    subhead: "Independent live music touring shouldn't be gatekept behind $30/month corporate agency tools or dead-end scrapers."
+  },
+  "/features": {
+    title: "GigLizard Features - Free Tour Planner, Plots & Riders",
+    description: "Free touring toolkit for independent bands: 4,800+ venue directory, AI route planner with drive times, drag-and-drop stage plots, and tech riders.",
+    canonical: "https://www.giglizard.us/features",
+    heading: "Book the Gig. Route the Van. Show Up Looking Pro.",
+    subhead: "The complete production & booking workspace for independent and regional touring acts across the Lower 48."
+  },
+  "/compare": {
+    title: "GigLizard vs Rivals - Sonicbids, Prism & Spreadsheets",
+    description: "Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory and $9.99 flat pass vs $30/mo recurring subscriptions.",
+    canonical: "https://www.giglizard.us/compare",
+    heading: "How GigLizard Compares to Every Alternative",
+    subhead: "Prism leads enterprise venue management; Gigwell serves agencies from $33/mo; Sonicbids paywalls gig discovery. GigLizard undercuts all of them with $0 tools and a $9.99 pass."
+  },
+  "/vs/sonicbids": {
+    title: "GigLizard vs Sonicbids - Free Venues vs Pay-to-Apply",
+    description: "Compare GigLizard and Sonicbids. Search 4,800+ venues for free with no pay-to-apply submission fees and zero recurring subscriptions.",
+    canonical: "https://www.giglizard.us/vs/sonicbids",
+    heading: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
+    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 4,800+ verified venue inboxes 100% free forever."
+  },
+  "/vs/giglizard-vs-sonicbids": {
+    title: "GigLizard vs Sonicbids - Free Venues vs Pay-to-Apply",
+    description: "Compare GigLizard and Sonicbids. Search 4,800+ venues for free with no pay-to-apply submission fees and zero recurring subscriptions.",
+    canonical: "https://www.giglizard.us/vs/sonicbids",
+    heading: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
+    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 4,800+ verified venue inboxes 100% free forever."
+  },
+  "/vs/prism-fm": {
+    title: "GigLizard vs Prism.fm - Built for DIY Bands vs Arenas",
+    description: "Compare GigLizard and Prism.fm. Free self-serve touring tools for independent bands vs enterprise venue management software.",
+    canonical: "https://www.giglizard.us/vs/prism-fm",
+    heading: "GigLizard vs Prism.fm: Built for DIY Bands, Not Arenas",
+    subhead: "Prism is built for multi-seat venue operators and arena promoters with enterprise sales demos. GigLizard is built for working bands on the road with instant self-serve tools."
+  },
+  "/vs/gigwell": {
+    title: "GigLizard vs Gigwell - Free DIY Tools vs $33/mo Plan",
+    description: "Compare GigLizard vs Gigwell. Free venue directory and $9.99 flat pass vs $33/mo annual-only contracts for agency rosters.",
+    canonical: "https://www.giglizard.us/vs/gigwell",
+    heading: "GigLizard vs Gigwell: Free DIY Tooling vs $33/mo Contracts",
+    subhead: "Gigwell targets talent agencies with $33/mo ($396/year upfront) lock-in contracts. GigLizard charges $9.99 for a single 30-day pass with zero recurring billing."
+  },
+  "/changelog": {
+    title: "GigLizard Changelog - Shipped Product Updates",
+    description: "Dated changelog of shipped features, venue directory additions, and tool updates for GigLizard.",
+    canonical: "https://www.giglizard.us/changelog",
+    heading: "GigLizard Changelog: Dated Updates & Shipped Features",
+    subhead: "Dated updates, newly verified venues, and touring tools shipped for working DIY bands. Built and maintained in Seattle, WA by Little Rusty."
+  },
+  "/customers": {
+    title: "GigLizard Case Studies - How DIY Bands Book Tours",
+    description: "Real touring case studies and road stories from independent bands booking clubs, routing tours, and filling dates across the Lower 48.",
+    canonical: "https://www.giglizard.us/customers",
+    heading: "How DIY Bands & Venues Book Real Shows Across the Lower 48",
+    subhead: "Verified case studies from touring musicians booking clubs, routing tours, and filling middle dates without agency gatekeepers."
+  },
+  "/touring-guide": {
+    title: "DIY Tour Playbook - How to Book & Route Live Shows",
+    description: "Practical guide for independent bands booking and routing self-managed tours across North America.",
+    canonical: "https://www.giglizard.us/touring-guide",
+    heading: "The Independent Musician's DIY Touring Playbook",
+    subhead: "Proven strategies for routing the van, pitching venue talent buyers, co-billing with local bands, and filling every middle date."
+  }
+};
+
+function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
+  const cleanPath = reqPath.split("?")[0].replace(/\/$/, "") || "/";
+  const meta = ROUTE_METADATA_MAP[cleanPath] || ROUTE_METADATA_MAP["/"];
+
+  let html = rawTemplate;
+  html = html.replace(/<title>.*?<\/title>/s, `<title>${meta.title}</title>`);
+  html = html.replace(/<meta name="description" content=".*?" \/>/s, `<meta name="description" content="${meta.description}" />`);
+  html = html.replace(/<link rel="canonical" href=".*?" \/>/s, `<link rel="canonical" href="${meta.canonical}" />`);
+  html = html.replace(/<meta property="og:url" content=".*?" \/>/s, `<meta property="og:url" content="${meta.canonical}" />`);
+  html = html.replace(/<meta property="og:title" content=".*?" \/>/s, `<meta property="og:title" content="${meta.title}" />`);
+  html = html.replace(/<meta property="og:description" content=".*?" \/>/s, `<meta property="og:description" content="${meta.description}" />`);
+  html = html.replace(/<meta name="twitter:title" content=".*?" \/>/s, `<meta name="twitter:title" content="${meta.title}" />`);
+  html = html.replace(/<meta name="twitter:description" content=".*?" \/>/s, `<meta name="twitter:description" content="${meta.description}" />`);
+
+  if (meta.heading) {
+    html = html.replace(/<h1>.*?<\/h1>/s, `<h1>${meta.heading}</h1>`);
+  }
+  if (meta.subhead) {
+    html = html.replace(/<p>Find music venues for free.*?<\/p>/s, `<p>${meta.subhead}</p>`);
+  }
+
+  return html;
+}
+
 // Vite or Static file hosting setup
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     console.log("Starting in development mode with Vite middleware...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa",
+      appType: "custom",
     });
+
+    // Custom HTML route renderer with per-page SEO titles, descriptions, and canonicals (D5.1, D5.3)
+    app.use(async (req, res, next) => {
+      if (
+        req.method !== "GET" || 
+        req.path.startsWith("/api/") || 
+        req.path.startsWith("/@") || 
+        req.path.startsWith("/src/") || 
+        req.path.startsWith("/node_modules/") ||
+        req.path.includes(".")
+      ) {
+        return next();
+      }
+      try {
+        const template = fs.readFileSync(path.resolve("index.html"), "utf-8");
+        const customHtml = renderHtmlForRoute(template, req.path);
+        const transformedHtml = await vite.transformIndexHtml(req.originalUrl, customHtml);
+        res.status(200).set({ "Content-Type": "text/html" }).end(transformedHtml);
+      } catch (e) {
+        next(e);
+      }
+    });
+
     app.use(vite.middlewares);
   } else {
     console.log("Starting in production mode...");
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, { index: false }));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const templatePath = path.join(distPath, "index.html");
+      if (fs.existsSync(templatePath)) {
+        const template = fs.readFileSync(templatePath, "utf-8");
+        const finalHtml = renderHtmlForRoute(template, req.path);
+        res.status(200).set({ "Content-Type": "text/html" }).end(finalHtml);
+      } else {
+        res.sendFile(templatePath);
+      }
     });
   }
 

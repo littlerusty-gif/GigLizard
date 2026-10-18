@@ -97,6 +97,13 @@ export interface AvailableBand {
   password?: string;
   epkUrl?: string | null;
   musicUrl?: string | null;
+  // Booking Agency Representation
+  hasBookingAgency?: boolean;
+  bookingAgency?: string | null; // e.g. "Intrepid Artists", "Ground Control Touring", etc.
+  bookingAgentName?: string | null; // e.g. "Rick Booth"
+  bookingAgencyEmail?: string | null; // e.g. "staff@intrepidartists.com"
+  bookingAgencyPhone?: string | null; // e.g. "(704) 358-4501"
+  bookingAgencyWebsite?: string | null; // e.g. "https://www.intrepidartists.com"
 }
 
 export interface BandProfile {
@@ -254,6 +261,13 @@ export interface UserAccount {
   password?: string;
   epkUrl?: string | null;
   musicUrl?: string | null;
+  // Booking Agency Representation
+  hasBookingAgency?: boolean;
+  bookingAgency?: string | null;
+  bookingAgentName?: string | null;
+  bookingAgencyEmail?: string | null;
+  bookingAgencyPhone?: string | null;
+  bookingAgencyWebsite?: string | null;
 }
 
 export type ReviewAuthorRole = 
