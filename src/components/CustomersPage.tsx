@@ -291,7 +291,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
       <div className="p-4 bg-slate-900/90 border border-slate-700/80 rounded-xl text-xs text-slate-400 flex items-start gap-3">
         <Star className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold text-slate-200">Musician Community Notice:</span> Are you a touring band that routed a tour, booked a co-bill, or filled open dates using GigLizard? We verify every member submission directly with verified band links and press photos. Submit your tour report to <a href="mailto:littlerusty@gmail.com" className="text-emerald-400 underline hover:text-emerald-300">littlerusty@gmail.com</a> to be featured.
+          <span className="font-semibold text-slate-200">Musician Community Notice:</span> Are you a touring band that routed a tour, booked a co-bill, or filled open dates using GigLizard? We verify every member submission directly with verified band links and press photos. Submit your tour report through our <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("open-contact-modal"))} className="text-emerald-400 underline hover:text-emerald-300 font-medium cursor-pointer">contact web form</button> to be featured.
         </div>
       </div>
 

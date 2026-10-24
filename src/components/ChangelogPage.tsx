@@ -125,7 +125,7 @@ export default function ChangelogPage({ onSelectTab, onOpenRegister }: Changelog
           Have an Idea or Encountered a Venue Contact Change?
         </h3>
         <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-          Email Little Rusty directly at <a href="mailto:littlerusty@gmail.com" className="text-indigo-400 font-mono hover:underline">littlerusty@gmail.com</a>. Every listing report is investigated and resolved within 24 hours.
+          Submit updates directly via our <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("open-contact-modal"))} className="text-indigo-400 font-medium hover:underline cursor-pointer">support web form</button>. Every listing report is investigated and resolved within 24 hours.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button

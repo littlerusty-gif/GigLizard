@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Shield, Scale, Lock, Heart, CheckCircle2, X, Mail } from "lucide-react";
 import ContactModal from "./ContactModal";
 
@@ -34,6 +34,12 @@ export default function Footer({
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 
+  useEffect(() => {
+    const handleOpen = () => setShowContactModal(true);
+    window.addEventListener("open-contact-modal", handleOpen);
+    return () => window.removeEventListener("open-contact-modal", handleOpen);
+  }, []);
+
   const handleOpenContact = () => {
     if (onOpenContact) {
       onOpenContact();
@@ -59,7 +65,7 @@ export default function Footer({
               Nationwide Independent Touring & Stage Directory (Lower 48). Stage plotting, routing, and booking workspace.
             </p>
             <p className="text-[11px] text-slate-400">
-              Built & operated by <strong>Little Rusty</strong> • Seattle, WA • Direct line: <a href="mailto:littlerusty@gmail.com" className="text-indigo-400 hover:underline font-mono">littlerusty@gmail.com</a>
+              Built & operated by <strong>Little Rusty</strong> • Seattle, WA • <button type="button" onClick={handleOpenContact} className="text-indigo-400 hover:underline cursor-pointer">Contact Support via Web Form</button>
             </p>
             {/* Third-Party Signals Strip (D3.5, D3.1) */}
             <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-[11px]">

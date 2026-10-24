@@ -180,7 +180,7 @@ export default function TermsOfServiceModal({ isOpen, onClose }: TermsOfServiceM
 
           {/* Contact Support */}
           <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 text-slate-400 text-[11px]">
-            For legal inquiries, copyright concerns, or permissions, contact our administration team at: <span className="font-mono text-indigo-300">littlerusty@gmail.com</span>.
+            For legal inquiries, copyright concerns, or permissions, contact our administration team via our support web form.
           </div>
 
         </div>

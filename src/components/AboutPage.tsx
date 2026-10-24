@@ -46,14 +46,15 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <a 
-              href="mailto:littlerusty@gmail.com"
-              className="flex items-center gap-2 text-xs bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300 transition-colors"
-              title="Direct email to Little Rusty"
+            <button 
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("open-contact-modal"))}
+              className="flex items-center gap-2 text-xs bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title="Contact Little Rusty via Web Form"
             >
               <Mail className="w-4 h-4 text-indigo-400" />
-              <span>Direct Line: <strong className="text-white font-mono">littlerusty@gmail.com</strong></span>
-            </a>
+              <span>Contact via Web Form</span>
+            </button>
             <a
               href="https://www.linkedin.com/in/littlerusty"
               target="_blank"

@@ -1962,7 +1962,7 @@ export default function Home({
               },
               {
                 q: "What happens if a booking contact bounces or changes?",
-                a: "We maintain an active moderation queue. If you ever encounter an invalid email, click 'Report Contact' on the listing or email littlerusty@gmail.com. We investigate within 24 hours, update the verified address, and notify you directly."
+                a: "We maintain an active moderation queue. If you ever encounter an invalid email, click 'Report Contact' on the listing or submit a report through our contact web form. We investigate within 24 hours, update the verified address, and notify you directly."
               },
               {
                 q: "Is the $9.99 pass a recurring subscription or a one-time purchase?",
@@ -1970,7 +1970,7 @@ export default function Home({
               },
               {
                 q: "What is the 100% Artist Satisfaction Guarantee?",
-                a: "We offer a 7-day hassle-free money-back refund. If you purchase a 30-day pass and cannot find active bands or bookable venues along your route, simply email littlerusty@gmail.com within 7 days for an immediate 100% refund."
+                a: "We offer a 7-day hassle-free money-back refund. If you purchase a 30-day pass and cannot find active bands or bookable venues along your route, simply submit a request through our contact web form within 7 days for an immediate 100% refund."
               },
               {
                 q: "Why are venue listings 100% free while band contacts have a pass fee?",
@@ -2023,14 +2023,15 @@ export default function Home({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a
-              href="mailto:littlerusty@gmail.com"
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("open-contact-modal"))}
               className="px-3.5 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
-              title="Email Little Rusty directly"
+              title="Contact Support via Web Form"
             >
               <Mail className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Email Little Rusty</span>
-            </a>
+              <span>Contact Web Form</span>
+            </button>
             <button
               type="button"
               onClick={() => setShowAboutModal(true)}
@@ -2051,7 +2052,7 @@ export default function Home({
             <span className="font-bold text-amber-300">— Little Rusty, Seattle, WA</span>
             <span className="text-emerald-400 font-semibold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Direct support at <strong className="text-white">littlerusty@gmail.com</strong> (Under 4 hr reply guarantee)
+              Direct support via our official contact web form (Under 4 hr reply guarantee)
             </span>
           </div>
         </div>
@@ -2081,7 +2082,7 @@ export default function Home({
               <span>Direct Founder Support</span>
             </p>
             <p className="text-[11.5px]">
-              GigLizard is built and personally operated by <strong>Little Rusty</strong> from Seattle, WA. Official contact: <strong className="text-white font-mono">littlerusty@gmail.com</strong> (or giglizard.us@gmail.com) with guaranteed human replies.
+              GigLizard is built and personally operated by <strong>Little Rusty</strong> from Seattle, WA. Official contact is available via our verified support web form with guaranteed human replies.
             </p>
           </div>
         </div>

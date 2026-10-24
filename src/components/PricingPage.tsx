@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: "What happens if a booking contact bounces or changes?",
-    a: "We maintain an active moderation queue. If you ever encounter an invalid email, click 'Report Contact' on the listing or email littlerusty@gmail.com. We investigate within 24 hours, update the verified booker address, and notify you directly."
+    a: "We maintain an active moderation queue. If you ever encounter an invalid email, click 'Report Contact' on the listing or submit a report through our contact web form. We investigate within 24 hours, update the verified booker address, and notify you directly."
   },
   {
     q: "Is the $9.99 pass a recurring subscription or a one-time purchase?",
@@ -33,7 +33,7 @@ const FAQS = [
   },
   {
     q: "What is the 100% Artist Satisfaction Guarantee?",
-    a: "We offer a 7-day hassle-free money-back refund. If you purchase a 30-day pass and cannot find active bands or bookable venues along your route, simply email littlerusty@gmail.com within 7 days for an immediate 100% refund."
+    a: "We offer a 7-day hassle-free money-back refund. If you purchase a 30-day pass and cannot find active bands or bookable venues along your route, simply submit a request through our contact web form within 7 days for an immediate 100% refund."
   },
   {
     q: "Why are venue listings 100% free while band contacts have a pass fee?",

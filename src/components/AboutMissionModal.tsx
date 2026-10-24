@@ -119,13 +119,20 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
             <span>Direct Founder Contact Guarantee</span>
           </h4>
           <p className="text-slate-400 text-[11.5px] leading-relaxed">
-            GigLizard is built and personally run by <strong>Little Rusty</strong> in Seattle, WA. No call centers, no outsourced support tickets. If you need a venue corrected, an account updated, or tour advice, email me directly.
+            GigLizard is built and personally run by <strong>Little Rusty</strong> in Seattle, WA. No call centers, no outsourced support tickets. If you need a venue corrected, an account updated, or tour advice, reach out through our contact web form.
           </p>
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80 text-[11px]">
-            <div className="flex items-center gap-2 text-slate-300">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                window.dispatchEvent(new CustomEvent("open-contact-modal"));
+              }}
+              className="flex items-center gap-2 text-indigo-300 hover:text-white cursor-pointer transition-colors"
+            >
               <Mail className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Direct Email: <strong className="text-white font-mono">littlerusty@gmail.com</strong></span>
-            </div>
+              <span>Contact via Web Form</span>
+            </button>
             <span className="text-emerald-400 font-medium">Guaranteed response within 4 hours</span>
           </div>
         </div>
