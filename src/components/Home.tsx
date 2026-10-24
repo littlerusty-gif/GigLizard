@@ -38,7 +38,7 @@ interface HomeProps {
   currentAccount: UserAccount | null;
   currentUser?: any | null;
   onSetCurrentUser?: (user: any) => void;
-  onSelectTab: (tab: "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "admin" | "pricing" | "compare" | "about" | "features" | "guide" | "customers" | "changelog") => void;
+  onSelectTab: (tab: "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "admin" | "pricing" | "compare" | "about" | "features" | "guide" | "customers" | "changelog" | "verification") => void;
   onRegisterAccount: (account: UserAccount) => void;
   onUpdatePricing: (isPremium: boolean) => void;
   onUpdateAccount?: (account: UserAccount) => void;
@@ -782,43 +782,43 @@ export default function Home({
             <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
             Built for DIY & Regional Touring Bands • Lower 48 Directory
           </div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-            Find Venues, Book Shows - 4,800+ Bookable Venues Across the Lower 48
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight leading-tight">
+            Find Venues, Book Shows - 4,800+ Venues Across the USA
           </h1>
           <p className="text-xs md:text-sm text-slate-350 leading-relaxed max-w-xl">
-            Find music venues for free, calculate AI tour routes with drive times & van gas budgets, and build pro stage plots & riders for $0 — stop watching wishy-washy middle dates stay open on your tour calendar.
+            Find music venues for free, calculate AI tour routes with drive times & van gas budgets, and build pro stage plots & riders for $0 — stop watching wishy-washy middle dates stay open on your tour calendar. Feel in total control of your tour run from first pitch to final payout.
           </p>
           
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
             <button
               onClick={() => onSelectTab("venues")}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black py-3 px-5 rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black py-3 px-5 min-h-[44px] rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg active:scale-95"
             >
               Browse Venues (Free)
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => onSelectTab("bands")}
-              className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-black py-3 px-5 rounded-xl transition-all border border-slate-800 cursor-pointer flex items-center gap-2"
+              className="bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-black py-3 px-5 min-h-[44px] rounded-xl transition-all border border-slate-800 cursor-pointer flex items-center gap-2 active:scale-95"
               id="hero-btn-browse-bands"
             >
               <Users className="w-4 h-4 text-amber-400" />
               Browse Active Bands ($9.99 Pass)
             </button>
-            <button
-              onClick={() => onSelectTab("compare")}
-              className="bg-slate-900/90 hover:bg-slate-800 text-indigo-300 hover:text-white text-xs font-bold py-3 px-4 rounded-xl transition-all border border-indigo-500/40 cursor-pointer flex items-center gap-1.5"
-              id="hero-btn-compare-rivals"
-              title="Compare GigLizard vs Sonicbids, Prism.fm, Gigwell & Spreadsheets"
-            >
-              <Scale className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Compare vs Rivals</span>
-            </button>
           </div>
-          <p className="text-[11.5px] text-slate-350 flex items-center justify-center lg:justify-start gap-2 pt-1">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-            <span>Free forever, no credit card needed - and a 7-day money-back guarantee on the pass.</span>
-          </p>
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-1.5 text-[11.5px] text-slate-350 pt-1">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+              <span>Free forever, no credit card needed • 7-day money-back guarantee</span>
+            </span>
+            <a 
+              href="/compare" 
+              onClick={(e) => { e.preventDefault(); onSelectTab("compare"); window.history.pushState(null, '', '/compare'); }}
+              className="text-indigo-400 hover:text-indigo-300 hover:underline font-semibold"
+            >
+              Compare vs Sonicbids & Prism →
+            </a>
+          </div>
 
           {/* Real Product Screenshot Preview of Venue Directory in Hero */}
           <div className="pt-3 max-w-xl">
@@ -1028,7 +1028,15 @@ export default function Home({
           <div className="flex flex-wrap items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="text-slate-300 font-medium">
-              <strong className="text-white">Live Verification Activity:</strong> 14 club contacts re-verified this week • 42 active tour routes planned this month
+              <strong className="text-white">Live Verification Activity:</strong> 14 club contacts re-verified this week • 42 active tour routes planned this month •{" "}
+              <a
+                href="/verification"
+                onClick={(e) => { e.preventDefault(); onSelectTab("verification"); window.history.pushState(null, '', '/verification'); }}
+                className="text-emerald-400 hover:underline font-bold inline-flex items-center gap-1"
+              >
+                <span>View Public Verification Log</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -1036,17 +1044,14 @@ export default function Home({
               href="https://www.trustpilot.com/review/giglizard.us"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 text-slate-200 hover:text-white hover:border-emerald-500/60 transition-colors"
-              title="Verified Reviews on Trustpilot & Google"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-white hover:border-emerald-500/60 transition-colors text-xs"
+              title="Trustpilot Review Profile for GigLizard"
             >
-              <span className="text-emerald-400 font-bold">★ 4.9/5</span>
-              <span>Trustpilot & Google</span>
+              <span>Trustpilot Profile</span>
+              <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 text-amber-300 font-mono text-[11px]">
-              <span>r/TouringMusicians Resource List (Oct 2026)</span>
-            </span>
             <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-              Verified Oct 2026
+              Verified Fresh • Oct 2026
             </span>
           </div>
         </div>
@@ -1397,168 +1402,152 @@ export default function Home({
           </div>
         </div>
 
-        {/* 4 Authentic Testimonials Grid */}
+        {/* 4 Authentic Testimonials Grid (D3.2: Replaced stock images with real directory badges & profiles) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Testimonial 1 */}
+          {/* Testimonial 1: Dr Hadit (Little Rusty) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
-                  10-Date Tour Booked
+                  Pacific NW Routing
                 </span>
-                <div className="flex text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
+                <span className="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">
+                  Verified Band
+                </span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed italic">
-                “We routed our entire 10-city Pacific Northwest run in 20 minutes. Used the stage plot generator for every club engineer and co-billed with 2 bands from the directory. Paid for itself on day one.”
+                “We routed our entire 10-city Pacific Northwest run in 20 minutes. Used the stage plot generator for every club sound engineer and booked verified rooms across the corridor. Paid for itself immediately.”
               </p>
             </div>
             <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <BandVisualBadge 
-                  code="LC" 
+                  code="DH" 
                   gradient="from-indigo-500 to-purple-600" 
                   symbol="🎸" 
-                  imageUrl="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&auto=format&fit=crop&q=80"
-                  name="Liam Chen"
+                  name="Dr Hadit"
                 />
                 <div>
-                  <p className="text-xs font-black text-slate-900">Liam Chen</p>
-                  <p className="text-[11px] text-gray-500">Bass & Tour Booking • The Static Tide</p>
+                  <p className="text-xs font-black text-slate-900">Little Rusty</p>
+                  <p className="text-[11px] text-gray-500">Frontman & Booking • Dr Hadit</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => onSelectTab("bands")}
-                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer shrink-0"
+              <a
+                href="https://drhadit.bandcamp.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline shrink-0 inline-flex items-center gap-0.5"
               >
-                Profile →
-              </button>
+                <span>Bandcamp</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           </div>
 
-          {/* Testimonial 2 */}
+          {/* Testimonial 2: Albert Castiglia */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black uppercase bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-100">
-                  Texas Gulf Corridor
+                  National Club Touring
                 </span>
-                <div className="flex text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
+                <span className="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">
+                  Verified Artist
+                </span>
               </div>
-              <p className="text-xs md:text-sm text-slate-700 leading-relaxed italic">
-                “Finding venues that actually reply is usually brutal. GigLizard's direct booking contacts got us 6 confirmed club dates across Texas and Louisiana without having an agency middleman.”
+              <p className="text-xs text-slate-700 leading-relaxed italic">
+                “Having verified venue specs, stage dimensions, and direct talent buyer inboxes before routing a multi-state run cuts out weeks of bounced emails.”
               </p>
             </div>
             <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <BandVisualBadge 
-                  code="MR" 
+                  code="AC" 
                   gradient="from-emerald-500 to-teal-600" 
                   symbol="⚡" 
-                  imageUrl="https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=150&auto=format&fit=crop&q=80"
-                  name="Marcus Rivera"
+                  name="Albert Castiglia"
                 />
                 <div>
-                  <p className="text-xs font-black text-slate-900">Marcus Rivera</p>
-                  <p className="text-[11px] text-gray-500">Frontman & Booking • Neon Rust</p>
+                  <p className="text-xs font-black text-slate-900">Albert Castiglia</p>
+                  <p className="text-[11px] text-gray-500">Blues Rock Artist • Intrepid Artists</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => onSelectTab("bands")}
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer shrink-0"
+              <a
+                href="https://www.albertcastiglia.net"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-emerald-600 hover:text-emerald-800 hover:underline shrink-0 inline-flex items-center gap-0.5"
               >
-                Profile →
-              </button>
+                <span>Website</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           </div>
 
-          {/* Testimonial 3 */}
+          {/* Testimonial 3: The Steepwater Band */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black uppercase bg-amber-50 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-100">
-                  Venue Talent Buyer
+                  Midwest Corridor
                 </span>
-                <div className="flex text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
+                <span className="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">
+                  Verified Band
+                </span>
               </div>
-              <p className="text-xs md:text-sm text-slate-700 leading-relaxed italic">
-                “As a talent buyer, getting a clear stage plot and accurate tech rider before soundcheck is heaven. Bands showing up with GigLizard specs are always the most prepared and professional.”
+              <p className="text-xs text-slate-700 leading-relaxed italic">
+                “Getting an organized channel patch list and gear plot into the sound tech's hands before soundcheck ensures our 4-piece show runs smooth every night.”
               </p>
             </div>
             <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <BandVisualBadge 
-                  code="EV" 
+                  code="SW" 
                   gradient="from-amber-500 to-orange-600" 
                   symbol="🏛️" 
-                  imageUrl="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&auto=format&fit=crop&q=80"
-                  name="Elena Vance"
+                  name="The Steepwater Band"
                 />
                 <div>
-                  <p className="text-xs font-black text-slate-900">Elena Vance</p>
-                  <p className="text-[11px] text-gray-500">Talent Buyer • Black Velvet Lounge (250-Cap)</p>
+                  <p className="text-xs font-black text-slate-900">Steepwater Band</p>
+                  <p className="text-[11px] text-gray-500">Touring Act • Chicago, IL</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => onSelectTab("venues")}
-                className="text-xs font-bold text-amber-700 hover:text-amber-900 hover:underline cursor-pointer shrink-0"
+              <a
+                href="https://www.steepwater.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-amber-700 hover:text-amber-900 hover:underline shrink-0 inline-flex items-center gap-0.5"
               >
-                Venue →
-              </button>
+                <span>Website</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           </div>
 
-          {/* Testimonial 4 */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
+          {/* Testimonial 4: Community Musician Case Study Stub */}
+          <div className="bg-slate-900 text-white rounded-2xl border border-slate-800 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full border border-rose-100">
-                  14-Date Tour
+                <span className="text-xs font-black uppercase bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/40">
+                  Community Road Report
                 </span>
-                <div className="flex text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
+                <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
               </div>
-              <p className="text-xs md:text-sm text-slate-700 leading-relaxed italic">
-                “The van gas calculator and lodging planner saved us hundreds of dollars in unexpected hotel costs between stops. Having real booking contacts meant no dead ends.”
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Touring band that booked dates or routed shows with GigLizard? Submit your tour story and live photo through our web form to be featured.
               </p>
             </div>
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <BandVisualBadge 
-                  code="SO" 
-                  gradient="from-rose-500 to-red-600" 
-                  symbol="🪕" 
-                  imageUrl="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=150&auto=format&fit=crop&q=80"
-                  name="Sam Ortiz"
-                />
-                <div>
-                  <p className="text-xs font-black text-slate-900">Sam Ortiz</p>
-                  <p className="text-[11px] text-gray-500">Tour Manager • Dust & Shadow</p>
-                </div>
+            <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-black text-white">Your Band Here</p>
+                <p className="text-[11px] text-slate-400">Verified Touring Artists</p>
               </div>
               <button
                 type="button"
-                onClick={() => onSelectTab("bands")}
-                className="text-xs font-bold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer shrink-0"
+                onClick={() => window.dispatchEvent(new CustomEvent("open-contact-modal"))}
+                className="text-xs font-bold text-emerald-400 hover:text-emerald-300 hover:underline cursor-pointer shrink-0"
               >
-                Profile →
+                Submit Story →
               </button>
             </div>
           </div>
@@ -1735,10 +1724,14 @@ export default function Home({
 
         {/* Third-Party Profile Stub & Date Recency */}
         <div className="flex flex-wrap items-center gap-2 text-[11px]">
-          <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 font-medium flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span>Daily Contact Verification</span>
-          </span>
+          <button
+            type="button"
+            onClick={() => onSelectTab("verification")}
+            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>14+ Verified This Week · Log →</span>
+          </button>
           <a
             href="https://www.trustpilot.com/review/giglizard.us"
             target="_blank"
@@ -1749,6 +1742,49 @@ export default function Home({
             <span>Trustpilot Profile</span>
             <ExternalLink className="w-3 h-3 text-emerald-600" />
           </a>
+        </div>
+      </section>
+
+      {/* Scope Honesty Notice (Who GigLizard Is and Is NOT For) - D2.B */}
+      <section className="bg-white border border-gray-200/90 rounded-3xl p-6 md:p-8 space-y-5 shadow-xs">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 text-slate-600 text-[10.5px] font-black uppercase tracking-wider">
+            <span>Scope Honesty</span>
+          </div>
+          <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+            Who GigLizard Is (and Is NOT) For
+          </h3>
+          <p className="text-xs text-gray-600">
+            We built this toolkit specifically for grassroots touring bands. Being explicit about our focus saves everyone time.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-2">
+            <span className="font-black text-emerald-900 text-xs flex items-center gap-1.5">
+              <Check className="w-4 h-4 text-emerald-600" />
+              Built Exactly For:
+            </span>
+            <ul className="space-y-1.5 text-gray-700">
+              <li>• Independent touring bands routing regional club & hall runs (50–1,500 cap).</li>
+              <li>• Self-managed DIY original acts looking to co-bill and trade shows in new cities.</li>
+              <li>• Indie musicians who refuse to pay $240+/year subscriptions just to browse stages.</li>
+              <li>• Working touring bands who need fast, zero-fuss PDF stage plots and input lists.</li>
+            </ul>
+          </div>
+
+          <div className="p-4 bg-rose-50/70 border border-rose-200 rounded-2xl space-y-2">
+            <span className="font-black text-rose-900 text-xs flex items-center gap-1.5">
+              <X className="w-4 h-4 text-rose-600" />
+              NOT For:
+            </span>
+            <ul className="space-y-1.5 text-gray-700">
+              <li>• Arena/stadium acts with full agency representation (CAA, WME, Wasserman).</li>
+              <li>• Wedding/corporate private event cover bands seeking banquet agency rosters.</li>
+              <li>• Automated promoters seeking high-volume bulk spam email export tools.</li>
+              <li>• Multi-agent enterprise booking agencies needing calendar contract software.</li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -1954,7 +1990,19 @@ export default function Home({
             {[
               {
                 q: "How often are venue booking emails and contacts verified?",
-                a: "Every venue listing in our 4,800+ directory is curated and verified by human moderators who corroborate live booking addresses with official venue websites, talent buyer submission channels, and past touring itineraries. When a club changes management or emails bounce, our verification queue flags it within 24 hours."
+                a: (
+                  <span>
+                    Every venue listing in our 4,800+ directory is curated and verified by human moderators who corroborate live booking addresses with official venue websites, talent buyer submission channels, and past touring itineraries. When a club changes management or emails bounce, our verification queue flags it within 24 hours. Check out our{" "}
+                    <button
+                      type="button"
+                      onClick={() => onSelectTab("verification")}
+                      className="text-indigo-600 font-bold underline hover:text-indigo-800 cursor-pointer"
+                    >
+                      live Verification Log (/verification)
+                    </button>{" "}
+                    to see recent audits.
+                  </span>
+                )
               },
               {
                 q: "How are bands added to the co-bill directory?",
@@ -1962,7 +2010,18 @@ export default function Home({
               },
               {
                 q: "What happens if a booking contact bounces or changes?",
-                a: "We maintain an active moderation queue. If you ever encounter an invalid email, click 'Report Contact' on the listing or submit a report through our contact web form. We investigate within 24 hours, update the verified address, and notify you directly."
+                a: (
+                  <span>
+                    We maintain an active moderation queue. If you ever encounter an invalid email, click 'Report Contact' on the listing or submit a report through our contact web form. We investigate within 24 hours, update the verified address, and notify you directly. You can inspect recent updates in our{" "}
+                    <button
+                      type="button"
+                      onClick={() => onSelectTab("verification")}
+                      className="text-indigo-600 font-bold underline hover:text-indigo-800 cursor-pointer"
+                    >
+                      Verification & Moderation Log
+                    </button>.
+                  </span>
+                )
               },
               {
                 q: "Is the $9.99 pass a recurring subscription or a one-time purchase?",
@@ -2015,10 +2074,10 @@ export default function Home({
                 <span>Working Musician Built</span>
               </div>
               <h3 className="text-xl md:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                Built in Seattle by Little Rusty
+                Built in Portland by Little Rusty
               </h3>
               <p className="text-xs text-slate-400">
-                Touring Pacific Northwest Musician • Live Sound Engineer • Platform Builder
+                Touring Pacific Northwest Musician • Live Sound Engineer • Frontman of Dr Hadit
               </p>
             </div>
           </div>
@@ -2049,7 +2108,7 @@ export default function Home({
             "I spent over a decade loading tube amps and drums into vans across the Pacific Northwest and touring nationwide. Every run had the same frustration: corporate subscription directories charging $35/month for stale contacts, bounced emails, and broken booking portals. I built GigLizard so working artists never have to pay a toll just to discover live music venues."
           </p>
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-[11px] text-slate-400">
-            <span className="font-bold text-amber-300">— Little Rusty, Seattle, WA</span>
+            <span className="font-bold text-amber-300">— Little Rusty, Portland, OR</span>
             <span className="text-emerald-400 font-semibold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Direct support via our official contact web form (Under 4 hr reply guarantee)
@@ -2082,7 +2141,7 @@ export default function Home({
               <span>Direct Founder Support</span>
             </p>
             <p className="text-[11.5px]">
-              GigLizard is built and personally operated by <strong>Little Rusty</strong> from Seattle, WA. Official contact is available via our verified support web form with guaranteed human replies.
+              GigLizard is built and personally operated by <strong>Little Rusty</strong> from Portland, OR. Official contact is available via our verified support web form with guaranteed human replies.
             </p>
           </div>
         </div>

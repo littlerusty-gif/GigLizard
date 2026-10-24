@@ -14,30 +14,74 @@ interface PricingPageProps {
   onOpenRegister: () => void;
 }
 
-const FAQS = [
+interface FaqItem {
+  q: string;
+  a: (onSelectTab: (tab: any) => void) => React.ReactNode;
+}
+
+const PRICING_FAQS: FaqItem[] = [
   {
     q: "How often are venue booking emails and contacts verified?",
-    a: "Every venue listing in our 4,800+ directory is curated and verified by human moderators who corroborate live booking addresses with official venue websites, talent buyer submission channels, and past touring itineraries. When a club changes management or emails bounce, our anti-bot audit flags it immediately for verification."
+    a: (onSelectTab) => (
+      <span>
+        Every venue listing in our 4,800+ directory is curated and verified by human moderators who corroborate live booking addresses with official venue websites, talent buyer submission channels, and past touring itineraries. When a club changes management or emails bounce, our anti-bot audit flags it immediately for verification. You can inspect recent updates and moderation turnaround times in our{" "}
+        <button
+          type="button"
+          onClick={() => onSelectTab("verification")}
+          className="text-indigo-600 font-bold underline hover:text-indigo-800 cursor-pointer"
+        >
+          live Verification Log (/verification)
+        </button>.
+      </span>
+    )
   },
   {
     q: "How are bands added to the co-bill directory?",
-    a: "Active bands register directly or claim their profile with their official booking contact, hometown, genres, and EPK/music links. Each profile is scanned for spam to ensure genuine touring artists seeking co-bills and shared shows across the Lower 48."
+    a: () => (
+      <span>
+        Active bands register directly or claim their profile with their official booking contact, hometown, genres, and EPK/music links. Each profile is scanned for spam to ensure genuine touring artists seeking co-bills and shared shows across the Lower 48.
+      </span>
+    )
   },
   {
     q: "What happens if a booking contact bounces or changes?",
-    a: "We maintain an active moderation queue. If you ever encounter an invalid email, click 'Report Contact' on the listing or submit a report through our contact web form. We investigate within 24 hours, update the verified booker address, and notify you directly."
+    a: (onSelectTab) => (
+      <span>
+        We maintain an active moderation queue. If you ever encounter an invalid email, click 'Report Contact' on the listing or submit a report through our contact web form. We investigate within 24 hours, update the verified booker address, and notify you directly. Check our{" "}
+        <button
+          type="button"
+          onClick={() => onSelectTab("verification")}
+          className="text-indigo-600 font-bold underline hover:text-indigo-800 cursor-pointer"
+        >
+          Verification turnaround metrics
+        </button>{" "}
+        to see recently updated clubs.
+      </span>
+    )
   },
   {
     q: "Is the $9.99 pass a recurring subscription or a one-time purchase?",
-    a: "The $9.99 pass is a flat 30-day access key with zero recurring auto-billing traps. You are never quietly billed next month. You only renew when actively preparing your next tour run."
+    a: () => (
+      <span>
+        The $9.99 pass is a flat 30-day access key with zero recurring auto-billing traps. You are never quietly billed next month. You only renew when actively preparing your next tour run.
+      </span>
+    )
   },
   {
     q: "What is the 100% Artist Satisfaction Guarantee?",
-    a: "We offer a 7-day hassle-free money-back refund. If you purchase a 30-day pass and cannot find active bands or bookable venues along your route, simply submit a request through our contact web form within 7 days for an immediate 100% refund."
+    a: () => (
+      <span>
+        We offer a 7-day hassle-free money-back refund. If you purchase a 30-day pass and cannot find active bands or bookable venues along your route, simply submit a request through our contact web form within 7 days for an immediate 100% refund.
+      </span>
+    )
   },
   {
     q: "Why are venue listings 100% free while band contacts have a pass fee?",
-    a: "We believe independent artists should never pay a toll to discover live music rooms. Band booking emails, however, are shielded behind human authentication and an affordable 30-day pass to protect musician inboxes from commercial web scrapers and automated marketing bots."
+    a: () => (
+      <span>
+        We believe independent artists should never pay a toll to discover live music rooms. Band booking emails, however, are shielded behind human authentication and an affordable 30-day pass to protect musician inboxes from commercial web scrapers and automated marketing bots.
+      </span>
+    )
   }
 ];
 
@@ -73,16 +117,20 @@ export default function PricingPage({
             href="https://www.trustpilot.com/review/giglizard.us"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 font-bold hover:bg-emerald-100 transition-all shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 font-bold hover:bg-emerald-100 transition-all shadow-2xs"
             title="External Review Platform Profile (Claimed / Pending Activation)"
           >
-            <span className="text-emerald-500 font-black">★ 4.9/5</span>
-            <span>Rated by Touring Musicians on Trustpilot & Google</span>
+            <span>Trustpilot Profile (Claimed)</span>
+            <ArrowRight className="w-3 h-3 text-emerald-600" />
           </a>
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-medium">
-            <span className="text-amber-500">💬</span>
-            <span>Featured in r/TouringMusicians DIY Directory Hub (Oct 2026)</span>
-          </span>
+          <button
+            type="button"
+            onClick={() => onSelectTab("verification")}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200 font-bold hover:bg-slate-200 transition-all cursor-pointer"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>14+ Listings Verified This Week · Moderation Log →</span>
+          </button>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold font-mono">
             Save 70%+ vs $33/mo Competitors
           </span>
@@ -267,37 +315,82 @@ export default function PricingPage({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 space-y-1.5">
-            <span className="font-black text-emerald-800 text-[11px] block">GigLizard</span>
-            <p className="text-lg font-black text-slate-900">$9.99 <span className="text-[10px] font-normal text-gray-500">/ 30 days</span></p>
-            <p className="text-[11px] text-gray-650 leading-relaxed">
-              Single pass. 100% free venue discovery & stage plot tools. Zero auto-renew traps.
-            </p>
+        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs min-w-[280px]">
+            <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 space-y-1.5">
+              <span className="font-black text-emerald-800 text-[11px] block">GigLizard</span>
+              <p className="text-lg font-black text-slate-900">$9.99 <span className="text-[10px] font-normal text-gray-500">/ 30 days</span></p>
+              <p className="text-[11px] text-gray-650 leading-relaxed">
+                Single pass. 100% free venue discovery & stage plot tools. Zero auto-renew traps.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-1.5">
+              <span className="font-bold text-slate-700 text-[11px] block">Sonicbids</span>
+              <p className="text-lg font-black text-rose-600">$19.99–$34.99 <span className="text-[10px] font-normal text-gray-500">/mo</span></p>
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Paywalls gig search itself. $240+/yr recurring subscription. No stage plot canvas.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-1.5">
+              <span className="font-bold text-slate-700 text-[11px] block">Gigwell</span>
+              <p className="text-lg font-black text-rose-600">From $33 <span className="text-[10px] font-normal text-gray-500">/mo ($396/yr)</span></p>
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Billed strictly annually. Built for agency contracts, not independent DIY bands.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-1.5">
+              <span className="font-bold text-slate-700 text-[11px] block">Prism.fm</span>
+              <p className="text-lg font-black text-slate-900">Demo Only <span className="text-[10px] font-normal text-gray-500">($1,000s/yr)</span></p>
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Enterprise sales-led for venue box offices. No free tools or band routing.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scope Honesty Notice (Who GigLizard Is and Is NOT For) - D2.B */}
+      <div className="max-w-4xl mx-auto bg-slate-50 border border-slate-200/90 rounded-3xl p-6 md:p-8 space-y-5">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 text-slate-600 text-[10.5px] font-black uppercase tracking-wider">
+            <span>Scope Honesty</span>
+          </div>
+          <h3 className="text-xl font-black text-slate-900 tracking-tight">
+            Who GigLizard Is (and Is NOT) For
+          </h3>
+          <p className="text-xs text-gray-600">
+            We built this toolkit for a specific audience. Being clear on who we serve saves everyone time.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-2">
+            <span className="font-black text-emerald-900 text-xs flex items-center gap-1.5">
+              <Check className="w-4 h-4 text-emerald-600" />
+              Built Exactly For:
+            </span>
+            <ul className="space-y-1.5 text-gray-700">
+              <li>• Independent touring bands routing regional club & hall runs (50–1,500 cap).</li>
+              <li>• Self-managed DIY original acts looking to co-bill and trade shows in new cities.</li>
+              <li>• Indie musicians who refuse to pay $240+/year subscriptions just to browse stages.</li>
+              <li>• Working touring bands who need fast, zero-fuss PDF stage plots and input lists.</li>
+            </ul>
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-1.5">
-            <span className="font-bold text-slate-700 text-[11px] block">Sonicbids</span>
-            <p className="text-lg font-black text-rose-600">$19.99–$34.99 <span className="text-[10px] font-normal text-gray-500">/mo</span></p>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Paywalls gig search itself. $240+/yr recurring subscription. No stage plot canvas.
-            </p>
-          </div>
-
-          <div className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-1.5">
-            <span className="font-bold text-slate-700 text-[11px] block">Gigwell</span>
-            <p className="text-lg font-black text-rose-600">From $33 <span className="text-[10px] font-normal text-gray-500">/mo ($396/yr)</span></p>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Billed strictly annually. Built for agency contracts, not independent DIY bands.
-            </p>
-          </div>
-
-          <div className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-1.5">
-            <span className="font-bold text-slate-700 text-[11px] block">Prism.fm</span>
-            <p className="text-lg font-black text-slate-900">Demo Only <span className="text-[10px] font-normal text-gray-500">($1,000s/yr)</span></p>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Enterprise sales-led for venue box offices. No free tools or band routing.
-            </p>
+          <div className="p-4 bg-rose-50/70 border border-rose-200 rounded-2xl space-y-2">
+            <span className="font-black text-rose-900 text-xs flex items-center gap-1.5">
+              <X className="w-4 h-4 text-rose-600" />
+              NOT For:
+            </span>
+            <ul className="space-y-1.5 text-gray-700">
+              <li>• Arena/stadium acts with full agency representation (CAA, WME, Wasserman).</li>
+              <li>• Wedding/corporate private event cover bands seeking banquet agency rosters.</li>
+              <li>• Automated promoters seeking high-volume bulk spam email export tools.</li>
+              <li>• Multi-agent enterprise booking agencies needing calendar contract software.</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -339,7 +432,7 @@ export default function PricingPage({
         </div>
 
         <div className="space-y-3">
-          {FAQS.map((faq, idx) => {
+          {PRICING_FAQS.map((faq, idx) => {
             const isOpen = openFaqIndex === idx;
             return (
               <div 
@@ -360,7 +453,7 @@ export default function PricingPage({
                 </button>
                 {isOpen && (
                   <div className="px-4 md:px-5 pb-5 text-xs text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
-                    {faq.a}
+                    {faq.a(onSelectTab)}
                   </div>
                 )}
               </div>

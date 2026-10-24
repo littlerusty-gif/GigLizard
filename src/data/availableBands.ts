@@ -24,7 +24,7 @@ const STATIC_BANDS: AvailableBand[] = [
     name: "Dr Hadit",
     genres: ["Alternative Rock", "Hard Rock", "Pacific NW"],
     city: "Seattle, WA",
-    bio: "High-octane Pacific Northwest rock and live touring performance. Founded and fronted by Little Rusty from Seattle with heavy overdrive riffs, sharp rhythms, and soaring anthems.",
+    bio: "High-octane Pacific Northwest rock and live touring performance. Founded and fronted by Little Rusty from Portland with heavy overdrive riffs, sharp rhythms, and soaring anthems.",
     contactEmail: "littlerusty@gmail.com",
     contactPhone: "(206) 555-0199",
     website: "https://www.drhadit.com",

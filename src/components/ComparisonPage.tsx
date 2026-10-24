@@ -476,7 +476,7 @@ export default function ComparisonPage({
                     Hero Headline (h1)
                   </td>
                   <td className="py-3.5 px-5 bg-indigo-50/40 font-bold text-indigo-950">
-                    “Connecting Rising Performers & Music Venues”
+                    “Find Venues, Book Shows - 4,800+ Venues Across the USA”
                   </td>
                   <td className="py-3.5 px-5 text-gray-650 italic">
                     “Run a More Powerful, Profitable Live Events Business”
@@ -679,7 +679,7 @@ export default function ComparisonPage({
                     Trust Spine
                   </td>
                   <td className="py-3.5 px-5 bg-indigo-50/40 text-indigo-950 font-semibold">
-                    4,800+ venues, 1,300+ bands, 4.9/5 stars, Founder Little Rusty (Seattle DIY musician)
+                    4,800+ venues, 1,300+ bands, Founder Little Rusty (Portland DIY musician)
                   </td>
                   <td className="py-3.5 px-5 text-gray-650">
                     Named theaters (Pabst, Spokane Arena), 10,000+ venues claimed

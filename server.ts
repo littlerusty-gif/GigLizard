@@ -1632,7 +1632,7 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     title: "GigLizard - Free Venue Directory & DIY Tour Tools",
     description: "Find 4,800+ music venues for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
     canonical: "https://www.giglizard.us/",
-    heading: "Find Venues, Book Shows - 4,800+ Bookable Venues Across the Lower 48",
+    heading: "Find Venues, Book Shows - 4,800+ Venues Across the USA",
     subhead: "Find music venues for free, calculate AI tour routes with drive times & van gas budgets, and build pro stage plots & riders for $0 — stop watching wishy-washy middle dates stay open on your tour calendar."
   },
   "/pricing": {
@@ -1643,10 +1643,10 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     subhead: "Venues and production tools are 100% free for all bands forever. Get a flat 30-day all-access pass for $9.99 with zero recurring billing traps."
   },
   "/about": {
-    title: "About GigLizard - Built by DIY Musicians in Seattle",
-    description: "GigLizard was founded in Seattle by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
+    title: "About GigLizard - Built by DIY Musicians in Portland",
+    description: "GigLizard was founded in Portland by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
     canonical: "https://www.giglizard.us/about",
-    heading: "Built in the Pacific Northwest by Little Rusty from Seattle",
+    heading: "Built in the Pacific Northwest by Little Rusty from Portland",
     subhead: "Independent live music touring shouldn't be gatekept behind $30/month corporate agency tools or dead-end scrapers."
   },
   "/features": {
@@ -1664,14 +1664,14 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     subhead: "Prism leads enterprise venue management; Gigwell serves agencies from $33/mo; Sonicbids paywalls gig discovery. GigLizard undercuts all of them with $0 tools and a $9.99 pass."
   },
   "/vs/sonicbids": {
-    title: "GigLizard vs Sonicbids - Free Venues vs Pay-to-Apply",
+    title: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
     description: "Compare GigLizard and Sonicbids. Search 4,800+ venues for free with no pay-to-apply submission fees and zero recurring subscriptions.",
     canonical: "https://www.giglizard.us/vs/sonicbids",
     heading: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
     subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 4,800+ verified venue inboxes 100% free forever."
   },
   "/vs/giglizard-vs-sonicbids": {
-    title: "GigLizard vs Sonicbids - Free Venues vs Pay-to-Apply",
+    title: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
     description: "Compare GigLizard and Sonicbids. Search 4,800+ venues for free with no pay-to-apply submission fees and zero recurring subscriptions.",
     canonical: "https://www.giglizard.us/vs/sonicbids",
     heading: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
@@ -1696,7 +1696,7 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     description: "Dated changelog of shipped features, venue directory additions, and tool updates for GigLizard.",
     canonical: "https://www.giglizard.us/changelog",
     heading: "GigLizard Changelog: Dated Updates & Shipped Features",
-    subhead: "Dated updates, newly verified venues, and touring tools shipped for working DIY bands. Built and maintained in Seattle, WA by Little Rusty."
+    subhead: "Dated updates, newly verified venues, and touring tools shipped for working DIY bands. Built and maintained in Portland, OR by Little Rusty."
   },
   "/customers": {
     title: "GigLizard Case Studies - How DIY Bands Book Tours",
@@ -1711,6 +1711,20 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     canonical: "https://www.giglizard.us/touring-guide",
     heading: "The Independent Musician's DIY Touring Playbook",
     subhead: "Proven strategies for routing the van, pitching venue talent buyers, co-billing with local bands, and filling every middle date."
+  },
+  "/faq": {
+    title: "Tour Booking & Directory FAQ | GigLizard",
+    description: "Frequently asked questions about venue booking inboxes, $9.99 flat band passes, 7-day money-back refunds, and DIY touring tools.",
+    canonical: "https://www.giglizard.us/faq",
+    heading: "Tour Booking, Pass Pricing & Verification FAQ",
+    subhead: "Transparent answers to common questions about our 4,800+ venue directory, band passes, and DIY tools."
+  },
+  "/verification": {
+    title: "Directory Verification Log & Freshness Audits | GigLizard",
+    description: "Live moderation queue, dated venue audits, and human corroboration records for 4,800+ music venues and active band contacts across the Lower 48.",
+    canonical: "https://www.giglizard.us/verification",
+    heading: "How We Verify 4,800+ Venues Without Stale Scraping",
+    subhead: "Live moderation queue, dated audit entries, and community bounce reports resolved within 24 hours."
   }
 };
 

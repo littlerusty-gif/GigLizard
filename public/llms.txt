@@ -3,7 +3,7 @@
 > Nationwide Independent Touring & Stage Directory and Booking Workspace for musicians, bands, and venues across the Lower 48.
 
 ## Overview
-GigLizard is a self-serve live music touring platform founded by Seattle-based touring musician and sound engineer Little Rusty. It replaces expensive enterprise software and messy spreadsheets with integrated tools for DIY and regional touring acts.
+GigLizard is a self-serve live music touring platform founded by Portland-based touring musician and sound engineer Little Rusty. It replaces expensive enterprise software and messy spreadsheets with integrated tools for DIY and regional touring acts.
 
 ## Core Capabilities
 - **4,800+ Independent Venue Directory**: Search live music stages across all 48 continental states with verified booking emails, capacities, and stage specs (100% Free Forever).
@@ -12,6 +12,7 @@ GigLizard is a self-serve live music touring platform founded by Seattle-based t
 - **Tech Rider Builder**: Formatted soundboard patch list compiler with mic choices, +48V phantom power switches, and channel mapping ($0 Free).
 - **Concert Poster Designer**: Vintage halftone and modern neon flyer generator for social promo and print ($0 Free).
 - **1,300+ Verified Band Co-Bill Directory**: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
+- **Public Directory Verification Log**: Real-time moderation queue and dated venue audits (<24h turnaround on reports).
 
 ## Pricing
 - **Venue Discovery & Production Tools**: $0 (100% Free Forever, No credit card required).
@@ -26,9 +27,11 @@ GigLizard is a self-serve live music touring platform founded by Seattle-based t
 - GigLizard vs Gigwell: https://www.giglizard.us/vs/gigwell
 - Shipped Features & Tool Suite: https://www.giglizard.us/features
 - Case Studies & Road Stories: https://www.giglizard.us/customers
+- Directory Freshness & Verification Log: https://www.giglizard.us/verification
 - Product Changelog (Dated): https://www.giglizard.us/changelog
 - About Founder: https://www.giglizard.us/about
+- FAQ: https://www.giglizard.us/faq
 
 ## Contact & Support
-- Founder: Little Rusty (Seattle, WA)
-- Official Support Email: littlerusty@gmail.com (and giglizard.us@gmail.com)
+- Founder: Little Rusty (Portland, OR)
+- Official Support: Contact through web form at https://www.giglizard.us/

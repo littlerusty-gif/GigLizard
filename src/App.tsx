@@ -26,6 +26,7 @@ import FeaturesPage from "./components/FeaturesPage";
 import TouringGuidePage from "./components/TouringGuidePage";
 import ChangelogPage from "./components/ChangelogPage";
 import { CustomersPage } from "./components/CustomersPage";
+import VerificationPage from "./components/VerificationPage";
 import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
@@ -62,8 +63,8 @@ const INITIAL_RIDER_INPUTS = [
 ];
 
 export default function GigLizardApp() {
-  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin" | "compare" | "about" | "features" | "guide" | "changelog" | "customers";
-  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin", "compare", "about", "features", "guide", "changelog", "customers"];
+  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin" | "compare" | "about" | "features" | "guide" | "changelog" | "customers" | "verification";
+  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin", "compare", "about", "features", "guide", "changelog", "customers", "verification"];
 
   // Mobile navigation drawer toggle state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -127,8 +128,10 @@ export default function GigLizardApp() {
       if (cleanPath === "/rider" || cleanPath === "/tech-rider") return "rider";
       if (cleanPath === "/poster") return "poster";
       if (cleanPath === "/advisor" || cleanPath === "/help" || cleanPath === "/faq") return "advisor";
+      if (cleanPath === "/verification" || cleanPath === "/audit" || cleanPath === "/freshness") return "verification";
 
       const rawHash = window.location.hash.replace("#", "").toLowerCase();
+      if (rawHash === "verification") return "verification";
       if (rawHash === "dashboard" || rawHash === "admin") return isOwner ? "admin" : "home";
       if (rawHash.startsWith("stage-plot")) return "plot";
       if (rawHash === "compare" || rawHash === "vs" || rawHash === "comparison") return "compare";
@@ -444,13 +447,29 @@ export default function GigLizardApp() {
       tour: "AI Tour Route Planner & Gas Calculator | GigLizard",
       pricing: "GigLizard Pricing - Free Venues, $9.99 Band Contacts Pass",
       compare: "GigLizard vs Rivals - Sonicbids, Prism & Spreadsheets",
-      about: "About GigLizard - Built by DIY Musicians in Seattle",
+      about: "About GigLizard - Built by DIY Musicians in Portland",
       features: "GigLizard Features - Free Tour Planner, Plots & Riders",
       changelog: "GigLizard Changelog - Shipped Product Updates",
       customers: "GigLizard Case Studies - How DIY Bands Book Tours",
       faq: "Tour Booking & Directory FAQ | GigLizard",
       guide: "DIY Tour Playbook - How to Book & Route Live Shows",
+      verification: "Directory Verification Log & Freshness Audits | GigLizard",
       admin: "Owner Dashboard | GigLizard"
+    };
+
+    const descriptions: Record<string, string> = {
+      home: "Find 4,800+ music venues for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
+      venues: "Search 4,800+ verified live music clubs, theaters, and listening rooms across the Lower 48 with direct booking emails and specs.",
+      bands: "Browse 1,300+ active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.",
+      pricing: "Transparent DIY tour pricing: 4,800+ venues and stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.",
+      compare: "Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory and $9.99 flat pass vs $30/mo recurring subscriptions.",
+      about: "GigLizard was founded in Portland by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
+      features: "Free touring toolkit for independent bands: 4,800+ venue directory, AI route planner with drive times, drag-and-drop stage plots, and tech riders.",
+      changelog: "Dated changelog of shipped features, venue directory additions, and tool updates for GigLizard.",
+      customers: "Real touring case studies and road stories from independent bands booking clubs, routing tours, and filling dates across the Lower 48.",
+      guide: "Practical guide for independent bands booking and routing self-managed tours across North America.",
+      verification: "Live moderation queue, dated venue audits, and human corroboration records for 4,800+ music venues and active band contacts across the Lower 48.",
+      faq: "Frequently asked questions about venue booking inboxes, $9.99 flat band passes, 7-day money-back refunds, and DIY touring tools."
     };
 
     const canonicals: Record<string, string> = {
@@ -469,13 +488,18 @@ export default function GigLizardApp() {
       customers: "https://www.giglizard.us/customers",
       guide: "https://www.giglizard.us/touring-guide",
       advisor: "https://www.giglizard.us/faq",
+      verification: "https://www.giglizard.us/verification",
       admin: "https://www.giglizard.us/admin"
     };
 
-    document.title = titles[activeTab] || "GigLizard - Free Venue Directory & DIY Tour Tools";
+    const pageTitle = titles[activeTab] || "GigLizard - Free Venue Directory & DIY Tour Tools";
+    const pageDesc = descriptions[activeTab] || descriptions.home;
+    const canonicalHref = canonicals[activeTab] || "https://www.giglizard.us/";
+
+    document.title = pageTitle;
 
     try {
-      const canonicalHref = canonicals[activeTab] || "https://www.giglizard.us/";
+      // 1. Update or create canonical
       let linkCanonical = document.querySelector('link[rel="canonical"]');
       if (!linkCanonical) {
         linkCanonical = document.createElement("link");
@@ -483,6 +507,27 @@ export default function GigLizardApp() {
         document.head.appendChild(linkCanonical);
       }
       linkCanonical.setAttribute("href", canonicalHref);
+
+      // 2. Update meta description
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute("content", pageDesc);
+
+      // 3. Update Open Graph tags
+      let ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute("content", pageTitle);
+
+      let ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute("content", pageDesc);
+
+      let ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogUrl) ogUrl.setAttribute("content", canonicalHref);
+
+      // 4. Update Twitter Card tags
+      let twTitle = document.querySelector('meta[name="twitter:title"]');
+      if (twTitle) twTitle.setAttribute("content", pageTitle);
+
+      let twDesc = document.querySelector('meta[name="twitter:description"]');
+      if (twDesc) twDesc.setAttribute("content", pageDesc);
     } catch (_) {}
   }, [activeTab]);
 
@@ -522,6 +567,10 @@ export default function GigLizardApp() {
     }
     if (clean === "security" || clean === "anti-scraping") {
       setShowSecurityModal(true);
+      return true;
+    }
+    if (clean === "verification" || clean === "audit" || clean === "freshness") {
+      setActiveTabState("verification");
       return true;
     }
     if (clean === "customers" || clean === "stories" || clean === "testimonials") {
@@ -1295,6 +1344,20 @@ export default function GigLizardApp() {
             </a>
 
             <a
+              href="/features"
+              onClick={(e) => { e.preventDefault(); setActiveTab("features"); window.history.pushState(null, '', '/features'); }}
+              id="tab-btn-features"
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
+                activeTab === "features"
+                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
+                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+              <span>Features</span>
+            </a>
+
+            <a
               href="/pricing"
               onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); window.history.pushState(null, '', '/pricing'); }}
               id="tab-btn-pricing"
@@ -1842,6 +1905,16 @@ export default function GigLizardApp() {
         {activeTab === "customers" && (
           <div className="space-y-6" id="view-customers-wrapper">
             <CustomersPage 
+              onSelectTab={setActiveTab} 
+              onOpenRegister={() => setShowArtistRegistrationModal(true)} 
+              onOpenCheckout={() => setShowPayPalModal(true)}
+            />
+          </div>
+        )}
+
+        {activeTab === "verification" && (
+          <div className="space-y-6" id="view-verification-wrapper">
+            <VerificationPage 
               onSelectTab={setActiveTab} 
               onOpenRegister={() => setShowArtistRegistrationModal(true)} 
               onOpenCheckout={() => setShowPayPalModal(true)}

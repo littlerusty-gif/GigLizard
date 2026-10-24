@@ -77,7 +77,7 @@ export default function ChangelogPage({ onSelectTab, onOpenRegister }: Changelog
           GigLizard Changelog
         </h1>
         <p className="text-xs md:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
-          Dated updates, newly verified venues, and touring tools shipped for working DIY bands. Built and maintained in Seattle, WA by Little Rusty.
+          Dated updates, newly verified venues, and touring tools shipped for working DIY bands. Built and maintained in Portland, OR by Little Rusty.
         </p>
       </div>
 

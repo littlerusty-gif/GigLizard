@@ -351,17 +351,22 @@ export function TourPlannerScreenshot({ className = "" }: { className?: string }
  */
 export function FounderAvatar({ className = "", size = "md" }: { className?: string; size?: "sm" | "md" | "lg" }) {
   const sizeClasses = size === "lg" ? "w-16 h-16" : size === "sm" ? "w-10 h-10" : "w-13 h-13";
-  const iconSize = size === "lg" ? "text-2xl" : size === "sm" ? "text-sm" : "text-xl";
 
   return (
-    <div className={`relative inline-block ${className}`}>
-      <div className={`${sizeClasses} rounded-2xl bg-gradient-to-tr from-amber-500 via-indigo-600 to-rose-500 p-0.5 shadow-lg flex items-center justify-center`}>
-        <div className="w-full h-full bg-slate-950 rounded-[14px] flex flex-col items-center justify-center text-white overflow-hidden relative">
-          <span className={iconSize}>🎸</span>
-          <span className="text-[7.5px] font-black tracking-wider text-amber-400 font-mono -mt-0.5">RUSTY</span>
-        </div>
+    <div className={`relative inline-block shrink-0 ${className}`}>
+      <div className={`${sizeClasses} rounded-2xl bg-gradient-to-tr from-amber-500 via-indigo-600 to-rose-500 p-0.5 shadow-lg overflow-hidden`}>
+        <img
+          src="/little_rusty_founder.jpg"
+          alt="Little Rusty — Touring Musician & Live Sound Engineer"
+          className="w-full h-full object-cover rounded-[14px]"
+          loading="lazy"
+          onError={(e) => {
+            // Graceful fallback if image blocked
+            (e.currentTarget as HTMLElement).style.display = "none";
+          }}
+        />
       </div>
-      <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Little Rusty • Seattle, WA (Active Musician & Builder)" />
+      <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Little Rusty • Portland, OR (Active Musician & Audio Engineer)" />
     </div>
   );
 }

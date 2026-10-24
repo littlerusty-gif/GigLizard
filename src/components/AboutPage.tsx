@@ -21,7 +21,7 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
           <span>The GigLizard Origin Story</span>
         </div>
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-          Built in the Pacific Northwest by Little Rusty from Seattle
+          Built in the Pacific Northwest by Little Rusty from Portland
         </h1>
         <p className="text-sm text-gray-600 leading-relaxed max-w-xl mx-auto">
           Independent live music touring shouldn't be gatekept behind $30/month corporate agency tools or dead-end scrapers.
@@ -40,7 +40,7 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
               </h2>
               <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                Seattle, WA • Pacific Northwest DIY Musician & Live Sound Engineer
+                Portland, OR • Pacific Northwest DIY Musician & Live Sound Engineer
               </p>
             </div>
           </div>

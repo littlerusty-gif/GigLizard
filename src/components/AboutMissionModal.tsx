@@ -39,7 +39,7 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
         <div className="space-y-3 text-center md:text-left pr-8">
           <div className="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-300 text-[11px] font-extrabold py-1 px-3 rounded-full border border-amber-500/30">
             <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
-            <span>Built by Little Rusty from Seattle</span>
+            <span>Built by Little Rusty from Portland</span>
           </div>
           
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
@@ -49,7 +49,7 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
                 "I Built This Because Touring Shouldn't Be Gatekept"
               </h2>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Hi, I'm <strong>Little Rusty</strong> from Seattle, WA. I'm a working Pacific Northwest DIY musician and live audio engineer. I created GigLizard to solve the exact headaches I faced loading vans and booking club dates across the Northwest and nationwide.
+                Hi, I'm <strong>Little Rusty</strong> from Portland, OR. I'm a working Pacific Northwest DIY musician and live audio engineer. I created GigLizard to solve the exact headaches I faced loading vans and booking club dates across the Northwest and nationwide.
               </p>
             </div>
           </div>
@@ -65,7 +65,7 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
           </p>
           <div className="pt-2 border-t border-slate-800 not-italic flex items-center justify-between text-[11px] text-slate-400 font-sans">
             <span className="font-bold text-amber-400">— Little Rusty, Creator & Musician</span>
-            <span className="text-slate-400">Seattle, WA</span>
+            <span className="text-slate-400">Portland, OR</span>
           </div>
         </div>
 
@@ -119,7 +119,7 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
             <span>Direct Founder Contact Guarantee</span>
           </h4>
           <p className="text-slate-400 text-[11.5px] leading-relaxed">
-            GigLizard is built and personally run by <strong>Little Rusty</strong> in Seattle, WA. No call centers, no outsourced support tickets. If you need a venue corrected, an account updated, or tour advice, reach out through our contact web form.
+            GigLizard is built and personally run by <strong>Little Rusty</strong> in Portland, OR. No call centers, no outsourced support tickets. If you need a venue corrected, an account updated, or tour advice, reach out through our contact web form.
           </p>
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80 text-[11px]">
             <button

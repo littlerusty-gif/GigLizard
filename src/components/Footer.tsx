@@ -65,9 +65,9 @@ export default function Footer({
               Nationwide Independent Touring & Stage Directory (Lower 48). Stage plotting, routing, and booking workspace.
             </p>
             <p className="text-[11px] text-slate-400">
-              Built & operated by <strong>Little Rusty</strong> • Seattle, WA • <button type="button" onClick={handleOpenContact} className="text-indigo-400 hover:underline cursor-pointer">Contact Support via Web Form</button>
+              Built & operated by <strong>Little Rusty</strong> • Portland, OR • <button type="button" onClick={handleOpenContact} className="text-indigo-400 hover:underline cursor-pointer">Contact Support via Web Form</button>
             </p>
-            {/* Third-Party Signals Strip (D3.5, D3.1) */}
+            {/* Verification & Trust Signals (D3.5, D3.1) */}
             <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-[11px]">
               <a
                 href="https://www.trustpilot.com/review/giglizard.us"
@@ -76,12 +76,10 @@ export default function Footer({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-colors"
                 title="Trustpilot Review Profile for GigLizard"
               >
-                <span className="text-emerald-400 font-bold">★ 4.9/5</span>
-                <span>Trustpilot & Google Reviews</span>
+                <span>Trustpilot Profile</span>
               </a>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
-                <span className="text-amber-400">💬</span>
-                <span>r/TouringMusicians Resource List (Oct 2026)</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400 font-mono">
+                <span>Directory Freshness Verified • Oct 2026</span>
               </span>
             </div>
           </div>
