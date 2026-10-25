@@ -4,6 +4,7 @@ import {
   Mail, MapPin, Sparkles, CheckCircle2, ArrowRight, Heart, ExternalLink 
 } from "lucide-react";
 import { FounderAvatar } from "./ProductPreviews";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface AboutPageProps {
   onSelectTab: (tab: any) => void;
@@ -11,6 +12,7 @@ interface AboutPageProps {
 }
 
 export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProps) {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-fade-in" id="about-page-root">
       
@@ -74,7 +76,7 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
             <em>"I spent over twelve years loading tube amps and drum gear into vans across the Pacific Northwest and the country. Every tour started the same way: messy spreadsheets, dead venue websites, bouncing email addresses, and subscription platforms that charged $25 to $35 a month just to message a club booker who hadn't checked that portal in three years."</em>
           </p>
           <p>
-            <em>"I built GigLizard with a very clear, stubborn philosophy: <strong>Musicians should never have to pay a toll just to discover live music venues.</strong> That's why our 4,800+ venue directory, stage plot builder, tech rider generator, and Google Maps van router are 100% free forever."</em>
+            <em>"I built GigLizard with a very clear, stubborn philosophy: <strong>Musicians should never have to pay a toll just to discover live music venues.</strong> That's why our {venueCountStr} venue directory, {bandCountStr} touring bands network, stage plot builder, tech rider generator, and Google Maps van router are 100% free forever."</em>
           </p>
           <p>
             <em>"The only element with a small fee is our 30-day band contacts pass ($9.99). Why? Because band booking emails are sacred. If we made all band inboxes publicly scrapeable, marketing bot farms and spam agencies would flood our peers with junk. A flat 30-day pass defends musicians against scrapers, keeps inboxes clean, and funds human moderators who verify every room."</em>
@@ -96,9 +98,9 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
             <Building className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-black text-slate-900">100% Free Venue Discovery</h3>
+          <h3 className="text-base font-black text-slate-900">100% Free Venue &amp; Band Discovery</h3>
           <p className="text-xs text-gray-600 leading-relaxed">
-            All 4,800+ music clubs, dive bars, theaters, and listening rooms across all 48 lower states remain 100% free to search. No paywalls to view capacity, sound system specs, or direct booking emails.
+            All {venueCountStr} music clubs, dive bars, theaters, and listening rooms (along with {bandCountStr} active bands) across all 48 lower states remain 100% free to search. No paywalls to view capacity, sound system specs, or direct booking emails.
           </p>
         </div>
 
@@ -128,7 +130,7 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
           </div>
           <h3 className="text-base font-black text-slate-900">Grassroots Co-Bill Community</h3>
           <p className="text-xs text-gray-600 leading-relaxed">
-            Over 1,300+ bands swap shows and trade dates. When touring bands pair up with local draws in every corridor city, both acts make more money and pack the room.
+            Over {bandCountStr} bands swap shows and trade dates. When touring bands pair up with local draws in every corridor city, both acts make more money and pack the room.
           </p>
         </div>
       </div>

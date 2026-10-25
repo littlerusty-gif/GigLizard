@@ -38,6 +38,7 @@ import {
   MigrationSyncResult 
 } from "./utils/adminMigration";
 import { ProgrammaticVenueRoute, parseProgrammaticVenuePath } from "./utils/venueSeoRoutes";
+import { useDirectoryCounts } from "./utils/directoryCounts";
 import { 
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
@@ -64,6 +65,7 @@ const INITIAL_RIDER_INPUTS = [
 ];
 
 export default function GigLizardApp() {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin" | "compare" | "about" | "features" | "guide" | "changelog" | "customers" | "verification";
   const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin", "compare", "about", "features", "guide", "changelog", "customers", "verification"];
 
@@ -453,7 +455,7 @@ export default function GigLizardApp() {
   useEffect(() => {
     const titles: Record<string, string> = {
       home: "GigLizard - Free Venue Directory & DIY Tour Tools",
-      venues: "Free Venue Directory (4,800+ Clubs) | GigLizard",
+      venues: `Free Venue Directory (${venueCountStr} Clubs) | GigLizard`,
       bands: "Touring Bands & Co-Bills ($9.99 Pass) | GigLizard",
       plot: "Free Stage Plot Designer & Gear Canvas | GigLizard",
       rider: "Tech Rider & Soundboard Patch Builder | GigLizard",
@@ -472,17 +474,17 @@ export default function GigLizardApp() {
     };
 
     const descriptions: Record<string, string> = {
-      home: "Find 4,800+ music venues for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
-      venues: "Search 4,800+ verified live music clubs, theaters, and listening rooms across the Lower 48 with direct booking emails and specs.",
-      bands: "Browse 1,300+ active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.",
-      pricing: "Transparent DIY tour pricing: 4,800+ venues and stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.",
-      compare: "Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory and $9.99 flat pass vs $30/mo recurring subscriptions.",
+      home: `Find ${venueCountStr} music venues & ${bandCountStr} bands for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.`,
+      venues: `Search ${venueCountStr} verified live music clubs and ${bandCountStr} touring bands across the Lower 48 with direct booking emails and specs.`,
+      bands: `Browse ${bandCountStr} active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.`,
+      pricing: `Transparent DIY tour pricing: ${venueCountStr} venues & ${bandCountStr} bands, plus stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.`,
+      compare: `Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory (${venueCountStr} clubs & ${bandCountStr} bands) and $9.99 flat pass vs $30/mo recurring subscriptions.`,
       about: "GigLizard was founded in Portland by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
-      features: "Free touring toolkit for independent bands: 4,800+ venue directory, AI route planner with drive times, drag-and-drop stage plots, and tech riders.",
+      features: `Free touring toolkit for independent bands: ${venueCountStr} venue directory, ${bandCountStr} active touring bands, AI route planner with drive times, drag-and-drop stage plots, and tech riders.`,
       changelog: "Explore the dated product changelog for GigLizard: verified music venue directory expansions, interactive stage plots, and DIY tour features.",
       customers: "Real touring case studies and road stories from independent bands booking clubs, routing tours, and filling dates across the Lower 48.",
       guide: "Practical DIY tour playbook for independent musicians: find bookable clubs, pitch talent buyers, coordinate co-bills, and budget van fuel.",
-      verification: "Live moderation queue, dated venue audits, and human corroboration records for 4,800+ music venues and active band contacts across the Lower 48.",
+      verification: `Live moderation queue, dated venue audits, and human corroboration records for ${venueCountStr} music venues and ${bandCountStr} active band contacts across the Lower 48.`,
       faq: "Frequently asked questions about venue booking inboxes, $9.99 flat band passes, 7-day money-back refunds, and DIY touring tools."
     };
 

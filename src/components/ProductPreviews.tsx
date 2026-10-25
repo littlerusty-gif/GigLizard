@@ -4,11 +4,13 @@ import {
   Compass, Navigation, Star, ShieldCheck, CheckCircle2, 
   Volume2, Mic, Eye, Zap, Fuel, Clock, DollarSign, Users
 } from "lucide-react";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 /**
  * High-fidelity, crisp product screenshot preview of the Venue Directory
  */
 export function VenueDirectoryScreenshot({ className = "" }: { className?: string }) {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   return (
     <div 
       className={`rounded-2xl border border-slate-700/80 bg-slate-950 p-4 font-sans text-xs text-slate-200 shadow-2xl overflow-hidden select-none ${className}`}
@@ -25,7 +27,7 @@ export function VenueDirectoryScreenshot({ className = "" }: { className?: strin
         </div>
         <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/40">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          4,800+ Verified Stages
+          {venueCountStr} Stages &amp; {bandCountStr} Bands
         </div>
       </div>
 

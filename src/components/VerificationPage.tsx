@@ -1,9 +1,9 @@
-import React from "react";
 import { 
   CheckCircle2, ShieldCheck, Clock, RefreshCw, AlertCircle, 
   ArrowLeft, Search, Building2, MapPin, Mail, Sparkles, 
   ArrowRight, History, Calendar, Check
 } from "lucide-react";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface VerificationPageProps {
   onSelectTab: (tab: any) => void;
@@ -56,6 +56,7 @@ const RECENT_VERIFICATIONS: VerificationLogEntry[] = [
 ];
 
 export default function VerificationPage({ onSelectTab }: VerificationPageProps) {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-fade-in" id="verification-page-root">
       
@@ -77,7 +78,7 @@ export default function VerificationPage({ onSelectTab }: VerificationPageProps)
           <span>Public Directory Freshness Log</span>
         </div>
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-          How We Verify 4,800+ Venues Without Stale Scraping
+          How We Verify {venueCountStr} Venues &amp; {bandCountStr} Bands Without Stale Scraping
         </h1>
         <p className="text-sm md:text-base text-gray-650 leading-relaxed">
           The number one objection touring musicians have to online directories is dead data: stale emails, bounced forms, and promoters who left three years ago. Here is our live moderation workflow and dated verification history.
@@ -114,12 +115,12 @@ export default function VerificationPage({ onSelectTab }: VerificationPageProps)
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs space-y-1 text-center">
-          <p className="text-2xl md:text-3xl font-black text-slate-900">4,800+</p>
+          <p className="text-2xl md:text-3xl font-black text-slate-900">{venueCountStr}</p>
           <p className="text-xs font-bold text-purple-600 flex items-center justify-center gap-1">
             <Building2 className="w-3.5 h-3.5" />
-            <span>Venues (Free $0)</span>
+            <span>Venues &amp; {bandCountStr} Bands</span>
           </p>
-          <p className="text-[11px] text-gray-400">Open across Lower 48</p>
+          <p className="text-[11px] text-gray-400">Verified across Lower 48</p>
         </div>
       </div>
 
@@ -264,7 +265,7 @@ export default function VerificationPage({ onSelectTab }: VerificationPageProps)
             className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center gap-2"
           >
             <Search className="w-4 h-4" />
-            <span>Search 4,800+ Free Venues</span>
+            <span>Search {venueCountStr} Venues &amp; {bandCountStr} Bands</span>
           </button>
         </div>
       </div>

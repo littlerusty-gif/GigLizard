@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 import { 
   Check, X, Sparkles, Building, Users, ShieldCheck, 
   ArrowRight, Scale, DollarSign, Clock, HelpCircle, Heart,
@@ -18,6 +19,7 @@ export default function ComparisonPage({
   onOpenCheckout, 
   onOpenRegister 
 }: ComparisonPageProps) {
+  const { venueCountStr, bandCountStr, combinedCountStr } = useDirectoryCounts();
   const [activeCompetitorFilter, setActiveCompetitorFilter] = useState<"all" | "diy" | "enterprise">("all");
   const [showStatusQuoSpreadsheet, setShowStatusQuoSpreadsheet] = useState(true);
   const [annualToursPlanned, setAnnualToursPlanned] = useState<number>(2);
@@ -112,7 +114,7 @@ export default function ComparisonPage({
               GigLizard vs Sonicbids: Stop Paying to Apply for Gigs
             </h1>
             <p className="text-xs md:text-sm text-slate-600 max-w-3xl leading-relaxed">
-              Sonicbids charges independent musicians $20 to $35/month recurring just to maintain an EPK and apply to shows. <strong>GigLizard gives you direct booking emails and technical specs for 4,800+ independent venues 100% free forever.</strong>
+              Sonicbids charges independent musicians $20 to $35/month recurring just to maintain an EPK and apply to shows. <strong>GigLizard gives you direct booking emails and technical specs for {venueCountStr} independent venues and {bandCountStr} active bands 100% free forever.</strong>
             </p>
           </div>
 
@@ -123,7 +125,7 @@ export default function ComparisonPage({
                 <span className="bg-emerald-600 text-white font-black px-2.5 py-0.5 rounded-full text-[11px]">$0 Free Core / $9.99 Pass</span>
               </div>
               <ul className="space-y-2 text-emerald-950">
-                <li className="flex items-start gap-2">✓ <strong>Free Venue Discovery:</strong> 4,800+ clubs & theaters with verified talent buyer emails for $0 forever.</li>
+                <li className="flex items-start gap-2">✓ <strong>Free Venue Discovery:</strong> {venueCountStr} clubs &amp; theaters and {bandCountStr} touring bands with verified talent buyer emails for $0 forever.</li>
                 <li className="flex items-start gap-2">✓ <strong>No Application Fees:</strong> Message club bookers directly without middleman tolls or pay-to-play barriers.</li>
                 <li className="flex items-start gap-2">✓ <strong>Full Stage Toolkit:</strong> Interactive drag-and-drop stage plots, dynamic patch lists, and van route gas estimators included for $0.</li>
                 <li className="flex items-start gap-2">✓ <strong>Zero Recurring Auto-Renewals:</strong> Flat $9.99 30-day pass only for unmasked co-bill band contacts. Automatically expires after 30 days.</li>
@@ -150,7 +152,7 @@ export default function ComparisonPage({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="p-4 bg-slate-50 rounded-xl space-y-1">
                 <h4 className="font-bold text-slate-900">Why are GigLizard venue listings free while Sonicbids charges monthly?</h4>
-                <p className="text-slate-600">We believe independent artists should never pay a toll to discover live music venues. We provide 4,800+ music clubs, dive bars, theaters, and listening rooms 100% free.</p>
+                <p className="text-slate-600">We believe independent artists should never pay a toll to discover live music venues. We provide {venueCountStr} music clubs, dive bars, theaters, and listening rooms and {bandCountStr} touring bands 100% free.</p>
               </div>
               <div className="p-4 bg-slate-50 rounded-xl space-y-1">
                 <h4 className="font-bold text-slate-900">Does GigLizard charge submission fees to pitch a room?</h4>
@@ -190,7 +192,7 @@ export default function ComparisonPage({
               <ul className="space-y-2 text-emerald-950">
                 <li className="flex items-start gap-2">✓ <strong>Instant Self-Serve Access:</strong> No sales demos, no multi-week onboarding, no annual enterprise contracts.</li>
                 <li className="flex items-start gap-2">✓ <strong>$0 DIY Touring Suite:</strong> Stage plots, channel patch lists, van fuel routing, and gig posters included for $0.</li>
-                <li className="flex items-start gap-2">✓ <strong>Flat $9.99 Pass:</strong> Flat 30-day access to 1,300+ co-bill band contacts.</li>
+                <li className="flex items-start gap-2">✓ <strong>Flat $9.99 Pass:</strong> Flat 30-day access to {bandCountStr} co-bill band contacts.</li>
               </ul>
             </div>
 
@@ -242,7 +244,7 @@ export default function ComparisonPage({
               <ul className="space-y-2 text-emerald-950">
                 <li className="flex items-start gap-2">✓ <strong>No Annual Lock-In:</strong> Buy a single 30-day pass ($9.99) only when actively booking a tour run.</li>
                 <li className="flex items-start gap-2">✓ <strong>100% Free Stage Tools:</strong> Drag-and-drop stage plot designer, tech rider compiler, and flyer maker bundled for $0.</li>
-                <li className="flex items-start gap-2">✓ <strong>4,800+ Venue Directory:</strong> Search clubs across all 48 continental states with verified booking contacts.</li>
+                <li className="flex items-start gap-2">✓ <strong>{venueCountStr} Venue Directory &amp; {bandCountStr} Bands:</strong> Search clubs across all 48 continental states with verified booking contacts and active bands.</li>
               </ul>
             </div>
 
@@ -343,9 +345,9 @@ export default function ComparisonPage({
               $0
             </div>
             <div>
-              <h3 className="font-black text-slate-900 text-sm">Free-Forever Venue Discovery</h3>
+              <h3 className="font-black text-slate-900 text-sm">Free-Forever Venue &amp; Band Discovery</h3>
               <p className="text-[11.5px] text-gray-500 mt-1 leading-relaxed">
-                Leveraged against Sonicbids' subscription paywall. Browse 4,800+ verified clubs with direct booking inboxes without spending a cent.
+                Leveraged against Sonicbids' subscription paywall. Browse {venueCountStr} verified clubs and {bandCountStr} touring acts with direct booking inboxes without spending a cent.
               </p>
             </div>
           </div>
@@ -679,7 +681,7 @@ export default function ComparisonPage({
                     Trust Spine
                   </td>
                   <td className="py-3.5 px-5 bg-indigo-50/40 text-indigo-950 font-semibold">
-                    4,800+ venues, 1,300+ bands, Founder Little Rusty (Portland DIY musician)
+                    {venueCountStr} venues, {bandCountStr} bands, Founder Little Rusty (Portland DIY musician)
                   </td>
                   <td className="py-3.5 px-5 text-gray-650">
                     Named theaters (Pabst, Spokane Arena), 10,000+ venues claimed
@@ -1080,7 +1082,7 @@ export default function ComparisonPage({
           Ready to Book Live Shows Without Paying Middleman Tolls?
         </h3>
         <p className="text-xs md:text-sm text-slate-350 max-w-2xl mx-auto leading-relaxed">
-          Search 4,800+ independent music venues across the Lower 48 for $0. Build professional stage plots, dynamic patch lists, and vintage flyers. When you're ready to fill the middle dates, unlock 1,300+ direct band contacts for just $9.99.
+          Search {venueCountStr} independent music venues and {bandCountStr} touring bands across the Lower 48 for $0. Build professional stage plots, dynamic patch lists, and vintage flyers. When you're ready to fill the middle dates, unlock {bandCountStr} direct band contacts for just $9.99.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
           <button
@@ -1088,7 +1090,7 @@ export default function ComparisonPage({
             onClick={() => onSelectTab("venues")}
             className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs rounded-xl shadow-lg cursor-pointer transition-all flex items-center gap-2"
           >
-            <span>Search 4,800+ Venues for Free</span>
+            <span>Search {venueCountStr} Venues &amp; {bandCountStr} Bands for Free</span>
             <ArrowRight className="w-4 h-4" />
           </button>
           <button

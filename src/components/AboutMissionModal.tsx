@@ -4,6 +4,7 @@ import {
   Sparkles, Award, CheckCircle2, Mail, ExternalLink, ShieldCheck 
 } from "lucide-react";
 import { FounderAvatar } from "./ProductPreviews";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface AboutMissionModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface AboutMissionModalProps {
 }
 
 export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: AboutMissionModalProps) {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   if (!isOpen) return null;
 
   return (
@@ -61,7 +63,7 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
             "For years, indie bands have been forced to choose between stale, outdated venue spreadsheets or corporate middleman apps that charge $25 to $35 a month just to message a club promoter. That model bleeds touring bands dry."
           </p>
           <p>
-            "My promise with GigLizard: <strong>Venue discovery is 100% free forever.</strong> Anyone can search 4,800+ music clubs, see sound specs, and book directly. The only small charge is a $9.99 30-day pass for band contacts — strictly to keep spam bots and scraper farms from harvesting our peers' inboxes."
+            "My promise with GigLizard: <strong>Venue discovery is 100% free forever.</strong> Anyone can search {venueCountStr} music clubs and {bandCountStr} touring acts, see sound specs, and book directly. The only small charge is a $9.99 30-day pass for band contacts — strictly to keep spam bots and scraper farms from harvesting our peers' inboxes."
           </p>
           <div className="pt-2 border-t border-slate-800 not-italic flex items-center justify-between text-[11px] text-slate-400 font-sans">
             <span className="font-bold text-amber-400">— Little Rusty, Creator & Musician</span>
@@ -74,10 +76,10 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
           <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-2">
             <div className="flex items-center gap-2 text-emerald-400 font-bold">
               <Building className="w-4 h-4" />
-              <span>100% Free Venue Discovery</span>
+              <span>100% Free Venue &amp; Band Discovery</span>
             </div>
             <p className="text-slate-300 leading-relaxed text-[11.5px]">
-              We believe independent bands should never have to pay a toll just to find out where to play. All 4,800+ music venue listings, direct booking addresses, and stage specs across all 48 lower states remain 100% free to search and explore.
+              We believe independent bands should never have to pay a toll just to find out where to play. All {venueCountStr} music venue listings and {bandCountStr} active bands across all 48 lower states remain 100% free to search and explore.
             </p>
           </div>
 
@@ -107,7 +109,7 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
               <span>Grassroots Co-Bill Network</span>
             </div>
             <p className="text-slate-300 leading-relaxed text-[11.5px]">
-              The secret to successful DIY touring is teaming up with local acts who can pack their home room. GigLizard connects over 1,300+ bands eager to swap shows, share bills, and build lasting touring corridors.
+              The secret to successful DIY touring is teaming up with local acts who can pack their home room. GigLizard connects over {bandCountStr} bands eager to swap shows, share bills, and build lasting touring corridors.
             </p>
           </div>
         </div>

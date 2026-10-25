@@ -1,5 +1,6 @@
 import React from "react";
 import { ArrowLeft, CheckCircle2, Star, ShieldCheck, MapPin, ExternalLink, Calendar, Music2, Quote, ArrowRight, UserCheck } from "lucide-react";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface CustomersPageProps {
   onSelectTab: (tab: any) => void;
@@ -126,6 +127,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
   onOpenRegister,
   onOpenCheckout,
 }) => {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-12">
       {/* Back button */}
@@ -158,7 +160,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
         <div className="space-y-2 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-2 text-emerald-400 font-bold text-sm">
             <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            Verified Attributions & Transparent Metrics
+            Verified Attributions &amp; Transparent Metrics
           </div>
           <p className="text-slate-300 text-sm max-w-xl">
             Every case study below is contributed with written permission by active touring musicians with real band names, roles, and verified routing milestones. No synthetic filler or anonymous placeholders.
@@ -166,11 +168,11 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4 text-center">
           <div className="bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-xl">
-            <div className="text-2xl font-black text-white">4,800+</div>
+            <div className="text-2xl font-black text-white">{venueCountStr}</div>
             <div className="text-xs text-slate-400 font-medium">Verified Venues</div>
           </div>
           <div className="bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-xl">
-            <div className="text-2xl font-black text-white">1,300+</div>
+            <div className="text-2xl font-black text-white">{bandCountStr}</div>
             <div className="text-xs text-slate-400 font-medium">Bands on Road</div>
           </div>
           <div className="bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-xl">
@@ -301,7 +303,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           Find Venues, Book Shows
         </h2>
         <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto">
-          Start exploring 4,800+ music venues for free right now. Zero credit card needed, free forever, and a 7-day money-back guarantee on the optional $9.99 pass.
+          Start exploring {venueCountStr} music venues and {bandCountStr} touring bands for free right now. Zero credit card needed, free forever, and a 7-day money-back guarantee on the optional $9.99 pass.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
           <button

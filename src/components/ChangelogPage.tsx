@@ -3,6 +3,7 @@ import {
   Sparkles, Calendar, CheckCircle2, ShieldCheck, MapPin, 
   ArrowRight, Users, Sliders, FileText, Compass, DollarSign 
 } from "lucide-react";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface ChangelogPageProps {
   onSelectTab: (tab: any) => void;
@@ -10,6 +11,7 @@ interface ChangelogPageProps {
 }
 
 export default function ChangelogPage({ onSelectTab, onOpenRegister }: ChangelogPageProps) {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   const changelogEntries = [
     {
       version: "v2.6.0",
@@ -18,7 +20,7 @@ export default function ChangelogPage({ onSelectTab, onOpenRegister }: Changelog
       tag: "Major Release",
       tagColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
       highlights: [
-        "Human re-verification of 4,800+ independent music venues across all 48 Lower States and DC.",
+        `Human re-verification of ${venueCountStr} independent music venues and ${bandCountStr} touring acts across all 48 Lower States and DC.`,
         "Launched comprehensive 5-platform comparison suite against Sonicbids, Prism.fm, Gigwell, and spreadsheets.",
         "Renamed paid tier to 'Band Contacts 30-Day Pass' with explicit value-anchoring ('Less than the door split on a single gig').",
         "Added instant 7-day money-back satisfaction guarantee under all primary action flows.",
@@ -54,11 +56,11 @@ export default function ChangelogPage({ onSelectTab, onOpenRegister }: Changelog
     {
       version: "v2.2.0",
       date: "July 2, 2026",
-      title: "1,300+ Band Co-Bill Directory & Anti-Scraping Protection",
+      title: `${bandCountStr} Band Co-Bill Directory & Anti-Scraping Protection`,
       tag: "Directory Milestone",
       tagColor: "bg-amber-50 text-amber-800 border-amber-200",
       highlights: [
-        "Reached 1,300+ verified touring and regional bands available for shared show bills and co-promotions.",
+        `Reached ${bandCountStr} verified touring and regional bands available for shared show bills and co-promotions.`,
         "Activated DOM email obfuscation and anti-scraping shield to protect musician inboxes from marketing spam.",
         "Introduced flat $9.99 30-day access pass with zero recurring billing traps."
       ]
@@ -133,7 +135,7 @@ export default function ChangelogPage({ onSelectTab, onOpenRegister }: Changelog
             onClick={() => onSelectTab("venues")}
             className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2"
           >
-            <span>Search 4,800+ Free Venues</span>
+            <span>Search {venueCountStr} Venues &amp; {bandCountStr} Bands (Free)</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
           <button

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { UserAccount } from "../types";
 import SatisfactionGuaranteeModal from "./SatisfactionGuaranteeModal";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface PricingPageProps {
   currentAccount: UserAccount | null;
@@ -19,12 +20,12 @@ interface FaqItem {
   a: (onSelectTab: (tab: any) => void) => React.ReactNode;
 }
 
-const PRICING_FAQS: FaqItem[] = [
+const getPricingFaqs = (venueCountStr: string, bandCountStr: string): FaqItem[] => [
   {
     q: "How often are venue booking emails and contacts verified?",
     a: (onSelectTab) => (
       <span>
-        Every venue listing in our 4,800+ directory is curated and verified by human moderators who corroborate live booking addresses with official venue websites, talent buyer submission channels, and past touring itineraries. When a club changes management or emails bounce, our anti-bot audit flags it immediately for verification. You can inspect recent updates and moderation turnaround times in our{" "}
+        Every venue listing in our {venueCountStr} directory (alongside {bandCountStr} touring acts) is curated and verified by human moderators who corroborate live booking addresses with official venue websites, talent buyer submission channels, and past touring itineraries. When a club changes management or emails bounce, our anti-bot audit flags it immediately for verification. You can inspect recent updates and moderation turnaround times in our{" "}
         <button
           type="button"
           onClick={() => onSelectTab("verification")}
@@ -91,8 +92,10 @@ export default function PricingPage({
   onOpenCheckout,
   onOpenRegister
 }: PricingPageProps) {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [showGuaranteeModal, setShowGuaranteeModal] = useState(false);
+  const faqs = getPricingFaqs(venueCountStr, bandCountStr);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-fade-in" id="pricing-page-root">
@@ -160,7 +163,7 @@ export default function PricingPage({
             <ul className="space-y-3 text-xs text-gray-700">
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-500 font-bold shrink-0 mt-0.5" />
-                <span><strong>4,800+ Independent Venues:</strong> Browse all live stages across the Lower 48 with complete addresses and booking emails for free.</span>
+                <span><strong>{venueCountStr} Independent Venues &amp; {bandCountStr} Touring Bands:</strong> Browse all live stages across the Lower 48 with complete addresses and booking emails for free.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-500 font-bold shrink-0 mt-0.5" />
@@ -230,7 +233,7 @@ export default function PricingPage({
             <ul className="space-y-3 text-xs text-gray-700">
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-500 font-bold shrink-0 mt-0.5" />
-                <span><strong>1,300+ Verified Band Contacts:</strong> Unmask direct booking emails, manager contacts, EPKs, and listen links.</span>
+                <span><strong>{bandCountStr} Verified Band Contacts:</strong> Unmask direct booking emails, manager contacts, EPKs, and listen links.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-500 font-bold shrink-0 mt-0.5" />
@@ -433,7 +436,7 @@ export default function PricingPage({
         </div>
 
         <div className="space-y-3">
-          {PRICING_FAQS.map((faq, idx) => {
+          {faqs.map((faq, idx) => {
             const isOpen = openFaqIndex === idx;
             return (
               <div 

@@ -233,12 +233,12 @@ app.get("/llms.txt", (req, res) => {
 GigLizard is a self-serve live music touring platform founded by Seattle-based touring musician and sound engineer Little Rusty (frontman of Dr Hadit). It replaces expensive enterprise software and messy spreadsheets with integrated tools for DIY and regional touring acts.
 
 ## Core Capabilities
-- 4,800+ Independent Venue Directory: Search live music stages across all 48 continental states with verified booking emails, capacities, and stage specs (100% Free Forever, No credit card required).
+- 650+ Independent Venue Directory & 4,850+ Touring Bands: Search live music stages across all 48 continental states with verified booking emails, capacities, and stage specs (100% Free Forever, No credit card required).
 - Smart Tour Planner: AI-driven tour routing with Google Maps, drive times, van fuel expense calculation, and corridor stop suggestions ($0 Free).
 - Stage Plot Designer: Interactive drag-and-drop gear canvas to map drums, monitor wedges, pedalboards, and mic booms with instant PNG/PDF export ($0 Free).
 - Tech Rider Builder: Formatted soundboard patch list compiler with mic choices, +48V phantom power switches, and channel mapping ($0 Free).
 - Concert Poster Designer: Vintage halftone and modern neon flyer generator for social promo and print ($0 Free).
-- 1,300+ Verified Band Co-Bill Directory: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
+- 4,850+ Verified Band Co-Bill Directory: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
 
 ## Pricing
 - Venue Discovery & Production Tools: $0 (100% Free Forever, No credit card required).
@@ -1631,14 +1631,14 @@ interface RouteMetadata {
 const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   "/": {
     title: "GigLizard - Free Venue Directory & DIY Tour Tools",
-    description: "Find 4,800+ music venues for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
+    description: "Find 650+ music venues and 4,850+ touring bands for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
     canonical: "https://www.giglizard.us/",
-    heading: "Find Venues, Book Shows - 4,800+ Venues Across the USA",
+    heading: "Find Venues, Book Shows - 650+ Venues Across the USA",
     subhead: "Find music venues for free, calculate AI tour routes with drive times & van gas budgets, and build pro stage plots & riders for $0 — stop watching wishy-washy middle dates stay open on your tour calendar."
   },
   "/pricing": {
     title: "GigLizard Pricing - Free Venues, $9.99 Band Contacts Pass",
-    description: "Transparent DIY tour pricing: 4,800+ venues and stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.",
+    description: "Transparent DIY tour pricing: 650+ venues and 4,850+ touring bands, plus stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.",
     canonical: "https://www.giglizard.us/pricing",
     heading: "Access to Venues - FREE / Access to Band Contacts - $9.99",
     subhead: "Venues and production tools are 100% free for all bands forever. Get a flat 30-day all-access pass for $9.99 with zero recurring billing traps."
@@ -1652,31 +1652,31 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   },
   "/features": {
     title: "GigLizard Features - Free Tour Planner, Plots & Riders",
-    description: "Free touring toolkit for independent bands: 4,800+ venue directory, AI route planner with drive times, drag-and-drop stage plots, and tech riders.",
+    description: "Free touring toolkit for independent bands: 650+ venue directory, 4,850+ active touring bands, AI route planner with drive times, drag-and-drop stage plots, and tech riders.",
     canonical: "https://www.giglizard.us/features",
     heading: "Book the Gig. Route the Van. Show Up Looking Pro.",
     subhead: "The complete production & booking workspace for independent and regional touring acts across the Lower 48."
   },
   "/compare": {
     title: "GigLizard vs Rivals - Sonicbids, Prism & Spreadsheets",
-    description: "Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory and $9.99 flat pass vs $30/mo recurring subscriptions.",
+    description: "Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory (650+ clubs & 4,850+ bands) and $9.99 flat pass vs $30/mo recurring subscriptions.",
     canonical: "https://www.giglizard.us/compare",
     heading: "How GigLizard Compares to Every Alternative",
     subhead: "Prism leads enterprise venue management; Gigwell serves agencies from $33/mo; Sonicbids paywalls gig discovery. GigLizard undercuts all of them with $0 tools and a $9.99 pass."
   },
   "/vs/sonicbids": {
     title: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
-    description: "Compare GigLizard and Sonicbids. Search 4,800+ venues for free with no pay-to-apply submission fees and zero recurring subscriptions.",
+    description: "Compare GigLizard and Sonicbids. Search 650+ venues and 4,850+ bands for free with no pay-to-apply submission fees and zero recurring subscriptions.",
     canonical: "https://www.giglizard.us/vs/sonicbids",
     heading: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
-    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 4,800+ verified venue inboxes 100% free forever."
+    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 650+ verified venue inboxes and 4,850+ touring bands 100% free forever."
   },
   "/vs/giglizard-vs-sonicbids": {
     title: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
-    description: "Compare GigLizard and Sonicbids. Search 4,800+ venues for free with no pay-to-apply submission fees and zero recurring subscriptions.",
+    description: "Compare GigLizard and Sonicbids. Search 650+ venues and 4,850+ bands for free with no pay-to-apply submission fees and zero recurring subscriptions.",
     canonical: "https://www.giglizard.us/vs/sonicbids",
     heading: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
-    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 4,800+ verified venue inboxes 100% free forever."
+    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 650+ verified venue inboxes and 4,850+ touring bands 100% free forever."
   },
   "/vs/prism-fm": {
     title: "GigLizard vs Prism.fm - Built for DIY Bands vs Arenas",
@@ -1687,7 +1687,7 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   },
   "/vs/gigwell": {
     title: "GigLizard vs Gigwell - Free DIY Tools vs $33/mo Plan",
-    description: "Compare GigLizard vs Gigwell. Free venue directory and $9.99 flat pass vs $33/mo annual-only contracts for agency rosters.",
+    description: "Compare GigLizard vs Gigwell. Free venue directory (650+ clubs & 4,850+ bands) and $9.99 flat pass vs $33/mo annual-only contracts for agency rosters.",
     canonical: "https://www.giglizard.us/vs/gigwell",
     heading: "GigLizard vs Gigwell: Free DIY Tooling vs $33/mo Contracts",
     subhead: "Gigwell targets talent agencies with $33/mo ($396/year upfront) lock-in contracts. GigLizard charges $9.99 for a single 30-day pass with zero recurring billing."
@@ -1718,27 +1718,27 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     description: "Frequently asked questions about venue booking inboxes, $9.99 flat band passes, 7-day money-back refunds, and DIY touring tools.",
     canonical: "https://www.giglizard.us/faq",
     heading: "Tour Booking, Pass Pricing & Verification FAQ",
-    subhead: "Transparent answers to common questions about our 4,800+ venue directory, band passes, and DIY tools."
+    subhead: "Transparent answers to common questions about our 650+ venue directory, 4,850+ touring bands, band passes, and DIY tools."
   },
   "/verification": {
     title: "Directory Verification Log & Freshness Audits | GigLizard",
-    description: "Live moderation queue, dated venue audits, and human corroboration records for 4,800+ music venues and active band contacts across the Lower 48.",
+    description: "Live moderation queue, dated venue audits, and human corroboration records for 650+ music venues and 4,850+ active band contacts across the Lower 48.",
     canonical: "https://www.giglizard.us/verification",
-    heading: "How We Verify 4,800+ Venues Without Stale Scraping",
+    heading: "How We Verify 650+ Venues & 4,850+ Bands Without Stale Scraping",
     subhead: "Live moderation queue, dated audit entries, and community bounce reports resolved within 24 hours."
   },
   "/venues": {
-    title: "Free Venue Directory (4,800+ Clubs) | GigLizard",
-    description: "Search 4,800+ verified live music clubs, theaters, and listening rooms across the Lower 48 with direct booking emails and specs.",
+    title: "Free Venue Directory (650+ Clubs) | GigLizard",
+    description: "Search 650+ verified live music clubs and 4,850+ touring bands across the Lower 48 with direct booking emails and specs.",
     canonical: "https://www.giglizard.us/venues",
-    heading: "Find Venues, Book Shows - 4,800+ Venues Across the USA",
+    heading: "Find Venues & Bands, Book Shows - 650+ Venues & 4,850+ Bands Across the USA",
     subhead: "Browse live music venues by city, state, capacity, and genre. 100% free with verified booking emails and stage sound specs."
   },
   "/bands": {
     title: "Touring Bands & Co-Bills ($9.99 Pass) | GigLizard",
-    description: "Browse 1,300+ active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.",
+    description: "Browse 4,850+ active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.",
     canonical: "https://www.giglizard.us/bands",
-    heading: "1,300+ Active Touring Bands Across the Lower 48",
+    heading: "4,850+ Active Touring Bands Across the Lower 48",
     subhead: "Find compatible touring acts to swap shows and fill rooms in every tour stop."
   },
   "/tour": {

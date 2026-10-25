@@ -13,6 +13,7 @@ import { getOwnerVenueEdits, getOwnerDeletedVenueIds, isEmailAlreadyRegistered, 
 import { fetchProfiles, profileToVenue, getCachedProfiles, insertProfile } from "../lib/supabase";
 import { CONTINENTAL_US_STATES } from "../constants/states";
 import { ProgrammaticVenueRoute, POPULAR_TOURING_CITIES, POPULAR_GENRE_CITY_ROUTES, parseProgrammaticVenuePath } from "../utils/venueSeoRoutes";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface VenueDirectoryProps {
   onSelectVenueForPoster: (venue: Venue) => void;
@@ -31,6 +32,7 @@ export default function VenueDirectory({
   programmaticRoute,
   onNavigateProgrammaticRoute
 }: VenueDirectoryProps) {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("All");
@@ -700,7 +702,7 @@ export default function VenueDirectory({
               className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 self-start md:self-auto shrink-0 cursor-pointer"
             >
               <X className="w-3.5 h-3.5 text-rose-400" />
-              <span>Reset & View All 4,800+ USA Venues</span>
+              <span>Reset &amp; View All {venueCountStr} USA Venues &amp; {bandCountStr} Bands</span>
             </button>
           </div>
 
@@ -1023,7 +1025,7 @@ export default function VenueDirectory({
             </p>
           </div>
           <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 font-semibold self-start sm:self-auto">
-            4,800+ Verified Stages
+            {venueCountStr} Stages &amp; {bandCountStr} Bands
           </span>
         </div>
 

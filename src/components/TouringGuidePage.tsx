@@ -4,6 +4,7 @@ import {
   ArrowRight, CheckCircle2, Sliders, FileText, DollarSign,
   Fuel, ShieldCheck, ChevronDown, ChevronUp, Sparkles, BookOpen
 } from "lucide-react";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface TouringGuidePageProps {
   onSelectTab: (tab: any) => void;
@@ -11,6 +12,7 @@ interface TouringGuidePageProps {
 }
 
 export default function TouringGuidePage({ onSelectTab, onOpenRegister }: TouringGuidePageProps) {
+  const { venueCountStr, bandCountStr } = useDirectoryCounts();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const guideFaqs = [
@@ -127,7 +129,7 @@ export default function TouringGuidePage({ onSelectTab, onOpenRegister }: Tourin
       <div className="bg-slate-950 text-white rounded-3xl p-8 text-center space-y-5 border border-slate-900 shadow-xl">
         <h3 className="text-2xl md:text-3xl font-black tracking-tight">Ready to Book Your Next Tour?</h3>
         <p className="text-xs md:text-sm text-slate-400 max-w-lg mx-auto">
-          Start searching 4,800+ independent clubs, map your tour route, and build stage plots for $0. No credit card required.
+          Start searching {venueCountStr} independent clubs and {bandCountStr} touring acts, map your tour route, and build stage plots for $0. No credit card required.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button
@@ -135,7 +137,7 @@ export default function TouringGuidePage({ onSelectTab, onOpenRegister }: Tourin
             onClick={() => onSelectTab("venues")}
             className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl cursor-pointer transition-all shadow-md flex items-center gap-2"
           >
-            <span>Search 4,800+ Venues (Free)</span>
+            <span>Search {venueCountStr} Venues &amp; {bandCountStr} Bands (Free)</span>
             <ArrowRight className="w-4 h-4" />
           </button>
           <button

@@ -25,8 +25,9 @@ import { sanitizeInputText } from "../utils/antiScrape";
 import { isAccessActive, getAccessStatusDetails, isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { resolveBandMusicLinks, categorizeUserMusicLink } from "../utils/musicLinks";
-import { isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
 import { insertProfile, supabase } from "../lib/supabase";
+import { isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
+import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface ToastNotification {
   id: string;
@@ -57,6 +58,7 @@ export default function Home({
   onLogOut,
   onTriggerEditAccount 
 }: HomeProps) {
+  const { venueCountStr, bandCountStr, combinedCountStr } = useDirectoryCounts();
   const [accountType, setAccountType] = useState<"Band" | "Venue" | "Sound Engineer">("Band");
   const [successMessage, setSuccessMessage] = useState("");
   const [registerError, setRegisterError] = useState("");
@@ -782,13 +784,13 @@ export default function Home({
             <div className="inline-flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
               <span>Independent Touring Directory</span>
               <span aria-hidden="true">·</span>
-              <span>4,800+ Venues Across the USA</span>
+              <span>{venueCountStr} Venues Across the USA</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
               Find Venues, Book Shows
               <span className="block text-slate-350 text-xl sm:text-2xl lg:text-3xl font-bold mt-2">
-                4,800+ Live Music Rooms Across the USA
+                {venueCountStr} Live Music Rooms Across the USA
               </span>
             </h1>
 
@@ -897,12 +899,12 @@ export default function Home({
       <section className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl space-y-6" id="proof-metrics-banner">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div className="space-y-1">
-            <div className="text-2xl md:text-3xl font-black text-emerald-400 font-mono tabular-nums">4,800+</div>
+            <div className="text-2xl md:text-3xl font-black text-emerald-400 font-mono tabular-nums">{venueCountStr}</div>
             <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">Independent Venues</p>
             <p className="text-xs text-slate-400">All 48 Lower States + DC</p>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl md:text-3xl font-black text-amber-400 font-mono tabular-nums">1,300+</div>
+            <div className="text-2xl md:text-3xl font-black text-amber-400 font-mono tabular-nums">{bandCountStr}</div>
             <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">Active Touring Acts</p>
             <p className="text-xs text-slate-400">Booking Contacts &amp; Co-Bills</p>
           </div>
@@ -1463,7 +1465,7 @@ export default function Home({
               </div>
               <h3 className="text-sm font-bold text-white">vs. Sonicbids</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Paywalls stage browsing with locked annual recurring plans. GigLizard gives you 4,800+ venues and verified booking emails 100% free.
+                Paywalls stage browsing with locked annual recurring plans. GigLizard gives you {venueCountStr} venues, {bandCountStr} touring bands, and verified booking emails 100% free.
               </p>
             </div>
             <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
@@ -1675,7 +1677,7 @@ export default function Home({
               <ul className="space-y-2.5 text-xs text-gray-650">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>4,800+ Independent Venues:</strong> Browse all live stages across the USA with verified booking emails.</span>
+                  <span><strong>{venueCountStr} Independent Venues &amp; {bandCountStr} Touring Bands:</strong> Browse all live stages across the USA with verified booking emails and coordinate shared bills.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
@@ -1731,7 +1733,7 @@ export default function Home({
               <ul className="space-y-2.5 text-xs text-gray-650">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>1,300+ Verified Band Contacts:</strong> Unmask booking emails, manager contacts, EPKs, and audio links.</span>
+                  <span><strong>{bandCountStr} Verified Band Contacts:</strong> Unmask booking emails, manager contacts, EPKs, and audio links.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
