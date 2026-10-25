@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Venue, UserAccount } from "../types";
 import { MUSIC_VENUES } from "../data/venues";
-import { Search, MapPin, Mail, Phone, Globe, Volume2, Lightbulb, Ticket, Users, AlertTriangle, PlusCircle, Check, Lock, Sparkles, ShieldCheck, ShieldAlert, KeyRound, RefreshCw, Star, MessageSquare } from "lucide-react";
+import { Search, MapPin, Mail, Phone, Globe, Volume2, Lightbulb, Ticket, Users, AlertTriangle, PlusCircle, Check, Lock, Sparkles, ShieldCheck, ShieldAlert, KeyRound, RefreshCw, Star, MessageSquare, Compass, ArrowRight, X } from "lucide-react";
 import ProtectedContact from "./ProtectedContact";
 import SecurityShieldModal from "./SecurityShieldModal";
 import CaptchaChallenge from "./CaptchaChallenge";
@@ -12,19 +12,24 @@ import { sanitizeInputText, escapeRegexSpecial, detectAutomatedBot, checkRapidHa
 import { getOwnerVenueEdits, getOwnerDeletedVenueIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
 import { fetchProfiles, profileToVenue, getCachedProfiles, insertProfile } from "../lib/supabase";
 import { CONTINENTAL_US_STATES } from "../constants/states";
+import { ProgrammaticVenueRoute, POPULAR_TOURING_CITIES, POPULAR_GENRE_CITY_ROUTES, parseProgrammaticVenuePath } from "../utils/venueSeoRoutes";
 
 interface VenueDirectoryProps {
   onSelectVenueForPoster: (venue: Venue) => void;
   selectedVenueId?: string;
   currentAccount?: UserAccount | null;
   onTriggerUpgrade?: () => void;
+  programmaticRoute?: ProgrammaticVenueRoute | null;
+  onNavigateProgrammaticRoute?: (route: ProgrammaticVenueRoute | null, url: string) => void;
 }
 
 export default function VenueDirectory({ 
   onSelectVenueForPoster, 
   selectedVenueId, 
   currentAccount, 
-  onTriggerUpgrade 
+  onTriggerUpgrade,
+  programmaticRoute,
+  onNavigateProgrammaticRoute
 }: VenueDirectoryProps) {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,6 +103,27 @@ export default function VenueDirectory({
     window.addEventListener("giglizard_reviews_updated", onReviewsUpdated);
     return () => window.removeEventListener("giglizard_reviews_updated", onReviewsUpdated);
   }, []);
+
+  // Synchronize filters when programmatic route changes (e.g. /venues/austin-tx, /venues/rock/chicago)
+  useEffect(() => {
+    if (programmaticRoute) {
+      if (programmaticRoute.city) {
+        setSearchTerm(programmaticRoute.city);
+      } else {
+        setSearchTerm("");
+      }
+      if (programmaticRoute.stateCode) {
+        setSelectedState(programmaticRoute.stateCode);
+      } else {
+        setSelectedState("All");
+      }
+      if (programmaticRoute.genre) {
+        setSelectedGenre(programmaticRoute.genre);
+      } else {
+        setSelectedGenre("All");
+      }
+    }
+  }, [programmaticRoute]);
 
   useEffect(() => {
     let isMounted = true;
@@ -619,6 +645,85 @@ export default function VenueDirectory({
         </div>
       )}
 
+      {/* Programmatic SEO Landing Page Hero Banner (e.g. /venues/austin-tx, /venues/rock/chicago, /venues/seattle-wa) */}
+      {programmaticRoute && (
+        <div className="bg-slate-900 text-white rounded-2xl p-6 md:p-8 border border-indigo-500/30 shadow-lg space-y-4" id="programmatic-seo-venue-header">
+          {/* Breadcrumb Navigation */}
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
+            {programmaticRoute.breadcrumb.map((crumb, idx) => (
+              <React.Fragment key={crumb.url}>
+                {idx > 0 && <span className="text-slate-600">/</span>}
+                {idx === programmaticRoute.breadcrumb.length - 1 ? (
+                  <span className="text-indigo-300 font-bold">{crumb.name}</span>
+                ) : (
+                  <a
+                    href={crumb.url.replace("https://www.giglizard.us", "") || "/"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (onNavigateProgrammaticRoute) {
+                        onNavigateProgrammaticRoute(null, crumb.url.replace("https://www.giglizard.us", "") || "/");
+                      }
+                    }}
+                    className="hover:text-white transition-colors underline"
+                  >
+                    {crumb.name}
+                  </a>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
+
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-semibold tracking-wide">
+                <Compass className="w-3.5 h-3.5" />
+                <span>Touring Market Directory · Lower 48</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                {programmaticRoute.heading}
+              </h1>
+              <p className="text-xs md:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                {programmaticRoute.subhead}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (onNavigateProgrammaticRoute) {
+                  onNavigateProgrammaticRoute(null, "/venues");
+                }
+                setSearchTerm("");
+                setSelectedState("All");
+                setSelectedGenre("All");
+              }}
+              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 self-start md:self-auto shrink-0 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5 text-rose-400" />
+              <span>Reset & View All 4,800+ USA Venues</span>
+            </button>
+          </div>
+
+          <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center gap-3 text-xs text-slate-300">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 text-indigo-300 border border-indigo-500/30 font-semibold font-mono">
+              <span>{filteredVenues.length} Stages Listed</span>
+            </span>
+            <span className="text-slate-400">·</span>
+            <span className="text-slate-300">Verified Direct Talent Buyer Contacts</span>
+            <span className="text-slate-400">·</span>
+            <span className="text-emerald-400 font-semibold">100% Free Forever</span>
+            {programmaticRoute.city && (
+              <>
+                <span className="text-slate-400">·</span>
+                <span className="text-amber-300">
+                  {POPULAR_TOURING_CITIES.find(c => c.city.toLowerCase() === programmaticRoute.city?.toLowerCase())?.corridor || `Tour Stop: ${programmaticRoute.city}`}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Search and Filters heading row */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-5 space-y-4" id="venue-filter-box">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2" id="dir-filter-title-row">
@@ -902,6 +1007,119 @@ export default function VenueDirectory({
           </div>
         )}
       </div>
+
+      {/* Programmatic SEO Directory Index: Explore Venues by Touring Market & Genre */}
+      <section className="bg-white rounded-2xl border border-gray-200/90 p-6 md:p-8 space-y-6 shadow-xs" id="programmatic-venue-seo-index">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+          <div>
+            <div className="text-xs font-semibold text-indigo-600 tracking-wide">
+              Programmatic Touring Directory · USA Markets
+            </div>
+            <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight mt-0.5">
+              Explore Live Music Venues by City & Genre
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Targeted booking directories with room specs, talent buyer contacts, and corridor runs.
+            </p>
+          </div>
+          <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 font-semibold self-start sm:self-auto">
+            4,800+ Verified Stages
+          </span>
+        </div>
+
+        {/* City Markets Grid */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Top Touring Hubs (City Directories)</span>
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs">
+            {POPULAR_TOURING_CITIES.map((c) => {
+              const url = `/venues/${c.slug}`;
+              const isCurrent = programmaticRoute?.canonicalPath === url;
+              return (
+                <a
+                  key={c.slug}
+                  href={url}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const route = parseProgrammaticVenuePath(url);
+                    if (onNavigateProgrammaticRoute) {
+                      onNavigateProgrammaticRoute(route, url);
+                    }
+                  }}
+                  className={`p-3 rounded-xl border transition-all flex flex-col justify-between cursor-pointer group ${
+                    isCurrent
+                      ? "bg-indigo-50/90 border-indigo-400 text-indigo-900 shadow-xs"
+                      : "bg-slate-50/60 hover:bg-indigo-50/40 border-gray-200/80 hover:border-indigo-300 text-slate-800"
+                  }`}
+                >
+                  <div>
+                    <span className="font-bold block text-slate-900 group-hover:text-indigo-600 transition-colors">
+                      {c.city}, {c.state}
+                    </span>
+                    <span className="text-[10.5px] text-gray-500 line-clamp-1 mt-0.5">
+                      {c.tagline}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-indigo-600 font-semibold mt-2 inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                    <span>View Stages</span>
+                    <ArrowRight className="w-2.5 h-2.5" />
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Genre + City Circuit Grid */}
+        <div className="space-y-3 pt-4 border-t border-gray-100">
+          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Popular Genre Circuits</span>
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
+            {POPULAR_GENRE_CITY_ROUTES.map((g) => {
+              const url = `/venues/${g.slug}`;
+              const isCurrent = programmaticRoute?.canonicalPath === url;
+              return (
+                <a
+                  key={g.slug}
+                  href={url}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const route = parseProgrammaticVenuePath(url);
+                    if (onNavigateProgrammaticRoute) {
+                      onNavigateProgrammaticRoute(route, url);
+                    }
+                  }}
+                  className={`p-3 rounded-xl border transition-all flex flex-col justify-between cursor-pointer group ${
+                    isCurrent
+                      ? "bg-amber-50/90 border-amber-400 text-amber-950 shadow-xs"
+                      : "bg-slate-50/60 hover:bg-amber-50/40 border-gray-200/80 hover:border-amber-300 text-slate-800"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
+                        {g.genre} in {g.city}
+                      </span>
+                      <span className="text-[10px] font-mono text-gray-400">{g.state}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-1 leading-snug">
+                      Verified {g.metaSummary}
+                    </p>
+                  </div>
+                  <span className="text-[10.5px] text-amber-700 font-semibold mt-2 inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                    <span>Explore {g.genre} Venues</span>
+                    <ArrowRight className="w-2.5 h-2.5" />
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* Security Shield Diagnostic Modal */}
       <SecurityShieldModal

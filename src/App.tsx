@@ -37,6 +37,7 @@ import {
   downloadEmbeddedBandsAndVenuesCSV, 
   MigrationSyncResult 
 } from "./utils/adminMigration";
+import { ProgrammaticVenueRoute, parseProgrammaticVenuePath } from "./utils/venueSeoRoutes";
 import { 
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
@@ -121,7 +122,7 @@ export default function GigLizardApp() {
       if (cleanPath === "/changelog" || cleanPath === "/updates") return "changelog";
       if (cleanPath === "/customers" || cleanPath === "/stories" || cleanPath === "/case-studies") return "customers";
       if (cleanPath === "/guide" || cleanPath.includes("touring-guide") || cleanPath.includes("tour-guide") || cleanPath.includes("playbook")) return "guide";
-      if (cleanPath === "/venues") return "venues";
+      if (cleanPath === "/venues" || cleanPath.startsWith("/venues/")) return "venues";
       if (cleanPath === "/bands") return "bands";
       if (cleanPath === "/tour") return "tour";
       if (cleanPath === "/plot" || cleanPath === "/stage-plot") return "plot";
@@ -131,6 +132,7 @@ export default function GigLizardApp() {
       if (cleanPath === "/verification" || cleanPath === "/audit" || cleanPath === "/freshness") return "verification";
 
       const rawHash = window.location.hash.replace("#", "").toLowerCase();
+      if (rawHash === "venues" || rawHash.startsWith("venues/")) return "venues";
       if (rawHash === "verification") return "verification";
       if (rawHash === "dashboard" || rawHash === "admin") return isOwner ? "admin" : "home";
       if (rawHash.startsWith("stage-plot")) return "plot";
@@ -389,6 +391,15 @@ export default function GigLizardApp() {
   }, []);
 
   const [activeTab, setActiveTabState] = useState<TabType>(getInitialTab);
+  const [programmaticVenueRoute, setProgrammaticVenueRoute] = useState<ProgrammaticVenueRoute | null>(() => {
+    try {
+      const cleanPath = window.location.pathname.replace(/\/$/, "");
+      const cleanHash = window.location.hash.replace("#", "").replace(/\/$/, "");
+      return parseProgrammaticVenuePath(cleanPath) || parseProgrammaticVenuePath(cleanHash);
+    } catch (_) {
+      return null;
+    }
+  });
 
   // Automatic Scroll-to-Top on View / Tab Mount / Change:
   // When activeTab changes (e.g., navigating to Poster Builder), instantly scroll to the top
@@ -406,6 +417,9 @@ export default function GigLizardApp() {
   const isNavigatingViaPopstateRef = useRef<boolean>(false);
 
   const setActiveTab = (tab: TabType, pushToHistory = true) => {
+    if (tab !== "venues") {
+      setProgrammaticVenueRoute(null);
+    }
     if (tab === "admin" && currentAccount?.contactEmail?.trim().toLowerCase() !== "littlerusty@gmail.com") {
       setActiveTabState("home");
       try {
@@ -492,9 +506,15 @@ export default function GigLizardApp() {
       admin: "https://www.giglizard.us/admin"
     };
 
-    const pageTitle = titles[activeTab] || "GigLizard - Free Venue Directory & DIY Tour Tools";
-    const pageDesc = descriptions[activeTab] || descriptions.home;
-    const canonicalHref = canonicals[activeTab] || "https://www.giglizard.us/";
+    let pageTitle = titles[activeTab] || "GigLizard - Free Venue Directory & DIY Tour Tools";
+    let pageDesc = descriptions[activeTab] || descriptions.home;
+    let canonicalHref = canonicals[activeTab] || "https://www.giglizard.us/";
+
+    if (activeTab === "venues" && programmaticVenueRoute) {
+      pageTitle = `${programmaticVenueRoute.title} | GigLizard`;
+      pageDesc = programmaticVenueRoute.metaDescription;
+      canonicalHref = `https://www.giglizard.us${programmaticVenueRoute.canonicalPath}`;
+    }
 
     document.title = pageTitle;
 
@@ -529,7 +549,7 @@ export default function GigLizardApp() {
       let twDesc = document.querySelector('meta[name="twitter:description"]');
       if (twDesc) twDesc.setAttribute("content", pageDesc);
     } catch (_) {}
-  }, [activeTab]);
+  }, [activeTab, programmaticVenueRoute]);
 
   // Track page visit on mount and tab switch
   useEffect(() => {
@@ -541,6 +561,19 @@ export default function GigLizardApp() {
     const clean = targetStr.replace(/^[/#]+/, "").toLowerCase();
     if (!clean) return false;
 
+    if (clean.startsWith("venues/")) {
+      const prog = parseProgrammaticVenuePath(clean);
+      if (prog) {
+        setProgrammaticVenueRoute(prog);
+        setActiveTabState("venues");
+        return true;
+      }
+    }
+    if (clean === "venues" || clean === "clubs") {
+      setProgrammaticVenueRoute(null);
+      setActiveTabState("venues");
+      return true;
+    }
     if (clean === "about" || clean === "mission") {
       setActiveTabState("about");
       return true;
@@ -590,7 +623,7 @@ export default function GigLizardApp() {
     resolveTargetRoute(rawHash) || resolveTargetRoute(rawPath);
   }, []);
 
-  // Listen to browser hash changes (e.g. back/forward or direct URL clicks)
+  // Listen to browser hash and popstate changes (e.g. back/forward or direct URL clicks)
   useEffect(() => {
     const handleHashChange = () => {
       const stageBandId = getInitialStagePlotBandId();
@@ -624,8 +657,10 @@ export default function GigLizardApp() {
       }
     };
     window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handleHashChange);
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handleHashChange);
     };
   }, [currentAccount]);
 
@@ -1714,6 +1749,15 @@ export default function GigLizardApp() {
               onSelectVenueForPoster={handleSelectVenueForGig}
               selectedVenueId={selectedVenueId}
               currentAccount={currentAccount}
+              programmaticRoute={programmaticVenueRoute}
+              onNavigateProgrammaticRoute={(route, url) => {
+                setProgrammaticVenueRoute(route);
+                if (url) {
+                  try {
+                    window.history.pushState({ programmaticRoute: route }, "", url);
+                  } catch (_) {}
+                }
+              }}
               onTriggerUpgrade={() => {
                 setActiveTab("home");
                 setTimeout(() => {

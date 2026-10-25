@@ -10,6 +10,7 @@ import { createClient } from "@supabase/supabase-js";
 import { INITIAL_AVAILABLE_BANDS, sanitizeBandPhoneNumber } from "./src/data/availableBands";
 import { MUSIC_VENUES } from "./src/data/venues";
 import { resolveBandAgency } from "./src/utils/bookingAgencies";
+import { parseProgrammaticVenuePath } from "./src/utils/venueSeoRoutes";
 
 dotenv.config();
 
@@ -1725,12 +1726,66 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     canonical: "https://www.giglizard.us/verification",
     heading: "How We Verify 4,800+ Venues Without Stale Scraping",
     subhead: "Live moderation queue, dated audit entries, and community bounce reports resolved within 24 hours."
+  },
+  "/venues": {
+    title: "Free Venue Directory (4,800+ Clubs) | GigLizard",
+    description: "Search 4,800+ verified live music clubs, theaters, and listening rooms across the Lower 48 with direct booking emails and specs.",
+    canonical: "https://www.giglizard.us/venues",
+    heading: "Find Venues, Book Shows - 4,800+ Venues Across the USA",
+    subhead: "Browse live music venues by city, state, capacity, and genre. 100% free with verified booking emails and stage sound specs."
+  },
+  "/bands": {
+    title: "Touring Bands & Co-Bills ($9.99 Pass) | GigLizard",
+    description: "Browse 1,300+ active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.",
+    canonical: "https://www.giglizard.us/bands",
+    heading: "1,300+ Active Touring Bands Across the Lower 48",
+    subhead: "Find compatible touring acts to swap shows and fill rooms in every tour stop."
+  },
+  "/tour": {
+    title: "AI Tour Route Planner & Gas Calculator | GigLizard",
+    description: "Calculate driving routes, fuel costs, lodging, and corridor stop suggestions for independent touring bands with Google Maps.",
+    canonical: "https://www.giglizard.us/tour",
+    heading: "Smart Tour Routing & Van Fuel Calculator",
+    subhead: "Plan efficient driving runs, estimate tour fuel budgets, and find lodging along your route."
+  },
+  "/plot": {
+    title: "Free Stage Plot Designer & Gear Canvas | GigLizard",
+    description: "Interactive drag-and-drop gear canvas to map drums, monitor wedges, and mic booms with instant PNG/PDF export for venue audio technicians.",
+    canonical: "https://www.giglizard.us/plot",
+    heading: "Drag-and-Drop Stage Plot Designer",
+    subhead: "Build clear, professional stage layouts in minutes and export directly to PDF."
+  },
+  "/rider": {
+    title: "Tech Rider & Soundboard Patch Builder | GigLizard",
+    description: "Compile formatted soundboard patch lists, mic choices, and +48V phantom power switches for venue sound engineers.",
+    canonical: "https://www.giglizard.us/rider",
+    heading: "Live Sound Tech Rider & Channel Patch List Builder",
+    subhead: "Send organized input lists to house sound engineers so soundcheck runs smooth."
+  },
+  "/poster": {
+    title: "Concert Poster Designer & Gig Flyers | GigLizard",
+    description: "Create vintage halftone and modern neon gig flyers for social promo, club posters, and tour announcements.",
+    canonical: "https://www.giglizard.us/poster",
+    heading: "Concert Poster & Gig Flyer Studio",
+    subhead: "Design tour date posters and gig announcements in retro halftone and neon styles."
   }
 };
 
 function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
   const cleanPath = reqPath.split("?")[0].replace(/\/$/, "") || "/";
-  const meta = ROUTE_METADATA_MAP[cleanPath] || ROUTE_METADATA_MAP["/"];
+  
+  // 1. Check if this is a programmatic venue directory route (e.g. /venues/austin-tx, /venues/rock/chicago, /venues/seattle-wa)
+  const prog = cleanPath.startsWith("/venues/") ? parseProgrammaticVenuePath(cleanPath) : null;
+  
+  const meta: RouteMetadata = prog
+    ? {
+        title: prog.title,
+        description: prog.description,
+        canonical: `https://www.giglizard.us${prog.canonicalPath}`,
+        heading: prog.heading,
+        subhead: prog.subhead
+      }
+    : (ROUTE_METADATA_MAP[cleanPath] || ROUTE_METADATA_MAP["/"]);
 
   let html = rawTemplate;
   html = html.replace(/<title>.*?<\/title>/s, `<title>${meta.title}</title>`);
@@ -1747,6 +1802,72 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
   }
   if (meta.subhead) {
     html = html.replace(/<p>Find music venues for free.*?<\/p>/s, `<p>${meta.subhead}</p>`);
+  }
+
+  // 2. For programmatic venue landing pages, inject dynamic ItemList structured data & semantic noscript stage list
+  if (prog) {
+    const matchingVenues = MUSIC_VENUES.filter(v => {
+      let match = true;
+      if (prog.city) {
+        const cityLower = prog.city.toLowerCase();
+        match = match && (v.city.toLowerCase() === cityLower || v.address.toLowerCase().includes(cityLower));
+      }
+      if (prog.stateCode) {
+        const stateUpper = prog.stateCode.toUpperCase();
+        match = match && (
+          v.state?.toUpperCase() === stateUpper ||
+          v.address.toUpperCase().includes(`, ${stateUpper}`) ||
+          v.id.toLowerCase().startsWith(`${stateUpper.toLowerCase()}-`)
+        );
+      }
+      if (prog.genre) {
+        const genreLower = prog.genre.toLowerCase();
+        match = match && v.genres.some(g => g.toLowerCase().includes(genreLower));
+      }
+      return match;
+    });
+
+    const displayVenues = matchingVenues.length > 0 ? matchingVenues : MUSIC_VENUES.slice(0, 10);
+
+    const schemaItemList = {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": prog.heading,
+      "description": prog.description,
+      "url": `https://www.giglizard.us${prog.canonicalPath}`,
+      "numberOfItems": displayVenues.length,
+      "itemListElement": displayVenues.slice(0, 25).map((v, idx) => ({
+        "@type": "ListItem",
+        "position": idx + 1,
+        "item": {
+          "@type": "MusicVenue",
+          "name": v.name,
+          "address": v.address,
+          "maximumAttendeeCapacity": v.capacity,
+          "telephone": v.contactPhone,
+          "url": v.website ? (v.website.startsWith("http") ? v.website : `https://${v.website}`) : undefined,
+          "description": v.description
+        }
+      }))
+    };
+
+    html = html.replace(
+      "</head>",
+      `    <script type="application/ld+json">\n    ${JSON.stringify(schemaItemList, null, 2)}\n    </script>\n  </head>`
+    );
+
+    // Inject semantic venue list into noscript for search engine crawlers
+    const noscriptContent = `
+        <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>${prog.heading} (${displayVenues.length} Verified Stages)</h2>
+          <p>${prog.subhead}</p>
+          <ul style="padding-left: 20px; line-height: 1.6;">
+            ${displayVenues.map(v => `<li><strong>${v.name}</strong> (Capacity: ${v.capacity}) — ${v.address} | Genres: ${v.genres.join(", ")} | Booking Email: ${v.contactEmail}</li>`).join("\n            ")}
+          </ul>
+        </div>
+      </main>`;
+    
+    html = html.replace("</main>", noscriptContent);
   }
 
   return html;
