@@ -40,7 +40,7 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
               </h2>
               <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                Portland, OR • Pacific Northwest DIY Musician & Live Sound Engineer
+                Portland, OR • Frontman of Dr Hadit, Knucklebone, 7AT • Live Sound Engineer
               </p>
             </div>
           </div>

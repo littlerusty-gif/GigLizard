@@ -49,7 +49,7 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
                 "I Built This Because Touring Shouldn't Be Gatekept"
               </h2>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Hi, I'm <strong>Little Rusty</strong> from Portland, OR. I'm a working Pacific Northwest DIY musician and live audio engineer. I created GigLizard to solve the exact headaches I faced loading vans and booking club dates across the Northwest and nationwide.
+                Hi, I'm <strong>Little Rusty</strong> from Portland, OR. I'm a working Pacific Northwest DIY musician (frontman of Dr Hadit, Knucklebone, 7AT) and live audio engineer. I created GigLizard to solve the exact headaches I faced loading vans and booking club dates across the Northwest and nationwide.
               </p>
             </div>
           </div>

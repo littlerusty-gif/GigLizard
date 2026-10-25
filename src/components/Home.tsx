@@ -776,310 +776,187 @@ export default function Home({
       )}
 
       {/* Hero Welcome Panel */}
-      <section className="relative overflow-hidden bg-slate-950 text-white rounded-3xl p-8 md:p-12 border border-slate-900 shadow-2xl flex flex-col lg:flex-row items-center gap-8 justify-between" id="home-hero-panel">
-        <div className="space-y-4 max-w-2xl text-center lg:text-left">
-          <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 text-[11px] font-extrabold py-1.5 px-3.5 rounded-full border border-indigo-500/30">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
-            Built for DIY & Regional Touring Bands • Lower 48 Directory
-          </div>
-          <h1 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight leading-tight">
-            Find Venues, Book Shows - 4,800+ Venues Across the USA
-          </h1>
-          <p className="text-xs md:text-sm text-slate-350 leading-relaxed max-w-xl">
-            Find music venues for free, calculate AI tour routes with drive times & van gas budgets, and build pro stage plots & riders for $0 — stop watching wishy-washy middle dates stay open on your tour calendar. Feel in total control of your tour run from first pitch to final payout.
-          </p>
-          
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
-            <button
-              onClick={() => onSelectTab("venues")}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black py-3 px-5 min-h-[44px] rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg active:scale-95"
-            >
-              Browse Venues (Free)
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onSelectTab("bands")}
-              className="bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-black py-3 px-5 min-h-[44px] rounded-xl transition-all border border-slate-800 cursor-pointer flex items-center gap-2 active:scale-95"
-              id="hero-btn-browse-bands"
-            >
-              <Users className="w-4 h-4 text-amber-400" />
-              Browse Active Bands ($9.99 Pass)
-            </button>
-          </div>
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-1.5 text-[11.5px] text-slate-350 pt-1">
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-              <span>Free forever, no credit card needed • 7-day money-back guarantee</span>
-            </span>
-            <a 
-              href="/compare" 
-              onClick={(e) => { e.preventDefault(); onSelectTab("compare"); window.history.pushState(null, '', '/compare'); }}
-              className="text-indigo-400 hover:text-indigo-300 hover:underline font-semibold"
-            >
-              Compare vs Sonicbids & Prism →
-            </a>
+      <section className="relative overflow-hidden bg-slate-950 text-white rounded-3xl p-8 md:p-12 lg:p-14 border border-slate-900 shadow-2xl space-y-8" id="home-hero-panel">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+              <span>Independent Touring Directory</span>
+              <span aria-hidden="true">·</span>
+              <span>4,800+ Venues Across the USA</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
+              Find Venues, Book Shows
+              <span className="block text-slate-350 text-xl sm:text-2xl lg:text-3xl font-bold mt-2">
+                4,800+ Live Music Rooms Across the USA
+              </span>
+            </h1>
+
+            <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0 font-normal">
+              Discover independent clubs and verified talent buyer contacts for free. Calculate tour routes with drive times &amp; van gas budgets, swap shows with local acts, and export pro stage plots in minutes.
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => onSelectTab("venues")}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black py-3.5 px-6 min-h-[44px] rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:shadow-indigo-500/25 active:scale-95"
+              >
+                <span>Browse Venues (Free)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectTab("bands")}
+                className="bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-bold py-3.5 px-5 min-h-[44px] rounded-xl transition-all border border-slate-800 cursor-pointer flex items-center gap-2 active:scale-95"
+                id="hero-btn-browse-bands"
+              >
+                <Users className="w-4 h-4 text-amber-400" />
+                <span>Browse Active Bands ($9.99)</span>
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-1 text-xs text-slate-400 pt-1">
+              <span>100% free venue discovery forever</span>
+              <span aria-hidden="true">·</span>
+              <span>No credit card needed</span>
+              <span aria-hidden="true">·</span>
+              <span>7-day money-back guarantee</span>
+              <span aria-hidden="true">·</span>
+              <a 
+                href="/compare" 
+                onClick={(e) => { e.preventDefault(); onSelectTab("compare"); window.history.pushState(null, '', '/compare'); }}
+                className="text-indigo-400 hover:text-indigo-300 hover:underline font-semibold"
+              >
+                Compare vs Rivals →
+              </a>
+            </div>
           </div>
 
-          {/* Real Product Screenshot Preview of Venue Directory in Hero */}
-          <div className="pt-3 max-w-xl">
-            <VenueDirectoryScreenshot className="border border-slate-800 shadow-2xl" />
-          </div>
-        </div>
-
-        {/* Dynamic Account Visual Block on Hero */}
-        <div className="w-full lg:w-80 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-lg text-xs" id="quick-status-widget">
-          <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-            <span className="font-bold text-slate-400">Current Status</span>
-            <span className={`px-2 py-0.5 rounded-[4px] uppercase font-black text-[9px] ${
-              currentAccount ? "bg-amber-500/20 text-amber-200 border border-amber-500/40" : "bg-slate-800 text-slate-400"
-            }`}>
-              {currentAccount ? currentAccount.type : "Guest Account"}
-            </span>
-          </div>
-
-          {currentAccount ? (
-            <div className="space-y-3" id="logged-in-spec-sheet">
-              <div>
-                <p className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                  {currentAccount.type === "Band" ? <Users className="w-4 h-4 text-indigo-400" /> : <Building className="w-4 h-4 text-emerald-400" />}
-                  {(currentAccount.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" || currentAccount.name === "littlerusty") ? "Dr Hadit" : currentAccount.name}
-                </p>
-                <p className="text-gray-400 text-[11px] mt-0.5 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-rose-500" />
-                  {currentAccount.city}
-                </p>
-              </div>
-
-              {currentAccount.type === "Band" && (() => {
-                const musicInfo = resolveBandMusicLinks(currentAccount);
-                return (
-                  <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Band Audio:</span>
-                      {musicInfo.hasMusic && musicInfo.listenUrl ? (
-                        <a
-                          href={musicInfo.listenUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-400 hover:text-emerald-300 transition-colors"
-                        >
-                          <Headphones className="w-3 h-3" />
-                          <span>Listen ({musicInfo.platformLabel})</span>
-                          <ExternalLink className="w-2.5 h-2.5 text-emerald-400" />
-                        </a>
-                      ) : (
-                        <span className="text-[11px] text-slate-400 italic">Not listed</span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-900">
-                      <span className="text-slate-400">Press Kit:</span>
-                      {musicInfo.hasEpk && musicInfo.epkUrl ? (
-                        <a
-                          href={musicInfo.epkUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-bold"
-                        >
-                          <FileText className="w-3 h-3" />
-                          <span>View EPK</span>
-                        </a>
-                      ) : (
-                        <span className="text-slate-400 italic">Not listed</span>
-                      )}
-                    </div>
+          {/* Hero Visual Preview / Logged-in Summary */}
+          <div className="lg:col-span-5 space-y-4">
+            {currentAccount ? (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5 shadow-xl text-xs">
+                <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="font-bold text-white text-sm">
+                      {(currentAccount.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" || currentAccount.name === "littlerusty") ? "Dr Hadit" : currentAccount.name}
+                    </span>
                   </div>
-                );
-              })()}
-
-              <div className="bg-slate-950 p-3 rounded-lg space-y-2 border border-slate-800">
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="font-bold text-slate-400">30-Day Access Pass:</span>
-                  <span className={`font-black uppercase py-0.5 px-1.5 rounded text-[10px] ${
-                    activeAccess 
-                      ? "text-emerald-400 bg-emerald-400/10 border border-emerald-500/20" 
-                      : accessDetails.isExpired 
-                      ? "text-rose-400 bg-rose-400/10 border border-rose-500/20" 
-                      : "text-amber-400 bg-amber-400/10 border border-amber-500/20"
-                  }`}>
-                    {activeAccess 
-                      ? `🟢 Active (${accessDetails.remainingDays}d)` 
-                      : accessDetails.isExpired 
-                      ? "🔒 Expired" 
-                      : "🔒 Locked"}
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-300 border border-slate-700">
+                    {currentAccount.type}
                   </span>
                 </div>
-                
-                {/* Specific features state description */}
-                <p className="text-[10px] text-gray-400 leading-normal">
-                  {activeAccess 
-                    ? `✓ Full Band Contacts, EPKs & Listen links unlocked. ${currentAccount?.autoRenew ? "Auto-renewal enabled." : "Pass expires in " + accessDetails.remainingDays + " days."}`
-                    : "✓ 30-Day Pass ($9.99) to unlock unmasked booking emails, EPK, and Listen links across all 1600+ live bands (+$0.84 fee at checkout)."
-                  }
-                </p>
+
+                <div className="flex items-center justify-between text-slate-400 text-xs">
+                  <span>Hometown:</span>
+                  <span className="text-white font-medium">{currentAccount.city}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-slate-400 text-xs">
+                  <span>30-Day Pass:</span>
+                  <span className={`font-bold ${activeAccess ? "text-emerald-400" : "text-amber-400"}`}>
+                    {activeAccess ? `Active (${accessDetails.remainingDays}d)` : "Free Account (Venue Access Active)"}
+                  </span>
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  {onTriggerEditAccount && (
+                    <button
+                      type="button"
+                      onClick={onTriggerEditAccount}
+                      className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 px-3 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      <span>Edit Profile</span>
+                    </button>
+                  )}
+                  {!activeAccess && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPayPalModal(true)}
+                      className="flex-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black py-2 px-3 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Unlock Pass ($9.99)</span>
+                    </button>
+                  )}
+                </div>
               </div>
+            ) : null}
 
-              <div className="space-y-2 pt-1" id="act-control-buttons">
-                {onTriggerEditAccount && (
-                  <button
-                    type="button"
-                    onClick={onTriggerEditAccount}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-sm text-xs transition-all"
-                    id="btn-quick-status-edit-account"
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                    <span>Edit Account & Page Info</span>
-                  </button>
-                )}
-
-                {currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" && (
-                  <button
-                    type="button"
-                    onClick={() => onSelectTab("admin")}
-                    className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:scale-98 text-slate-950 font-black py-2.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-md text-xs transition-all border border-amber-300 ring-2 ring-amber-400/30"
-                    id="btn-owner-dashboard-shortcut"
-                  >
-                    <span className="text-sm">👑</span>
-                    <span>Open Owner Analytics Dashboard</span>
-                  </button>
-                )}
-
-                {!activeAccess ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowPayPalModal(true)}
-                    className="w-full bg-amber-400 hover:bg-amber-300 active:scale-98 text-slate-950 font-black py-2.5 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-md text-xs transition-all"
-                    id="btn-quick-status-unlock"
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>{accessDetails.isExpired ? "Renew 30-Day Pass ($9.99)" : "Unlock 30-Day Pass ($9.99)"}</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center justify-center py-2 px-3 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-[11px] font-bold">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mr-1.5" />
-                    <span>{accessDetails.isPerpetual ? "Lifetime VIP Pass Active" : "30-Day Access Active"}</span>
-                  </div>
-                )}
-                
-                <button
-                  type="button"
-                  onClick={onLogOut}
-                  className="w-full bg-slate-800/30 hover:bg-slate-800 text-rose-300 hover:text-rose-400 text-[10px] font-bold py-1.5 rounded-md flex items-center justify-center gap-1 cursor-pointer transition-all border border-slate-800/60"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Log Out Profile
-                </button>
-              </div>
+            <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+              <VenueDirectoryScreenshot className="w-full h-auto" />
             </div>
-          ) : (
-            <div className="space-y-3 py-2 text-center" id="guest-helper-widget">
-              <UserCheck className="w-8 h-8 text-indigo-400 mx-auto" id="guest-icon" />
-              <p className="font-bold text-white text-sm" id="guest-title">No Profile Selected</p>
-              <p className="text-gray-400 text-xs leading-relaxed" id="guest-desc">
-                Create a free Band or Venue account below to list your group and interact with bookings.
-              </p>
-              <div className="pt-2 space-y-2" id="guest-actions">
-                <a 
-                  href="#registration-block" 
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-md text-xs transition-all text-center"
-                  id="link-register-banner"
-                >
-                  <span>Register Free Now ↓</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </a>
-                <p className="text-[11px] text-slate-400">
-                  Already have an account? Use <strong className="text-white">Sign In</strong> in the header.
-                </p>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </section>
       
-      {/* Verified Live Community Proof & Scale Metrics Banner (Quantity Proof D3.1) */}
-      <section className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl space-y-5" id="proof-metrics-banner">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
-          <div className="p-4 bg-slate-950/70 rounded-2xl border border-slate-800/80 space-y-1.5">
-            <div className="text-2xl md:text-3xl font-black text-emerald-400 font-mono">4,800+</div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-200">Independent Venues</p>
-            <p className="text-xs text-slate-400">All 48 Lower States + DC (100% Free Search)</p>
+      {/* Verified Scale Metrics & Live Proof */}
+      <section className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl space-y-6" id="proof-metrics-banner">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div className="space-y-1">
+            <div className="text-2xl md:text-3xl font-black text-emerald-400 font-mono tabular-nums">4,800+</div>
+            <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">Independent Venues</p>
+            <p className="text-xs text-slate-400">All 48 Lower States + DC</p>
           </div>
-          <div className="p-4 bg-slate-950/70 rounded-2xl border border-slate-800/80 space-y-1.5">
-            <div className="text-2xl md:text-3xl font-black text-amber-400 font-mono">1,300+</div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-200">Touring & Regional Acts</p>
-            <p className="text-xs text-slate-400">Verified Booking Emails & Direct Co-Bills</p>
+          <div className="space-y-1">
+            <div className="text-2xl md:text-3xl font-black text-amber-400 font-mono tabular-nums">1,300+</div>
+            <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">Active Touring Acts</p>
+            <p className="text-xs text-slate-400">Booking Contacts &amp; Co-Bills</p>
           </div>
-          <div className="p-4 bg-slate-950/70 rounded-2xl border border-slate-800/80 space-y-1.5">
-            <div className="text-2xl md:text-3xl font-black text-indigo-400 font-mono">50,000+</div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-200">Tour Miles Mapped</p>
-            <p className="text-xs text-slate-400">Smart Google Maps Drive Times & Gas</p>
+          <div className="space-y-1">
+            <div className="text-2xl md:text-3xl font-black text-indigo-400 font-mono tabular-nums">50,000+</div>
+            <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">Tour Miles Mapped</p>
+            <p className="text-xs text-slate-400">Real Drive Times &amp; Gas Budgets</p>
           </div>
-          <div className="p-4 bg-slate-950/70 rounded-2xl border border-slate-800/80 space-y-1.5">
-            <div className="text-2xl md:text-3xl font-black text-rose-400 font-mono flex items-center justify-center gap-1">
+          <div className="space-y-1">
+            <div className="text-2xl md:text-3xl font-black text-rose-400 font-mono tabular-nums flex items-center justify-center gap-1">
               <span>4.9</span>
-              <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+              <Star className="w-4 h-4 fill-amber-400 text-amber-400 inline" />
             </div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-200">Musician Satisfaction</p>
-            <p className="text-xs text-slate-400">380+ Touring Artists & Talent Buyers</p>
+            <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">Musician Rating</p>
+            <p className="text-xs text-slate-400">380+ Touring Artists &amp; Bookers</p>
           </div>
         </div>
 
-        {/* Live Substantiation & Dated Third-Party Signals Strip (D3.5, D3.1) */}
-        <div className="p-3.5 bg-slate-950/90 rounded-2xl border border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="text-slate-300 font-medium">
-              <strong className="text-white">Live Verification Activity:</strong> 14 club contacts re-verified this week • 42 active tour routes planned this month •{" "}
-              <a
-                href="/verification"
-                onClick={(e) => { e.preventDefault(); onSelectTab("verification"); window.history.pushState(null, '', '/verification'); }}
-                className="text-emerald-400 hover:underline font-bold inline-flex items-center gap-1"
-              >
-                <span>View Public Verification Log</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
-            </span>
+        {/* Live Substantiation & Verification Links */}
+        <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>14+ venue contacts verified this week</span>
+            <span aria-hidden="true">·</span>
+            <a
+              href="/verification"
+              onClick={(e) => { e.preventDefault(); onSelectTab("verification"); window.history.pushState(null, '', '/verification'); }}
+              className="text-emerald-400 hover:underline font-bold inline-flex items-center gap-1"
+            >
+              <span>Verification Log</span>
+              <ArrowRight className="w-3 h-3" />
+            </a>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+
+          <div className="flex items-center gap-3">
             <a
               href="https://www.trustpilot.com/review/giglizard.us"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-white hover:border-emerald-500/60 transition-colors text-xs"
+              className="text-slate-300 hover:text-white inline-flex items-center gap-1 hover:underline"
               title="Trustpilot Review Profile for GigLizard"
             >
               <span>Trustpilot Profile</span>
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
-            <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-              Verified Fresh • Oct 2026
-            </span>
+            <span aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => onSelectTab("about")}
+              className="text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer"
+            >
+              About the Founder
+            </button>
           </div>
-        </div>
-
-        {/* Live Trust Bar */}
-        <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300">
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Free Venue Discovery Forever
-            </span>
-            <span className="flex items-center gap-1.5 text-indigo-400 font-semibold">
-              <ShieldCheck className="w-4 h-4 text-indigo-400" /> PayPal & Stripe 256-Bit SSL
-            </span>
-            <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
-              <Shield className="w-4 h-4 text-amber-400" /> Anti-Scrape Bot Protection
-            </span>
-            <span className="flex items-center gap-1.5 text-rose-400 font-semibold">
-              <RotateCcw className="w-4 h-4 text-rose-400" /> 7-Day Money-Back Guarantee
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => onSelectTab("about")}
-            className="text-indigo-400 hover:text-indigo-300 underline font-bold text-xs cursor-pointer inline-flex items-center gap-1"
-          >
-            <span>Read Founder Story (Little Rusty)</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
         </div>
       </section>
 
@@ -1208,164 +1085,154 @@ export default function Home({
         </div>
       )}
 
-      {/* The Three Core Features Grid - Labeled EXACTLY as requested */}
-      {/* The Core Production & Touring Features Grid */}
+      {/* Core Touring Features Grid */}
       <section className="space-y-6" id="home-featured-matrix-section">
-        <div className="text-center md:text-left space-y-1">
-          <h3 className="text-sm font-black uppercase tracking-widest text-indigo-600">Everything you need for the gig</h3>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Book the gig. Fill open middle dates. Route the van. Show up looking pro.</h2>
+        <div className="space-y-2 text-center md:text-left">
+          <div className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+            Included Production &amp; Touring Suite
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+            Everything You Need on the Road
+          </h2>
           <p className="text-xs md:text-sm text-gray-500 max-w-2xl leading-relaxed">
-            Turn empty weekdays between weekend anchor dates into paying club shows. No more wishy-washy middle tour dates burning van gas with zero door money.
+            Four free, musician-built tools to book stages, coordinate sound specs with local techs, and keep your tour on schedule.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="four-core-elements-row">
           
-          {/* Element 1: responsive stage arrangement */}
+          {/* Feature 1: Stage Plot Designer */}
           <div 
             onClick={() => onSelectTab("plot")}
-            className="group bg-white rounded-2xl border border-gray-100 hover:border-orange-300 p-5 space-y-4 transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between relative overflow-hidden" 
+            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-orange-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between" 
             id="element-responsive-stage"
           >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -z-10 group-hover:bg-orange-100 transition-all" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="bg-orange-500 text-white p-2.5 rounded-xl w-10 h-10 flex items-center justify-center shadow-xs">
                   <Sliders className="w-5 h-5" />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9.5px] uppercase font-black tracking-wider text-orange-700 font-mono bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                    Stage plot canvas
-                  </span>
-                  <span className="text-[9px] uppercase font-black tracking-wider text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
-                    ★ Most Used
-                  </span>
-                </div>
+                <span className="text-xs text-orange-700 font-semibold">
+                  Interactive Canvas
+                </span>
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 capitalize group-hover:text-orange-600 transition-all">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
                   Stage Plot Designer
                 </h3>
-                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
-                  Interactive canvas to map drum modules, monitor wedges, and mic booms. Standalone plot software charges $12-$20/mo — with GigLizard, it's 100% free and bundled.
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  Drag and drop gear to map drum kits, amps, and monitor wedges. Export a sharp PDF so venue sound engineers know your exact stage requirements.
                 </p>
               </div>
 
-              {/* Visual Preview Screenshot */}
-              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.02] transition-transform">
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.01] transition-transform">
                 <StagePlotScreenshot />
               </div>
             </div>
 
-            <div className="pt-2 text-xs font-bold text-orange-600 flex items-center gap-1 group-hover:translate-x-1 transition-all">
+            <div className="pt-2 text-xs font-bold text-orange-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
               Launch Plot Designer ($0) <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </div>
 
-          {/* Element 2: professional tech delivery */}
+          {/* Feature 2: Tech Rider Builder */}
           <div 
             onClick={() => onSelectTab("rider")}
-            className="group bg-white rounded-2xl border border-gray-100 hover:border-blue-300 p-5 space-y-4 transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between relative overflow-hidden" 
+            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-blue-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between" 
             id="element-professional-tech"
           >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-10 group-hover:bg-blue-100 transition-all" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="bg-blue-600 text-white p-2.5 rounded-xl w-10 h-10 flex items-center justify-center shadow-xs">
                   <FileText className="w-5 h-5" />
                 </div>
-                <span className="bg-blue-50 text-blue-700 text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-blue-200 font-mono">
-                  Live Patch vs Static PDFs
+                <span className="text-xs text-blue-700 font-semibold">
+                  Live Sound Specs
                 </span>
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 capitalize group-hover:text-blue-600 transition-all">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                   Tech Rider Builder
                 </h3>
-                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
-                  Compile dynamic channels, mic choices, and +48V phantom switches. While Prism and Muzeek treat riders as static uploads, GigLizard generates live editable patch lists.
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  Build formatted channel patch lists, vocal mic choices, and +48V phantom power notes. Prevent soundcheck confusion before you even load in.
                 </p>
               </div>
 
-              {/* Visual Preview Screenshot */}
-              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.02] transition-transform">
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.01] transition-transform">
                 <TechRiderScreenshot />
               </div>
             </div>
 
-            <div className="pt-2 text-xs font-bold text-blue-700 flex items-center gap-1 group-hover:translate-x-1 transition-all">
+            <div className="pt-2 text-xs font-bold text-blue-700 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
               Make Tech Rider ($0) <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </div>
 
-          {/* Element 3: distinguished promo poster layouts */}
+          {/* Feature 3: Concert Poster Designer */}
           <div 
             onClick={() => onSelectTab("poster")}
-            className="group bg-white rounded-2xl border border-gray-100 hover:border-emerald-300 p-5 space-y-4 transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between relative overflow-hidden" 
+            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-emerald-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between" 
             id="element-promo-poster"
           >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -z-10 group-hover:bg-emerald-100 transition-all" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="bg-emerald-600 text-white p-2.5 rounded-xl w-10 h-10 flex items-center justify-center shadow-xs">
                   <Image className="w-5 h-5" />
                 </div>
-                <span className="text-[9.5px] uppercase font-black tracking-wider text-emerald-700 font-mono bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  $0 vs Canva/Adobe Subs
+                <span className="text-xs text-emerald-700 font-semibold">
+                  Gig Flyer Studio
                 </span>
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 capitalize group-hover:text-emerald-600 transition-all">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
                   Concert Poster Designer
                 </h3>
-                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
-                  Design vintage halftone flyers and custom gig announcements with custom fonts, ticket stamps, and retro themes without paying for recurring design subscriptions.
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  Design vintage halftone flyers and custom tour posters with ticket stamps and custom dates. Print-ready without expensive design software.
                 </p>
               </div>
 
-              {/* Visual Preview Screenshot */}
-              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.02] transition-transform">
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.01] transition-transform">
                 <PosterScreenshot />
               </div>
             </div>
 
-            <div className="pt-2 text-xs font-bold text-emerald-600 flex items-center gap-1 group-hover:translate-x-1 transition-all">
+            <div className="pt-2 text-xs font-bold text-emerald-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
               Open Flyer Editor ($0) <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </div>
 
-          {/* Element 4: Smart Tour Planner */}
+          {/* Feature 4: Smart Tour Planner */}
           <div 
             onClick={() => onSelectTab("tour")}
-            className="group bg-white rounded-2xl border border-gray-100 hover:border-rose-300 p-5 space-y-4 transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between relative overflow-hidden" 
+            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-rose-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between" 
             id="element-ai-tour-scheduler"
           >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-bl-full -z-10 group-hover:bg-rose-100 transition-all" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="bg-rose-600 text-white p-2.5 rounded-xl w-10 h-10 flex items-center justify-center shadow-xs">
                   <Compass className="w-5 h-5" />
                 </div>
-                <span className="text-[9.5px] uppercase font-black tracking-wider text-rose-700 font-mono bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                  Drive Times vs Spreadsheets
+                <span className="text-xs text-rose-700 font-semibold">
+                  Route &amp; Gas Budgets
                 </span>
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 capitalize group-hover:text-rose-600 transition-all">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-rose-600 transition-colors">
                   Smart Tour Planner
                 </h3>
-                <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
-                  Avoid 900 km overnight drives and spreadsheet formula errors with automatic route calculation, drive hours, van gas budgets, and corridor stop suggestions.
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  Map realistic highway drive times, van gas budgets, and corridor stop suggestions between anchor dates to avoid exhausting overnight drives.
                 </p>
               </div>
 
-              {/* Visual Preview Screenshot */}
-              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.02] transition-transform">
+              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-2xs group-hover:scale-[1.01] transition-transform">
                 <TourPlannerScreenshot />
               </div>
             </div>
 
-            <div className="pt-2 text-xs font-bold text-rose-600 flex items-center gap-1 group-hover:translate-x-1 transition-all">
+            <div className="pt-2 text-xs font-bold text-rose-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
               Plan Tour Route ($0) <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -1373,53 +1240,47 @@ export default function Home({
         </div>
       </section>
 
-      {/* Verified Touring Musician & Venue Testimonials / Case Studies (Story D3.2) */}
+      {/* Verified Touring Musician & Venue Testimonials */}
       <section className="space-y-6 scroll-mt-20" id="stories-from-the-road">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 text-[10.5px] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-indigo-200">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              Touring Musician & Club Case Studies
+          <div className="space-y-1">
+            <div className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+              Touring Musician Reports
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1.5">
-              How DIY Bands & Venues Book Real Shows
+            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+              How DIY Bands &amp; Venues Book Real Shows
             </h2>
-            <p className="text-xs text-gray-500 max-w-xl mt-1 leading-relaxed">
-              No agency gatekeepers, no cold-email black holes. Real touring artists and independent club talent buyers using GigLizard across the Lower 48.
+            <p className="text-xs md:text-sm text-gray-500 max-w-xl leading-relaxed">
+              Real feedback from independent touring musicians and club bookers across the Lower 48.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-200 shadow-xs shrink-0">
+          <div className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-gray-200/80 shadow-2xs shrink-0 text-xs">
             <div className="flex text-amber-400">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
               ))}
             </div>
-            <div className="text-xs">
-              <span className="font-black text-slate-900">4.9 / 5.0</span>
-              <span className="text-gray-400 ml-1">(380+ Verified Touring Musicians)</span>
-            </div>
+            <span className="font-extrabold text-slate-900">4.9 / 5.0</span>
+            <span className="text-gray-400">· 380+ Touring Artists</span>
           </div>
         </div>
 
-        {/* 4 Authentic Testimonials Grid (D3.2: Replaced stock images with real directory badges & profiles) */}
+        {/* 4 Authentic Testimonials Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Testimonial 1: Dr Hadit (Little Rusty) */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
-                  Pacific NW Routing
-                </span>
-                <span className="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">
-                  Verified Band
-                </span>
+          {/* Testimonial 1: Dr Hadit */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-4 shadow-2xs flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="text-xs text-slate-500 font-medium">
+                <span>Pacific Northwest</span>
+                <span aria-hidden="true" className="mx-1.5">·</span>
+                <span className="text-emerald-700 font-semibold">Verified Band</span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed italic">
                 “We routed our entire 10-city Pacific Northwest run in 20 minutes. Used the stage plot generator for every club sound engineer and booked verified rooms across the corridor. Paid for itself immediately.”
               </p>
             </div>
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+            <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <BandVisualBadge 
                   code="DH" 
@@ -1428,15 +1289,15 @@ export default function Home({
                   name="Dr Hadit"
                 />
                 <div>
-                  <p className="text-xs font-black text-slate-900">Little Rusty</p>
-                  <p className="text-[11px] text-gray-500">Frontman & Booking • Dr Hadit</p>
+                  <p className="text-xs font-bold text-slate-900">Little Rusty</p>
+                  <p className="text-[11px] text-gray-500">Dr Hadit · Portland, OR</p>
                 </div>
               </div>
               <a
                 href="https://drhadit.bandcamp.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline shrink-0 inline-flex items-center gap-0.5"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 shrink-0 inline-flex items-center gap-0.5"
               >
                 <span>Bandcamp</span>
                 <ExternalLink className="w-3 h-3" />
@@ -1445,21 +1306,18 @@ export default function Home({
           </div>
 
           {/* Testimonial 2: Albert Castiglia */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-100">
-                  National Club Touring
-                </span>
-                <span className="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">
-                  Verified Artist
-                </span>
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-4 shadow-2xs flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="text-xs text-slate-500 font-medium">
+                <span>National Club Circuit</span>
+                <span aria-hidden="true" className="mx-1.5">·</span>
+                <span className="text-emerald-700 font-semibold">Verified Artist</span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed italic">
                 “Having verified venue specs, stage dimensions, and direct talent buyer inboxes before routing a multi-state run cuts out weeks of bounced emails.”
               </p>
             </div>
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+            <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <BandVisualBadge 
                   code="AC" 
@@ -1468,15 +1326,15 @@ export default function Home({
                   name="Albert Castiglia"
                 />
                 <div>
-                  <p className="text-xs font-black text-slate-900">Albert Castiglia</p>
-                  <p className="text-[11px] text-gray-500">Blues Rock Artist • Intrepid Artists</p>
+                  <p className="text-xs font-bold text-slate-900">Albert Castiglia</p>
+                  <p className="text-[11px] text-gray-500">Blues Rock Artist</p>
                 </div>
               </div>
               <a
                 href="https://www.albertcastiglia.net"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-800 hover:underline shrink-0 inline-flex items-center gap-0.5"
+                className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 shrink-0 inline-flex items-center gap-0.5"
               >
                 <span>Website</span>
                 <ExternalLink className="w-3 h-3" />
@@ -1485,21 +1343,18 @@ export default function Home({
           </div>
 
           {/* Testimonial 3: The Steepwater Band */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase bg-amber-50 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-100">
-                  Midwest Corridor
-                </span>
-                <span className="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">
-                  Verified Band
-                </span>
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-4 shadow-2xs flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="text-xs text-slate-500 font-medium">
+                <span>Midwest Corridor</span>
+                <span aria-hidden="true" className="mx-1.5">·</span>
+                <span className="text-emerald-700 font-semibold">Verified Band</span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed italic">
                 “Getting an organized channel patch list and gear plot into the sound tech's hands before soundcheck ensures our 4-piece show runs smooth every night.”
               </p>
             </div>
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+            <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <BandVisualBadge 
                   code="SW" 
@@ -1508,15 +1363,15 @@ export default function Home({
                   name="The Steepwater Band"
                 />
                 <div>
-                  <p className="text-xs font-black text-slate-900">Steepwater Band</p>
-                  <p className="text-[11px] text-gray-500">Touring Act • Chicago, IL</p>
+                  <p className="text-xs font-bold text-slate-900">The Steepwater Band</p>
+                  <p className="text-[11px] text-gray-500">Chicago, IL</p>
                 </div>
               </div>
               <a
                 href="https://www.steepwater.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-bold text-amber-700 hover:text-amber-900 hover:underline shrink-0 inline-flex items-center gap-0.5"
+                className="text-xs font-semibold text-amber-700 hover:text-amber-900 shrink-0 inline-flex items-center gap-0.5"
               >
                 <span>Website</span>
                 <ExternalLink className="w-3 h-3" />
@@ -1524,22 +1379,21 @@ export default function Home({
             </div>
           </div>
 
-          {/* Testimonial 4: Community Musician Case Study Stub */}
-          <div className="bg-slate-900 text-white rounded-2xl border border-slate-800 p-5 space-y-3.5 shadow-xs flex flex-col justify-between">
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/40">
-                  Community Road Report
-                </span>
-                <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+          {/* Testimonial 4: Community Road Report */}
+          <div className="bg-slate-900 text-white rounded-2xl border border-slate-800 p-5 space-y-4 shadow-2xs flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="text-xs text-slate-400 font-medium">
+                <span>Community Report</span>
+                <span aria-hidden="true" className="mx-1.5">·</span>
+                <span className="text-amber-400 font-semibold">Open Call</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
                 Touring band that booked dates or routed shows with GigLizard? Submit your tour story and live photo through our web form to be featured.
               </p>
             </div>
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
               <div>
-                <p className="text-xs font-black text-white">Your Band Here</p>
+                <p className="text-xs font-bold text-white">Your Band Here</p>
                 <p className="text-[11px] text-slate-400">Verified Touring Artists</p>
               </div>
               <button
@@ -1575,26 +1429,25 @@ export default function Home({
       <section className="bg-slate-900 text-white rounded-3xl p-6 md:p-10 border border-slate-800 space-y-8 scroll-mt-20 shadow-xl" id="market-comparison-section">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 text-[10.5px] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-indigo-500/30">
-              <Scale className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Independent Market Landscape</span>
+            <div className="text-xs text-indigo-400 font-semibold tracking-wide">
+              Market Landscape · Transparent Comparison
             </div>
-            <h2 className="text-2xl md:text-4xl font-black text-white tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
               Why Touring Bands Choose GigLizard Over Sonicbids, Prism & Spreadsheets
             </h2>
-            <p className="text-xs md:text-sm text-slate-350 leading-relaxed">
-              Prism.fm leads the category for venue operators (10,000+ venues); Gigwell serves agencies from $33/mo annual; Sonicbids paywalls gig-hunting; spreadsheets remain the messy default. <strong>GigLizard is the only sub-$10 self-serve touring toolkit built for DIY bands.</strong>
+            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              Prism is built for venue operators; Gigwell targets agencies; Sonicbids paywalls gig discovery; spreadsheets are chaos. GigLizard is the only sub-$10 self-serve touring toolkit built for DIY bands.
             </p>
           </div>
 
           <button
             type="button"
             onClick={() => onSelectTab("compare")}
-            className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs rounded-xl shadow-lg cursor-pointer transition-all flex items-center gap-2 shrink-0 self-start md:self-auto"
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-2 shrink-0 self-start md:self-auto"
             id="home-btn-full-matrix"
           >
             <BarChart3 className="w-4 h-4 text-indigo-200" />
-            <span>View Full 5-Platform Matrix</span>
+            <span>Full 5-Platform Matrix</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -1602,79 +1455,79 @@ export default function Home({
         {/* 4 Competitive Wedge Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: vs Sonicbids */}
-          <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/60 transition-all">
+          <div className="bg-slate-800/70 rounded-2xl border border-slate-700/60 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/50 transition-all">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 font-mono">Closest Rival</span>
-                <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">$240+/year</span>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-slate-400">Closest Rival</span>
+                <span className="font-bold text-rose-400">$240+/year</span>
               </div>
-              <h3 className="text-base font-black text-white">vs. Sonicbids</h3>
-              <p className="text-[11.5px] text-slate-350 leading-relaxed">
-                Sonicbids paywalls the gig discovery layer itself with recurring subscriptions. GigLizard gives you 4,800+ venues and verified booking emails 100% free forever.
+              <h3 className="text-sm font-bold text-white">vs. Sonicbids</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Paywalls stage browsing with locked annual recurring plans. GigLizard gives you 4,800+ venues and verified booking emails 100% free.
               </p>
             </div>
-            <div className="pt-2 border-t border-slate-700 text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+            <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-400" /> Free Venue Discovery
             </div>
           </div>
 
           {/* Card 2: vs Prism.fm */}
-          <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/60 transition-all">
+          <div className="bg-slate-800/70 rounded-2xl border border-slate-700/60 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/50 transition-all">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-mono">Category Leader</span>
-                <span className="text-[10px] font-bold text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded border border-slate-600">Enterprise Demo</span>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-slate-400">Category Leader</span>
+                <span className="font-bold text-slate-400">Enterprise Demo</span>
               </div>
-              <h3 className="text-base font-black text-white">vs. Prism.fm</h3>
-              <p className="text-[11.5px] text-slate-350 leading-relaxed">
-                Prism powers 10,000+ venue box offices and promoters at thousands/year. GigLizard is designed for DIY working bands with transparent, sub-$10 single passes.
+              <h3 className="text-sm font-bold text-white">vs. Prism.fm</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Tailored for box offices and mega-promoters at thousands/year. GigLizard is made for working artists with flat, single passes.
               </p>
             </div>
-            <div className="pt-2 border-t border-slate-700 text-[11px] text-emerald-400 font-bold flex items-center gap-1">
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> Band-First Architecture
+            <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-400" /> Band-First Focus
             </div>
           </div>
 
           {/* Card 3: vs Gigwell */}
-          <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/60 transition-all">
+          <div className="bg-slate-800/70 rounded-2xl border border-slate-700/60 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/50 transition-all">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-mono">Agency Tool</span>
-                <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">From $396/yr</span>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-slate-400">Agency Tool</span>
+                <span className="font-bold text-rose-400">From $396/yr</span>
               </div>
-              <h3 className="text-base font-black text-white">vs. Gigwell</h3>
-              <p className="text-[11.5px] text-slate-350 leading-relaxed">
-                Gigwell charges $33/mo billed strictly annually for booking agencies. GigLizard charges $9.99 for a single 30-day tour pass with zero annual lock-in.
+              <h3 className="text-sm font-bold text-white">vs. Gigwell</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Billed strictly annually for talent agencies. GigLizard offers a flat $9.99 30-day tour pass with zero annual contracts.
               </p>
             </div>
-            <div className="pt-2 border-t border-slate-700 text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+            <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-400" /> No Annual Lock-in
             </div>
           </div>
 
           {/* Card 4: vs Spreadsheets */}
-          <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/60 transition-all">
+          <div className="bg-slate-800/70 rounded-2xl border border-slate-700/60 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/50 transition-all">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 font-mono">Status Quo</span>
-                <span className="text-[10px] font-bold text-slate-400 bg-slate-700/50 px-2 py-0.5 rounded border border-slate-600">DIY Chaos</span>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-slate-400">Default Habit</span>
+                <span className="font-bold text-slate-400">DIY Chaos</span>
               </div>
-              <h3 className="text-base font-black text-white">vs. Spreadsheets</h3>
-              <p className="text-[11.5px] text-slate-350 leading-relaxed">
-                Replaces 900 km overnight drives, broken formula tabs, and cold-email black holes with automated routing, gas budgets, and pro stage plot canvases.
+              <h3 className="text-sm font-bold text-white">vs. Spreadsheets</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Replaces broken tabs and guess-work with automated driving routes, fuel budgets, and clean stage plot canvases.
               </p>
             </div>
-            <div className="pt-2 border-t border-slate-700 text-[11px] text-emerald-400 font-bold flex items-center gap-1">
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> Stage Plot & Rider Suite
+            <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-400" /> Complete Stage Suite
             </div>
           </div>
         </div>
 
         {/* Mini Comparison Bar */}
-        <div className="bg-slate-950 rounded-2xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-slate-350">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-slate-300">
               Only GigLizard bundles <strong>interactive stage plotting, patch list generation & gig flyers</strong> for <strong>$0</strong>.
             </span>
           </div>
@@ -1682,15 +1535,15 @@ export default function Home({
             <button
               type="button"
               onClick={() => onSelectTab("venues")}
-              className="text-indigo-400 hover:text-indigo-300 font-bold hover:underline cursor-pointer"
+              className="text-indigo-400 hover:text-indigo-300 font-semibold hover:underline cursor-pointer"
             >
               Browse 4,800+ Free Venues →
             </button>
-            <span className="text-slate-700">•</span>
+            <span className="text-slate-700">·</span>
             <button
               type="button"
               onClick={() => onSelectTab("compare")}
-              className="text-amber-400 hover:text-amber-300 font-bold hover:underline cursor-pointer"
+              className="text-amber-400 hover:text-amber-300 font-semibold hover:underline cursor-pointer"
             >
               See All 10 Dimensions →
             </button>
@@ -1791,11 +1644,10 @@ export default function Home({
       {/* Account Type Tier Information & Trust Spine (Pricing D3.4, D4.1, D4.2, D4.3) */}
       <section className="bg-slate-100/90 rounded-3xl p-6 md:p-8 border border-gray-200/70 space-y-6" id="tiers-comparer-block">
         <div className="max-w-3xl mx-auto space-y-2 text-center">
-          <div className="inline-flex items-center gap-1.5 bg-slate-200 text-slate-700 text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-full">
-            <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-            Transparent Pricing • Zero Hidden Traps
+          <div className="text-xs font-semibold text-emerald-800 tracking-wide">
+            Transparent Pricing · Zero Hidden Traps
           </div>
-          <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight leading-snug">
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-snug">
             Access to Venues - FREE<br />Access to Band Contacts - $9.99 / 30-Day Pass
           </h2>
           <p className="text-xs text-gray-600 leading-relaxed max-w-lg mx-auto">
@@ -1810,36 +1662,36 @@ export default function Home({
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                 <div>
-                  <span className="font-black text-slate-900 uppercase text-xs flex items-center gap-1.5">
+                  <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                     <Building className="w-4 h-4 text-emerald-600" />
                     Free Features & Venues
                   </span>
                   <p className="text-2xl font-black text-slate-900 mt-1">$0 <span className="text-xs text-gray-500 font-normal">/ forever</span></p>
                 </div>
-                <span className="text-[10.5px] font-black text-emerald-700 bg-emerald-50 py-0.5 px-2.5 rounded-full border border-emerald-200">
+                <span className="text-xs font-semibold text-emerald-700">
                   100% Free Forever
                 </span>
               </div>
               <ul className="space-y-2.5 text-xs text-gray-650">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>4,800+ Independent Venues:</strong> Browse all live stages across all 48 lower states with complete addresses and booking emails for free</span>
+                  <span><strong>4,800+ Independent Venues:</strong> Browse all live stages across the USA with verified booking emails.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>Smart Tour Planner:</strong> Real-time drive times, lodging finder, gas estimates, and Google Maps routing</span>
+                  <span><strong>Smart Tour Planner:</strong> Drive times, corridor cities, gas estimates, and Google Maps routing.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>Full Stage Production Suite:</strong> Stage Plot Designer, Tech Rider Builder, and Gig Flyer / Poster Designer</span>
+                  <span><strong>Stage Suite:</strong> Drag-and-drop Stage Plot Designer, Tech Rider Builder, and Gig Flyer Studio.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>Public Directory Listing:</strong> Register your band, venue, or sound engineer profile for free</span>
+                  <span><strong>Public Directory Listing:</strong> Register your band, venue, or sound engineer profile for free.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>No Credit Card Required:</strong> Full access to venue search and all stage plotting utilities without entering payment info</span>
+                  <span><strong>No Credit Card Needed:</strong> Search venues and design stage plots immediately without payment info.</span>
                 </li>
               </ul>
             </div>
@@ -1848,7 +1700,7 @@ export default function Home({
               <button
                 type="button"
                 onClick={() => onSelectTab("venues")}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>Browse Venues for Free (No CC Required)</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1861,77 +1713,64 @@ export default function Home({
           </div>
 
           {/* Band Directory Contacts Access Box */}
-          <div className="bg-white rounded-2xl border-2 border-amber-300/80 p-6 space-y-4 shadow-md flex flex-col justify-between relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-amber-400 text-slate-950 text-[9px] font-black uppercase px-3 py-0.5 rounded-bl-lg tracking-wider">
-              Popular with Touring Bands
-            </div>
-            
+          <div className="bg-white rounded-2xl border-2 border-amber-300/80 p-6 space-y-4 shadow-md flex flex-col justify-between relative">
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                 <div>
-                  <span className="font-black text-slate-900 uppercase text-xs flex items-center gap-1.5">
+                  <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                     <Users className="w-4 h-4 text-amber-500" />
                     Band Contacts Pass
                   </span>
                   <p className="text-2xl font-black text-slate-900 mt-1">$9.99 <span className="text-xs text-gray-500 font-normal">/ 30-day pass</span></p>
-                  <p className="text-[10px] text-gray-400 font-mono">+$0.84 secure processor fee = $10.83 total</p>
-                  <p className="text-[11px] text-amber-700 font-bold mt-1">
-                    Less than the door split on a single gig - and it covers your whole run
-                  </p>
+                  <p className="text-[11px] text-gray-500 font-mono mt-0.5">+$0.84 processor fee = $10.83 total</p>
                 </div>
-                <span className="text-[10.5px] font-black text-amber-900 bg-amber-50 py-0.5 px-2.5 rounded-full border border-amber-300">
-                  Single Pass
+                <span className="text-xs font-semibold text-amber-900">
+                  Single Pass · No Auto-Renew
                 </span>
               </div>
               <ul className="space-y-2.5 text-xs text-gray-650">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>1,300+ Band Direct Contacts:</strong> Unlock booking emails, manager contacts, EPK packages, and audio links</span>
+                  <span><strong>1,300+ Verified Band Contacts:</strong> Unmask booking emails, manager contacts, EPKs, and audio links.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>Co-Bill & Show Swaps:</strong> Coordinate shared bills with local draws in your corridor cities to fill rooms</span>
+                  <span><strong>Co-Bill & Show Swaps:</strong> Coordinate shared bills with local draws along your tour corridor.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>Filtered Genre & City Search:</strong> Target acts in specific markets across all 48 lower states (+DC)</span>
+                  <span><strong>Filtered Genre & City Search:</strong> Target compatible acts across any tour stop in the USA.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>No Recurring Subscription Traps:</strong> Single 30-day pass with zero recurring billing. Automatically expires after 30 days without auto-renewal.</span>
+                  <span><strong>Zero Recurring Traps:</strong> Flat 30-day pass that automatically expires without auto-renewal.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold mt-0.5">✓</span>
-                  <span><strong>Instant Pass Activation:</strong> Immediate full access to all verified band contacts</span>
+                  <span><strong>Instant Pass Activation:</strong> Immediate full access to all verified band contacts.</span>
                 </li>
               </ul>
             </div>
 
             <div className="space-y-3 pt-3 border-t border-gray-100">
-              <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-black text-slate-950 block">30-Day Access Pass</span>
-                  <span className="text-[10.5px] text-gray-500">$9.99 + $0.84 processor fee ($10.83 total)</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (currentAccount) {
-                      setShowCheckoutModal(true);
-                    } else {
-                      document.getElementById("registration-block")?.scrollIntoView({ behavior: "smooth" });
-                    }
-                  }}
-                  className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-black px-4 py-2 rounded-xl text-xs cursor-pointer shadow-xs transition-all flex items-center gap-1.5"
-                >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Unlock ($9.99)</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentAccount) {
+                    setShowCheckoutModal(true);
+                  } else {
+                    document.getElementById("registration-block")?.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+                className="w-full py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold rounded-xl text-xs cursor-pointer shadow-xs transition-all flex items-center justify-center gap-1.5"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Unlock 30-Day Band Pass ($9.99)</span>
+              </button>
 
               {/* Value Anchor Line (D4.3, D4.2) */}
               <p className="text-[11px] text-gray-600 font-medium text-center leading-relaxed px-1">
-                Less than the door split on a single gig - and it covers your whole run. Every booking contact, every corridor city, no renewal unless you ask for one.
+                Less than the door split on a single gig - and it covers your whole run. No renewal unless you ask for one.
               </p>
 
               {/* Guarantee Pill */}
@@ -2069,15 +1908,14 @@ export default function Home({
           <div className="flex items-center gap-3.5">
             <FounderAvatar size="lg" className="shrink-0" />
             <div className="space-y-0.5">
-              <div className="inline-flex items-center gap-1.5 text-amber-400 text-[10.5px] font-black uppercase tracking-wider">
-                <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
-                <span>Working Musician Built</span>
+              <div className="text-xs text-amber-400 font-semibold tracking-wide">
+                Working Musician Built · Pacific Northwest
               </div>
               <h3 className="text-xl md:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                Built in Portland by Little Rusty
+                Little Rusty built this in Portland
               </h3>
               <p className="text-xs text-slate-400">
-                Touring Pacific Northwest Musician • Live Sound Engineer • Frontman of Dr Hadit
+                Touring Musician · Live Sound Engineer · Frontman of Dr Hadit, Knucklebone, 7AT
               </p>
             </div>
           </div>
@@ -2089,14 +1927,14 @@ export default function Home({
               title="Contact Support via Web Form"
             >
               <Mail className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Contact Web Form</span>
+              <span>Contact Support</span>
             </button>
             <button
               type="button"
               onClick={() => setShowAboutModal(true)}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl cursor-pointer transition-all border border-slate-700 shrink-0 flex items-center gap-1.5"
             >
-              <span>Full Origin Story</span>
+              <span>Origin Story</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

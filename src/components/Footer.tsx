@@ -65,7 +65,7 @@ export default function Footer({
               Nationwide Independent Touring & Stage Directory (Lower 48). Stage plotting, routing, and booking workspace.
             </p>
             <p className="text-[11px] text-slate-400">
-              Built & operated by <strong>Little Rusty</strong> • Portland, OR • <button type="button" onClick={handleOpenContact} className="text-indigo-400 hover:underline cursor-pointer">Contact Support via Web Form</button>
+              Little Rusty built this in Portland · <button type="button" onClick={handleOpenContact} className="text-indigo-400 hover:underline cursor-pointer">Contact Support via Web Form</button>
             </p>
             {/* Verification & Trust Signals (D3.5, D3.1) */}
             <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-[11px]">

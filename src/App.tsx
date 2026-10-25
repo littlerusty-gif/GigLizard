@@ -1299,160 +1299,121 @@ export default function GigLizardApp() {
             </button>
           </div>
 
-          {/* Desktop Navigation Bar (md+): Clean horizontal bar with crawler-visible hrefs (D5.3, D2.4) */}
-          <nav className="hidden md:flex flex-row items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/60 shadow-2xs shrink-0" id="main-nav">
-            <a
-              href="/venues"
-              onClick={(e) => { e.preventDefault(); setActiveTab("venues"); window.history.pushState(null, '', '/venues'); }}
-              id="tab-btn-venues"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "venues"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span>Venues</span>
-            </a>
+          {/* Desktop Navigation Bar (md+): Clean 5-link primary bar with clear actions */}
+          <div className="hidden md:flex items-center gap-3 shrink-0">
+            <nav className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/70 shrink-0" id="main-nav">
+              <a
+                href="/venues"
+                onClick={(e) => { e.preventDefault(); setActiveTab("venues"); window.history.pushState(null, '', '/venues'); }}
+                id="tab-btn-venues"
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "venues"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Venues</span>
+              </a>
 
-            <a
-              href="/bands"
-              onClick={(e) => { e.preventDefault(); setActiveTab("bands"); window.history.pushState(null, '', '/bands'); }}
-              id="tab-btn-bands"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "bands"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <Users className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>Bands</span>
-            </a>
+              <a
+                href="/bands"
+                onClick={(e) => { e.preventDefault(); setActiveTab("bands"); window.history.pushState(null, '', '/bands'); }}
+                id="tab-btn-bands"
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "bands"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span>Bands</span>
+              </a>
 
-            <a
-              href="/tour"
-              onClick={(e) => { e.preventDefault(); setActiveTab("tour"); window.history.pushState(null, '', '/tour'); }}
-              id="tab-btn-tour"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "tour"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span>Tour</span>
-            </a>
+              <a
+                href="/tour"
+                onClick={(e) => { e.preventDefault(); setActiveTab("tour"); window.history.pushState(null, '', '/tour'); }}
+                id="tab-btn-tour"
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "tour"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Tour</span>
+              </a>
 
-            <a
-              href="/features"
-              onClick={(e) => { e.preventDefault(); setActiveTab("features"); window.history.pushState(null, '', '/features'); }}
-              id="tab-btn-features"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "features"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
-              <span>Features</span>
-            </a>
+              <a
+                href="/features"
+                onClick={(e) => { e.preventDefault(); setActiveTab("features"); window.history.pushState(null, '', '/features'); }}
+                id="tab-btn-features"
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "features"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+                <span>Features</span>
+              </a>
 
-            <a
-              href="/pricing"
-              onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); window.history.pushState(null, '', '/pricing'); }}
-              id="tab-btn-pricing"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "pricing"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Pricing</span>
-            </a>
+              <a
+                href="/pricing"
+                onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); window.history.pushState(null, '', '/pricing'); }}
+                id="tab-btn-pricing"
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "pricing"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Pricing</span>
+              </a>
+            </nav>
 
-            <a
-              href="/compare"
-              onClick={(e) => { e.preventDefault(); setActiveTab("compare"); window.history.pushState(null, '', '/compare'); }}
-              id="tab-btn-compare"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "compare"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-              title="Compare GigLizard against Sonicbids, Prism.fm, Gigwell & Spreadsheets"
-            >
-              <Scale className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span>Compare</span>
-            </a>
-
+            {/* Claim Band Action */}
             <button
               type="button"
               onClick={() => setShowArtistRegistrationModal(true)}
               id="header-claim-band-btn"
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black cursor-pointer rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+              className="hidden lg:flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl border border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-amber-900 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
               title="Claim or submit your band to the verified touring directory"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-200 shrink-0" />
-              <span>+ Claim / List Your Band</span>
+              <span>+ List Band</span>
             </button>
 
-            <a
-              href="/advisor"
-              onClick={(e) => { e.preventDefault(); setActiveTab("advisor"); window.history.pushState(null, '', '/advisor'); }}
-              id="tab-btn-advisor"
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold cursor-pointer rounded-xl transition-all ${
-                activeTab === "advisor"
-                  ? "bg-white text-slate-950 shadow-xs ring-1 ring-slate-200"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-white/80"
-              }`}
-            >
-              <HelpCircle className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-              <span>Help</span>
-            </a>
-
-            {/* Owner & Private Analytics Dashboard Button - strictly visible to littlerusty@gmail.com only */}
+            {/* Owner Link if admin */}
             {currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" && (
               <button
+                type="button"
                 onClick={() => setActiveTab("admin")}
                 id="tab-btn-admin"
-                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs ${
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeTab === "admin"
-                    ? "bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-300"
-                    : "bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200"
+                    ? "bg-amber-400 text-slate-950 font-black"
+                    : "bg-amber-100/70 text-amber-900 hover:bg-amber-200"
                 }`}
-                title="Private Owner Analytics & Subscriber Contact Hub (littlerusty@gmail.com)"
+                title="Private Owner Analytics"
               >
-                <Crown className={`w-3.5 h-3.5 ${activeTab === "admin" ? "text-slate-950" : "text-amber-600"}`} />
+                <Crown className="w-3.5 h-3.5 text-amber-700" />
                 <span>Owner</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               </button>
             )}
 
-            {/* Dynamic Account Action Button: Edit Account if authenticated, Sign In if guest */}
+            {/* Dynamic Account Action Button */}
             {isAuthenticated ? (
-              <div className="flex items-center gap-1.5" id="header-authenticated-actions">
-                <span 
-                  id="header-user-display-badge"
-                  className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-slate-800 bg-white border border-slate-200/90 rounded-xl shadow-2xs"
-                  title={`Active account: ${isOwnerUser ? "Dr Hadit" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}`}
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                  <span className="truncate max-w-[120px] text-slate-900 font-extrabold">
-                    {isOwnerUser ? "Dr Hadit" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowEditAccountModal(true)}
-                  id="tab-btn-edit-account"
-                  className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 whitespace-nowrap"
-                  title="Edit your account password, view status, or update your band or venue page"
-                >
-                  <Settings className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                  <span>Account</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditAccountModal(true)}
+                id="tab-btn-edit-account"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
+                title="View Account Status"
+              >
+                <Settings className="w-3.5 h-3.5 text-slate-300" />
+                <span>Account</span>
+              </button>
             ) : (
               <button
                 type="button"
@@ -1461,14 +1422,14 @@ export default function GigLizardApp() {
                   setShowUserLoginModal(true);
                 }}
                 id="tab-btn-sign-in"
-                className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs font-black cursor-pointer rounded-xl transition-all shadow-xs bg-indigo-600 hover:bg-indigo-500 text-white whitespace-nowrap"
-                title="Sign in or register your GigLizard profile"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
+                title="Sign in to your profile"
               >
-                <LogIn className="w-3.5 h-3.5 shrink-0" />
+                <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
               </button>
             )}
-          </nav>
+          </div>
 
         </div>
 
