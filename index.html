@@ -8,23 +8,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>GigLizard - Free Venue Directory & DIY Tour Tools</title>
     <meta name="description" content="Find 4,800+ music venues for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees." />
+    <meta name="keywords" content="music venue directory, independent touring, diy tour booking, stage plot designer, band tech rider builder, concert flyer maker, live music booking emails, co-bill band finder, tour gas calculator, lower 48 venue search" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="theme-color" content="#0f172a" />
     <link rel="canonical" href="https://www.giglizard.us/" />
+    
+    <!-- OpenGraph Social Sharing Card (Facebook, LinkedIn, Discord, Slack) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="GigLizard" />
     <meta property="og:url" content="https://www.giglizard.us/" />
     <meta property="og:title" content="GigLizard - Free Venue Directory & DIY Tour Tools" />
     <meta property="og:description" content="Find 4,800+ music venues for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees." />
-    <meta property="og:image" content="/giglizard_logo.png" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="GigLizard" />
+    <meta property="og:image" content="https://www.giglizard.us/giglizard_logo.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GigLizard - Free Independent Live Music Touring Directory & Production Suite" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Social Sharing Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="GigLizard - Free Venue Directory & DIY Tour Tools" />
     <meta name="twitter:description" content="Find 4,800+ music venues for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees." />
-    <meta name="twitter:image" content="/giglizard_logo.png" />
+    <meta name="twitter:image" content="https://www.giglizard.us/giglizard_logo.png" />
+    <meta name="twitter:image:alt" content="GigLizard - Free Live Music Venue Directory & DIY Tour Tools" />
 
-    <!-- Schema.org Structured Data (JSON-LD) for Search Engines & AI Crawlers -->
+    <!-- Schema.org Structured Data (JSON-LD) for Search Engines & AI Assistants -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://www.giglizard.us/#website",
+          "url": "https://www.giglizard.us",
+          "name": "GigLizard",
+          "description": "Free Venue Directory & DIY Tour Preparation Suite for Musicians across the USA",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://www.giglizard.us/venues?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
         {
           "@type": "Organization",
           "@id": "https://www.giglizard.us/#organization",
@@ -38,6 +65,18 @@
             "addressLocality": "Portland",
             "addressRegion": "OR",
             "addressCountry": "US"
+          },
+          "founder": {
+            "@type": "Person",
+            "name": "Little Rusty",
+            "jobTitle": "Touring Musician & Live Sound Engineer",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Portland",
+              "addressRegion": "OR",
+              "addressCountry": "US"
+            },
+            "description": "Working Pacific Northwest musician, live sound engineer, and frontman of Dr Hadit, Knucklebone, 7AT."
           }
         },
         {
@@ -47,6 +86,16 @@
           "url": "https://www.giglizard.us",
           "applicationCategory": "MusicApplication",
           "operatingSystem": "All",
+          "browserRequirements": "Requires JavaScript. Requires HTML5 Canvas support.",
+          "featureList": [
+            "4,800+ Verified US Music Venues Directory",
+            "Interactive Drag-and-Drop Stage Plot Designer",
+            "Formatted Soundboard Tech Rider Builder",
+            "AI Tour Routing with Google Maps & Gas Cost Estimator",
+            "Retro & Neon Concert Poster Studio",
+            "1,300+ Verified Touring Bands Co-Bill Directory",
+            "Live Verification & Moderation Audit Queue"
+          ],
           "offers": [
             {
               "@type": "Offer",
@@ -61,6 +110,54 @@
               "price": "9.99",
               "priceCurrency": "USD",
               "description": "Unlocks direct booking emails and official contacts for 1,300+ touring acts with zero recurring billing."
+            }
+          ]
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://www.giglizard.us/#breadcrumbs",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://www.giglizard.us/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Venues",
+              "item": "https://www.giglizard.us/venues"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Bands",
+              "item": "https://www.giglizard.us/bands"
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "name": "Tour Planner",
+              "item": "https://www.giglizard.us/tour"
+            },
+            {
+              "@type": "ListItem",
+              "position": 5,
+              "name": "Stage Plot",
+              "item": "https://www.giglizard.us/plot"
+            },
+            {
+              "@type": "ListItem",
+              "position": 6,
+              "name": "Tech Rider",
+              "item": "https://www.giglizard.us/rider"
+            },
+            {
+              "@type": "ListItem",
+              "position": 7,
+              "name": "Pricing",
+              "item": "https://www.giglizard.us/pricing"
             }
           ]
         },
@@ -161,7 +258,7 @@
         <p><em>"One pass covers your whole tour run - every booking contact, every corridor city, no renewal unless you ask for one."</em></p>
 
         <h2>Built in Portland by Little Rusty</h2>
-        <p>Built by working Pacific Northwest touring musician and live sound engineer Little Rusty (frontman of Dr Hadit). Direct support available through our contact web form.</p>
+        <p>Built by working Pacific Northwest touring musician and live sound engineer Little Rusty (frontman of Dr Hadit, Knucklebone, 7AT). Direct support available through our contact web form.</p>
       </main>
     </noscript>
 

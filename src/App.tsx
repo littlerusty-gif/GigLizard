@@ -454,7 +454,7 @@ export default function GigLizardApp() {
       faq: "Tour Booking & Directory FAQ | GigLizard",
       guide: "DIY Tour Playbook - How to Book & Route Live Shows",
       verification: "Directory Verification Log & Freshness Audits | GigLizard",
-      admin: "Owner Dashboard | GigLizard"
+      admin: "Owner Management Dashboard | GigLizard"
     };
 
     const descriptions: Record<string, string> = {
@@ -465,9 +465,9 @@ export default function GigLizardApp() {
       compare: "Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory and $9.99 flat pass vs $30/mo recurring subscriptions.",
       about: "GigLizard was founded in Portland by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
       features: "Free touring toolkit for independent bands: 4,800+ venue directory, AI route planner with drive times, drag-and-drop stage plots, and tech riders.",
-      changelog: "Dated changelog of shipped features, venue directory additions, and tool updates for GigLizard.",
+      changelog: "Explore the dated product changelog for GigLizard: verified music venue directory expansions, interactive stage plots, and DIY tour features.",
       customers: "Real touring case studies and road stories from independent bands booking clubs, routing tours, and filling dates across the Lower 48.",
-      guide: "Practical guide for independent bands booking and routing self-managed tours across North America.",
+      guide: "Practical DIY tour playbook for independent musicians: find bookable clubs, pitch talent buyers, coordinate co-bills, and budget van fuel.",
       verification: "Live moderation queue, dated venue audits, and human corroboration records for 4,800+ music venues and active band contacts across the Lower 48.",
       faq: "Frequently asked questions about venue booking inboxes, $9.99 flat band passes, 7-day money-back refunds, and DIY touring tools."
     };

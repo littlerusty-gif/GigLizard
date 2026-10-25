@@ -3,7 +3,7 @@
 > Nationwide Independent Touring & Stage Directory and Booking Workspace for musicians, bands, and venues across the Lower 48.
 
 ## Overview
-GigLizard is a self-serve live music touring platform founded by Portland-based touring musician and sound engineer Little Rusty. It replaces expensive enterprise software and messy spreadsheets with integrated tools for DIY and regional touring acts.
+GigLizard is a self-serve live music touring platform founded by Portland-based touring musician and sound engineer Little Rusty (frontman of Dr Hadit, Knucklebone, 7AT). It replaces expensive enterprise software and messy spreadsheets with integrated tools for DIY and regional touring acts.
 
 ## Core Capabilities
 - **4,800+ Independent Venue Directory**: Search live music stages across all 48 continental states with verified booking emails, capacities, and stage specs (100% Free Forever).
@@ -20,6 +20,12 @@ GigLizard is a self-serve live music touring platform founded by Portland-based 
 
 ## Key URLs
 - Home: https://www.giglizard.us/
+- Venues Directory (Free 4,800+ Clubs): https://www.giglizard.us/venues
+- Band Directory (Co-Bill Contacts): https://www.giglizard.us/bands
+- Smart Tour Planner & Gas Calculator: https://www.giglizard.us/tour
+- Interactive Stage Plot Designer: https://www.giglizard.us/plot
+- Tech Rider & Soundboard Patch Builder: https://www.giglizard.us/rider
+- Concert Poster & Flyer Studio: https://www.giglizard.us/poster
 - Pricing ($0 Free vs $9.99 Pass): https://www.giglizard.us/pricing
 - Comparison Hub: https://www.giglizard.us/compare
 - GigLizard vs Sonicbids: https://www.giglizard.us/vs/sonicbids
@@ -28,6 +34,7 @@ GigLizard is a self-serve live music touring platform founded by Portland-based 
 - Shipped Features & Tool Suite: https://www.giglizard.us/features
 - Case Studies & Road Stories: https://www.giglizard.us/customers
 - Directory Freshness & Verification Log: https://www.giglizard.us/verification
+- DIY Tour Playbook & Guide: https://www.giglizard.us/touring-guide
 - Product Changelog (Dated): https://www.giglizard.us/changelog
 - About Founder: https://www.giglizard.us/about
 - FAQ: https://www.giglizard.us/faq
