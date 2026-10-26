@@ -11,11 +11,17 @@ import { INITIAL_AVAILABLE_BANDS, sanitizeBandPhoneNumber } from "./src/data/ava
 import { MUSIC_VENUES } from "./src/data/venues";
 import { resolveBandAgency } from "./src/utils/bookingAgencies";
 import { parseProgrammaticVenuePath } from "./src/utils/venueSeoRoutes";
-import { generateSitemapXml } from "./src/utils/sitemapGenerator";
+import { generateSitemapXml, generateDynamicSupabaseSitemap } from "./src/utils/sitemapGenerator";
 
 dotenv.config();
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://papzanzgzoghrrgdzvfo.supabase.co";
+const rawSupabaseUrl = (process.env.VITE_SUPABASE_URL || "https://papzanzgzoghrrgdzvfo.supabase.co").trim();
+let SUPABASE_URL = "https://papzanzgzoghrrgdzvfo.supabase.co";
+try {
+  SUPABASE_URL = new URL(rawSupabaseUrl).origin;
+} catch {
+  SUPABASE_URL = rawSupabaseUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
+}
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_VVfSEHC_sej3qB_Qtxl5yA_fS1ZleG2";
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -157,23 +163,22 @@ Sitemap: https://www.giglizard.us/sitemap.xml
 `);
 });
 
-// Dynamic & cached XML Sitemap (sitemaps.org schema 0.9)
-app.get("/sitemap.xml", (req, res) => {
+// Dynamic & cached XML Sitemap (sitemaps.org schema 0.9) querying Supabase unique city/states & venue IDs
+app.get("/sitemap.xml", async (req, res) => {
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("X-Robots-Tag", "noindex, follow");
-  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.setHeader("Cache-Control", "public, max-age=3600");
 
   try {
-    const sitemapPath = path.resolve("public/sitemap.xml");
-    if (fs.existsSync(sitemapPath)) {
-      res.send(fs.readFileSync(sitemapPath, "utf-8"));
-      return;
-    }
+    const dynamicXml = await generateDynamicSupabaseSitemap(supabaseAdmin);
+    try {
+      fs.writeFileSync(path.resolve("public/sitemap.xml"), dynamicXml, "utf-8");
+    } catch (_) {}
+    res.send(dynamicXml);
   } catch (err) {
-    console.error("Error reading public/sitemap.xml, generating on-the-fly:", err);
+    console.error("Error generating dynamic Supabase sitemap, falling back to sync:", err);
+    res.send(generateSitemapXml());
   }
-
-  res.send(generateSitemapXml());
 });
 
 // Google Search Console dynamic HTML file verification handler
@@ -1707,12 +1712,26 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     heading: "Smart Tour Routing & Van Fuel Calculator",
     subhead: "Plan efficient driving runs, estimate tour fuel budgets, and find lodging along your route."
   },
+  "/tools/stage-plot": {
+    title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
+    description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
+    canonical: "https://giglizard.us/tools/stage-plot",
+    heading: "Free Stage Plot Maker & Band Input List Template",
+    subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
+  },
+  "/stage-plot": {
+    title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
+    description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
+    canonical: "https://giglizard.us/tools/stage-plot",
+    heading: "Free Stage Plot Maker & Band Input List Template",
+    subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
+  },
   "/plot": {
-    title: "Free Stage Plot Designer & Gear Canvas | GigLizard",
-    description: "Interactive drag-and-drop gear canvas to map drums, monitor wedges, and mic booms with instant PNG/PDF export for venue audio technicians.",
-    canonical: "https://www.giglizard.us/plot",
-    heading: "Drag-and-Drop Stage Plot Designer",
-    subhead: "Build clear, professional stage layouts in minutes and export directly to PDF."
+    title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
+    description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
+    canonical: "https://giglizard.us/tools/stage-plot",
+    heading: "Free Stage Plot Maker & Band Input List Template",
+    subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
   },
   "/rider": {
     title: "Tech Rider & Soundboard Patch Builder | GigLizard",
@@ -1721,12 +1740,26 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     heading: "Live Sound Tech Rider & Channel Patch List Builder",
     subhead: "Send organized input lists to house sound engineers so soundcheck runs smooth."
   },
+  "/tools/poster-designer": {
+    title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
+    description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
+    canonical: "https://giglizard.us/tools/poster-designer",
+    heading: "Free Gig Poster Maker & Concert Flyer Generator",
+    subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
+  },
+  "/poster-designer": {
+    title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
+    description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
+    canonical: "https://giglizard.us/tools/poster-designer",
+    heading: "Free Gig Poster Maker & Concert Flyer Generator",
+    subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
+  },
   "/poster": {
-    title: "Concert Poster Designer & Gig Flyers | GigLizard",
-    description: "Create vintage halftone and modern neon gig flyers for social promo, club posters, and tour announcements.",
-    canonical: "https://www.giglizard.us/poster",
-    heading: "Concert Poster & Gig Flyer Studio",
-    subhead: "Design tour date posters and gig announcements in retro halftone and neon styles."
+    title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
+    description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
+    canonical: "https://giglizard.us/tools/poster-designer",
+    heading: "Free Gig Poster Maker & Concert Flyer Generator",
+    subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
   }
 };
 
@@ -1821,25 +1854,70 @@ function getRouteNoscriptSnippet(cleanPath: string): string {
           <p>Plot multi-city tour routing with real Google Maps drive times, gas budgets, and highway corridor recommendations between show dates.</p>
         </div>`;
   }
-  if (cleanPath === "/plot") {
+  if (cleanPath === "/plot" || cleanPath === "/tools/stage-plot" || cleanPath === "/stage-plot") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Drag-and-Drop Stage Plot Designer ($0 Free)</h2>
-          <p>Arrange vocal mics, monitor wedges, drum risers, bass rigs, and keyboard stands on a visual stage grid. Export clean print-ready PNG and PDF plots for house sound technicians.</p>
+        <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
+          <h2>Free Stage Plot Maker &amp; Band Input List Template ($0 Free)</h2>
+          <p>GigLizard provides a 100% free drag-and-drop stage plot creator, drum and amp stage diagram canvas, and band input list template generator with high-resolution PDF and PNG export for front-of-house (FOH) sound technicians and venue production managers.</p>
+          
+          <h3>Essential Stage Plot Symbols &amp; Gear Layout</h3>
+          <ul>
+            <li><strong>Drum Kit:</strong> Placed Upstage Center. Symbols for kick drum, snare top, hi-hat, rack toms, floor tom, and overhead condenser mics.</li>
+            <li><strong>Bass Rig &amp; Direct Box (DI):</strong> Stage Left/Right backline with dedicated active 48V phantom-powered DI box.</li>
+            <li><strong>Guitar Amplifiers:</strong> Stage Right / Stage Left cabinets with microphone preferences (Shure SM57 / Sennheiser e906).</li>
+            <li><strong>Monitor Wedges:</strong> Triangular frontline stage symbols with aux mix numbering (Mix 1 Lead Vox, Mix 2 Guitar, Mix 3 Bass, Mix 4 Drums).</li>
+            <li><strong>Vocal Microphones:</strong> Tall boom stands positioned on frontline downstage with cardioid null angles aimed away from wedges.</li>
+          </ul>
+
+          <h3>Standard Channel List Numbering Architecture</h3>
+          <p>Universal console order: Drums (Ch 1–6) &rarr; Bass DI (Ch 7) &rarr; Electric Guitars (Ch 8–9) &rarr; Keyboards/Synths (Ch 10–11) &rarr; Lead &amp; Backing Vocals (Ch 12–15).</p>
+
+          <h3>Frequently Asked Questions</h3>
+          <dl>
+            <dt><strong>What is a stage plot and why does my band need one?</strong></dt>
+            <dd>A stage plot is a visual top-down graphic diagram illustrating where each band member stands on stage, where drum kits, guitar amplifiers, bass rigs, and keyboards are located, and where vocal microphones and monitor wedges need to be positioned. Sending a clear stage plot 2 to 4 weeks prior to a show allows the venue's front-of-house (FOH) and monitor sound technicians to patch lines, set mic stands, and route monitors before your band arrives, drastically shortening line check times and preventing audio feedback during your set.</dd>
+            <dt><strong>What should be included on a band input list?</strong></dt>
+            <dd>A professional band input list (or patch list) should include the channel number, instrument name, microphone or DI preference (e.g. Shure Beta 52 for kick, SM57 for guitar amp, active DI box for bass), microphone stand type (tall boom, short boom, straight stand), +48V phantom power requirement, and monitor mix notes. Following standard channel order—drums first, followed by bass, guitars, keyboards, acoustic instruments, and lead/backing vocals—ensures any venue sound engineer can patch your band quickly without confusion.</dd>
+            <dt><strong>How do I export and send my stage plot to a sound engineer?</strong></dt>
+            <dd>With GigLizard, you can export your completed stage plot and input list as a high-resolution, print-ready PDF or high-DPI PNG directly from your browser with a single click. You can also generate a shareable web link to include in your booking email or electronic press kit (EPK) when confirming advance show details with talent buyers and production managers.</dd>
+          </dl>
         </div>`;
   }
   if (cleanPath === "/rider") {
     return `
         <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Live Audio Tech Rider & Channel Patch List Builder ($0 Free)</h2>
+          <h2>Live Audio Tech Rider &amp; Channel Patch List Builder ($0 Free)</h2>
           <p>Generate formatted 16, 24, or 32-channel soundboard input lists, mic selections, DI requirements, and monitor mix requests for front-of-house engineers.</p>
         </div>`;
   }
-  if (cleanPath === "/poster") {
+  if (cleanPath === "/poster" || cleanPath === "/tools/poster-designer" || cleanPath === "/poster-designer") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Concert Poster & Gig Flyer Studio ($0 Free)</h2>
-          <p>Create eye-catching gig flyers and tour posters in classic retro halftone or modern neon styles with instant high-res PNG export for Instagram and print.</p>
+        <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
+          <h2>Free Gig Poster Maker &amp; Concert Flyer Generator ($0 Free)</h2>
+          <p>Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports, 11x17 tabloid format, and 9:16 Instagram story dimensions.</p>
+
+          <h3>Essential Concert Poster Elements</h3>
+          <ul>
+            <li><strong>Headlining Band Name:</strong> Occupies 40%+ of visual hierarchy with high-contrast typography.</li>
+            <li><strong>Direct Support &amp; Co-Bills:</strong> Clear secondary typography for touring and local openers.</li>
+            <li><strong>Day of Week &amp; Full Date:</strong> e.g., &ldquo;FRIDAY, NOVEMBER 14&rdquo; for instant fan recall.</li>
+            <li><strong>Venue Name &amp; Metro Area:</strong> Distinct venue branding and city/neighborhood location.</li>
+            <li><strong>Doors, Show Times &amp; Ticket Price:</strong> Essential logistical info with optional ticket QR code.</li>
+            <li><strong>Age Restrictions:</strong> Clear &ldquo;21+ with ID&rdquo; or &ldquo;All Ages&rdquo; callouts.</li>
+          </ul>
+
+          <h3>Contrast Guidelines for Dim Club Lighting</h3>
+          <p>Adhere to strict WCAG AAA contrast ratios with bright text on dark surfaces (white, cadmium yellow, neon cyan on deep charcoal). Maintain 0.5-inch margins from edges to protect against staple guns and poster tape on venue walls.</p>
+
+          <h3>Frequently Asked Questions</h3>
+          <dl>
+            <dt><strong>What information must be included on a concert gig poster?</strong></dt>
+            <dd>An effective gig poster must clearly feature the headlining band name, direct supporting acts, day of the week, full date, venue name and city, door and show times, ticket price (or advance ticket QR code), age policy (21+, 18+, or All Ages), and presenting promoter or sponsor logo. Keeping this information legible from 5 feet away ensures club patrons and passersby instantly grasp show details.</dd>
+            <dt><strong>What are the standard dimensions for band flyers and gig posters?</strong></dt>
+            <dd>The most common print format for music venues, telephone poles, and record store windows is 11x17 inches (Tabloid) printed at 300 DPI. For social media marketing, 9:16 vertical (1080x1920 px) is standard for Instagram Stories and TikTok, while 4:5 vertical (1080x1350 px) and 1:1 square (1080x1080 px) are ideal for Instagram and Facebook feed posts.</dd>
+            <dt><strong>Can I export my flyer in both print (11x17) and social (9:16) aspect ratios?</strong></dt>
+            <dd>Yes. GigLizard's poster studio allows you to switch between 11x17 vertical print posters, 9:16 vertical social story flyers, and square social feed formats with instant vector typography rendering and 300 DPI export ready for commercial printers and digital screens.</dd>
+          </dl>
         </div>`;
   }
   return "";
@@ -1943,6 +2021,111 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
     
     html = html.replace("</main>", noscriptContent);
   } else {
+    // Inject custom SoftwareApplication + FAQPage JSON-LD structured data for stage plot & poster tools
+    if (cleanPath === "/plot" || cleanPath === "/tools/stage-plot" || cleanPath === "/stage-plot") {
+      const stagePlotSchema = {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": ["WebApplication", "SoftwareApplication"],
+            "@id": "https://giglizard.us/tools/stage-plot#software",
+            "name": "GigLizard Stage Plot & Input List Maker",
+            "applicationCategory": "MultimediaApplication",
+            "operatingSystem": "Web",
+            "url": "https://giglizard.us/tools/stage-plot",
+            "description": "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "keywords": "free stage plot maker, stage plot creator, band input list template, tech rider builder, drum and amp stage diagram"
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://giglizard.us/tools/stage-plot#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is a stage plot and why does my band need one?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "A stage plot is a visual top-down graphic diagram illustrating where each band member stands on stage, where drum kits, guitar amplifiers, bass rigs, and keyboards are located, and where vocal microphones and monitor wedges need to be positioned. Sending a clear stage plot 2 to 4 weeks prior to a show allows the venue's front-of-house (FOH) and monitor sound technicians to patch lines, set mic stands, and route monitors before your band arrives, drastically shortening line check times and preventing audio feedback during your set."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What should be included on a band input list?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "A professional band input list (or patch list) should include the channel number, instrument name, microphone or DI preference (e.g. Shure Beta 52 for kick, SM57 for guitar amp, active DI box for bass), microphone stand type (tall boom, short boom, straight stand), +48V phantom power requirement, and monitor mix notes. Following standard channel order—drums first, followed by bass, guitars, keyboards, acoustic instruments, and lead/backing vocals—ensures any venue sound engineer can patch your band quickly without confusion."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do I export and send my stage plot to a sound engineer?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "With GigLizard, you can export your completed stage plot and input list as a high-resolution, print-ready PDF or high-DPI PNG directly from your browser with a single click. You can also generate a shareable web link to include in your booking email or electronic press kit (EPK) when confirming advance show details with talent buyers and production managers."
+                }
+              }
+            ]
+          }
+        ]
+      };
+      html = html.replace(
+        "</head>",
+        `    <script type="application/ld+json">\n    ${JSON.stringify(stagePlotSchema, null, 2)}\n    </script>\n  </head>`
+      );
+    } else if (cleanPath === "/poster" || cleanPath === "/tools/poster-designer" || cleanPath === "/poster-designer") {
+      const posterSchema = {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": ["WebApplication", "SoftwareApplication"],
+            "@id": "https://giglizard.us/tools/poster-designer#software",
+            "name": "GigLizard Gig Poster Maker",
+            "applicationCategory": "MultimediaApplication",
+            "operatingSystem": "Web",
+            "url": "https://giglizard.us/tools/poster-designer",
+            "description": "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "keywords": "free gig poster maker, band flyer generator, concert poster designer, tour flyer maker, printable band poster template"
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://giglizard.us/tools/poster-designer#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What information must be included on a concert gig poster?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "An effective gig poster must clearly feature the headlining band name, direct supporting acts, day of the week, full date, venue name and city, door and show times, ticket price (or advance ticket QR code), age policy (21+, 18+, or All Ages), and presenting promoter or sponsor logo. Keeping this information legible from 5 feet away ensures club patrons and passersby instantly grasp show details."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What are the standard dimensions for band flyers and gig posters?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The most common print format for music venues, telephone poles, and record store windows is 11x17 inches (Tabloid) printed at 300 DPI. For social media marketing, 9:16 vertical (1080x1920 px) is standard for Instagram Stories and TikTok, while 4:5 vertical (1080x1350 px) and 1:1 square (1080x1080 px) are ideal for Instagram and Facebook feed posts."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I export my flyer in both print (11x17) and social (9:16) aspect ratios?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. GigLizard's poster studio allows you to switch between 11x17 vertical print posters, 9:16 vertical social story flyers, and square social feed formats with instant vector typography rendering and 300 DPI export ready for commercial printers and digital screens."
+                }
+              }
+            ]
+          }
+        ]
+      };
+      html = html.replace(
+        "</head>",
+        `    <script type="application/ld+json">\n    ${JSON.stringify(posterSchema, null, 2)}\n    </script>\n  </head>`
+      );
+    }
+
     const routeSnippet = getRouteNoscriptSnippet(cleanPath);
     if (routeSnippet) {
       html = html.replace("</main>", `${routeSnippet}\n      </main>`);

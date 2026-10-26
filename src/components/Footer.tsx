@@ -311,6 +311,30 @@ export default function Footer({
               <Mail className="w-3.5 h-3.5 text-indigo-400" />
               <span>[Contact Us]</span>
             </button>
+
+            <span className="text-slate-700 hidden sm:inline">•</span>
+
+            <a
+              href="/sitemap.xml"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-indigo-300 hover:underline transition-colors py-1 px-1.5 text-xs font-semibold"
+              id="footer-link-sitemap"
+            >
+              Sitemap.xml
+            </a>
+
+            <span className="text-slate-700 hidden sm:inline">•</span>
+
+            <a
+              href="/robots.txt"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-indigo-300 hover:underline transition-colors py-1 px-1.5 text-xs font-semibold"
+              id="footer-link-robots"
+            >
+              Robots.txt
+            </a>
           </div>
         </div>
 

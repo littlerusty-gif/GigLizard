@@ -127,9 +127,9 @@ export default function GigLizardApp() {
       if (cleanPath === "/venues" || cleanPath.startsWith("/venues/")) return "venues";
       if (cleanPath === "/bands") return "bands";
       if (cleanPath === "/tour") return "tour";
-      if (cleanPath === "/plot" || cleanPath === "/stage-plot") return "plot";
+      if (cleanPath === "/plot" || cleanPath === "/stage-plot" || cleanPath === "/tools/stage-plot") return "plot";
       if (cleanPath === "/rider" || cleanPath === "/tech-rider") return "rider";
-      if (cleanPath === "/poster") return "poster";
+      if (cleanPath === "/poster" || cleanPath === "/poster-designer" || cleanPath === "/tools/poster-designer") return "poster";
       if (cleanPath === "/advisor" || cleanPath === "/help" || cleanPath === "/faq") return "advisor";
       if (cleanPath === "/verification" || cleanPath === "/audit" || cleanPath === "/freshness") return "verification";
 
@@ -457,9 +457,9 @@ export default function GigLizardApp() {
       home: "GigLizard - Free Venue Directory & DIY Tour Tools",
       venues: `Free Venue Directory (${venueCountStr} Clubs) | GigLizard`,
       bands: "Touring Bands & Co-Bills ($9.99 Pass) | GigLizard",
-      plot: "Free Stage Plot Designer & Gear Canvas | GigLizard",
+      plot: "Free Stage Plot Maker & Band Input List Template | GigLizard",
       rider: "Tech Rider & Soundboard Patch Builder | GigLizard",
-      poster: "Concert Poster Designer & Gig Flyers | GigLizard",
+      poster: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
       tour: "AI Tour Route Planner & Gas Calculator | GigLizard",
       pricing: "GigLizard Pricing - Free Venues, $9.99 Band Contacts Pass",
       compare: "GigLizard vs Rivals - Sonicbids, Prism & Spreadsheets",
@@ -477,6 +477,10 @@ export default function GigLizardApp() {
       home: `Find ${venueCountStr} music venues & ${bandCountStr} bands for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.`,
       venues: `Search ${venueCountStr} verified live music clubs and ${bandCountStr} touring bands across the Lower 48 with direct booking emails and specs.`,
       bands: `Browse ${bandCountStr} active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.`,
+      plot: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
+      rider: "Compile formatted soundboard patch lists, mic choices, and +48V phantom power switches for venue sound engineers.",
+      poster: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
+      tour: "Calculate driving routes, fuel costs, lodging, and corridor stop suggestions for independent touring bands with Google Maps.",
       pricing: `Transparent DIY tour pricing: ${venueCountStr} venues & ${bandCountStr} bands, plus stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.`,
       compare: `Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory (${venueCountStr} clubs & ${bandCountStr} bands) and $9.99 flat pass vs $30/mo recurring subscriptions.`,
       about: "GigLizard was founded in Portland by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
@@ -492,9 +496,9 @@ export default function GigLizardApp() {
       home: "https://www.giglizard.us/",
       venues: "https://www.giglizard.us/venues",
       bands: "https://www.giglizard.us/bands",
-      plot: "https://www.giglizard.us/plot",
+      plot: "https://giglizard.us/tools/stage-plot",
       rider: "https://www.giglizard.us/rider",
-      poster: "https://www.giglizard.us/poster",
+      poster: "https://giglizard.us/tools/poster-designer",
       tour: "https://www.giglizard.us/tour",
       pricing: "https://www.giglizard.us/pricing",
       compare: "https://www.giglizard.us/compare",
@@ -513,8 +517,8 @@ export default function GigLizardApp() {
     let canonicalHref = canonicals[activeTab] || "https://www.giglizard.us/";
 
     if (activeTab === "venues" && programmaticVenueRoute) {
-      pageTitle = `${programmaticVenueRoute.title} | GigLizard`;
-      pageDesc = programmaticVenueRoute.metaDescription;
+      pageTitle = programmaticVenueRoute.title;
+      pageDesc = programmaticVenueRoute.description;
       canonicalHref = `https://www.giglizard.us${programmaticVenueRoute.canonicalPath}`;
     }
 
@@ -613,6 +617,18 @@ export default function GigLizardApp() {
       setTimeout(() => {
         document.getElementById("stories-from-the-road")?.scrollIntoView({ behavior: "smooth" });
       }, 150);
+      return true;
+    }
+    if (clean === "plot" || clean === "stage-plot" || clean === "tools/stage-plot") {
+      setActiveTabState("plot");
+      return true;
+    }
+    if (clean === "poster" || clean === "poster-designer" || clean === "tools/poster-designer") {
+      setActiveTabState("poster");
+      return true;
+    }
+    if (clean === "rider" || clean === "tech-rider") {
+      setActiveTabState("rider");
       return true;
     }
     return false;

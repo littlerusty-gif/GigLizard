@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
+import PosterDesignerSeoGuide from "./PosterDesignerSeoGuide";
 
 // Helper to resolve font family classes for poster title
 const getFontFamilyClass = (fontStyle?: string) => {
@@ -1794,6 +1795,9 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
             {renderFireballCard()}
           </div>
         </div>
+
+        {/* Semantic Musician Guide & Search Engine Optimization Content Section */}
+        <PosterDesignerSeoGuide />
 
         {/* Floating Download / Save Confirmation Toast */}
         {saveToast?.show && (

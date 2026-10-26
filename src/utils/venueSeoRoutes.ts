@@ -12,11 +12,14 @@ import { CONTINENTAL_US_STATES } from "../constants/states";
 
 export interface ProgrammaticVenueRoute {
   isProgrammatic: boolean;
-  type: "city-state" | "genre-city" | "genre-only" | "city-only" | "standard";
+  type: "city-state" | "genre-city" | "genre-only" | "city-only" | "venue-profile" | "standard";
   city?: string;
   stateCode?: string;
   stateName?: string;
   genre?: string;
+  venueSlug?: string;
+  venueName?: string;
+  venueId?: string;
   canonicalPath: string;
   title: string;
   description: string;
@@ -134,8 +137,62 @@ export function parseProgrammaticVenuePath(rawPath: string): ProgrammaticVenueRo
     return null;
   }
 
-  // Format 1: /venues/:genre/:city (e.g. /venues/rock/chicago)
+  // Format 1: /venues/:cityState/:venueSlug OR /venues/venue/:venueId OR /venues/:genre/:city
   if (parts.length === 3) {
+    // Sub-format 1A: /venues/venue/:venueId
+    if (parts[1] === "venue") {
+      const venueId = parts[2];
+      return {
+        isProgrammatic: true,
+        type: "venue-profile",
+        venueId,
+        canonicalPath: `/venues/venue/${venueId}`,
+        title: "Live Music Venue & Production Specs | GigLizard",
+        description: "View verified booking contact email, stage specs, capacity, and production guidelines for touring acts on GigLizard.",
+        heading: "Live Music Venue & Production Specs",
+        subhead: "Comprehensive stage dimensions, soundboard specs, PA system, and talent buyer inboxes for independent touring bands.",
+        breadcrumb: [
+          { name: "Home", url: "https://www.giglizard.us/" },
+          { name: "Venues", url: "https://www.giglizard.us/venues" },
+          { name: "Venue Profile", url: `https://www.giglizard.us/venues/venue/${venueId}` }
+        ]
+      };
+    }
+
+    // Sub-format 1B: /venues/:city-state/:venueSlug (e.g. /venues/portland-or/doug-fir-lounge)
+    const cityStateMatch = parts[1].match(/^(.+)-([a-z]{2})$/i);
+    if (cityStateMatch) {
+      const citySlug = cityStateMatch[1];
+      const stateSlug = cityStateMatch[2].toUpperCase();
+      const city = capitalizeWords(citySlug);
+      const stateCode = stateSlug;
+      const stateName = STATE_MAP[stateCode] || stateCode;
+      const venueSlug = parts[2];
+      const venueName = capitalizeWords(venueSlug);
+
+      return {
+        isProgrammatic: true,
+        type: "venue-profile",
+        city,
+        stateCode,
+        stateName,
+        venueSlug,
+        venueName,
+        canonicalPath: `/venues/${parts[1]}/${venueSlug}`,
+        title: `${venueName} | Live Music Stage & Specs in ${city}, ${stateCode} - GigLizard`,
+        description: `View verified booking contact email, stage specs, capacity, and production guidelines for ${venueName} in ${city}, ${stateCode}.`,
+        heading: `${venueName} - Live Music Venue & Booking Specs in ${city}, ${stateCode}`,
+        subhead: `Direct talent buyer inboxes, soundboard channels, PA rig, and stage layout at ${venueName} in ${city}, ${stateName}.`,
+        breadcrumb: [
+          { name: "Home", url: "https://www.giglizard.us/" },
+          { name: "Venues", url: "https://www.giglizard.us/venues" },
+          { name: `${city}, ${stateCode}`, url: `https://www.giglizard.us/venues/${parts[1]}` },
+          { name: venueName, url: `https://www.giglizard.us/venues/${parts[1]}/${venueSlug}` }
+        ]
+      };
+    }
+
+    // Sub-format 1C: /venues/:genre/:city (e.g. /venues/rock/chicago)
     const genreSlug = parts[1];
     const citySlug = parts[2];
     const genre = capitalizeWords(genreSlug);
@@ -185,9 +242,9 @@ export function parseProgrammaticVenuePath(rawPath: string): ProgrammaticVenueRo
       const stateCode = stateSlug;
       const stateName = STATE_MAP[stateCode] || stateCode;
 
-      const title = `Live Music Venues in ${city}, ${stateCode} (Free Directory) | GigLizard`;
-      const description = `Discover 100% free live music venues in ${city}, ${stateCode}. View room capacities, sound specs, and direct booking email contacts for independent touring acts.`;
-      const heading = `Live Music Venues in ${city}, ${stateCode}`;
+      const title = `Music Venues in ${city}, ${stateCode} | Booking & Production Specs - GigLizard`;
+      const description = `Find and contact verified music venues in ${city}, ${stateCode}. View stage specs, capacities, and DIY booking guidelines for touring bands.`;
+      const heading = `Live Music Venues & Booking Specs in ${city}, ${stateCode}`;
       const subhead = `Explore verified live stages, club capacities, soundboard specs, and direct talent buyer inboxes across ${city}, ${stateName}.`;
 
       return {
@@ -204,7 +261,6 @@ export function parseProgrammaticVenuePath(rawPath: string): ProgrammaticVenueRo
         breadcrumb: [
           { name: "Home", url: "https://www.giglizard.us/" },
           { name: "Venues", url: "https://www.giglizard.us/venues" },
-          { name: stateName, url: `https://www.giglizard.us/venues?state=${stateCode}` },
           { name: `${city}, ${stateCode}`, url: `https://www.giglizard.us/venues/${param}` }
         ]
       };
@@ -226,9 +282,9 @@ export function parseProgrammaticVenuePath(rawPath: string): ProgrammaticVenueRo
         stateCode,
         stateName,
         canonicalPath: `/venues/${matchedCity.slug}`,
-        title: `Live Music Venues in ${city}, ${stateCode} (Free Directory) | GigLizard`,
-        description: `Discover 100% free live music venues in ${city}, ${stateCode}. View room capacities, sound specs, and direct booking email contacts for independent touring acts.`,
-        heading: `Live Music Venues in ${city}, ${stateCode}`,
+        title: `Music Venues in ${city}, ${stateCode} | Booking & Production Specs - GigLizard`,
+        description: `Find and contact verified music venues in ${city}, ${stateCode}. View stage specs, capacities, and DIY booking guidelines for touring bands.`,
+        heading: `Live Music Venues & Booking Specs in ${city}, ${stateCode}`,
         subhead: `Explore verified live stages, club capacities, soundboard specs, and direct talent buyer inboxes across ${city}, ${stateName}.`,
         breadcrumb: [
           { name: "Home", url: "https://www.giglizard.us/" },

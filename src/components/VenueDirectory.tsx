@@ -14,6 +14,7 @@ import { fetchProfiles, profileToVenue, getCachedProfiles, insertProfile } from 
 import { CONTINENTAL_US_STATES } from "../constants/states";
 import { ProgrammaticVenueRoute, POPULAR_TOURING_CITIES, POPULAR_GENRE_CITY_ROUTES, parseProgrammaticVenuePath } from "../utils/venueSeoRoutes";
 import { useDirectoryCounts } from "../utils/directoryCounts";
+import CityVenueDirectory from "./CityVenueDirectory";
 
 interface VenueDirectoryProps {
   onSelectVenueForPoster: (venue: Venue) => void;
@@ -371,7 +372,20 @@ export default function VenueDirectory({
 
     return true;
   });
-
+  if (programmaticRoute && (programmaticRoute.type === "city-state" || programmaticRoute.type === "venue-profile")) {
+    return (
+      <CityVenueDirectory
+        programmaticRoute={programmaticRoute}
+        currentAccount={currentAccount}
+        onNavigateProgrammaticRoute={onNavigateProgrammaticRoute}
+        onSelectVenueForPoster={onSelectVenueForPoster}
+        onTriggerRegisterVenue={() => {
+          if (onNavigateProgrammaticRoute) onNavigateProgrammaticRoute(null, "/venues");
+          setShowAddForm(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6" id="venues-directory-panel">

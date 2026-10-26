@@ -15,6 +15,7 @@ import {
   uploadStagePlotToStorage, 
   updateBandStagePlotUrl 
 } from "../lib/supabase";
+import StagePlotSeoGuide from "./StagePlotSeoGuide";
 
 interface StagePlotDesignerProps {
   elements: StageElement[];
@@ -1358,6 +1359,9 @@ export default function StagePlotDesigner({
           </div>
         </div>
       )}
+
+      {/* Semantic Musician Guide & Search Engine Optimization Content Section */}
+      <StagePlotSeoGuide />
 
       {/* ========================================================================= */}
       {/* DEDICATED HIGH-RESOLUTION EXPORT TEMPLATE (Captured by html2canvas)        */}
