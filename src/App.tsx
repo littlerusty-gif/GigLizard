@@ -2007,6 +2007,9 @@ export default function GigLizardApp() {
         onOpenFeatures={() => setActiveTab("features")}
         onOpenGuide={() => setActiveTab("guide")}
         onOpenChangelog={() => setActiveTab("changelog")}
+        onOpenCustomers={() => setActiveTab("customers")}
+        onOpenFaq={() => setActiveTab("advisor")}
+        onOpenVerification={() => setActiveTab("verification")}
         userEmail={currentAccount?.contactEmail || currentUser?.email || ""}
         userName={currentAccount?.name || ""}
       />

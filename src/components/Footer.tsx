@@ -13,6 +13,9 @@ interface FooterProps {
   onOpenFeatures?: () => void;
   onOpenGuide?: () => void;
   onOpenChangelog?: () => void;
+  onOpenCustomers?: () => void;
+  onOpenFaq?: () => void;
+  onOpenVerification?: () => void;
   userEmail?: string;
   userName?: string;
 }
@@ -28,6 +31,9 @@ export default function Footer({
   onOpenFeatures,
   onOpenGuide,
   onOpenChangelog,
+  onOpenCustomers,
+  onOpenFaq,
+  onOpenVerification,
   userEmail,
   userName
 }: FooterProps) {
@@ -175,13 +181,45 @@ export default function Footer({
 
             <a
               href="/customers"
-              onClick={(e) => { e.preventDefault(); if (onOpenAbout) onOpenAbout(); }}
+              onClick={(e) => { 
+                e.preventDefault(); 
+                if (onOpenCustomers) onOpenCustomers();
+                else if (onOpenAbout) onOpenAbout(); 
+              }}
               className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
               id="footer-btn-case-studies"
             >
               <span>Case Studies</span>
             </a>
             <span className="text-slate-700 hidden sm:inline">•</span>
+
+            {onOpenFaq && (
+              <>
+                <a
+                  href="/faq"
+                  onClick={(e) => { e.preventDefault(); onOpenFaq(); }}
+                  className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+                  id="footer-btn-faq"
+                >
+                  <span>Tour FAQ</span>
+                </a>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
+            {onOpenVerification && (
+              <>
+                <a
+                  href="/verification"
+                  onClick={(e) => { e.preventDefault(); onOpenVerification(); }}
+                  className="text-slate-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+                  id="footer-btn-verification"
+                >
+                  <span>Verification Log</span>
+                </a>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
 
             <a
               href="/vs/sonicbids"
@@ -274,6 +312,40 @@ export default function Footer({
               <span>[Contact Us]</span>
             </button>
           </div>
+        </div>
+
+        {/* Popular Tour Hub Circuits for Internal Crawl Discovery */}
+        <div className="max-w-7xl mx-auto mt-6 pt-4 border-t border-slate-900 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] text-slate-500">
+          <span className="font-semibold text-slate-400">Popular Tour Circuits:</span>
+          <a href="/venues/austin-tx" className="hover:text-indigo-400 transition-colors">Austin</a>
+          <span>•</span>
+          <a href="/venues/seattle-wa" className="hover:text-indigo-400 transition-colors">Seattle</a>
+          <span>•</span>
+          <a href="/venues/portland-or" className="hover:text-indigo-400 transition-colors">Portland</a>
+          <span>•</span>
+          <a href="/venues/chicago-il" className="hover:text-indigo-400 transition-colors">Chicago</a>
+          <span>•</span>
+          <a href="/venues/nashville-tn" className="hover:text-indigo-400 transition-colors">Nashville</a>
+          <span>•</span>
+          <a href="/venues/los-angeles-ca" className="hover:text-indigo-400 transition-colors">Los Angeles</a>
+          <span>•</span>
+          <a href="/venues/new-york-ny" className="hover:text-indigo-400 transition-colors">New York</a>
+          <span>•</span>
+          <a href="/venues/brooklyn-ny" className="hover:text-indigo-400 transition-colors">Brooklyn</a>
+          <span>•</span>
+          <a href="/venues/philadelphia-pa" className="hover:text-indigo-400 transition-colors">Philadelphia</a>
+          <span>•</span>
+          <a href="/venues/boston-ma" className="hover:text-indigo-400 transition-colors">Boston</a>
+          <span>•</span>
+          <a href="/venues/atlanta-ga" className="hover:text-indigo-400 transition-colors">Atlanta</a>
+          <span>•</span>
+          <a href="/venues/denver-co" className="hover:text-indigo-400 transition-colors">Denver</a>
+          <span>•</span>
+          <a href="/venues/rock" className="hover:text-indigo-400 transition-colors">Rock Stages</a>
+          <span>•</span>
+          <a href="/venues/punk" className="hover:text-indigo-400 transition-colors">Punk Basements</a>
+          <span>•</span>
+          <a href="/venues/indie" className="hover:text-indigo-400 transition-colors">Indie Rooms</a>
         </div>
       </footer>
 

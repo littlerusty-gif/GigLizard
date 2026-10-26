@@ -11,6 +11,7 @@ import { INITIAL_AVAILABLE_BANDS, sanitizeBandPhoneNumber } from "./src/data/ava
 import { MUSIC_VENUES } from "./src/data/venues";
 import { resolveBandAgency } from "./src/utils/bookingAgencies";
 import { parseProgrammaticVenuePath } from "./src/utils/venueSeoRoutes";
+import { generateSitemapXml } from "./src/utils/sitemapGenerator";
 
 dotenv.config();
 
@@ -131,96 +132,54 @@ app.use("/api/", (req, res, next) => {
   next();
 });
 
-// 4. Crawlers & SEO Endpoints (robots.txt, sitemap.xml, llms.txt)
+// 4. Crawlers & SEO Endpoints (robots.txt, sitemap.xml, Google verification, llms.txt)
 app.get("/robots.txt", (req, res) => {
-  res.type("text/plain");
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=86400");
   res.send(`User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /admin/
 Disallow: /trap-bot-detected
 
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Host: https://www.giglizard.us
 Sitemap: https://www.giglizard.us/sitemap.xml
 `);
 });
 
+// Dynamic & cached XML Sitemap (sitemaps.org schema 0.9)
 app.get("/sitemap.xml", (req, res) => {
-  res.type("application/xml");
-  res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://www.giglizard.us/</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/pricing</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/compare</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/vs/sonicbids</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/vs/prism-fm</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/vs/gigwell</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/features</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/about</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/changelog</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/customers</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/touring-guide</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.giglizard.us/faq</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-</urlset>`);
+  res.setHeader("Content-Type", "application/xml; charset=utf-8");
+  res.setHeader("X-Robots-Tag", "noindex, follow");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+
+  try {
+    const sitemapPath = path.resolve("public/sitemap.xml");
+    if (fs.existsSync(sitemapPath)) {
+      res.send(fs.readFileSync(sitemapPath, "utf-8"));
+      return;
+    }
+  } catch (err) {
+    console.error("Error reading public/sitemap.xml, generating on-the-fly:", err);
+  }
+
+  res.send(generateSitemapXml());
+});
+
+// Google Search Console dynamic HTML file verification handler
+app.get(/^\/google([a-z0-9]+)\.html$/, (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`google-site-verification: google${req.params[0]}.html`);
 });
 
 app.get("/llms.txt", (req, res) => {
@@ -1771,6 +1730,121 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   }
 };
 
+function getRouteNoscriptSnippet(cleanPath: string): string {
+  if (cleanPath === "/pricing") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Simple, Musician-Friendly Pricing • Zero Hidden Traps</h2>
+          <div style="margin-bottom: 15px;">
+            <h3>Free Forever Tier ($0)</h3>
+            <p>Unlimited access to our 650+ nationwide music venue directory with verified booking emails, AI tour routing with gas estimation, drag-and-drop stage plot designer, soundboard tech rider builder, and concert poster maker. No credit card required.</p>
+          </div>
+          <div>
+            <h3>30-Day Band Directory Contacts Pass ($9.99 flat)</h3>
+            <p>Full access to 4,850+ active touring band contacts, co-bill matching, and show-swap messaging across all 48 continental states. Single payment, zero recurring billing or auto-renewals, protected by a 7-day 100% money-back satisfaction guarantee.</p>
+          </div>
+        </div>`;
+  }
+  if (cleanPath === "/compare" || cleanPath.startsWith("/vs/")) {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Why Independent Bands Switch to GigLizard</h2>
+          <p>GigLizard was created by touring musicians fed up with predatory subscriptions and clunky enterprise software.</p>
+          <ul>
+            <li><strong>vs Sonicbids:</strong> Sonicbids charges $240/yr with recurring billing traps. GigLizard provides 650+ free verified venues and an optional $9.99 30-day band pass with no renewals.</li>
+            <li><strong>vs Prism.fm:</strong> Prism.fm is designed for large venues at $300-$500/month. GigLizard gives DIY artists lightweight routing and soundboard rider tools for $0.</li>
+            <li><strong>vs Gigwell:</strong> Gigwell charges $1,200+/yr for booking agency workflows. GigLizard gives independent bands instant direct access to booking emails with zero commission fees.</li>
+          </ul>
+        </div>`;
+  }
+  if (cleanPath === "/faq") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Frequently Asked Questions</h2>
+          <dl>
+            <dt><strong>Is the 650+ venue directory really 100% free?</strong></dt>
+            <dd>Yes. Every single venue listing, capacity, soundboard spec, and booking email is completely free to view and search across all 48 continental states. No paywall, no credit card required.</dd>
+            <dt><strong>How does the $9.99 30-Day Band Pass work?</strong></dt>
+            <dd>It is a one-time charge of $9.99 (+$0.84 card fee = $10.83). It does NOT auto-renew. It unlocks direct booking contacts and social handles for 4,850+ active touring bands for a full 30 days.</dd>
+            <dt><strong>What is your refund policy?</strong></dt>
+            <dd>We provide a 7-day 100% money-back guarantee. If you are unsatisfied for any reason, request a refund and we process it immediately.</dd>
+            <dt><strong>How often is directory contact information audited?</strong></dt>
+            <dd>Our directory undergoes rolling freshness audits every 30 days. Community bounce reports are resolved within 24 hours.</dd>
+          </dl>
+        </div>`;
+  }
+  if (cleanPath === "/verification") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Directory Freshness & Verification Standards</h2>
+          <p>GigLizard rejects automated web scraper spam. Every venue and touring band record in our 650+ club and 4,850+ band directory is subjected to rolling 30-day freshness checks and rapid 24-hour community bounce ticket triage.</p>
+          <p>Bands can report changed contacts directly from any listing, triggering instant verification by our moderation team.</p>
+        </div>`;
+  }
+  if (cleanPath === "/touring-guide") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>The Independent Musician's DIY Touring Guide</h2>
+          <ol>
+            <li><strong>Route Logical Corridors:</strong> Keep driving times under 5 hours between stops to protect your voice and energy.</li>
+            <li><strong>Target Anchor Markets First:</strong> Secure Friday and Saturday shows in anchor cities 3 to 4 months in advance.</li>
+            <li><strong>Fill Middle Dates with Co-Bills:</strong> Reach out to local bands in intermediate cities using GigLizard's band directory.</li>
+            <li><strong>Send Clean Tech Riders:</strong> Use our 1-click stage plot and input patch builder so sound engineers are on your side.</li>
+          </ol>
+        </div>`;
+  }
+  if (cleanPath === "/about") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>About GigLizard • Built in Portland, OR</h2>
+          <p>GigLizard was founded by Little Rusty, a Pacific Northwest touring musician and live sound engineer (frontman of Dr Hadit, Knucklebone, 7AT). Frustrated by the lack of honest, affordable booking tools for independent artists, he built GigLizard to provide a free venue directory and essential tour tools without recurring subscription traps.</p>
+        </div>`;
+  }
+  if (cleanPath === "/customers") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Touring Band Case Studies</h2>
+          <p>Discover how independent acts use GigLizard to book 10-city Pacific Northwest runs, fill Midwest corridor dates, and swap co-bills with local acts across the country.</p>
+        </div>`;
+  }
+  if (cleanPath === "/bands") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>4,850+ Active Touring Bands Across the Lower 48</h2>
+          <p>Connect with active independent touring acts looking for regional support, co-bills, and show swaps. Includes direct booking contacts, active tour dates, and genres with an affordable $9.99 30-day pass.</p>
+        </div>`;
+  }
+  if (cleanPath === "/tour") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Smart Tour Route Planner & Van Fuel Expense Calculator</h2>
+          <p>Plot multi-city tour routing with real Google Maps drive times, gas budgets, and highway corridor recommendations between show dates.</p>
+        </div>`;
+  }
+  if (cleanPath === "/plot") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Drag-and-Drop Stage Plot Designer ($0 Free)</h2>
+          <p>Arrange vocal mics, monitor wedges, drum risers, bass rigs, and keyboard stands on a visual stage grid. Export clean print-ready PNG and PDF plots for house sound technicians.</p>
+        </div>`;
+  }
+  if (cleanPath === "/rider") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Live Audio Tech Rider & Channel Patch List Builder ($0 Free)</h2>
+          <p>Generate formatted 16, 24, or 32-channel soundboard input lists, mic selections, DI requirements, and monitor mix requests for front-of-house engineers.</p>
+        </div>`;
+  }
+  if (cleanPath === "/poster") {
+    return `
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Concert Poster & Gig Flyer Studio ($0 Free)</h2>
+          <p>Create eye-catching gig flyers and tour posters in classic retro halftone or modern neon styles with instant high-res PNG export for Instagram and print.</p>
+        </div>`;
+  }
+  return "";
+}
+
 function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
   const cleanPath = reqPath.split("?")[0].replace(/\/$/, "") || "/";
   
@@ -1868,6 +1942,11 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
       </main>`;
     
     html = html.replace("</main>", noscriptContent);
+  } else {
+    const routeSnippet = getRouteNoscriptSnippet(cleanPath);
+    if (routeSnippet) {
+      html = html.replace("</main>", `${routeSnippet}\n      </main>`);
+    }
   }
 
   return html;

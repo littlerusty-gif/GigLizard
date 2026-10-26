@@ -32,20 +32,43 @@ export const POPULAR_TOURING_CITIES: Array<{
   corridor: string;
   tagline: string;
 }> = [
+  // West Coast & Pacific Northwest
   { city: "Austin", state: "TX", slug: "austin-tx", corridor: "Texas Triangle (San Antonio · Houston · Dallas)", tagline: "Live Music Capital of the World" },
   { city: "Seattle", state: "WA", slug: "seattle-wa", corridor: "I-5 Pacific Northwest (Portland · Tacoma · Vancouver)", tagline: "Grunge, Indie & Underground Stages" },
   { city: "Portland", state: "OR", slug: "portland-or", corridor: "Cascadia Corridor (Seattle · Eugene · Bend)", tagline: "DIY Independent Music Mecca" },
-  { city: "Chicago", state: "IL", slug: "chicago-il", corridor: "Midwest Loop (Milwaukee · Indianapolis · Detroit)", tagline: "Legendary Blues, Rock & Indie Rooms" },
-  { city: "Nashville", state: "TN", slug: "nashville-tn", corridor: "Southeast Circuit (Atlanta · Louisville · Memphis)", tagline: "Music City Listening Rooms & Clubs" },
-  { city: "Denver", state: "CO", slug: "denver-co", corridor: "Rocky Mountain Hub (Boulder · Fort Collins · Salt Lake)", tagline: "Mile High Rock & Electronic Halls" },
-  { city: "Los Angeles", state: "CA", slug: "los-angeles-ca", corridor: "Southern California (San Diego · Santa Ana)", tagline: "Sunset Strip & West Coast Venues" },
-  { city: "Boston", state: "MA", slug: "boston-ma", corridor: "Northeast Corridor (Providence · NYC · New Haven)", tagline: "College Rock & Hardcore Dives" },
-  { city: "Minneapolis", state: "MN", slug: "minneapolis-mn", corridor: "Upper Midwest (Madison · Chicago · Duluth)", tagline: "Twin Cities Indie & Post-Rock Scene" },
-  { city: "San Diego", state: "CA", slug: "san-diego-ca", corridor: "SoCal Coastal Run (LA · Orange County)", tagline: "Coastal Clubs & Open-Air Amphitheaters" },
   { city: "Spokane", state: "WA", slug: "spokane-wa", corridor: "Inland Northwest (Missoula · Boise · Seattle)", tagline: "Inland Northwest Tour Stop" },
   { city: "Tacoma", state: "WA", slug: "tacoma-wa", corridor: "Puget Sound South (Seattle · Olympia)", tagline: "South Sound Live Stages" },
   { city: "Eugene", state: "OR", slug: "eugene-or", corridor: "Willamette Valley (Portland · Ashland)", tagline: "College Town Tour Stop" },
-  { city: "Bend", state: "OR", slug: "bend-or", corridor: "Central Oregon (Portland · Boise)", tagline: "High Desert Music Venues" }
+  { city: "Bend", state: "OR", slug: "bend-or", corridor: "Central Oregon (Portland · Boise)", tagline: "High Desert Music Venues" },
+  { city: "Los Angeles", state: "CA", slug: "los-angeles-ca", corridor: "Southern California (San Diego · Santa Ana)", tagline: "Sunset Strip & West Coast Venues" },
+  { city: "San Diego", state: "CA", slug: "san-diego-ca", corridor: "SoCal Coastal Run (LA · Orange County)", tagline: "Coastal Clubs & Open-Air Amphitheaters" },
+  { city: "San Francisco", state: "CA", slug: "san-francisco-ca", corridor: "Bay Area Corridor (Oakland · San Jose)", tagline: "Historic Bay Area Music Halls" },
+
+  // Midwest & Rocky Mountains
+  { city: "Chicago", state: "IL", slug: "chicago-il", corridor: "Midwest Loop (Milwaukee · Indianapolis · Detroit)", tagline: "Legendary Blues, Rock & Indie Rooms" },
+  { city: "Minneapolis", state: "MN", slug: "minneapolis-mn", corridor: "Upper Midwest (Madison · Chicago · Duluth)", tagline: "Twin Cities Indie & Post-Rock Scene" },
+  { city: "Denver", state: "CO", slug: "denver-co", corridor: "Rocky Mountain Hub (Boulder · Fort Collins · Salt Lake)", tagline: "Mile High Rock & Electronic Halls" },
+  { city: "Detroit", state: "MI", slug: "detroit-mi", corridor: "Rust Belt Circuit (Cleveland · Columbus · Chicago)", tagline: "Motor City Garage Rock & Techno" },
+  { city: "Cleveland", state: "OH", slug: "cleveland-oh", corridor: "Lake Erie Tour Run (Pittsburgh · Detroit · Buffalo)", tagline: "Rock & Roll Hall of Fame City Stages" },
+  { city: "Columbus", state: "OH", slug: "columbus-oh", corridor: "Ohio Valley Corridor (Cincinnati · Cleveland)", tagline: "High-Energy College Rock Circuit" },
+  { city: "Indianapolis", state: "IN", slug: "indianapolis-in", corridor: "Crossroads Corridor (Chicago · Louisville)", tagline: "Fountain Square Indie Hub" },
+
+  // South & Tennessee Valley
+  { city: "Nashville", state: "TN", slug: "nashville-tn", corridor: "Southeast Circuit (Atlanta · Louisville · Memphis)", tagline: "Music City Listening Rooms & Clubs" },
+  { city: "Memphis", state: "TN", slug: "memphis-tn", corridor: "Mississippi Delta Run (Nashville · New Orleans)", tagline: "Beale Street & Stax Soul Heritage" },
+  { city: "Atlanta", state: "GA", slug: "atlanta-ga", corridor: "Southeast Corridor (Athens · Charlotte · Nashville)", tagline: "Hip-Hop, Indie Rock & Punk Bastion" },
+  { city: "New Orleans", state: "LA", slug: "new-orleans-la", corridor: "Gulf Coast Run (Houston · Mobile · Pensacola)", tagline: "Frenchmen Street Jazz, Funk & Brass" },
+
+  // East Coast & Mid-Atlantic
+  { city: "New York", state: "NY", slug: "new-york-ny", corridor: "I-95 Northeast Megalopolis (Philly · Boston)", tagline: "Manhattan & Bowery Historic Stages" },
+  { city: "Brooklyn", state: "NY", slug: "brooklyn-ny", corridor: "NYC Metro Hub (Bushwick · Williamsburg · Greenpoint)", tagline: "Indie Rock, DIY Warehouses & Lo-Fi" },
+  { city: "Philadelphia", state: "PA", slug: "philadelphia-pa", corridor: "Mid-Atlantic Corridor (NYC · Baltimore · DC)", tagline: "Fishtown, South Street & Indie Dives" },
+  { city: "Boston", state: "MA", slug: "boston-ma", corridor: "Northeast Corridor (Providence · NYC · New Haven)", tagline: "College Rock & Hardcore Dives" },
+  { city: "Washington", state: "DC", slug: "washington-dc", corridor: "Capital Corridor (Baltimore · Richmond · Philly)", tagline: "Dischord Punk Roots & 9:30 Club Legacy" },
+  { city: "Baltimore", state: "MD", slug: "baltimore-md", corridor: "Chesapeake Circuit (DC · Philadelphia)", tagline: "DIY Art-Pop & Underground Dives" },
+  { city: "Pittsburgh", state: "PA", slug: "pittsburgh-pa", corridor: "Allegheny Hub (Cleveland · Columbus · Philly)", tagline: "Steel City Underground & Rust Belt Rock" },
+  { city: "Richmond", state: "VA", slug: "richmond-va", corridor: "Virginia Feeder (DC · Raleigh · Norfolk)", tagline: "DIY Metal, Punk & Indie Community" },
+  { city: "Asbury Park", state: "NJ", slug: "asbury-park-nj", corridor: "Jersey Shore Circuit (NYC · Philly)", tagline: "Stone Pony & Boardwalk Rock Heritage" }
 ];
 
 export const POPULAR_GENRE_CITY_ROUTES: Array<{
@@ -63,7 +86,13 @@ export const POPULAR_GENRE_CITY_ROUTES: Array<{
   { genre: "Metal", genreSlug: "metal", city: "Portland", state: "OR", slug: "metal/portland", metaSummary: "heavy metal dives, loud monitor rooms, and independent rock clubs" },
   { genre: "Electronic", genreSlug: "electronic", city: "Denver", state: "CO", slug: "electronic/denver", metaSummary: "warehouse venues, synth lounges, and bass-heavy performance spaces" },
   { genre: "Alternative Rock", genreSlug: "alternative-rock", city: "Seattle", state: "WA", slug: "alternative-rock/seattle", metaSummary: "iconic Belltown and Capitol Hill stages for touring alternative acts" },
-  { genre: "Blues", genreSlug: "blues", city: "Chicago", state: "IL", slug: "blues/chicago", metaSummary: "historic Chicago blues basements, soul clubs, and intimate stages" }
+  { genre: "Blues", genreSlug: "blues", city: "Chicago", state: "IL", slug: "blues/chicago", metaSummary: "historic Chicago blues basements, soul clubs, and intimate stages" },
+  { genre: "Rock", genreSlug: "rock", city: "New York", state: "NY", slug: "rock/new-york", metaSummary: "historic East Village, Bowery, and Lower East Side live rock venues" },
+  { genre: "Indie", genreSlug: "indie", city: "Brooklyn", state: "NY", slug: "indie/brooklyn", metaSummary: "Williamsburg, Bushwick, and Greenpoint indie rooms, lofts, and warehouses" },
+  { genre: "Punk", genreSlug: "punk", city: "Philadelphia", state: "PA", slug: "punk/philadelphia", metaSummary: "Fishtown basements, underground punk clubs, and DIY dive stages" },
+  { genre: "Hip-Hop", genreSlug: "hip-hop", city: "Atlanta", state: "GA", slug: "hip-hop/atlanta", metaSummary: "East Atlanta Village, Little Five Points, and Midtown performance venues" },
+  { genre: "Jazz", genreSlug: "jazz", city: "New Orleans", state: "LA", slug: "jazz/new-orleans", metaSummary: "Frenchmen Street jazz clubs, preservation halls, and brass venues" },
+  { genre: "Rock", genreSlug: "rock", city: "Los Angeles", state: "CA", slug: "rock/los-angeles", metaSummary: "Sunset Strip clubs, Silver Lake stages, and Hollywood live music rooms" }
 ];
 
 // Map state abbreviation to full name
