@@ -7,16 +7,17 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 async function generateVenueTip() {
   const response = await ai.models.generateContent({
     model: 'gemini-3.8-flash',
-    contents: 'Generate a short, punchy daily venue and live production tip for GigLizard.',
-    config: {
-      systemInstruction: 'You are GigLizard. Write a punchy, actionable production/venue tip under 200 characters starting with "🦎 GigLizard Tip:". Include #LiveMusic #VenueManagement.',
-      temperature: 0.7,
-      maxOutputTokens: 100,
-    }
+    contents: 'Write a punchy, actionable production or live venue tip for independent music venues and touring bands under 200 characters. Start directly with "🦎 GigLizard Tip:" and include #LiveMusic #VenueManagement.',
   });
 
-  const tip = response.text?.trim();
-  if (!tip) throw new Error('Gemini API returned an empty response.');
+  const candidateText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+  const tip = (response.text || candidateText || '').trim();
+
+  if (!tip) {
+    console.warn('Gemini returned an empty string, using fallback tip.');
+    return '🦎 GigLizard Tip: Advance your stage plots and input lists at least 48 hours before load-in to keep sound check on schedule! #LiveMusic #VenueManagement';
+  }
+
   return tip;
 }
 
