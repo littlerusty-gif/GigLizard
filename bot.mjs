@@ -50,7 +50,12 @@ async function scheduleBufferPost(text) {
       channelId: channelId,
       text: text,
       schedulingType: 'automatic',
-      mode: 'addToQueue'
+      mode: 'addToQueue',
+      metadata: {
+        facebook: {
+          type: 'post'
+        }
+      }
     }
   };
 
