@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function generateVenueTip() {
   const response = await ai.models.generateContent({
-    model: 'gemini-3.8-flash',
+    model: 'gemini-2.5-flash',
     contents: 'Generate a short, punchy daily venue and live production tip for GigLizard.',
     config: {
       systemInstruction: 'You are GigLizard. Write a punchy, actionable production/venue tip under 200 characters starting with "🦎 GigLizard Tip:". Include #LiveMusic #VenueManagement.',
@@ -31,11 +31,13 @@ async function scheduleBufferPost(text) {
   const query = `
     mutation CreatePost($input: CreatePostInput!) {
       createPost(input: $input) {
-        post {
-          id
-          status
+        ... on PostActionSuccess {
+          post {
+            id
+            status
+          }
         }
-        userErrors {
+        ... on MutationError {
           message
         }
       }
@@ -74,13 +76,14 @@ async function scheduleBufferPost(text) {
     throw new Error(`GraphQL query error: ${result.errors[0].message}`);
   }
 
-  const userErrors = result.data?.createPost?.userErrors;
-  if (userErrors?.length) {
-    console.error('Buffer UserErrors:', JSON.stringify(userErrors, null, 2));
-    throw new Error(`Buffer rejected post: ${userErrors.map(e => e.message).join(', ')}`);
+  const payload = result.data?.createPost;
+
+  if (payload?.message) {
+    throw new Error(`Buffer rejected post: ${payload.message}`);
   }
 
-  console.log(`Successfully queued post ID: ${result.data?.createPost?.post?.id}`);
+  const postId = payload?.post?.id;
+  console.log(`Successfully queued post ID: ${postId}`);
   return result.data;
 }
 
