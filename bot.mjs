@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function generateVenueTip() {
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.8-flash',
     contents: 'Generate a short, punchy daily venue and live production tip for GigLizard.',
     config: {
       systemInstruction: 'You are GigLizard. Write a punchy, actionable production/venue tip under 200 characters starting with "🦎 GigLizard Tip:". Include #LiveMusic #VenueManagement.',
