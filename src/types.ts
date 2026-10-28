@@ -8,7 +8,7 @@ export interface Venue {
   country?: string;
   genres: string[];
   contactEmail: string;
-  contactPhone: string;
+  contactPhone?: string;
   hasPA: boolean;
   hasLighting: boolean;
   description: string;
@@ -24,8 +24,18 @@ export type EquipmentType =
   | "vocal_mic"
   | "instrument_mic"
   | "monitor_wedge"
+  | "dual_wedge"
   | "di_box"
-  | "dj_turntables";
+  | "dj_turntables"
+  | "power_drop"
+  | "iem_transmitter"
+  | "wired_iem"
+  | "acoustic_guitar"
+  | "electric_guitar"
+  | "bass_guitar"
+  | "laptop_rig"
+  | "saxophone"
+  | "drum_pad";
 
 export interface StageElement {
   id: string;
@@ -34,6 +44,8 @@ export interface StageElement {
   x: number; // percentage width on canvas (0 to 100)
   y: number; // percentage height on canvas (0 to 100)
   rotation: number; // degrees: 0, 90, 180, 270
+  mixNumber?: number; // Optional monitor aux mix number (1, 2, 3, etc.)
+  notes?: string;
 }
 
 export interface InputChannel {

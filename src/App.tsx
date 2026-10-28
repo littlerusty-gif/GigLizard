@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import { analytics } from "@heycatch/sdk";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Venue, StageElement, TechRider, PosterConfig, UserAccount } from "./types";
 import Home from "./components/Home";
 import VenueDirectory from "./components/VenueDirectory";
-import StagePlotDesigner from "./components/StagePlotDesigner";
+import StagePlotDesigner, { PRESET_PROFESSIONAL_LIVE_BAND } from "./components/StagePlotDesigner";
 import TechRiderBuilder from "./components/TechRiderBuilder";
 import PosterDesigner from "./components/PosterDesigner";
 import BandAdvisor from "./components/BandAdvisor";
@@ -378,12 +379,26 @@ export default function GigLizardApp() {
         setCurrentAccount(mappedAccount);
         localStorage.setItem("current_user_account_v1", JSON.stringify(mappedAccount));
         localStorage.removeItem("giglizard_active_user");
+
+        // HeyCatch identity: stable user id, email/name/plan in properties
+        analytics.setIdentity(
+          session.user.id,
+          {
+            email: session.user.email || "",
+            name: finalName || session.user.email?.split("@")[0] || "Musician",
+            plan: mappedAccount.hasPaidAccess ? "pro" : "free"
+          },
+          { signup_date: session.user.created_at }
+        );
       } else {
         // Explicitly wipe state when signed out or unauthenticated
         setCurrentUser(null);
         setCurrentAccount(null);
         localStorage.removeItem("current_user_account_v1");
         localStorage.removeItem("giglizard_active_user");
+
+        // HeyCatch reset identity on sign-out
+        analytics.resetIdentity();
       }
     });
 
@@ -1117,6 +1132,7 @@ export default function GigLizardApp() {
     try {
       await supabase.auth.signOut();
     } catch (_) {}
+    analytics.resetIdentity();
     setCurrentUser(null);
     setCurrentAccount(null);
     localStorage.removeItem("current_user_account_v1");
@@ -1124,18 +1140,18 @@ export default function GigLizardApp() {
 
   // Band profile general settings
   const [bandProfile, setBandProfile] = useState(INITIAL_BAND_PROFILE);
-  const [selectedVenueId, setSelectedVenueId] = useState<string>("subterranean-cellar");
+  const [selectedVenueId, setSelectedVenueId] = useState<string>("showbox-seattle");
 
   // Stage items configuration
-  const [stageElements, setStageElements] = useState<StageElement[]>([]);
+  const [stageElements, setStageElements] = useState<StageElement[]>(PRESET_PROFESSIONAL_LIVE_BAND);
 
   // Tech rider inputs
   const [techRider, setTechRider] = useState<TechRider>({
     bandName: INITIAL_BAND_PROFILE.name,
     genre: INITIAL_BAND_PROFILE.genre,
-    contactName: "Dr Hadit (Tour Representative)",
+    contactName: "Tour Representative",
     contactEmail: "littlerusty@gmail.com",
-    contactPhone: "(206) 555-0199",
+    contactPhone: "",
     inputs: INITIAL_RIDER_INPUTS,
     audioNotes: "We require 3 independent monitor mixes. Center vocalist needs high power monitors with plenty of low-mids. Drummer prefers a stereo headphone mix if available. Soundcheck duration of 30 minutes is optimized.",
     hospitalityNotes: "Catering: Please provide 4 bottles of still water on stage. A simple box lunch or vegetarian-friendly snack tray is requested in the dressing room. Towels: 4 clean stage towels.",

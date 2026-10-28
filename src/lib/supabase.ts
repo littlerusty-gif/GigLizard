@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { AvailableBand, Venue } from "../types";
+import { MUSIC_VENUES } from "../data/venues";
 import { SubscriberMember } from "../utils/analyticsStore";
 
 // Production fallback credentials provided by user
@@ -1211,7 +1212,7 @@ export function supabaseRowToVenue(row: any): Venue {
     capacity: Number(row.capacity) || 150,
     genres: genres.length > 0 ? genres : ["Live Music"],
     contactEmail: (row.booking_email || row.email || "").trim(),
-    contactPhone: "(555) 000-0000",
+    contactPhone: (row.phone || row.contact_phone || "").trim() && !(row.phone || row.contact_phone || "").includes("555") ? (row.phone || row.contact_phone).trim() : undefined,
     website: (row.website || "").trim() || undefined,
     hasPA: true,
     hasLighting: true,
@@ -1245,6 +1246,144 @@ export function setCachedDatabaseVenues(venues: Venue[]) {
 }
 
 /**
+ * Generates a normalized composite key for venue deduplication: `${name}-${city}-${state}`
+ */
+export function buildVenueCompositeKey(name: string, city: string, state?: string): string {
+  const cleanName = (name || "").trim().toLowerCase();
+  let cleanCity = (city || "").trim().toLowerCase();
+  let cleanState = (state || "").trim().toUpperCase();
+  if (cleanCity.includes(",")) {
+    const parts = cleanCity.split(",");
+    cleanCity = parts[0].trim();
+    if (!cleanState && parts[1]) {
+      cleanState = parts[1].trim().toUpperCase();
+    }
+  }
+  return `${cleanName}-${cleanCity}-${cleanState}`;
+}
+
+/**
+ * Merges live Supabase database venues with local bundled venues (MUSIC_VENUES) and custom venues,
+ * placing newly submitted / database venues at the top of results and deduplicating by `${name}-${city}-${state}`.
+ */
+export function mergeVenuesWithBundled(
+  databaseVenues: Venue[],
+  bundledVenues: Venue[] = MUSIC_VENUES,
+  customVenues: Venue[] = []
+): Venue[] {
+  const seenKeys = new Set<string>();
+  const merged: Venue[] = [];
+
+  // 1. Newly submitted and database venues first (at the top of results)
+  for (const v of [...customVenues, ...databaseVenues]) {
+    if (!v || !v.name) continue;
+    const key = buildVenueCompositeKey(v.name, v.city, v.state);
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      merged.push(v);
+    }
+  }
+
+  // 2. Bundled local venues follow
+  for (const v of bundledVenues) {
+    if (!v || !v.name) continue;
+    const key = buildVenueCompositeKey(v.name, v.city, v.state);
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      merged.push(v);
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Inserts a new venue record directly into the Supabase `venues` table.
+ * If an anon insert fails (e.g. RLS policy or network error), the error is caught, logged,
+ * and returned so the UI can notify the user.
+ */
+export async function saveVenueToDatabase(venue: {
+  id?: string;
+  name: string;
+  city: string;
+  state?: string;
+  address?: string;
+  capacity?: number;
+  genres?: string[] | string;
+  contactEmail: string;
+  contactPhone?: string;
+  website?: string;
+  description?: string;
+  hasPA?: boolean;
+  hasLighting?: boolean;
+}): Promise<{ data: any; error: any; venue?: Venue }> {
+  let cleanCity = (venue.city || "").trim();
+  let cleanState = (venue.state || "").trim().toUpperCase();
+  if (cleanCity.includes(",")) {
+    const parts = cleanCity.split(",");
+    cleanCity = parts[0].trim();
+    if (!cleanState && parts[1]) {
+      cleanState = parts[1].trim().toUpperCase();
+    }
+  }
+
+  const processedGenres = Array.isArray(venue.genres)
+    ? venue.genres
+    : (typeof venue.genres === "string" ? venue.genres.split(",").map(g => g.trim()).filter(Boolean) : ["Live Music"]);
+
+  const cleanPhone = venue.contactPhone && !venue.contactPhone.includes("555") ? venue.contactPhone.trim() : null;
+
+  const newVenueRow: any = {
+    name: venue.name.trim(),
+    city: cleanCity,
+    state: cleanState || "WA",
+    address: venue.address ? venue.address.trim() : `${cleanCity}, ${cleanState || "WA"}`,
+    booking_email: (venue.contactEmail || "").trim().toLowerCase(),
+    website: venue.website ? venue.website.trim() : null,
+    capacity: Number(venue.capacity) || 150,
+    genres_accepted: processedGenres,
+    age_limit: "21+"
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from("venues")
+      .insert([newVenueRow])
+      .select();
+
+    if (error) {
+      console.error("[Supabase] Insert to venues table failed (RLS or database error):", error);
+      return { data: null, error };
+    }
+
+    let insertedVenue: Venue | undefined;
+    if (data && data[0]) {
+      insertedVenue = {
+        ...supabaseRowToVenue(data[0]),
+        contactPhone: venue.contactPhone || "Inquire",
+        description: venue.description || `[Capacity: ${venue.capacity || 150} guests] Live music stage in ${cleanCity}, ${cleanState || "WA"}.`,
+        hasPA: venue.hasPA !== false,
+        hasLighting: venue.hasLighting !== false
+      };
+      // Update local storage cache
+      const cached = getCachedDatabaseVenues();
+      const updatedCache = [insertedVenue, ...cached.filter(v => v.id !== insertedVenue!.id && v.name.toLowerCase() !== insertedVenue!.name.toLowerCase())];
+      setCachedDatabaseVenues(updatedCache);
+
+      // Trigger global event so any active views reload immediately
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("giglizard_venues_updated"));
+      }
+    }
+
+    return { data, error: null, venue: insertedVenue };
+  } catch (err: any) {
+    console.error("[Supabase] Unexpected exception inserting venue:", err);
+    return { data: null, error: err };
+  }
+}
+
+/**
  * Fetch all venues from the public.venues table in Supabase
  */
 export async function fetchAllVenuesFromDatabase(): Promise<Venue[]> {
@@ -1252,8 +1391,7 @@ export async function fetchAllVenuesFromDatabase(): Promise<Venue[]> {
     const { data, error } = await supabase
       .from("venues")
       .select("*")
-      .order("name", { ascending: true })
-      .limit(2000);
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.warn("[Supabase] Notice querying venues table:", error.message);

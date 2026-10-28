@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { analytics } from "@heycatch/sdk";
 import { 
   PayPalScriptProvider, 
   PayPalButtons, 
@@ -137,6 +138,15 @@ export default function PayPalAccessModal({
 }: PayPalAccessModalProps) {
   // Checkbox at checkout to accept recurring monthly charges. Checked by default
   const [autoRenew, setAutoRenew] = useState(true);
+
+  // Ensure auto renew is enabled and checked by default whenever checkout modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setAutoRenew(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+    }
+  }, [isOpen]);
   
   // Custom Client ID input for settings fallback
   const [customClientId, setCustomClientId] = useState(() => {
@@ -189,6 +199,10 @@ export default function PayPalAccessModal({
       };
 
       localStorage.setItem("venue_user_profile_v1", JSON.stringify(updatedAccount));
+
+      // HeyCatch: Track subscription started and update user plan property
+      analytics.setPersonProperties({ plan: "pro" });
+      analytics.trackEvent("subscription_started", { plan: "pro", amount: 9.99 });
 
       setSuccessMessage("✅ Payment Successful! Full contact information is unlocked for 30 days.");
       setTimeout(() => {
@@ -335,21 +349,24 @@ export default function PayPalAccessModal({
           </div>
         </div>
 
-        {/* Recurring Renewal Checkbox */}
-        <div className="p-3.5 bg-slate-950/50 rounded-2xl border border-slate-800/80 flex items-start gap-3">
+        {/* Auto Renew on Checkout (Checked by default) */}
+        <div className="p-3.5 bg-slate-950/60 rounded-2xl border border-indigo-500/30 flex items-start gap-3">
           <input
             id="recurring-monthly-checkbox"
             type="checkbox"
             checked={autoRenew}
             onChange={(e) => setAutoRenew(e.target.checked)}
-            className="mt-0.5 w-4 h-4 text-indigo-500 bg-slate-800 border-slate-600 rounded focus:ring-indigo-500 cursor-pointer"
+            className="mt-0.5 w-4 h-4 text-indigo-500 bg-slate-800 border-slate-600 rounded focus:ring-indigo-500 cursor-pointer accent-indigo-500"
           />
           <label htmlFor="recurring-monthly-checkbox" className="text-xs text-slate-300 leading-snug cursor-pointer select-none">
-            <span className="font-black text-white block">
-              Accept recurring monthly renewal ($9.99 every 30 days)
+            <span className="font-black text-white flex items-center gap-2">
+              <span>Enable auto renew ($9.99 every 30 days)</span>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                Active by default
+              </span>
             </span>
-            <span className="text-[11px] text-slate-400 font-medium">
-              Automatically maintains your unmasked band directory access each month. You can cancel at any time.
+            <span className="text-[11px] text-slate-400 font-medium block mt-1">
+              Automatically maintains your unmasked band directory access each month. You can manage or cancel any time from your account settings.
             </span>
           </label>
         </div>

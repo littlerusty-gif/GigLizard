@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Venue, UserAccount } from "../types";
 import { MUSIC_VENUES } from "../data/venues";
-import { supabase } from "../lib/supabase";
+import { supabase, buildVenueCompositeKey, getCachedDatabaseVenues } from "../lib/supabase";
 import { ProgrammaticVenueRoute } from "../utils/venueSeoRoutes";
 import {
   MapPin,
@@ -109,78 +109,150 @@ export default function CityVenueDirectory({
       }
       try {
         // 1. Query Supabase public.venues table
-        const { data: supaVenues, error } = await supabase
-          .from("venues")
-          .select("*")
-          .ilike("city", city)
-          .ilike("state", stateCode);
+        let supaVenues: any[] = [];
+        try {
+          const { data, error } = await supabase
+            .from("venues")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (!error && data && Array.isArray(data)) {
+            supaVenues = data;
+          }
+        } catch (e) {
+          console.warn("[CityVenueDirectory] Notice fetching Supabase venues:", e);
+        }
+
+        // Also check cached database venues
+        const cachedDbVenues = getCachedDatabaseVenues();
+
+        // Check local custom venues submitted by users
+        let customList: Venue[] = [];
+        try {
+          const savedCustom = localStorage.getItem("custom_venues_v1");
+          if (savedCustom) customList = JSON.parse(savedCustom);
+        } catch (_) {}
+
+        // Helper to check if a venue matches current city/state
+        const matchesCurrentCity = (vCity?: string, vState?: string, vAddr?: string) => {
+          const c = (vCity || "").toLowerCase();
+          const s = (vState || "").toUpperCase();
+          const a = (vAddr || "").toLowerCase();
+          const targetCity = city.toLowerCase();
+          const targetState = stateCode.toUpperCase();
+
+          const cityMatches = c === targetCity || c.includes(targetCity) || a.includes(targetCity);
+          const stateMatches = !targetState || s === targetState || a.includes(`, ${targetState.toLowerCase()}`) || a.includes(` ${targetState.toLowerCase()}`);
+          return cityMatches && stateMatches;
+        };
 
         // 2. Query matching local curated venues
-        const localMatches = MUSIC_VENUES.filter(v => {
-          const matchCity = v.city?.toLowerCase() === city.toLowerCase() || v.address?.toLowerCase().includes(city.toLowerCase());
-          const matchState = v.state?.toUpperCase() === stateCode || v.address?.toUpperCase().includes(`, ${stateCode}`);
-          return matchCity && matchState;
-        });
+        const localMatches = MUSIC_VENUES.filter(v => 
+          matchesCurrentCity(v.city, v.state, v.address)
+        );
 
-        // 3. Merge and deduplicate by normalized name
-        const combinedMap = new Map<string, VenueRecord>();
+        // 3. Collect matching database and custom venues (prioritized at top)
+        const dbAndCustomMatches: VenueRecord[] = [];
 
-        // Seed with local curated data first (rich production details)
-        localMatches.forEach(lv => {
-          const key = lv.name.toLowerCase().trim();
-          combinedMap.set(key, {
-            id: lv.id,
-            name: lv.name,
-            city: lv.city || city,
-            state: lv.state || stateCode,
-            address: lv.address,
-            booking_email: lv.contactEmail,
-            website: lv.website,
-            capacity: lv.capacity || 200,
-            genres_accepted: lv.genres,
-            age_limit: "21+",
-            hasPA: lv.hasPA !== false,
-            hasLighting: lv.hasLighting !== false,
-            description: lv.description,
-            phone: lv.contactPhone
-          });
-        });
+        // Add custom venues first
+        for (const cv of customList) {
+          if (matchesCurrentCity(cv.city, cv.state, cv.address)) {
+            dbAndCustomMatches.push({
+              id: cv.id,
+              name: cv.name,
+              city: cv.city || city,
+              state: cv.state || stateCode,
+              address: cv.address || `${city}, ${stateCode}`,
+              booking_email: cv.contactEmail || "booking@giglizard.us",
+              website: cv.website || null,
+              capacity: cv.capacity || 200,
+              genres_accepted: Array.isArray(cv.genres) ? cv.genres : ["Live Music"],
+              age_limit: "21+",
+              hasPA: cv.hasPA !== false,
+              hasLighting: cv.hasLighting !== false,
+              description: cv.description || `Independent live music stage in ${city}, ${stateCode}.`,
+              phone: cv.contactPhone || null
+            });
+          }
+        }
 
-        // Merge Supabase database records
-        if (supaVenues && supaVenues.length > 0) {
-          supaVenues.forEach((sv: any) => {
-            const key = (sv.name || "").toLowerCase().trim();
-            const existing = combinedMap.get(key);
+        // Add Supabase database venues
+        const allDbRows = [...supaVenues, ...cachedDbVenues.map(cv => ({
+          id: cv.id,
+          name: cv.name,
+          city: cv.city,
+          state: cv.state,
+          address: cv.address,
+          booking_email: cv.contactEmail,
+          website: cv.website,
+          capacity: cv.capacity,
+          genres_accepted: cv.genres,
+          age_limit: "21+",
+          hasPA: cv.hasPA,
+          hasLighting: cv.hasLighting,
+          description: cv.description,
+          phone: cv.contactPhone
+        }))];
+
+        for (const sv of allDbRows) {
+          if (!sv || !sv.name) continue;
+          if (matchesCurrentCity(sv.city, sv.state, sv.address)) {
             let genresList: string[] = ["Rock", "Indie", "Alternative"];
             if (Array.isArray(sv.genres_accepted) && sv.genres_accepted.length > 0) {
               genresList = sv.genres_accepted;
-            } else if (existing?.genres_accepted) {
-              genresList = existing.genres_accepted;
+            } else if (typeof sv.genres_accepted === "string") {
+              genresList = sv.genres_accepted.split(",").map((g: string) => g.trim()).filter(Boolean);
             }
 
-            combinedMap.set(key, {
-              id: sv.id || existing?.id || `v-${Math.random()}`,
+            dbAndCustomMatches.push({
+              id: sv.id || `v-${Math.random()}`,
               name: sv.name,
-              city: sv.city || existing?.city || city,
-              state: sv.state || existing?.state || stateCode,
-              address: sv.address || existing?.address || `${city}, ${stateCode}`,
-              booking_email: sv.booking_email || sv.email || existing?.booking_email || "booking@giglizard.us",
-              website: sv.website || existing?.website || null,
-              capacity: sv.capacity || existing?.capacity || 250,
+              city: sv.city || city,
+              state: sv.state || stateCode,
+              address: sv.address || `${city}, ${stateCode}`,
+              booking_email: sv.booking_email || sv.email || "booking@giglizard.us",
+              website: sv.website || null,
+              capacity: Number(sv.capacity) || 250,
               genres_accepted: genresList,
-              age_limit: sv.age_limit || existing?.age_limit || "21+",
-              hasPA: existing ? existing.hasPA : true,
-              hasLighting: existing ? existing.hasLighting : true,
-              description: sv.description || existing?.description || `Independent live music stage in ${city}, ${stateCode}. Host to touring acts, regional showcases, and DIY concerts.`,
-              phone: sv.phone || existing?.phone || null
+              age_limit: sv.age_limit || "21+",
+              hasPA: sv.hasPA !== false,
+              hasLighting: sv.hasLighting !== false,
+              description: sv.description || `Independent live music stage in ${city}, ${stateCode}. Host to touring acts, regional showcases, and DIY concerts.`,
+              phone: sv.phone || null
             });
-          });
+          }
         }
 
-        const finalList = Array.from(combinedMap.values()).sort((a, b) => {
-          // Sort by capacity descending
-          return (b.capacity || 0) - (a.capacity || 0);
-        });
+        // Build curated local venue records
+        const localVenueRecords: VenueRecord[] = localMatches.map(lv => ({
+          id: lv.id,
+          name: lv.name,
+          city: lv.city || city,
+          state: lv.state || stateCode,
+          address: lv.address,
+          booking_email: lv.contactEmail,
+          website: lv.website,
+          capacity: lv.capacity || 200,
+          genres_accepted: lv.genres,
+          age_limit: "21+",
+          hasPA: lv.hasPA !== false,
+          hasLighting: lv.hasLighting !== false,
+          description: lv.description,
+          phone: lv.contactPhone
+        }));
+
+        // Deduplicate using composite key `${name}-${city}-${state}`
+        // Prioritize newly submitted and database venues at the top
+        const seenKeys = new Set<string>();
+        const finalList: VenueRecord[] = [];
+
+        for (const v of [...dbAndCustomMatches, ...localVenueRecords]) {
+          const compKey = buildVenueCompositeKey(v.name, v.city, v.state);
+          if (!seenKeys.has(compKey)) {
+            seenKeys.add(compKey);
+            finalList.push(v);
+          }
+        }
 
         if (isMounted) {
           setVenues(finalList);
@@ -202,8 +274,14 @@ export default function CityVenueDirectory({
 
     loadCityVenues();
 
+    const onVenuesUpdated = () => {
+      loadCityVenues();
+    };
+    window.addEventListener("giglizard_venues_updated", onVenuesUpdated);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("giglizard_venues_updated", onVenuesUpdated);
     };
   }, [city, stateCode, programmaticRoute.venueSlug, programmaticRoute.venueName]);
 

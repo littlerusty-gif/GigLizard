@@ -34,11 +34,11 @@ export default function ProtectedContact({
     return generateDeconstructedContactChunks(value);
   }, [value]);
 
-  if (!value || value === "Inquire" || value === "Unlisted") {
+  if (!value || value === "Inquire" || value === "Unlisted" || (type === "phone" && (value.includes("555-") || value.includes("(555)")))) {
     return (
       <span className="text-gray-400 text-xs italic font-medium flex items-center gap-1">
         {type === "email" ? <Mail className="w-3 h-3" /> : <Phone className="w-3 h-3" />}
-        {value || "--"}
+        {type === "phone" ? "Inquire via Email" : (value || "--")}
       </span>
     );
   }

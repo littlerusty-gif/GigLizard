@@ -6,20 +6,21 @@
 
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
-
-// Actual database baseline numbers rounded to the nearest 50
-export const BASELINE_VENUE_COUNT = 650;
-export const BASELINE_BAND_COUNT = 4850;
-
-// 30 days in milliseconds (30 days * 24 hrs * 60 mins * 60 secs * 1000 ms)
-export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-
-const STORAGE_KEY = 'giglizard_directory_counts_30d_v1';
+import { MUSIC_VENUES } from '../data/venues';
 
 export function roundToNearest50(count: number): number {
   if (!count || count <= 0) return 50;
   return Math.max(50, Math.round(count / 50) * 50);
 }
+
+// Actual database and directory baseline numbers rounded to the nearest 50
+export const BASELINE_VENUE_COUNT = roundToNearest50(MUSIC_VENUES.length);
+export const BASELINE_BAND_COUNT = 4850;
+
+// 30 days in milliseconds (30 days * 24 hrs * 60 mins * 60 secs * 1000 ms)
+export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+const STORAGE_KEY = 'giglizard_directory_counts_30d_v2';
 
 export interface DirectoryCounts {
   venueCount: number;
@@ -88,10 +89,11 @@ export async function refreshDirectoryCountsIfExpired(): Promise<DirectoryCounts
       supabase.from('bands').select('*', { count: 'exact', head: true })
     ]);
 
-    const rawVenues = venuesRes.count ?? BASELINE_VENUE_COUNT;
+    const dbVenues = venuesRes.count ?? 0;
+    const actualVenueCount = Math.max(MUSIC_VENUES.length, dbVenues > MUSIC_VENUES.length ? dbVenues : MUSIC_VENUES.length + dbVenues);
     const rawBands = bandsRes.count ?? BASELINE_BAND_COUNT;
 
-    const roundedVenues = roundToNearest50(rawVenues);
+    const roundedVenues = roundToNearest50(actualVenueCount);
     const roundedBands = roundToNearest50(rawBands);
 
     const freshCounts: DirectoryCounts = {

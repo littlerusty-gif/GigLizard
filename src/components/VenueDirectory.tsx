@@ -10,7 +10,18 @@ import ReviewsModal from "./ReviewsModal";
 import { getRatingStats } from "../utils/reviewsManager";
 import { sanitizeInputText, escapeRegexSpecial, detectAutomatedBot, checkRapidHarvestingAttempt } from "../utils/antiScrape";
 import { getOwnerVenueEdits, getOwnerDeletedVenueIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
-import { fetchProfiles, profileToVenue, getCachedProfiles, insertProfile, fetchAllVenuesFromDatabase, getCachedDatabaseVenues } from "../lib/supabase";
+import { 
+  fetchProfiles, 
+  profileToVenue, 
+  getCachedProfiles, 
+  insertProfile, 
+  fetchAllVenuesFromDatabase, 
+  getCachedDatabaseVenues,
+  saveVenueToDatabase,
+  buildVenueCompositeKey,
+  mergeVenuesWithBundled,
+  supabase
+} from "../lib/supabase";
 import { CONTINENTAL_US_STATES } from "../constants/states";
 import { ProgrammaticVenueRoute, POPULAR_TOURING_CITIES, POPULAR_GENRE_CITY_ROUTES, parseProgrammaticVenuePath } from "../utils/venueSeoRoutes";
 import { useDirectoryCounts } from "../utils/directoryCounts";
@@ -40,9 +51,12 @@ export default function VenueDirectory({
   const [selectedState, setSelectedState] = useState("All");
   const [selectedCapacity, setSelectedCapacity] = useState("All");
   const [selectedRatingFilter, setSelectedRatingFilter] = useState("All");
+  const [showAllVenuesExplicitly, setShowAllVenuesExplicitly] = useState(false);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [formErrorMsg, setFormErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [honeypotBot, setHoneypotBot] = useState("");
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [reviewModalVenue, setReviewModalVenue] = useState<Venue | null>(null);
@@ -143,14 +157,36 @@ export default function VenueDirectory({
         }
       }
 
-      // Query live registered venue profiles and full database venues from Supabase
+      // Query live venues directly from Supabase `venues` table on mount
       let supabaseVenues: Venue[] = [];
       let databaseVenues: Venue[] = getCachedDatabaseVenues();
       try {
-        const cached = getCachedProfiles()
-          .filter(p => (p.type || p.role) === "Venue")
-          .map(profileToVenue);
-        supabaseVenues = cached;
+        const { data: dbVenues, error: dbError } = await supabase
+          .from("venues")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (!dbError && dbVenues && Array.isArray(dbVenues) && dbVenues.length > 0) {
+          databaseVenues = dbVenues.map((v: any) => ({
+            id: String(v.id || `v-${Date.now()}`),
+            name: v.name || "Music Venue",
+            city: v.city || "Seattle",
+            state: v.state || "WA",
+            address: v.address || `${v.city || "Seattle"}, ${v.state || "WA"}`,
+            genres: Array.isArray(v.genres_accepted) 
+              ? v.genres_accepted 
+              : (typeof v.genres_accepted === "string" ? v.genres_accepted.split(",").map((g: string) => g.trim()).filter(Boolean) : ["Live Music"]),
+            capacity: Number(v.capacity) || 150,
+            contactEmail: v.booking_email || v.email || "booking@giglizard.us",
+            contactPhone: v.phone || "Inquire",
+            description: v.description || `[Capacity: ${v.capacity || 150} guests] Live music stage.`,
+            website: v.website || "www.inquire-booking.com",
+            hasPA: v.hasPA !== false,
+            hasLighting: v.hasLighting !== false
+          }));
+        } else if (databaseVenues.length === 0) {
+          databaseVenues = await fetchAllVenuesFromDatabase();
+        }
 
         const liveProfiles = await fetchProfiles();
         if (isMounted) {
@@ -158,13 +194,8 @@ export default function VenueDirectory({
             .filter(p => (p.type || p.role) === "Venue")
             .map(profileToVenue);
         }
-
-        const remoteDbVenues = await fetchAllVenuesFromDatabase();
-        if (isMounted && remoteDbVenues.length > 0) {
-          databaseVenues = remoteDbVenues;
-        }
       } catch (err) {
-        console.warn("Could not load Supabase venues:", err);
+        console.warn("Notice querying Supabase venues on mount:", err);
       }
 
       let userVenueList: Venue[] = [];
@@ -186,27 +217,31 @@ export default function VenueDirectory({
         userVenueList = [userVenueObj];
       }
 
-      const rawMerged = [...userVenueList, ...databaseVenues, ...supabaseVenues, ...customList, ...MUSIC_VENUES].filter(
-        v => !(v as any).isPrivate && (v as any).venueType !== "house_show"
-      );
+      // Merge newly fetched Supabase venues with local bundled venues (MUSIC_VENUES) & custom venues
+      // Deduplicating by composite key `${name}-${city}-${state}` and placing newly submitted/database venues at the top
+      const initialMerged = mergeVenuesWithBundled(
+        databaseVenues,
+        MUSIC_VENUES,
+        [...userVenueList, ...customList, ...supabaseVenues]
+      ).filter(v => !(v as any).isPrivate && (v as any).venueType !== "house_show");
+
       const deletedIds = new Set(getOwnerDeletedVenueIds());
       const ownerEdits = getOwnerVenueEdits();
 
       const seenVenueKeys = new Set<string>();
       const deduplicatedVenues: Venue[] = [];
-      for (let v of rawMerged) {
-        const nameKey = (v.name || "").trim().toLowerCase();
-        const cityKey = (v.city || "").trim().toLowerCase();
-        const stateKey = (v.state || "").trim().toUpperCase();
-        const compositeKey = `${nameKey}__${cityKey}__${stateKey}`;
+      for (let v of initialMerged) {
+        if (!v || !v.name) continue;
+        const compositeKey = buildVenueCompositeKey(v.name, v.city, v.state);
+        const nameLower = (v.name || "").trim().toLowerCase();
 
-        if (deletedIds.has(v.id) || (nameKey && deletedIds.has(nameKey))) {
+        if (deletedIds.has(v.id) || (nameLower && deletedIds.has(nameLower))) {
           continue;
         }
         if (ownerEdits[v.id]) {
           v = { ...v, ...ownerEdits[v.id] };
-        } else if (nameKey && ownerEdits[nameKey]) {
-          v = { ...v, ...ownerEdits[nameKey] };
+        } else if (nameLower && ownerEdits[nameLower]) {
+          v = { ...v, ...ownerEdits[nameLower] };
         }
         if (compositeKey && !seenVenueKeys.has(compositeKey)) {
           seenVenueKeys.add(compositeKey);
@@ -232,7 +267,7 @@ export default function VenueDirectory({
     };
   }, [currentAccount?.name, currentAccount?.type, currentAccount?.contactEmail]);
 
-  const handleAddVenueSubmit = (e: React.FormEvent) => {
+  const handleAddVenueSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Bot trap check
@@ -267,6 +302,17 @@ export default function VenueDirectory({
       return;
     }
 
+    let parsedCity = cleanCity;
+    let parsedState = "";
+    if (cleanCity.includes(",")) {
+      const parts = cleanCity.split(",").map(p => p.trim());
+      parsedCity = parts[0] || cleanCity;
+      parsedState = (parts[1] || "").toUpperCase();
+    } else if (cleanAddress.includes(",")) {
+      const match = cleanAddress.match(/,\s*([A-Za-z]{2})\b/);
+      if (match) parsedState = match[1].toUpperCase();
+    }
+
     const processedGenres = form.genres 
       ? form.genres.split(",").map(g => sanitizeInputText(g.trim(), 30)).filter(g => g.length > 0)
       : ["Live Music"];
@@ -276,7 +322,8 @@ export default function VenueDirectory({
       name: cleanName,
       capacity: Number(form.capacity) || 100,
       address: cleanAddress,
-      city: cleanCity,
+      city: parsedCity,
+      state: parsedState || undefined,
       genres: processedGenres,
       contactEmail: cleanEmail,
       contactPhone: cleanPhone || "Inquire",
@@ -286,6 +333,16 @@ export default function VenueDirectory({
       hasLighting: form.hasLighting
     };
 
+    const compositeKey = buildVenueCompositeKey(newVenue.name, newVenue.city, newVenue.state);
+
+    // 3. Instant UI Update:
+    // Append the new venue to local state immediately so submitting user sees it without hard refresh
+    setVenues(prev => [newVenue, ...prev.filter(v => buildVenueCompositeKey(v.name, v.city, v.state) !== compositeKey)]);
+    setShowAllVenuesExplicitly(true);
+    setIsSubmitting(true);
+    setFormErrorMsg("");
+
+    // Local storage fallback cache
     const saved = localStorage.getItem("custom_venues_v1");
     let customList: Venue[] = [];
     if (saved) {
@@ -295,10 +352,33 @@ export default function VenueDirectory({
         console.error(err);
       }
     }
-    const updatedCustomList = [newVenue, ...customList.filter(v => v.name.toLowerCase() !== cleanName.toLowerCase() && v.contactEmail.toLowerCase() !== cleanEmail.toLowerCase())];
+    const updatedCustomList = [newVenue, ...customList.filter(v => buildVenueCompositeKey(v.name, v.city, v.state) !== compositeKey)];
     localStorage.setItem("custom_venues_v1", JSON.stringify(updatedCustomList));
 
-    // Persist directly into Supabase profiles table
+    // 1. Form Submission (Write to Supabase `venues` table directly)
+    let insertResult: { data: any; error: any; venue?: Venue } = { data: null, error: null };
+    try {
+      insertResult = await saveVenueToDatabase({
+        id: newVenue.id,
+        name: cleanName,
+        city: parsedCity,
+        state: parsedState || "WA",
+        address: cleanAddress,
+        capacity: Number(form.capacity) || 100,
+        genres: processedGenres,
+        contactEmail: cleanEmail,
+        contactPhone: cleanPhone,
+        website: cleanWeb,
+        description: newVenue.description,
+        hasPA: form.hasPA,
+        hasLighting: form.hasLighting
+      });
+    } catch (saveErr: any) {
+      console.error("[Venue Registration] Unexpected error writing to Supabase venues table:", saveErr);
+      insertResult = { data: null, error: saveErr };
+    }
+
+    // Dual persist directly into Supabase profiles table for login compatibility
     insertProfile({
       id: newVenue.id,
       name: cleanName,
@@ -312,33 +392,38 @@ export default function VenueDirectory({
       website: cleanWeb || undefined,
       phone: cleanPhone || undefined,
       genres: processedGenres,
-      bio: `[Capacity: ${form.capacity} guests] ${cleanDesc || "A gorgeous live music environment ready for exciting performances."}`,
+      bio: newVenue.description,
       has_pa: form.hasPA,
       has_lighting: form.hasLighting
-    }).catch(err => console.warn("Supabase venue insert error:", err));
+    }).catch(err => console.warn("Notice: profiles table insert:", err));
 
-    const combined = [newVenue, ...venues.filter(v => v.name.toLowerCase() !== cleanName.toLowerCase())];
-    setVenues(combined);
-    setShowAddForm(false);
-    setSuccessMsg(`Successfully added "${cleanName}" to Venue Directory!`);
-    setTimeout(() => setSuccessMsg(""), 4000);
-    
-    // Reset form
-    setForm({
-      name: "",
-      capacity: 150,
-      address: "",
-      city: "",
-      genres: "",
-      contactEmail: "",
-      contactPhone: "",
-      description: "",
-      website: "",
-      hasPA: true,
-      hasLighting: true
-    });
-    setSuccessMsg("Successfully registered your music venue space!");
-    setTimeout(() => setSuccessMsg(""), 4000);
+    setIsSubmitting(false);
+
+    if (insertResult.error) {
+      console.error("[Venue Registration] Insert to Supabase venues table failed (RLS or database error):", insertResult.error);
+      setFormErrorMsg(
+        `Notice: Cloud database sync encountered an issue (${insertResult.error.message || "Row Level Security or Network error"}). Your venue has been added locally for your session.`
+      );
+    } else {
+      setSuccessMsg(`Successfully registered "${cleanName}"! Venue is now stored in Supabase and live across the platform.`);
+      setTimeout(() => setSuccessMsg(""), 5000);
+      setShowAddForm(false);
+
+      // Reset form
+      setForm({
+        name: "",
+        capacity: 150,
+        address: "",
+        city: "",
+        genres: "",
+        contactEmail: "",
+        contactPhone: "",
+        description: "",
+        website: "",
+        hasPA: true,
+        hasLighting: true
+      });
+    }
   };
 
   const genres = ["All", "Grunge", "Punk", "Alternative Rock", "Indie Rock", "Synthwave", "Folk", "Acoustic", "Electronic", "Psychedelic", "Metal", "Jazz"];
@@ -396,6 +481,158 @@ export default function VenueDirectory({
 
     return true;
   });
+
+  const isSearchActive = Boolean(
+    searchTerm.trim().length > 0 ||
+    selectedState !== "All" ||
+    selectedGenre !== "All" ||
+    selectedCapacity !== "All" ||
+    selectedRatingFilter !== "All"
+  );
+
+  const shouldShowVenues = isSearchActive || showAllVenuesExplicitly;
+
+  const renderExploreSection = () => (
+    <section className="bg-white rounded-2xl border border-gray-200/90 p-6 md:p-8 space-y-6 shadow-xs" id="programmatic-venue-seo-index">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+        <div>
+          <div className="text-xs font-semibold text-indigo-600 tracking-wide uppercase">
+            Touring Market Directory · Lower 48 Stages
+          </div>
+          <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight mt-0.5">
+            Explore Live Music Venues by City &amp; Genre
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Targeted booking directories with room specs, talent buyer contacts, and corridor runs.
+          </p>
+        </div>
+        <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 font-semibold self-start sm:self-auto">
+          {venueCountStr} Stages &amp; {bandCountStr} Bands
+        </span>
+      </div>
+
+      {/* City Markets Grid */}
+      <div className="space-y-3">
+        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+          <span>Top Touring Hubs (City Directories)</span>
+        </h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs">
+          {POPULAR_TOURING_CITIES.map((c) => {
+            const url = `/venues/${c.slug}`;
+            const isCurrent = programmaticRoute?.canonicalPath === url;
+            return (
+              <a
+                key={c.slug}
+                href={url}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const route = parseProgrammaticVenuePath(url);
+                  if (onNavigateProgrammaticRoute) {
+                    onNavigateProgrammaticRoute(route, url);
+                  }
+                }}
+                className={`p-3 rounded-xl border transition-all flex flex-col justify-between cursor-pointer group ${
+                  isCurrent
+                    ? "bg-indigo-50/90 border-indigo-400 text-indigo-900 shadow-xs"
+                    : "bg-slate-50/60 hover:bg-indigo-50/40 border-gray-200/80 hover:border-indigo-300 text-slate-800"
+                }`}
+              >
+                <div>
+                  <span className="font-bold block text-slate-900 group-hover:text-indigo-600 transition-colors">
+                    {c.city}, {c.state}
+                  </span>
+                  <span className="text-[10.5px] text-gray-500 line-clamp-1 mt-0.5">
+                    {c.tagline}
+                  </span>
+                </div>
+                <span className="text-[10px] text-indigo-600 font-semibold mt-2 inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                  <span>View Stages</span>
+                  <ArrowRight className="w-2.5 h-2.5" />
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Genre + City Circuit Grid */}
+      <div className="space-y-3 pt-4 border-t border-gray-100">
+        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+          <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+          <span>Popular Genre Circuits</span>
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
+          {POPULAR_GENRE_CITY_ROUTES.map((g) => {
+            const url = `/venues/${g.slug}`;
+            const isCurrent = programmaticRoute?.canonicalPath === url;
+            return (
+              <a
+                key={g.slug}
+                href={url}
+                onClick={(e) => {
+                  e.preventDefault();
+                  const route = parseProgrammaticVenuePath(url);
+                  if (onNavigateProgrammaticRoute) {
+                    onNavigateProgrammaticRoute(route, url);
+                  }
+                }}
+                className={`p-3 rounded-xl border transition-all flex flex-col justify-between cursor-pointer group ${
+                  isCurrent
+                    ? "bg-amber-50/90 border-amber-400 text-amber-950 shadow-xs"
+                    : "bg-slate-50/60 hover:bg-amber-50/40 border-gray-200/80 hover:border-amber-300 text-slate-800"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
+                      {g.genre} in {g.city}
+                    </span>
+                    <span className="text-[10px] font-mono text-gray-400">{g.state}</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1 leading-snug">
+                    Verified {g.metaSummary}
+                  </p>
+                </div>
+                <span className="text-[10.5px] text-amber-700 font-semibold mt-2 inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                  <span>Explore {g.genre} Venues</span>
+                  <ArrowRight className="w-2.5 h-2.5" />
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Touring States Quick Filter */}
+      <div className="space-y-3 pt-4 border-t border-gray-100">
+        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+          <Compass className="w-3.5 h-3.5 text-indigo-600" />
+          <span>Touring States Quick Filter</span>
+        </h4>
+        <div className="flex flex-wrap gap-1.5 text-xs">
+          {["WA", "CA", "TX", "TN", "IL", "CO", "NY", "OR", "MA", "GA", "PA", "NC", "OH", "AZ", "FL", "MN"].map((st) => (
+            <button
+              key={st}
+              type="button"
+              onClick={() => {
+                setSelectedState(st);
+                setShowAllVenuesExplicitly(true);
+              }}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                selectedState === st
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                  : "bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border-slate-200"
+              }`}
+            >
+              {st}
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+
   if (programmaticRoute && (programmaticRoute.type === "city-state" || programmaticRoute.type === "venue-profile")) {
     return (
       <CityVenueDirectory
@@ -504,6 +741,23 @@ export default function VenueDirectory({
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-900 text-xs font-semibold flex items-center gap-2" id="success-banner-venue">
           <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           <span>{successMsg}</span>
+        </div>
+      )}
+
+      {formErrorMsg && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-amber-900 text-xs font-semibold flex items-center justify-between gap-2 shadow-xs" id="error-banner-venue">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <span>{formErrorMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFormErrorMsg("")}
+            className="text-amber-700 hover:text-amber-950 p-1 cursor-pointer"
+            title="Dismiss error notice"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -647,7 +901,7 @@ export default function VenueDirectory({
                 <label className="block text-gray-700 font-bold mb-1">Contact Phone</label>
                 <input
                   type="text"
-                  placeholder="E.g., (206) 555-9000"
+                  placeholder="E.g., (206) 628-3151"
                   value={form.contactPhone}
                   onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
                   className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -666,19 +920,32 @@ export default function VenueDirectory({
               </div>
             </div>
 
+            {formErrorMsg && (
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-amber-900 text-xs font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>{formErrorMsg}</span>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
               <button
                 type="button"
-                onClick={() => setShowAddForm(false)}
-                className="py-2 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold cursor-pointer"
+                onClick={() => {
+                  setShowAddForm(false);
+                  setFormErrorMsg("");
+                }}
+                disabled={isSubmitting}
+                className="py-2 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold cursor-pointer disabled:opacity-50"
               >
                 Close Form
               </button>
               <button
                 type="submit"
-                className="py-2 px-5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold cursor-pointer"
+                disabled={isSubmitting}
+                className="py-2 px-5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold cursor-pointer disabled:opacity-60 flex items-center gap-2"
               >
-                Register My Venue Space
+                {isSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>{isSubmitting ? "Registering Venue..." : "Register My Venue Space"}</span>
               </button>
             </div>
           </form>
@@ -854,28 +1121,96 @@ export default function VenueDirectory({
         </div>
       </div>
 
-      {/* Grid of searchable venues */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="venues-listing-grid">
-        
-        {/* Invisible Honeypot Canary Venue Card to catch automated DOM scrapers */}
-        <div 
-          aria-hidden="true" 
-          style={{ 
-            position: "absolute", 
-            left: "-9999px", 
-            width: "1px", 
-            height: "1px", 
-            overflow: "hidden", 
-            opacity: 0, 
-            pointerEvents: "none" 
-          }}
-          className="venue-card-canary-honeypot"
-        >
-          <h4>Pacific Canary Trap Music Hall</h4>
-          <p>Seattle, WA • 1000 Fake St</p>
-          <a href="mailto:spider-trap@pacifictour-honeypot.internal">spider-trap@pacifictour-honeypot.internal</a>
-          <span>(555) 019-9999</span>
+      {/* 1. Default State: Don't automatically list venues. Show Explore by City & Genre and search prompt */}
+      {!shouldShowVenues && (
+        <div className="space-y-6 animate-fade-in" id="explore-before-search-block">
+          <div className="bg-gradient-to-r from-indigo-50/70 via-white to-slate-50 border border-indigo-100/90 rounded-2xl p-5 md:p-6 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 text-xs font-black text-indigo-700 uppercase tracking-wider">
+                <Search className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Search by Criteria or Pick a City Hub</span>
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                Explore Verified Stages by City &amp; Genre
+              </h3>
+              <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
+                Choose a touring city or genre circuit below to view curated room listings with house PA and lighting specs. Or use the locator above to filter by state, vibe, or capacity.
+              </p>
+            </div>
+            <button
+              type="button"
+              id="btn-browse-all-stages"
+              onClick={() => setShowAllVenuesExplicitly(true)}
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold border border-slate-300 transition-all shadow-2xs flex items-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer"
+            >
+              <span>Browse All {venueCountStr} Stages</span>
+              <ArrowRight className="w-3.5 h-3.5 text-indigo-600" />
+            </button>
+          </div>
+
+          {renderExploreSection()}
         </div>
+      )}
+
+      {/* 2. When a Search is Performed or "Browse All" is Clicked: Show Search Results and Venues Grid */}
+      {shouldShowVenues && (
+        <div className="space-y-6 animate-fade-in" id="active-search-results-block">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-2xl p-4 md:px-5 text-xs shadow-2xs">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-50 text-indigo-800 font-black border border-indigo-200">
+                <span>{filteredVenues.length} {filteredVenues.length === 1 ? "Stage" : "Stages"} Found</span>
+              </span>
+              {isSearchActive ? (
+                <span className="text-slate-600 font-medium text-xs">
+                  matching your search filters
+                </span>
+              ) : (
+                <span className="text-slate-600 font-medium text-xs">
+                  showing all continental USA live music stages
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              id="btn-reset-venue-search"
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedState("All");
+                setSelectedGenre("All");
+                setSelectedCapacity("All");
+                setSelectedRatingFilter("All");
+                setShowAllVenuesExplicitly(false);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5 text-rose-500" />
+              <span>Back to City &amp; Genre Hubs</span>
+            </button>
+          </div>
+
+          {/* Grid of searchable venues */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="venues-listing-grid">
+            
+            {/* Invisible Honeypot Canary Venue Card to catch automated DOM scrapers */}
+            <div 
+              aria-hidden="true" 
+              style={{ 
+                position: "absolute", 
+                left: "-9999px", 
+                width: "1px", 
+                height: "1px", 
+                overflow: "hidden", 
+                opacity: 0, 
+                pointerEvents: "none" 
+              }}
+              className="venue-card-canary-honeypot"
+            >
+              <h4>Pacific Canary Trap Music Hall</h4>
+              <p>Seattle, WA • 1000 Fake St</p>
+              <a href="mailto:spider-trap@pacifictour-honeypot.internal">spider-trap@pacifictour-honeypot.internal</a>
+              <span>(206) 019-9999</span>
+            </div>
 
         {filteredVenues.map((v) => {
           const isChosen = selectedVenueId === v.id;
@@ -1042,124 +1377,30 @@ export default function VenueDirectory({
         })}
 
         {filteredVenues.length === 0 && (
-          <div className="col-span-full bg-white border border-gray-100 rounded-xl p-8 text-center text-gray-400 text-xs font-semibold" id="no-venues-state">
-            No booking venues fit your search terms. Open options and clear search variables.
+          <div className="col-span-full bg-white border border-gray-100 rounded-xl p-8 text-center text-gray-500 text-xs font-semibold space-y-3" id="no-venues-state">
+            <p>No booking venues fit your search terms. Open options and clear search variables.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedState("All");
+                setSelectedGenre("All");
+                setSelectedCapacity("All");
+                setSelectedRatingFilter("All");
+                setShowAllVenuesExplicitly(false);
+              }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors cursor-pointer"
+            >
+              Clear Filters &amp; Return to City Hubs
+            </button>
           </div>
         )}
       </div>
 
-      {/* Programmatic SEO Directory Index: Explore Venues by Touring Market & Genre */}
-      <section className="bg-white rounded-2xl border border-gray-200/90 p-6 md:p-8 space-y-6 shadow-xs" id="programmatic-venue-seo-index">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
-          <div>
-            <div className="text-xs font-semibold text-indigo-600 tracking-wide">
-              Programmatic Touring Directory · USA Markets
-            </div>
-            <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight mt-0.5">
-              Explore Live Music Venues by City & Genre
-            </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Targeted booking directories with room specs, talent buyer contacts, and corridor runs.
-            </p>
-          </div>
-          <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60 font-semibold self-start sm:self-auto">
-            {venueCountStr} Stages &amp; {bandCountStr} Bands
-          </span>
-        </div>
-
-        {/* City Markets Grid */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Top Touring Hubs (City Directories)</span>
-          </h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs">
-            {POPULAR_TOURING_CITIES.map((c) => {
-              const url = `/venues/${c.slug}`;
-              const isCurrent = programmaticRoute?.canonicalPath === url;
-              return (
-                <a
-                  key={c.slug}
-                  href={url}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const route = parseProgrammaticVenuePath(url);
-                    if (onNavigateProgrammaticRoute) {
-                      onNavigateProgrammaticRoute(route, url);
-                    }
-                  }}
-                  className={`p-3 rounded-xl border transition-all flex flex-col justify-between cursor-pointer group ${
-                    isCurrent
-                      ? "bg-indigo-50/90 border-indigo-400 text-indigo-900 shadow-xs"
-                      : "bg-slate-50/60 hover:bg-indigo-50/40 border-gray-200/80 hover:border-indigo-300 text-slate-800"
-                  }`}
-                >
-                  <div>
-                    <span className="font-bold block text-slate-900 group-hover:text-indigo-600 transition-colors">
-                      {c.city}, {c.state}
-                    </span>
-                    <span className="text-[10.5px] text-gray-500 line-clamp-1 mt-0.5">
-                      {c.tagline}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-indigo-600 font-semibold mt-2 inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-                    <span>View Stages</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
-                  </span>
-                </a>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Genre + City Circuit Grid */}
-        <div className="space-y-3 pt-4 border-t border-gray-100">
-          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Popular Genre Circuits</span>
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
-            {POPULAR_GENRE_CITY_ROUTES.map((g) => {
-              const url = `/venues/${g.slug}`;
-              const isCurrent = programmaticRoute?.canonicalPath === url;
-              return (
-                <a
-                  key={g.slug}
-                  href={url}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const route = parseProgrammaticVenuePath(url);
-                    if (onNavigateProgrammaticRoute) {
-                      onNavigateProgrammaticRoute(route, url);
-                    }
-                  }}
-                  className={`p-3 rounded-xl border transition-all flex flex-col justify-between cursor-pointer group ${
-                    isCurrent
-                      ? "bg-amber-50/90 border-amber-400 text-amber-950 shadow-xs"
-                      : "bg-slate-50/60 hover:bg-amber-50/40 border-gray-200/80 hover:border-amber-300 text-slate-800"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
-                        {g.genre} in {g.city}
-                      </span>
-                      <span className="text-[10px] font-mono text-gray-400">{g.state}</span>
-                    </div>
-                    <p className="text-[11px] text-gray-500 mt-1 leading-snug">
-                      Verified {g.metaSummary}
-                    </p>
-                  </div>
-                  <span className="text-[10.5px] text-amber-700 font-semibold mt-2 inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-                    <span>Explore {g.genre} Venues</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
-                  </span>
-                </a>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      {/* Explore Section below search results */}
+      {renderExploreSection()}
+    </div>
+  )}
 
       {/* Security Shield Diagnostic Modal */}
       <SecurityShieldModal

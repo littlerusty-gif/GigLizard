@@ -10,6 +10,24 @@
 
       gtag('config', 'AW-18542590401');
     </script>
+
+    <!-- Global fetch setter compatibility shim for sandboxed/iframe environments -->
+    <script>
+      (function() {
+        try {
+          var origFetch = window.fetch;
+          if (origFetch) {
+            var currentFetch = origFetch;
+            Object.defineProperty(window, 'fetch', {
+              get: function() { return currentFetch; },
+              set: function(fn) { currentFetch = fn; },
+              configurable: true,
+              enumerable: true
+            });
+          }
+        } catch (_) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />

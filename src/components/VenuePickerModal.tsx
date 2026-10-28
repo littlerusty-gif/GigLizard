@@ -631,7 +631,7 @@ export const VenuePickerModal: React.FC<VenuePickerModalProps> = ({
                   <label className="block font-bold text-slate-700 mb-1">Booking Email / Phone</label>
                   <input
                     type="text"
-                    placeholder="e.g., booking@venue.com or 555-0192"
+                    placeholder="e.g., booking@venue.com or (206) 628-3151"
                     value={customContactEmail}
                     onChange={(e) => setCustomContactEmail(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { analytics } from "@heycatch/sdk";
 import { UserAccount, Venue, AvailableBand } from "../types";
 import { 
   Sliders, FileText, Image, Shield, Sparkles, Check, 
@@ -25,7 +26,7 @@ import { sanitizeInputText } from "../utils/antiScrape";
 import { isAccessActive, getAccessStatusDetails, isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { resolveBandMusicLinks, categorizeUserMusicLink } from "../utils/musicLinks";
-import { insertProfile, supabase } from "../lib/supabase";
+import { insertProfile, supabase, saveVenueToDatabase } from "../lib/supabase";
 import { isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
 import { useDirectoryCounts } from "../utils/directoryCounts";
 
@@ -353,6 +354,21 @@ export default function Home({
       };
       const updatedVenues = [newVenue, ...customVenues.filter(v => v.name.toLowerCase() !== newVenue.name.toLowerCase() && v.contactEmail.toLowerCase() !== newVenue.contactEmail.toLowerCase())];
       localStorage.setItem("custom_venues_v1", JSON.stringify(updatedVenues));
+      saveVenueToDatabase({
+        id: newVenue.id,
+        name: newVenue.name,
+        city: newVenue.city,
+        address: newVenue.address,
+        capacity: newVenue.capacity,
+        genres: newVenue.genres,
+        contactEmail: newVenue.contactEmail,
+        contactPhone: newVenue.contactPhone,
+        description: newVenue.description,
+        website: newVenue.website,
+        hasPA: newVenue.hasPA,
+        hasLighting: newVenue.hasLighting
+      }).catch(err => console.warn("[Home] saveVenueToDatabase notice:", err));
+      window.dispatchEvent(new CustomEvent("giglizard_venues_updated"));
 
       const fallbackPayload: UserAccount = {
         type: "Venue",
@@ -723,6 +739,16 @@ export default function Home({
         setRegisteredSuccessAccount(payload);
         setSuccessMessage(`Welcome! Your free ${accountType} account for "${payload.name}" was successfully registered and listed.`);
         showToast("success", `Welcome ${payload.name}! You are registered and logged in.`);
+
+        // HeyCatch: Client witness of completed registration
+        if (authData.user) {
+          analytics.setIdentity(
+            authData.user.id,
+            { email: form.email.trim(), name: payload.name, plan: "free", role: form.role },
+            { signup_date: authData.user.created_at }
+          );
+          analytics.trackEvent("signup_completed");
+        }
       } else {
         // Email confirmation is required by Supabase
         const confirmMsg = "Account created! Please check your email to confirm your account before logging in.";
@@ -1539,7 +1565,7 @@ export default function Home({
               onClick={() => onSelectTab("venues")}
               className="text-indigo-400 hover:text-indigo-300 font-semibold hover:underline cursor-pointer"
             >
-              Browse 4,800+ Free Venues →
+              Browse {venueCountStr} Free Venues →
             </button>
             <span className="text-slate-700">·</span>
             <button
@@ -1833,7 +1859,7 @@ export default function Home({
                 q: "How often are venue booking emails and contacts verified?",
                 a: (
                   <span>
-                    Every venue listing in our 4,800+ directory is curated and verified by human moderators who corroborate live booking addresses with official venue websites, talent buyer submission channels, and past touring itineraries. When a club changes management or emails bounce, our verification queue flags it within 24 hours. Check out our{" "}
+                    Every venue listing in our {venueCountStr} directory is curated and verified by human moderators who corroborate live booking addresses with official venue websites, talent buyer submission channels, and past touring itineraries. When a club changes management or emails bounce, our verification queue flags it within 24 hours. Check out our{" "}
                     <button
                       type="button"
                       onClick={() => onSelectTab("verification")}
@@ -1963,7 +1989,7 @@ export default function Home({
               <span>Why Venues are 100% Free</span>
             </p>
             <p className="text-[11.5px]">
-              Independent artists shouldn't have to pay to discover live music venues. We maintain 4,800+ music clubs, dive bars, theaters, and listening rooms across the Lower 48 and keep them permanently open to everyone.
+              Independent artists shouldn't have to pay to discover live music venues. We maintain {venueCountStr} music clubs, dive bars, theaters, and listening rooms across the Lower 48 and keep them permanently open to everyone.
             </p>
           </div>
           <div className="space-y-1.5 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/60">

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { analytics } from "@heycatch/sdk";
 import { UserAccount, AvailableBand, Venue } from "../types";
 import { sanitizeInputText } from "../utils/antiScrape";
 import { isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
-import { getCachedProfiles, fetchProfiles, insertProfile, supabase, resolveAccountFromDatabase, linkAuthUidToBand, saveBandToDatabase } from "../lib/supabase";
+import { getCachedProfiles, fetchProfiles, insertProfile, supabase, resolveAccountFromDatabase, linkAuthUidToBand, saveBandToDatabase, saveVenueToDatabase } from "../lib/supabase";
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { 
   X, Lock, LogIn, Eye, EyeOff, CheckCircle2, 
@@ -560,6 +561,16 @@ export default function UserLoginModal({
           setSuccessMessage("Account created! Please check your email to confirm your account before logging in.");
           return;
         }
+
+        // HeyCatch: Client witness of completed registration
+        if (authData.user) {
+          analytics.setIdentity(
+            authData.user.id,
+            { email: cleanEmail, name: finalName, plan: "free" },
+            { signup_date: authData.user.created_at }
+          );
+          analytics.trackEvent("signup_completed");
+        }
       } catch (err: any) {
         setErrorMessage(err?.message || "Registration failed. Please try again.");
         return;
@@ -619,6 +630,19 @@ export default function UserLoginModal({
           hasLighting: true
         };
         localStorage.setItem("custom_venues_v1", JSON.stringify([newVenue, ...list.filter(v => v.contactEmail !== cleanEmail)]));
+        saveVenueToDatabase({
+          id: newVenue.id,
+          name: finalName,
+          city: finalCity,
+          address: finalCity,
+          capacity: 150,
+          genres: ["Live Music"],
+          contactEmail: cleanEmail,
+          contactPhone: "Inquire",
+          description: newVenue.description,
+          hasPA: true,
+          hasLighting: true
+        }).catch(e => console.warn("[UserLoginModal] saveVenueToDatabase notice:", e));
         window.dispatchEvent(new CustomEvent("giglizard_venues_updated"));
       } catch (err) {
         console.warn("Failed pushing venue to global directory state:", err);

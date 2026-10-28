@@ -187,6 +187,12 @@ app.get(/^\/google([a-z0-9]+)\.html$/, (req, res) => {
   res.send(`google-site-verification: google${req.params[0]}.html`);
 });
 
+// HeyCatch channel attribution redirect rule: /<char> -> /?utm_source=heycatch&utm_campaign=<char> (302)
+app.get("/:l([a-z0-9])", (req, res) => {
+  const char = req.params.l;
+  res.redirect(302, `/?utm_source=heycatch&utm_campaign=${char}`);
+});
+
 app.get("/llms.txt", (req, res) => {
   res.type("text/plain");
   res.send(`# GigLizard
@@ -521,11 +527,11 @@ function getProcessedVenuesList() {
     seen.add(compositeKey);
 
     const override = serverVenueOverrides[v.id] || serverVenueOverrides[nameKey];
-    if (override) {
-      result.push({ ...v, ...override });
-    } else {
-      result.push(v);
+    const venueObj = override ? { ...v, ...override } : { ...v };
+    if (venueObj.contactPhone && venueObj.contactPhone.includes("555")) {
+      delete venueObj.contactPhone;
     }
+    result.push(venueObj);
   }
   return result;
 }
@@ -2000,7 +2006,7 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
           "name": v.name,
           "address": v.address,
           "maximumAttendeeCapacity": v.capacity,
-          "telephone": v.contactPhone,
+          "telephone": (v.contactPhone && !v.contactPhone.includes("555")) ? v.contactPhone : undefined,
           "url": v.website ? (v.website.startsWith("http") ? v.website : `https://${v.website}`) : undefined,
           "description": v.description
         }
@@ -2151,7 +2157,7 @@ async function startServer() {
     // Custom HTML route renderer with per-page SEO titles, descriptions, and canonicals (D5.1, D5.3)
     app.use(async (req, res, next) => {
       if (
-        req.method !== "GET" || 
+        (req.method !== "GET" && req.method !== "HEAD") || 
         req.path.startsWith("/api/") || 
         req.path.startsWith("/@") || 
         req.path.startsWith("/src/") || 

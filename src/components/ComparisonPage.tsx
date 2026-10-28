@@ -478,7 +478,7 @@ export default function ComparisonPage({
                     Hero Headline (h1)
                   </td>
                   <td className="py-3.5 px-5 bg-indigo-50/40 font-bold text-indigo-950">
-                    “Find Venues, Book Shows - 4,800+ Venues Across the USA”
+                    “Find Venues, Book Shows - {venueCountStr} Venues Across the USA”
                   </td>
                   <td className="py-3.5 px-5 text-gray-650 italic">
                     “Run a More Powerful, Profitable Live Events Business”
@@ -614,7 +614,7 @@ export default function ComparisonPage({
                     Top 3 Features
                   </td>
                   <td className="py-3.5 px-5 bg-indigo-50/40 text-indigo-950 font-semibold">
-                    1. 4,800+ Venue Directory<br />
+                    1. {venueCountStr} Venue Directory<br />
                     2. AI Tour Router & Drive Times<br />
                     3. Live Stage Plot / Rider / Poster Suite
                   </td>

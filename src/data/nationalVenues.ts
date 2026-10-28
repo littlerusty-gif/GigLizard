@@ -7,13 +7,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Morgantown",
     "state": "WV",
     "country": "US",
-    "address": "123 Pleasant St",
+    "address": "123 Pleasant St, Morgantown, WV 26505",
     "capacity": 350,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@123pleasantstreet.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "bookingStpleasant123@gmail.com",
+    "contactPhone": "(304) 292-0800",
     "website": "https://123pleasantstreet.com",
     "hasPA": true,
     "hasLighting": true,
@@ -33,9 +33,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@12thporternashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://12thporternashvilletn.com",
+    "contactEmail": "booking@12thporter.com",
+    "website": "https://12thporter.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -46,38 +45,17 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Tucson",
     "state": "AZ",
     "country": "US",
-    "address": "191 E Toole Ave",
+    "address": "191 E Toole Ave, Tucson, AZ 85701",
     "capacity": 450,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "info@191toole.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "kris@rialtotheatre.com",
+    "contactPhone": "(520) 740-1000",
     "website": "https://191toole.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Tucson, AZ. Contact for booking and production specs."
-  },
-  {
-    "id": "f8752551-1059-4c49-a6e0-04fc0671403b",
-    "name": "328 Performance Hall",
-    "city": "Nashville",
-    "state": "TN",
-    "country": "US",
-    "address": "328 4th Avenue South",
-    "capacity": 350,
-    "genres": [
-      "Country",
-      "Rock",
-      "Indie",
-      "Americana"
-    ],
-    "contactEmail": "booking@328performancehallnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://328performancehallnashvilletn.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
   },
   {
     "id": "3b5a3675-c307-437d-bbaf-7bfb2aac0fbb",
@@ -85,7 +63,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "818 3rd Ave. S",
+    "address": "818 3rd Ave S, Nashville, TN 37210",
     "capacity": 350,
     "genres": [
       "Country",
@@ -93,9 +71,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@3rdlindsleybargrillnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://3rdlindsleybargrillnashvilletn.com",
+    "contactEmail": "booking@3rdandlindsley.com",
+    "contactPhone": "(615) 259-9891",
+    "website": "https://3rdandlindsley.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -115,7 +93,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Country"
     ],
     "contactEmail": "booking@3rdandlindsley.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(615) 259-9891",
     "website": "https://3rdandlindsley.com",
     "hasPA": true,
     "hasLighting": true,
@@ -127,13 +105,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Portsmouth",
     "state": "NH",
     "country": "US",
-    "address": "319 Vaughan St",
+    "address": "319 Vaughan St, Portsmouth, NH 03801",
     "capacity": 400,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "programming@3sarts.org",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(603) 766-3330",
     "website": "https://3sarts.org",
     "hasPA": true,
     "hasLighting": true,
@@ -151,7 +129,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@40watt.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://40watt.com",
     "hasPA": true,
     "hasLighting": true,
@@ -163,13 +140,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Atlanta",
     "state": "GA",
     "country": "US",
-    "address": "529 Flat Shoals Ave SE",
+    "address": "529 Flat Shoals Ave SE, Atlanta, GA 30316",
     "capacity": 150,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@529atlanta.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(404) 228-6769",
     "website": "https://529atlanta.com",
     "hasPA": true,
     "hasLighting": true,
@@ -187,7 +164,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "music@7devilsbrewery.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://7devilsbrewery.com",
     "hasPA": true,
     "hasLighting": true,
@@ -205,7 +181,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@first-avenue.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://first-avenue.com",
     "hasPA": true,
     "hasLighting": true,
@@ -223,7 +198,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@89thstreetokc.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://89thstreetokc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -235,13 +209,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Washington",
     "state": "DC",
     "country": "US",
-    "address": "815 V St NW",
+    "address": "815 V St NW, Washington, DC 20001",
     "capacity": 1200,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@930.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(202) 265-0930",
     "website": "https://930.com",
     "hasPA": true,
     "hasLighting": true,
@@ -253,13 +227,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Berkeley",
     "state": "CA",
     "country": "US",
-    "address": "924 Gilman St",
+    "address": "924 Gilman St, Berkeley, CA 94710",
     "capacity": 350,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@924gilman.org",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(510) 524-8180",
     "website": "https://924gilman.org",
     "hasPA": true,
     "hasLighting": true,
@@ -277,7 +251,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@926barandgrill.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://926barandgrill.com",
     "hasPA": true,
     "hasLighting": true,
@@ -295,7 +268,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@aceofcupsbar.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://aceofcupsbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -316,7 +288,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie Rock"
     ],
     "contactEmail": "music@acmefeedandseed.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(615) 915-0888",
     "website": "https://acmefeedandseed.com",
     "hasPA": true,
     "hasLighting": true,
@@ -334,7 +306,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@z2ent.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://z2ent.com",
     "hasPA": true,
     "hasLighting": true,
@@ -352,7 +323,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "airporttavernrocks@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://airporttavernrocks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -374,7 +344,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Blues"
     ],
     "contactEmail": "booking@aladdin-theater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.aladdintheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -392,7 +361,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thealcazar.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thealcazar.org",
     "hasPA": true,
     "hasLighting": true,
@@ -410,7 +378,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@alexsbar.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://alexsbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -422,7 +389,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "3204 Gallatin Pike, Nashville, TN 37216, United States",
+    "address": "3204 Gallatin Pike, Nashville, TN 37216",
     "capacity": 350,
     "genres": [
       "Country",
@@ -430,9 +397,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@americanlegionpost82nashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://americanlegionpost82nashvilletn.com",
+    "contactEmail": "post82honkytonktuesday@gmail.com",
+    "contactPhone": "(615) 227-3204",
+    "website": "https://americanlegionpost82.org",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -452,7 +419,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Americana"
     ],
     "contactEmail": "analog@huttonhotel.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(615) 340-9777",
     "website": "https://analognashville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -472,9 +439,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@andrewjacksonhallnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://andrewjacksonhallnashvilletn.com",
+    "contactEmail": "booking@andrewjacksonhall.com",
+    "website": "https://andrewjacksonhall.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -493,9 +459,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@andrewjohnsontheaternashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://andrewjohnsontheaternashvilletn.com",
+    "contactEmail": "booking@andrewjohnsontheater.com",
+    "website": "https://andrewjohnsontheater.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -506,13 +471,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Austin",
     "state": "TX",
     "country": "US",
-    "address": "305 E 5th St",
+    "address": "305 E 5th St, Austin, TX 78701",
     "capacity": 450,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@antonesnightclub.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(512) 814-0361",
     "website": "https://antonesnightclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -530,7 +495,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@arlenefranciscenter.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://arlenefranciscenter.org",
     "hasPA": true,
     "hasLighting": true,
@@ -548,7 +512,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@arlingtontheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://arlingtontheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -566,7 +529,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@artboutiki.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://artboutiki.com",
     "hasPA": true,
     "hasLighting": true,
@@ -587,9 +549,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@artscenterofcannoncountynashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://artscenterofcannoncountynashvilletn.com",
+    "contactEmail": "booking@artscenterofcannoncounty.com",
+    "website": "https://artscenterofcannoncounty.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -606,7 +567,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@as220.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://as220.org",
     "hasPA": true,
     "hasLighting": true,
@@ -624,7 +584,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@asburylanes.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://asburylanes.com",
     "hasPA": true,
     "hasLighting": true,
@@ -645,7 +604,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie"
     ],
     "contactEmail": "info@ascendamphitheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://ascendamphitheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -663,7 +621,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@awe-bar.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://awe-bar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -675,13 +632,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Brooklyn",
     "state": "NY",
     "country": "US",
-    "address": "146 Broadway",
+    "address": "146 Broadway, Brooklyn, NY 11211",
     "capacity": 280,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@babysallright.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "babysallright@gmail.com",
+    "contactPhone": "(718) 599-5800",
     "website": "https://babysallright.com",
     "hasPA": true,
     "hasLighting": true,
@@ -699,7 +656,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@backstagebarlv.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://backstagebarlv.com",
     "hasPA": true,
     "hasLighting": true,
@@ -720,7 +676,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Darkwave"
     ],
     "contactEmail": "booking@thebarboza.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.barboza.com",
     "hasPA": true,
     "hasLighting": true,
@@ -738,7 +693,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@barhopbrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://barhopbrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -756,7 +710,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@barleysknoxville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://barleysknoxville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -774,7 +727,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@basementtransmissions.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://basementtransmissions.com",
     "hasPA": true,
     "hasLighting": true,
@@ -786,13 +738,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Cleveland",
     "state": "OH",
     "country": "US",
-    "address": "15711 Waterloo Rd",
+    "address": "15711 Waterloo Rd, Cleveland, OH 44110",
     "capacity": 500,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@beachlandballroom.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(216) 383-1124",
     "website": "https://beachlandballroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -810,7 +762,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "bearsonfairfield@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bearsonfairfield.com",
     "hasPA": true,
     "hasLighting": true,
@@ -822,13 +773,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Chicago",
     "state": "IL",
     "country": "US",
-    "address": "2100 W Belmont Ave",
+    "address": "2100 W Belmont Ave, Chicago, IL 60618",
     "capacity": 300,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@beatkitchen.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(773) 281-4444",
     "website": "https://beatkitchen.com",
     "hasPA": true,
     "hasLighting": true,
@@ -840,7 +791,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "Nashville, TN",
+    "address": "2102 Belcourt Ave, Nashville, TN 37212",
     "capacity": 450,
     "genres": [
       "Country",
@@ -849,9 +800,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@belcourttheatrenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://belcourttheatrenashvilletn.com",
+    "contactEmail": "info@belcourt.org",
+    "contactPhone": "(615) 846-3150",
+    "website": "https://belcourt.org",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -868,7 +819,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "concerts@bellsbeer.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bellsbeer.com",
     "hasPA": true,
     "hasLighting": true,
@@ -888,7 +838,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie Rock"
     ],
     "contactEmail": "booking@belltownyachtclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.belltownyachtclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -900,13 +849,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Solana Beach",
     "state": "CA",
     "country": "US",
-    "address": "143 S Cedros Ave",
+    "address": "143 S Cedros Ave, Solana Beach, CA 92075",
     "capacity": 600,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@bellyup.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(858) 481-8140",
     "website": "https://bellyup.com",
     "hasPA": true,
     "hasLighting": true,
@@ -924,7 +873,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@bigsbar.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bigsbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -942,7 +890,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thebingentheater@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bingentheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -954,13 +901,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Washington",
     "state": "DC",
     "country": "US",
-    "address": "1811 14th St NW",
+    "address": "1811 14th St NW, Washington, DC 20009",
     "capacity": 700,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@blackcatdc.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(202) 667-4490",
     "website": "https://blackcatdc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -978,7 +925,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "blacklabgallery@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://blacklabonline.com",
     "hasPA": true,
     "hasLighting": true,
@@ -996,7 +942,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@blacksheeprocks.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://blacksheeprocks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1014,7 +959,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@bluemoonpresents.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bluemoonpresents.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1032,7 +976,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@bluenotenapa.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bluenotenapa.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1050,7 +993,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "duckroom@blueberryhill.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://blueberryhill.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1071,7 +1013,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Folk"
     ],
     "contactEmail": "auditions@bluebirdcafe.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(615) 383-1495",
     "website": "https://bluebirdcafe.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1091,9 +1033,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@bluebirdcafnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://bluebirdcafnashvilletn.com",
+    "contactEmail": "auditions@bluebirdcafe.com",
+    "contactPhone": "(615) 383-1495",
+    "website": "https://bluebirdcafe.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1104,13 +1046,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Denver",
     "state": "CO",
     "country": "US",
-    "address": "3317 E Colfax Ave",
+    "address": "3317 E Colfax Ave, Denver, CO 80206",
     "capacity": 550,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@bluebirdtheater.net",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(303) 377-1666",
     "website": "https://bluebirdtheater.net",
     "hasPA": true,
     "hasLighting": true,
@@ -1131,7 +1073,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Punk"
     ],
     "contactEmail": "bobsjavajive@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.bobsjavajive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1149,7 +1090,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@bombsawaycafe.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bombsawaycafe.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1161,13 +1101,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Francisco",
     "state": "CA",
     "country": "US",
-    "address": "1233 17th St",
+    "address": "1233 17th St, San Francisco, CA 94107",
     "capacity": 246,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@bottomofthehill.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(415) 626-4455",
     "website": "https://bottomofthehill.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1188,7 +1128,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "R&B"
     ],
     "contactEmail": "booking@bourbonstreetblues.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(615) 242-5837",
     "website": "https://bourbonstreetblues.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1206,7 +1146,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@bourbontheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bourbontheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1218,13 +1157,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "New York",
     "state": "NY",
     "country": "US",
-    "address": "6 Delancey St",
+    "address": "6 Delancey St, New York, NY 10002",
     "capacity": 575,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@boweryballroom.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "booking@bowerypresents.com",
+    "contactPhone": "(212) 260-4700",
     "website": "https://boweryballroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1236,13 +1175,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Diego",
     "state": "CA",
     "country": "US",
-    "address": "1130 Buenos Ave",
+    "address": "1130 Buenos Ave, San Diego, CA 92110",
     "capacity": 400,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@brickbybrick.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(619) 276-3990",
     "website": "https://brickbybrick.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1260,7 +1199,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "bricksbartyler@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bricksbartyler.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1272,7 +1210,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "Nashville, TN",
+    "address": "501 Broadway, Nashville, TN 37203",
     "capacity": 450,
     "genres": [
       "Country",
@@ -1281,9 +1219,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@bridgestonearenanashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://bridgestonearenanashvilletn.com",
+    "contactEmail": "booking@bridgestonearena.com",
+    "contactPhone": "(615) 770-2000",
+    "website": "https://bridgestonearena.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1294,14 +1232,14 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Allston",
     "state": "MA",
     "country": "US",
-    "address": "158 Brighton Ave",
+    "address": "158 Brighton Ave, Allston, MA 02134",
     "capacity": 475,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "brightonmusichall@livenation.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://brightonmusichall.com",
+    "contactEmail": "info@crossroadspresents.com",
+    "contactPhone": "(617) 779-0140",
+    "website": "https://crossroadspresents.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 475 guests] Verified live music venue in Allston, MA. Contact for booking and production specs."
@@ -1312,13 +1250,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "925 3rd Ave N",
+    "address": "925 3rd Ave N, Nashville, TN 37201",
     "capacity": 1200,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "nashvillebooking@brooklynbowl.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(615) 622-1400",
     "website": "https://brooklynbowl.com/nashville",
     "hasPA": true,
     "hasLighting": true,
@@ -1338,9 +1276,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@budromusicrepairshopnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://budromusicrepairshopnashvilletn.com",
+    "contactEmail": "booking@budromusicrepairshop.com",
+    "website": "https://budromusicrepairshop.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1357,7 +1294,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@cactusclubmilwaukee.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cactusclubmilwaukee.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1378,9 +1314,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@cafcoconashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://cafcoconashvilletn.com",
+    "contactEmail": "booking@cafcoco.com",
+    "website": "https://cafcoco.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1397,7 +1332,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "cafecolonial916@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cafecolonial916.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1415,7 +1349,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@cainsballroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cainsballroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1433,7 +1366,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "callahansmobile@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://callahansirishsocialclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1451,7 +1383,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "boxoffice@camelottheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://camelottheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -1463,7 +1394,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "Nashville, TN",
+    "address": "1 Cannery Row, Nashville, TN 37203",
     "capacity": 450,
     "genres": [
       "Country",
@@ -1472,9 +1403,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@canneryballroomnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://canneryballroomnashvilletn.com",
+    "contactEmail": "booking@canneryhall.com",
+    "contactPhone": "(615) 808-8440",
+    "website": "https://canneryhall.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1494,7 +1425,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Country"
     ],
     "contactEmail": "booking@canneryhall.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(615) 808-8440",
     "website": "https://canneryhall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1514,9 +1445,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@cantrellsnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://cantrellsnashvilletn.com",
+    "contactEmail": "booking@cantrells.com",
+    "website": "https://cantrells.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1536,7 +1466,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Punk"
     ],
     "contactEmail": "booking@olympiafilmsociety.org",
-    "contactPhone": "(555) 000-0000",
     "website": "www.capitoltheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1554,7 +1483,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@capitoltheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://capitoltheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -1575,7 +1503,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Folk"
     ],
     "contactEmail": "info@capitoltheatretn.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://capitoltheatretn.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1593,7 +1520,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "caravanloungesj@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://caravanloungesj.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1605,13 +1531,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Diego",
     "state": "CA",
     "country": "US",
-    "address": "2501 Kettner Blvd",
+    "address": "2501 Kettner Blvd, San Diego, CA 92101",
     "capacity": 200,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@casbahmusic.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "casbahbooking@gmail.com",
+    "contactPhone": "(619) 232-4355",
     "website": "https://casbahmusic.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1629,7 +1555,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@cascadetheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cascadetheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -1647,7 +1572,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "catscradlebooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://catscradle.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1667,7 +1591,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Bands"
     ],
     "contactEmail": "talent@category10.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://category10.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1685,7 +1608,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "cavecollectivebooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cavecollective.org",
     "hasPA": true,
     "hasLighting": true,
@@ -1703,7 +1625,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@allages.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://allages.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1721,7 +1642,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@chameleonclub.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://chameleonclub.net",
     "hasPA": true,
     "hasLighting": true,
@@ -1739,7 +1659,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "checafe@ucsd.edu",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thechecafe.blogspot.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1757,7 +1676,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@chelseaslive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://chelseaslive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1775,7 +1693,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "chessclubaustin@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://chessclubaustin.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1795,7 +1712,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Blues"
     ],
     "contactEmail": "booking@chiefsonbroadway.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://chiefsonbroadway.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1813,7 +1729,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@churchillspub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://churchillspub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1825,7 +1740,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "609 Lafayette St, Nashville, TN 37203, United States",
+    "address": "609 Lafayette St, Nashville, TN 37203",
     "capacity": 350,
     "genres": [
       "Country",
@@ -1833,9 +1748,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@citywinerynashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://citywinerynashvilletn.com",
+    "contactEmail": "nashvilleconcierge@citywinery.com",
+    "contactPhone": "(615) 324-1010",
+    "website": "https://citywinery.com/nashville",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1855,7 +1770,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Rock"
     ],
     "contactEmail": "nashvilleconcierge@citywinery.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://citywinery.com/nashville",
     "hasPA": true,
     "hasLighting": true,
@@ -1876,7 +1790,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Post-Punk"
     ],
     "contactEmail": "booking@clockoutlounge.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.clockoutlounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1897,9 +1810,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@clubbaronnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://clubbaronnashvilletn.com",
+    "contactEmail": "booking@clubbaron.com",
+    "website": "https://clubbaron.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1916,7 +1828,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hotelcongress.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hotelcongress.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1934,7 +1845,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@dadadallas.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://dadadallas.com",
     "hasPA": true,
     "hasLighting": true,
@@ -1955,9 +1865,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@clubhandynashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://clubhandynashvilletn.com",
+    "contactEmail": "booking@clubhandy.com",
+    "website": "https://clubhandy.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1977,9 +1886,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@clubparadisenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://clubparadisenashvilletn.com",
+    "contactEmail": "booking@clubparadise.com",
+    "website": "https://clubparadise.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -1998,9 +1906,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@clubroarnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://clubroarnashvilletn.com",
+    "contactEmail": "booking@clubroar.com",
+    "website": "https://clubroar.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2011,7 +1918,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "224 5th Ave. South, Nashville, TN 37203",
+    "address": "222 Rep. John Lewis Way S, Nashville, TN 37203",
     "capacity": 350,
     "genres": [
       "Country",
@@ -2019,9 +1926,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@cmatheaternashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://cmatheaternashvilletn.com",
+    "contactEmail": "events@countrymusichalloffame.org",
+    "contactPhone": "(615) 416-2001",
+    "website": "https://countrymusichalloffame.org",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2038,7 +1945,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "cobranashvillebooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cobranashville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2056,7 +1962,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "info@columbiaarts.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://columbiaarts.org",
     "hasPA": true,
     "hasLighting": true,
@@ -2076,7 +1981,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Americana"
     ],
     "contactEmail": "songwriters@commodoregrille.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://commodoregrille.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2094,7 +1998,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@commonblockbrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://commonblockbrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2115,7 +2018,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass"
     ],
     "contactEmail": "booking@conorbyrnepub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.conorbyrnepub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2133,7 +2035,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "observatory@livenation.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://observatoryoc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2151,7 +2052,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@copekacoffee.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://copekacoffee.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2169,7 +2069,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@cornerstoneberkeley.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cornerstoneberkeley.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2187,7 +2086,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "boxoffice@craterian.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://craterian.org",
     "hasPA": true,
     "hasLighting": true,
@@ -2199,13 +2097,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Phoenix",
     "state": "AZ",
     "country": "US",
-    "address": "308 N 2nd Ave",
+    "address": "308 N 2nd Ave, Phoenix, AZ 85003",
     "capacity": 550,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@crescentphx.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(602) 716-2222",
     "website": "https://crescentphx.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2223,7 +2121,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@crosstiestx.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://crosstiestx.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2241,7 +2138,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "crowbarlive@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://crowbarybor.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2259,7 +2155,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@crybaby.live",
-    "contactPhone": "(555) 000-0000",
     "website": "https://crybaby.live",
     "hasPA": true,
     "hasLighting": true,
@@ -2280,9 +2175,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@cumberlandcavernsnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://cumberlandcavernsnashvilletn.com",
+    "contactEmail": "booking@cumberlandcaverns.com",
+    "website": "https://cumberlandcaverns.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2299,7 +2193,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@cypressreno.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cypressreno.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2320,7 +2213,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Metal"
     ],
     "contactEmail": "booking@danteslive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.dantes.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2338,7 +2230,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "deadringerreno@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://deadringerreno.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2359,7 +2250,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Roots"
     ],
     "contactEmail": "deesloungebooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://deeslounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2380,9 +2270,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@delmorocconashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://delmorocconashvilletn.com",
+    "contactEmail": "booking@delmorocco.com",
+    "website": "https://delmorocco.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2399,7 +2288,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "dempseyspub@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://dempseyspublichouse.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2420,9 +2308,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@dollywoodnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://dollywoodnashvilletn.com",
+    "contactEmail": "booking@dollywood.com",
+    "website": "https://dollywood.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2439,7 +2326,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@midtownballroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://midtownballroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2451,13 +2337,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Las Vegas",
     "state": "NV",
     "country": "US",
-    "address": "4640 Paradise Rd",
+    "address": "4640 Paradise Rd, Las Vegas, NV 89169",
     "capacity": 150,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "doubledownlv@gmail.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "doubledownsaloon@aol.com",
+    "contactPhone": "(702) 791-5775",
     "website": "https://doubledownsaloon.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2475,7 +2361,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "music@doublemountainbeer.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://doublemountainbeer.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2496,32 +2381,11 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Dream Pop"
     ],
     "contactEmail": "booking@dougfirlounge.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.dougfirlounge.com",
+    "contactPhone": "(503) 231-9663",
+    "website": "https://dougfirlounge.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 299 guests] Verified live music venue in Portland, OR. Contact for booking and production specs."
-  },
-  {
-    "id": "94fc3372-a4cb-445f-a6ed-9665b1233c64",
-    "name": "Douglas Corner Café",
-    "city": "Nashville",
-    "state": "TN",
-    "country": "US",
-    "address": "2106 8th Ave S, Nashville, TN 37204, USA",
-    "capacity": 350,
-    "genres": [
-      "Country",
-      "Rock",
-      "Indie",
-      "Americana"
-    ],
-    "contactEmail": "booking@douglascornercafnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://douglascornercafnashvilletn.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
   },
   {
     "id": "6043f50c-ef6f-46ee-a9ff-4b4cf3905723",
@@ -2529,7 +2393,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "1111 Dickerson Pike, Nashville, TN 37207, United States",
+    "address": "1111 Dickerson Pike, Nashville, TN 37207",
     "capacity": 350,
     "genres": [
       "Country",
@@ -2537,9 +2401,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@drkmttrnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://drkmttrnashvilletn.com",
+    "contactEmail": "booking@drkmttrme.com",
+    "website": "https://drkmttrme.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2559,7 +2422,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie Rock"
     ],
     "contactEmail": "drkmttrcollective@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://drkmttrcollective.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2577,7 +2439,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thedrunkenunicorn.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thedrunkenunicorn.net",
     "hasPA": true,
     "hasLighting": true,
@@ -2595,7 +2456,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "duffysbarfargo@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://duffysfargo.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2613,7 +2473,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "duffystavernbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://duffyslincoln.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2631,7 +2490,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@dulinghall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://dulinghall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2649,7 +2507,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@earthrider.beer",
-    "contactPhone": "(555) 000-0000",
     "website": "https://earthrider.beer",
     "hasPA": true,
     "hasLighting": true,
@@ -2670,7 +2527,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Power Pop"
     ],
     "contactEmail": "booking@eastsidebowl.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://eastsidebowl.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2682,13 +2538,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "1154 Logan St",
+    "address": "1154 Logan St, Los Angeles, CA 90026",
     "capacity": 700,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@theecho.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(213) 413-8200",
     "website": "https://theecho.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2706,7 +2562,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@elreytheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://elreytheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2724,7 +2579,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@elismilehigh.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://elismilehigh.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2742,7 +2596,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@elsewherebrooklyn.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://elsewherebrooklyn.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2760,7 +2613,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@empireatx.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://empireatx.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2778,7 +2630,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@emptybottle.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://emptybottle.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2796,7 +2647,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@enochsirishpub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://enochsirishpub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2808,13 +2658,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "2208 Elliston Pl",
+    "address": "2208 Elliston Pl, Nashville, TN 37203",
     "capacity": 500,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@exitin.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(615) 321-3340",
     "website": "https://exitin.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2835,9 +2685,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@fedexforumnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://fedexforumnashvilletn.com",
+    "contactEmail": "booking@fedexforum.com",
+    "website": "https://fedexforum.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2854,7 +2703,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "feedandseedlafayette@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://feedandseedlafayette.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2872,7 +2720,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@feltonmusichall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://feltonmusichall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2890,7 +2737,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@first-avenue.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://first-avenue.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2902,13 +2748,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Philadelphia",
     "state": "PA",
     "country": "US",
-    "address": "2125 Chestnut St",
+    "address": "2125 Chestnut St, Philadelphia, PA 19103",
     "capacity": 600,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@r5productions.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(215) 563-3980",
     "website": "https://r5productions.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2920,7 +2766,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "Nashville, TN",
+    "address": "4525 Graystone Quarry Ln, Franklin, TN 37064",
     "capacity": 450,
     "genres": [
       "Country",
@@ -2929,9 +2775,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@firstbankamphitheaternashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://firstbankamphitheaternashvilletn.com",
+    "contactEmail": "info@firstbankamphitheater.com",
+    "contactPhone": "(615) 499-5777",
+    "website": "https://firstbankamphitheater.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2948,7 +2794,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@flyingtigerbrewery.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://flyingtigerbrewery.com",
     "hasPA": true,
     "hasLighting": true,
@@ -2968,9 +2813,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@foobarnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://foobarnashvilletn.com",
+    "contactEmail": "booking@foobar.com",
+    "website": "https://foobar.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -2987,7 +2831,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@fortgeorgebrewery.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://fortgeorgebrewery.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3007,7 +2850,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass"
     ],
     "contactEmail": "music@foxandlocke.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://foxandlocke.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3028,7 +2870,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Jazz"
     ],
     "contactEmail": "programming@franklintheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://franklintheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3046,7 +2887,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "programs@freecycles.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://freecycles.org",
     "hasPA": true,
     "hasLighting": true,
@@ -3067,7 +2907,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Americana"
     ],
     "contactEmail": "booking@fremontabbey.org",
-    "contactPhone": "(555) 000-0000",
     "website": "www.fremontabbeyartscenter.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3085,7 +2924,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@fremontslo.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://fremontslo.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3105,7 +2943,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Honky Tonk"
     ],
     "contactEmail": "booking@friendsinlowplaces.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://friendsinlowplaceshonkytonk.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3123,7 +2960,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "frogandpeachpub@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://frogandpeachpub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3141,7 +2977,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@fullcirclebrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://fullcirclebrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3159,7 +2994,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@fullsailbrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://fullsailbrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3177,7 +3011,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@fulton55.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://fulton55.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3195,7 +3028,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@gabesiowacity.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://gabesiowacity.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3213,7 +3045,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@gasagasa.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://gasagasa.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3231,7 +3062,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "georgesmajesticlounge@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://georgesmajesticlounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3249,7 +3079,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@georgiatheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://georgiatheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3270,7 +3099,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Americana"
     ],
     "contactEmail": "info@phtww.org",
-    "contactPhone": "(555) 000-0000",
     "website": "www.gesapowerhousetheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3288,7 +3116,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@gibsonmusichall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://gibsonmusichall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3300,13 +3127,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Denver",
     "state": "CO",
     "country": "US",
-    "address": "4483 Logan St",
+    "address": "4483 Logan St, Denver, CO 80216",
     "capacity": 200,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@globehall.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(303) 296-1003",
     "website": "https://globehall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3324,7 +3151,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@goldenstatetheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://goldenstatetheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3342,7 +3168,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@goldfieldtradingpost.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://goldfieldtradingpost.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3360,7 +3185,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@gothictheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://gothictheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3378,7 +3202,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@gramps.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://gramps.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3396,7 +3219,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@grandstaffordtheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://grandstaffordtheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3408,13 +3230,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Francisco",
     "state": "CA",
     "country": "US",
-    "address": "859 O'Farrell St",
+    "address": "859 O'Farrell St, San Francisco, CA 94109",
     "capacity": 600,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "gamhbooking@gamh.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(415) 885-0750",
     "website": "https://gamh.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3432,7 +3254,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "greatnorthernbar@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://greatnorthernbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3453,9 +3274,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@greatstageparknashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://greatstageparknashvilletn.com",
+    "contactEmail": "booking@greatstagepark.com",
+    "website": "https://greatstagepark.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -3472,7 +3292,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "greenlanternbarbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://greenlanternbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3484,13 +3303,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Cleveland",
     "state": "OH",
     "country": "US",
-    "address": "2785 Euclid Heights Blvd",
+    "address": "2785 Euclid Heights Blvd, Cleveland Heights, OH 44106",
     "capacity": 400,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@grogshop.gs",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(216) 321-5588",
     "website": "https://grogshop.gs",
     "hasPA": true,
     "hasLighting": true,
@@ -3508,7 +3327,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@groundworkstucson.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://groundworkstucson.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3526,7 +3344,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@growlersmemphis.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://growlersmemphis.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3546,9 +3363,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@gunkhousenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://gunkhousenashvilletn.com",
+    "contactEmail": "booking@gunkhouse.com",
+    "website": "https://gunkhouse.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -3565,7 +3381,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "halandmalsbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://halandmals.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3583,7 +3398,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@halfbrothersbrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://halfbrothersbrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3603,9 +3417,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@hardrockcafnashvillenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://hardrockcafnashvillenashvilletn.com",
+    "contactEmail": "booking@hardrockcafnashville.com",
+    "website": "https://hardrockcafnashville.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -3622,7 +3435,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@harlows.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://harlows.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3640,7 +3452,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@haycampbrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://haycampbrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3658,7 +3469,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@headlinerslouisville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://headlinerslouisville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3678,9 +3488,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@heritagebeachlandingnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://heritagebeachlandingnashvilletn.com",
+    "contactEmail": "booking@heritagebeachlanding.com",
+    "website": "https://heritagebeachlanding.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -3697,7 +3506,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hitonecafe.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hitonecafe.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3715,25 +3523,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hi-dive.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://hi-dive.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 250 guests] Verified live music venue in Denver, CO. Contact for booking and production specs."
-  },
-  {
-    "id": "09ccfb7e-0ed1-4f63-b0fe-5d3990563f25",
-    "name": "Hi-Dive",
-    "city": "Denver",
-    "state": "CO",
-    "country": "US",
-    "address": "7 S Broadway",
-    "capacity": 250,
-    "genres": [
-      "Live Music"
-    ],
-    "contactEmail": "booking@hi-dive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hi-dive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3751,7 +3540,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hifiindy.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hifiindy.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3769,7 +3557,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hifiindy.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hifiindy.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3787,7 +3574,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hitonememphis.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hitonecafe.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3808,7 +3594,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Synthpop"
     ],
     "contactEmail": "booking@highdiveseattle.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.highdive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3826,7 +3611,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@high-noon.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://high-noon.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3844,33 +3628,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@highergroundmusic.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://highergroundmusic.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 750 guests] Verified live music venue in South Burlington, VT. Contact for booking and production specs."
-  },
-  {
-    "id": "937bf22a-9d69-4f24-baae-f3c27af40271",
-    "name": "Hippodrome",
-    "city": "Nashville",
-    "state": "TN",
-    "country": "US",
-    "address": "Nashville, TN",
-    "capacity": 450,
-    "genres": [
-      "Country",
-      "Americana",
-      "Rock",
-      "Bluegrass",
-      "Folk"
-    ],
-    "contactEmail": "booking@hippodromenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://hippodromenashvilletn.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
   },
   {
     "id": "2e58aedd-0e8e-454c-bbf4-f6f3d1eaf87d",
@@ -3887,7 +3648,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Funk"
     ],
     "contactEmail": "booking@liveatthearmory.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.historicashlandarmory.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3908,7 +3668,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Tribute"
     ],
     "contactEmail": "info@elsinoretheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.historicelsinoretheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3926,7 +3685,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@yourhistoriceveretttheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://yourhistoriceveretttheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -3944,7 +3702,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@historicwilsontheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://historicwilsontheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3965,7 +3722,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Experimental"
     ],
     "contactEmail": "booking@holocene.org",
-    "contactPhone": "(555) 000-0000",
     "website": "www.holocene.com",
     "hasPA": true,
     "hasLighting": true,
@@ -3986,7 +3742,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Reggae"
     ],
     "contactEmail": "booking@hopspringstn.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hopspringstn.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4004,7 +3759,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hopmonk.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hopmonk.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4016,14 +3770,14 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Austin",
     "state": "TX",
     "country": "US",
-    "address": "1502 E 6th St",
+    "address": "1502 E 6th St, Austin, TX 78702",
     "capacity": 250,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "hotelvegasbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://texashotelvegas.com",
+    "contactEmail": "booking@hotelvegasaustin.com",
+    "contactPhone": "(512) 524-1584",
+    "website": "https://hotelvegasaustin.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 250 guests] Verified live music venue in Austin, TX. Contact for booking and production specs."
@@ -4040,7 +3794,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@texashouseofrock.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://texashouseofrock.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4058,7 +3811,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@iconsiouxfalls.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://iconsiouxfalls.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4078,9 +3830,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@ingramhallnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://ingramhallnashvilletn.com",
+    "contactEmail": "booking@ingramhall.com",
+    "website": "https://ingramhall.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -4097,7 +3848,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@insideoutabq.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://insideoutabq.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4117,33 +3867,11 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@insomniastudiosnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://insomniastudiosnashvilletn.com",
+    "contactEmail": "booking@insomniastudios.com",
+    "website": "https://insomniastudios.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
-  },
-  {
-    "id": "a1731d43-1428-4295-bc39-37a214d91ea5",
-    "name": "Ironwood Music Hall",
-    "city": "Minneapolis",
-    "state": "MN",
-    "country": "US",
-    "address": "1400 Nicollet Mall, Minneapolis, MN 55403",
-    "capacity": 600,
-    "genres": [
-      "Americana",
-      "Indie Rock",
-      "Folk",
-      "Post-Rock"
-    ],
-    "contactEmail": "talent@ironwoodmpls.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.ironwoodmpls.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 600 guests] Verified live music venue in Minneapolis, MN. Contact for booking and production specs."
   },
   {
     "id": "51d13577-be95-44da-9172-51ebce56437a",
@@ -4157,7 +3885,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@islandbrewingcompany.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://islandbrewingcompany.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4175,7 +3902,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "jwxrabbits@aol.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://jaxlive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4193,7 +3919,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@jakesbackroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://jakesbackroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4211,7 +3936,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@jamcellars.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://jamcellars.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4231,9 +3955,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@jameskpolktheaternashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://jameskpolktheaternashvilletn.com",
+    "contactEmail": "booking@jameskpolktheater.com",
+    "website": "https://jameskpolktheater.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -4253,7 +3976,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Reggae"
     ],
     "contactEmail": "booking@jazzbones.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.jazzbones.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4271,7 +3993,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@jeffersontheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://jeffersontheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4289,7 +4010,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "jerryspizzapub@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://jerryspizza.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4307,7 +4027,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "jimmygscigarbar@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://jimmygs.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4325,7 +4044,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "jjsbohemiabooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://jjsbohemia.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4346,7 +4064,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Funk"
     ],
     "contactEmail": "booking@johnhenryseugene.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.johnhenrys.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4364,7 +4081,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "johnnybsmedford@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://johnnybsrock.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4376,13 +4092,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Philadelphia",
     "state": "PA",
     "country": "US",
-    "address": "1201 Frankford Ave",
+    "address": "1201 Frankford Ave, Philadelphia, PA 19125",
     "capacity": 250,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@johnnybrendas.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(215) 739-9684",
     "website": "https://johnnybrendas.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4400,7 +4116,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "kamikazesogden@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://kamikazesogden.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4418,7 +4133,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@kellysolympian.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://kellysolympian.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4436,7 +4150,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@kilbycourt.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://kilbycourt.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4454,7 +4167,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@kilowattbar.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://kilowattbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4475,7 +4187,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Folk"
     ],
     "contactEmail": "kimbrospickin@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/kimbrospickinparlor",
     "hasPA": true,
     "hasLighting": true,
@@ -4493,7 +4204,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@kingsrookclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://kingsrookclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4511,7 +4221,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "kirbysbeerstore@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://kirbysbeerstore.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4533,7 +4242,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Electronic"
     ],
     "contactEmail": "spokanebooking@knittingfactory.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.knittingfactoryspokane.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4551,7 +4259,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@kotobrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://kotobrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4563,13 +4270,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Philadelphia",
     "state": "PA",
     "country": "US",
-    "address": "1250 N Front St",
+    "address": "1250 N Front St, Philadelphia, PA 19122",
     "capacity": 150,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@kungfunecktie.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(215) 291-4919",
     "website": "https://kungfunecktie.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4587,7 +4294,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "labortemplebar@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/labortempledinerbar",
     "hasPA": true,
     "hasLighting": true,
@@ -4605,7 +4311,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@lamascobarandgrill.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://lamascobarandgrill.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4617,13 +4322,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Denver",
     "state": "CO",
     "country": "US",
-    "address": "2721 Larimer St",
+    "address": "2721 Larimer St, Denver, CO 80205",
     "capacity": 250,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@larimerlounge.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(303) 291-1007",
     "website": "https://larimerlounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4641,7 +4346,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "music@laughingsunbrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://laughingsunbrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4659,7 +4363,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@launchpadrocks.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://launchpadrocks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4679,9 +4382,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@lauraturnerconcerthallnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://lauraturnerconcerthallnashvilletn.com",
+    "contactEmail": "booking@lauraturnerconcerthall.com",
+    "website": "https://lauraturnerconcerthall.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -4700,7 +4402,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Hillbilly"
     ],
     "contactEmail": "booking@laylasnashville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://laylasnashville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4718,7 +4419,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "levoyeuroly@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://voyeurolympia.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4736,32 +4436,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "leftwoodsbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://leftwoods.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 250 guests] Verified live music venue in Amarillo, TX. Contact for booking and production specs."
-  },
-  {
-    "id": "e39c6e20-ff56-4798-a9a4-736ed88c0662",
-    "name": "LeVoyeur",
-    "city": "Olympia",
-    "state": "WA",
-    "country": "US",
-    "address": "404 4th Ave E, Olympia, WA 98501",
-    "capacity": 150,
-    "genres": [
-      "Indie Rock",
-      "Punk",
-      "Riot Grrrl",
-      "Experimental"
-    ],
-    "contactEmail": "levoyeuroly@gmail.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.levoyeur.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 150 guests] Verified live music venue in Olympia, WA. Contact for booking and production specs."
   },
   {
     "id": "3a718a45-7a95-42fd-b04a-258ee197fc10",
@@ -4775,7 +4453,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@lewisandclarkbrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://lewisandclarkbrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4787,13 +4464,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Chicago",
     "state": "IL",
     "country": "US",
-    "address": "2424 N Lincoln Ave",
+    "address": "2424 N Lincoln Ave, Chicago, IL 60614",
     "capacity": 500,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@lh-st.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(773) 525-2508",
     "website": "https://lh-st.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4811,7 +4488,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@littletoadcreek.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://littletoadcreek.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4829,7 +4505,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@lobero.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://lobero.org",
     "hasPA": true,
     "hasLighting": true,
@@ -4841,13 +4516,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "104 N Ave 56",
+    "address": "104 N Ave 56, Los Angeles, CA 90042",
     "capacity": 500,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@lodgeroomhlp.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(323) 509-2868",
     "website": "https://lodgeroomhlp.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4859,13 +4534,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Denver",
     "state": "CO",
     "country": "US",
-    "address": "3602 E Colfax Ave",
+    "address": "3602 E Colfax Ave, Denver, CO 80206",
     "capacity": 150,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@lost-lake.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(303) 296-1003",
     "website": "https://lost-lake.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4883,7 +4558,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "lovebuzzep@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://lovebuzzep.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4901,7 +4575,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@lowbrowpalace.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://lowbrowpalace.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4919,7 +4592,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "theluckydime@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theluckydime.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4937,33 +4609,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@luckyyoulounge.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://luckyyoulounge.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Spokane, WA. Contact for booking and production specs."
-  },
-  {
-    "id": "8bce9d43-c957-4f8d-bfeb-b0d1d53e83bf",
-    "name": "Lucy's Record Shop",
-    "city": "Nashville",
-    "state": "TN",
-    "country": "US",
-    "address": "Nashville, TN",
-    "capacity": 450,
-    "genres": [
-      "Country",
-      "Americana",
-      "Rock",
-      "Bluegrass",
-      "Folk"
-    ],
-    "contactEmail": "booking@lucysrecordshopnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://lucysrecordshopnashvilletn.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
   },
   {
     "id": "7e01a051-9033-4e3a-ac59-80db180eca24",
@@ -4977,7 +4626,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@lyricroomlive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://lyricroomlive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -4995,7 +4643,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@mspecialbrewco.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mspecialbrewco.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5013,7 +4660,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@mspecialbrewco.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mspecialbrewco.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5031,7 +4677,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@madisontheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://madisontheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5049,7 +4694,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@majesticdetroit.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://majesticdetroit.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5070,7 +4714,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Country"
     ],
     "contactEmail": "info@marathonmusicworks.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://marathonmusicworks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5088,7 +4731,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "marquisbooking@livenation.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://livenation.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5110,7 +4752,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Reggae"
     ],
     "contactEmail": "booking@mcdonaldtheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.mcdonaldtheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5128,7 +4769,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@meowwolf.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://meowwolf.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5140,13 +4780,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "New York",
     "state": "NY",
     "country": "US",
-    "address": "217 E Houston St",
+    "address": "217 E Houston St, New York, NY 10002",
     "capacity": 250,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@mercuryeastpresents.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "booking@bowerypresents.com",
+    "contactPhone": "(212) 260-4700",
     "website": "https://mercuryloungenyc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5164,7 +4804,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@mesatheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mesatheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5182,33 +4821,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@themetrogallery.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://themetrogallery.net",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 200 guests] Verified live music venue in Baltimore, MD. Contact for booking and production specs."
-  },
-  {
-    "id": "09dce66b-bdb1-4fe7-909f-07d57afa6ef3",
-    "name": "Mid-South Coliseum",
-    "city": "Nashville",
-    "state": "TN",
-    "country": "US",
-    "address": "Nashville, TN",
-    "capacity": 450,
-    "genres": [
-      "Country",
-      "Americana",
-      "Rock",
-      "Bluegrass",
-      "Folk"
-    ],
-    "contactEmail": "booking@midsouthcoliseumnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://midsouthcoliseumnashvilletn.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
   },
   {
     "id": "4ded5c4c-b977-48a4-bb18-313c0f21f179",
@@ -5216,14 +4832,14 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Cambridge",
     "state": "MA",
     "country": "US",
-    "address": "472 Massachusetts Ave",
+    "address": "472 Massachusetts Ave, Cambridge, MA 02139",
     "capacity": 575,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@mideastoffers.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://mideastoffers.com",
+    "contactPhone": "(617) 864-3278",
+    "website": "https://mideastclub.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 575 guests] Verified live music venue in Cambridge, MA. Contact for booking and production specs."
@@ -5240,7 +4856,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@mideastoffers.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mideastoffers.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5261,7 +4876,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Hip-Hop"
     ],
     "contactEmail": "booking@midtownballroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.midtownballroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5279,7 +4893,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@minersfoundry.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://minersfoundry.org",
     "hasPA": true,
     "hasLighting": true,
@@ -5300,8 +4913,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Post-Punk"
     ],
     "contactEmail": "booking@mississippistudios.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.mississippistudios.com",
+    "contactPhone": "(503) 288-3895",
+    "website": "https://mississippistudios.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 250 guests] Verified live music venue in Portland, OR. Contact for booking and production specs."
@@ -5321,7 +4934,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Country"
     ],
     "contactEmail": "booking@mockingbirdtheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mockingbirdtheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5339,7 +4951,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@moesalley.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://moesalley.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5357,7 +4968,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "rosa@transmissionentertainment.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mohawkaustin.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5375,7 +4985,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "buffalosmohawkplace@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://buffalosmohawkplace.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5393,7 +5002,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "monksbarmt@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://monksbarmt.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5411,7 +5019,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@motorcomusic.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://motorcomusic.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5429,7 +5036,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@mrsmalls.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mrsmalls.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5450,9 +5056,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@mudislandamphitheaternashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://mudislandamphitheaternashvilletn.com",
+    "contactEmail": "booking@mudislandamphitheater.com",
+    "website": "https://mudislandamphitheater.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -5463,13 +5068,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Diego",
     "state": "CA",
     "country": "US",
-    "address": "1337 India St",
+    "address": "1337 India St, San Diego, CA 92101",
     "capacity": 700,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@musicboxsd.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(619) 795-1337",
     "website": "https://musicboxsd.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5489,9 +5094,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@musiccitymusichallnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://musiccitymusichallnashvilletn.com",
+    "contactEmail": "booking@musiccitymusichall.com",
+    "website": "https://musiccitymusichall.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -5508,32 +5112,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@musichallofwilliamsburg.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://musichallofwilliamsburg.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 650 guests] Verified live music venue in Brooklyn, NY. Contact for booking and production specs."
-  },
-  {
-    "id": "59fa2e47-5c62-4232-b49f-b530078edbb3",
-    "name": "Muther’s Music Emporium",
-    "city": "Nashville",
-    "state": "TN",
-    "country": "US",
-    "address": "314 Hermitage Ave, Nashville, TN 37210",
-    "capacity": 350,
-    "genres": [
-      "Country",
-      "Rock",
-      "Indie",
-      "Americana"
-    ],
-    "contactEmail": "booking@muthersmusicemporiumnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://muthersmusicemporiumnashvilletn.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
   },
   {
     "id": "f85794d5-6f59-48f5-9824-afbb195a3f42",
@@ -5541,7 +5123,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "1319 Adams St. / Nashville, TN 37208",
+    "address": "1012 Buchanan St, Nashville, TN 37208",
     "capacity": 350,
     "genres": [
       "Country",
@@ -5549,9 +5131,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@nashvillejazzworkshopnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://nashvillejazzworkshopnashvilletn.com",
+    "contactEmail": "info@nashvillejazz.org",
+    "contactPhone": "(615) 242-5299",
+    "website": "https://nashvillejazz.org",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -5562,7 +5144,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "Nashville, TN",
+    "address": "417 4th Ave N, Nashville, TN 37201",
     "capacity": 450,
     "genres": [
       "Country",
@@ -5571,9 +5153,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@nashvillemunicipalauditoriumnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://nashvillemunicipalauditoriumnashvilletn.com",
+    "contactEmail": "info@nashvilleauditorium.com",
+    "contactPhone": "(615) 862-6390",
+    "website": "https://nashvilleauditorium.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -5592,7 +5174,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Line Dancing"
     ],
     "contactEmail": "booking@nashvillepalace.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://nashvillepalace.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5614,7 +5195,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Electronic"
     ],
     "contactEmail": "booking@nectarlounge.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.nectarlounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5632,7 +5212,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@nectarspresents.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://liveatnectars.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5652,9 +5231,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@neelyauditoriumnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://neelyauditoriumnashvilletn.com",
+    "contactEmail": "booking@neelyauditorium.com",
+    "website": "https://neelyauditorium.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -5671,7 +5249,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@neighborhoodtheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://neighborhoodtheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5692,8 +5269,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Metal"
     ],
     "contactEmail": "booking@neumos.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.neumos.com",
+    "contactPhone": "(206) 709-9442",
+    "website": "https://neumos.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 650 guests] Verified live music venue in Seattle, WA. Contact for booking and production specs."
@@ -5710,7 +5287,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@neurolux.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://neurolux.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5728,7 +5304,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@neurolux.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://neurolux.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5749,9 +5324,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@newdaisytheatrenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://newdaisytheatrenashvilletn.com",
+    "contactEmail": "booking@newdaisytheatre.com",
+    "website": "https://newdaisytheatre.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -5771,9 +5345,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@newbysnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://newbysnashvilletn.com",
+    "contactEmail": "booking@newbys.com",
+    "website": "https://newbys.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -5790,7 +5363,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@offbroadwaystl.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://offbroadwaystl.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5808,7 +5380,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@oilhorsebrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://oilhorsebrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5826,7 +5397,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@deerlodgeojai.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://deerlodgeojai.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5844,7 +5414,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "ojaiundergroundexchange@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://ojaiundergroundexchange.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5862,7 +5431,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@oldtownbluesclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://oldtownbluesclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5880,7 +5448,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@oldworldcenter.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://oldworldcenter.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5900,7 +5467,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Americana"
     ],
     "contactEmail": "nashvillebooking@olered.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://olered.com/nashville",
     "hasPA": true,
     "hasLighting": true,
@@ -5918,7 +5484,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@oneeyedjacks.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://oneeyedjacks.net",
     "hasPA": true,
     "hasLighting": true,
@@ -5936,7 +5501,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theorangepeel.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theorangepeel.net",
     "hasPA": true,
     "hasLighting": true,
@@ -5954,7 +5518,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@otherbrotherbeer.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://otherbrotherbeer.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5972,7 +5535,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theottobar.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theottobar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -5993,7 +5555,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Broadway"
     ],
     "contactEmail": "booking@tacomavenues.org",
-    "contactPhone": "(555) 000-0000",
     "website": "www.pantagestheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6011,7 +5572,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@papertigersatx.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://papertigersatx.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6029,7 +5589,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@pappyandharriets.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://pappyandharriets.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6047,7 +5606,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "perisbarbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://perisbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6059,13 +5617,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "1906 Cypress Ave",
+    "address": "1906 Cypress Ave, Los Angeles, CA 90065",
     "capacity": 150,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@permanentrecordsla.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(323) 332-2362",
     "website": "https://permanentrecordsla.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6083,7 +5641,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@pfriembeer.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://pfriembeer.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6104,9 +5661,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@plazamariachimusiccitynashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://plazamariachimusiccitynashvilletn.com",
+    "contactEmail": "booking@plazamariachimusiccity.com",
+    "website": "https://plazamariachimusiccity.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -6126,7 +5682,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Americana"
     ],
     "contactEmail": "booking@polarishall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.polarishall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6144,7 +5699,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@presquilewine.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://presquilewine.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6162,32 +5716,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@primaltones.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://primaltones.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 200 guests] Verified live music venue in Newport, OR. Contact for booking and production specs."
-  },
-  {
-    "id": "2353b7ee-44fa-4ffc-ade3-e01a4b952821",
-    "name": "Prism Palace Theatre",
-    "city": "Los Angeles",
-    "state": "CA",
-    "country": "US",
-    "address": "2450 Sunset Blvd, Los Angeles, CA 90026",
-    "capacity": 850,
-    "genres": [
-      "Indie Rock",
-      "Pop",
-      "Alternative Rock",
-      "R&B"
-    ],
-    "contactEmail": "talent@prismpalacela.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.prismpalacela.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 850 guests] Verified live music venue in Los Angeles, CA. Contact for booking and production specs."
   },
   {
     "id": "62be58f6-94aa-4d53-8649-c3db6c605ebf",
@@ -6201,7 +5733,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thepubstation.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thepubstation.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6219,7 +5750,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@radiourbandigital.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://radiourbandigital.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6237,7 +5767,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "ralstonsgoat@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/ralstonsgoat",
     "hasPA": true,
     "hasLighting": true,
@@ -6257,9 +5786,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@ravefurrestnashvillenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://ravefurrestnashvillenashvilletn.com",
+    "contactEmail": "booking@ravefurrestnashville.com",
+    "website": "https://ravefurrestnashville.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -6279,7 +5807,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie"
     ],
     "contactEmail": "raysgoldenlionevents@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.raysgoldenlion.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6301,7 +5828,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "All-Ages"
     ],
     "contactEmail": "realarttacoma@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.realarttacoma.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6319,7 +5845,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@therecordbar.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://therecordbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6340,8 +5865,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Comedy"
     ],
     "contactEmail": "booking@revolutionhall.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.revolutionhall.com",
+    "contactPhone": "(503) 288-3895",
+    "website": "https://revolutionhall.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 830 guests] Verified live music venue in Portland, OR. Contact for booking and production specs."
@@ -6358,7 +5883,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@revolutionlive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://jointherevolution.net",
     "hasPA": true,
     "hasLighting": true,
@@ -6370,13 +5894,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Francisco",
     "state": "CA",
     "country": "US",
-    "address": "155 Fell St",
+    "address": "155 Fell St, San Francisco, CA 94102",
     "capacity": 400,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@rickshawstop.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(415) 861-2011",
     "website": "https://rickshawstop.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6394,7 +5918,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@rickshawtheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://rickshawtheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6412,7 +5935,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "rivercitysaloonhr@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/rivercitysaloonhr",
     "hasPA": true,
     "hasLighting": true,
@@ -6430,7 +5952,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@riversiderma.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://riversiderma.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6451,7 +5972,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie"
     ],
     "contactEmail": "events@riversiderevivalnashville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://riversiderevivalnashville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6471,7 +5991,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Rockabilly"
     ],
     "contactEmail": "booking@robertswesternworld.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://robertswesternworld.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6489,7 +6008,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@rockafairy.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://rockafairy.org",
     "hasPA": true,
     "hasLighting": true,
@@ -6509,9 +6027,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@rocketownnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://rocketownnashvilletn.com",
+    "contactEmail": "info@rocketown.org",
+    "contactPhone": "(615) 843-4001",
+    "website": "https://rocketown.org",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -6528,7 +6046,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@roguetheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://roguetheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -6546,7 +6063,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@roostertfeathers.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://roostertfeathers.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6564,7 +6080,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "rosebowltavern@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://rosebowltavern.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6582,7 +6097,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@rosemusichall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://rosemusichall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6600,32 +6114,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@roxytheatermuskogee.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://roxytheatermuskogee.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 500 guests] Verified live music venue in Muskogee, OK. Contact for booking and production specs."
-  },
-  {
-    "id": "f4b8924d-2a73-4dea-8ed9-8c31c46ad9d8",
-    "name": "Rusty Anchor Tavern",
-    "city": "Boston",
-    "state": "MA",
-    "country": "US",
-    "address": "88 Harbor View Rd, Boston, MA 02128",
-    "capacity": 90,
-    "genres": [
-      "Punk",
-      "Hardcore",
-      "Ska",
-      "Garage Rock"
-    ],
-    "contactEmail": "shows@rustyanchorboston.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.rustyanchorboston.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 90 guests] Verified live music venue in Boston, MA. Contact for booking and production specs."
   },
   {
     "id": "46c00372-47fa-422b-b1dc-48fbbcb86dee",
@@ -6642,7 +6134,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass"
     ],
     "contactEmail": "booking@ryman.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://ryman.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6654,13 +6145,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Brooklyn",
     "state": "NY",
     "country": "US",
-    "address": "1120 Manhattan Ave",
+    "address": "1120 Manhattan Ave, Brooklyn, NY 11222",
     "capacity": 250,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@saintvitusbar.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(718) 821-8375",
     "website": "https://saintvitusbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6681,26 +6172,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie Rock"
     ],
     "contactEmail": "sambondsbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.sambondsgarage.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 150 guests] Verified live music venue in Eugene, OR. Contact for booking and production specs."
-  },
-  {
-    "id": "a343589c-2a57-45b3-9055-ee92ae99e7db",
-    "name": "Sam Bonds Garage",
-    "city": "Eugene",
-    "state": "OR",
-    "country": "US",
-    "address": "407 Blair Blvd",
-    "capacity": 150,
-    "genres": [
-      "Live Music"
-    ],
-    "contactEmail": "booking@sambonds.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://sambonds.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 150 guests] Verified live music venue in Eugene, OR. Contact for booking and production specs."
@@ -6717,7 +6189,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@saturnbirmingham.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://saturnbirmingham.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6729,7 +6200,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "1 Symphony Place, Nashville, TN 37201",
+    "address": "1 Symphony Pl, Nashville, TN 37201",
     "capacity": 350,
     "genres": [
       "Country",
@@ -6737,9 +6208,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@schermerhornsymphonycenternashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://schermerhornsymphonycenternashvilletn.com",
+    "contactEmail": "tickets@nashvillesymphony.org",
+    "contactPhone": "(615) 687-6500",
+    "website": "https://nashvillesymphony.org",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -6750,13 +6221,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Chicago",
     "state": "IL",
     "country": "US",
-    "address": "3159 N Southport Ave",
+    "address": "3159 N Southport Ave, Chicago, IL 60657",
     "capacity": 165,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@lh-st.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(773) 525-2508",
     "website": "https://lh-st.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6776,7 +6247,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Blues"
     ],
     "contactEmail": "booking@scoreboardbar.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://scoreboardbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6797,7 +6267,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "R&B"
     ],
     "contactEmail": "seamonsterbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.seamonsterlounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6815,7 +6284,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theseasonsperformancehall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theseasonsperformancehall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6833,7 +6301,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@siberianola.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://siberianola.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6851,7 +6318,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "info@singlehillbrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://singlehillbrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6869,7 +6335,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "sisterbookingnm@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://sisterthebar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6889,7 +6354,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Classic Standards"
     ],
     "contactEmail": "booking@skullsrainbowroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://skullsrainbowroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6901,7 +6365,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "5055 Broadway Place",
+    "address": "5055 Broadway, Nashville, TN 37203",
     "capacity": 350,
     "genres": [
       "Country",
@@ -6909,9 +6373,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@skydeckonbroadwaynashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://skydeckonbroadwaynashvilletn.com",
+    "contactEmail": "info@assemblyfoodhall.com",
+    "contactPhone": "(615) 610-5300",
+    "website": "https://assemblyfoodhall.com/skydeck",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -6928,7 +6392,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@sleeping-village.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://sleeping-village.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6946,7 +6409,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@slobrew.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://slobrew.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6964,7 +6426,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theslowdown.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theslowdown.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6982,7 +6443,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@smileyssaloon.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://smileyssaloon.com",
     "hasPA": true,
     "hasLighting": true,
@@ -6994,13 +6454,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Diego",
     "state": "CA",
     "country": "US",
-    "address": "3615 El Cajon Blvd",
+    "address": "3615 El Cajon Blvd, San Diego, CA 92104",
     "capacity": 230,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@sodabarsd.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(619) 255-7224",
     "website": "https://sodabarsd.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7012,7 +6472,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "919 Gallatin Road #14 Nashville, TN 37206, USA",
+    "address": "1120 4th Ave S, Nashville, TN 37210",
     "capacity": 350,
     "genres": [
       "Country",
@@ -7020,9 +6480,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@softjunknashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://softjunknashvilletn.com",
+    "contactEmail": "softjunknashville@gmail.com",
+    "website": "https://instagram.com/softjunknashville",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -7039,7 +6498,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@sohosb.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://sohosb.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7057,7 +6515,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@soulbellybbq.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://soulbellybbq.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7075,7 +6532,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@southgatehouse.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://southgatehouse.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7093,7 +6549,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@spaceballroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://spaceballroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7111,7 +6566,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@space538.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://space538.org",
     "hasPA": true,
     "hasLighting": true,
@@ -7132,7 +6586,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Americana"
     ],
     "contactEmail": "booking@mcmenamins.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.spanishballroomatelkstemple.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7150,7 +6603,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@spiritpgh.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://spiritpgh.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7170,7 +6622,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Garage Rock"
     ],
     "contactEmail": "springwatersupperclub@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://springwatersupperclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7182,7 +6633,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "115 27th avenue north",
+    "address": "115 27th Ave N, Nashville, TN 37203",
     "capacity": 350,
     "genres": [
       "Country",
@@ -7190,9 +6641,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@springwatersupperclubandloungenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://springwatersupperclubandloungenashvilletn.com",
+    "contactEmail": "springwatersupperclub@gmail.com",
+    "contactPhone": "(615) 329-9780",
+    "website": "https://springwatersupperclub.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -7209,7 +6660,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@stagetwoevansville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://stagetwoevansville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7227,7 +6677,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@stanleysfamous.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://stanleysfamous.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7248,33 +6697,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Electronic"
     ],
     "contactEmail": "booking@startheaterportland.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.startheater.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Portland, OR. Contact for booking and production specs."
-  },
-  {
-    "id": "63b42978-f0a6-44e5-a832-751d3f8ef218",
-    "name": "Starwood Amphitheatre",
-    "city": "Nashville",
-    "state": "TN",
-    "country": "US",
-    "address": "Nashville, TN",
-    "capacity": 450,
-    "genres": [
-      "Country",
-      "Americana",
-      "Rock",
-      "Bluegrass",
-      "Folk"
-    ],
-    "contactEmail": "booking@starwoodamphitheatrenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://starwoodamphitheatrenashvilletn.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
   },
   {
     "id": "57b9b099-b68f-4111-87e6-37a8fe3368e1",
@@ -7290,7 +6716,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Classic Country"
     ],
     "contactEmail": "booking@stationinn.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://stationinn.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7310,9 +6735,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@steveandjudyturnerrecitalhallnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://steveandjudyturnerrecitalhallnashvilletn.com",
+    "contactEmail": "booking@steveandjudyturnerrecitalhall.com",
+    "website": "https://steveandjudyturnerrecitalhall.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -7329,7 +6753,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "stonewalltavernbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://stonewalltavern.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7347,7 +6770,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "strangersbakersfield@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/strangersbakersfield",
     "hasPA": true,
     "hasLighting": true,
@@ -7365,7 +6787,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@strummersclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://strummersclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7383,7 +6804,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "studiobobevents@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://studiobob.art",
     "hasPA": true,
     "hasLighting": true,
@@ -7401,7 +6821,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@substationseattle.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://substationseattle.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7422,7 +6841,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Industrial"
     ],
     "contactEmail": "booking@substationseattle.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.substationseattle.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7434,13 +6852,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Chicago",
     "state": "IL",
     "country": "US",
-    "address": "2011 W North Ave",
+    "address": "2011 W North Ave, Chicago, IL 60647",
     "capacity": 400,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@subt.net",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "talent@subt.net",
+    "contactPhone": "(773) 278-6600",
     "website": "https://subt.net",
     "hasPA": true,
     "hasLighting": true,
@@ -7458,7 +6876,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "supplyanddemandlbc@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://sdlongbeach.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7476,7 +6893,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@sweetwatermusichall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://sweetwatermusichall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7494,7 +6910,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "synapsisbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://synapsisunion.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7512,7 +6927,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "tampandgrind@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tampandgrind.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7530,7 +6944,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@taosmesabrewing.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://taosmesabrewing.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7548,7 +6961,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@tellus360.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tellus360.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7560,13 +6972,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "1234 W 7th St",
+    "address": "1234 W 7th St, Los Angeles, CA 90017",
     "capacity": 625,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@teragramballroom.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(213) 689-9100",
     "website": "https://teragramballroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7578,13 +6990,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Atlanta",
     "state": "GA",
     "country": "US",
-    "address": "887 W Marietta St NW",
+    "address": "887 West Marietta St NW, Atlanta, GA 30318",
     "capacity": 625,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@terminalwestatl.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "info@terminalwestatl.com",
+    "contactPhone": "(404) 876-5566",
     "website": "https://terminalwestatl.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7602,7 +7014,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@terrapincrossroads.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://terrapincrossroads.net",
     "hasPA": true,
     "hasLighting": true,
@@ -7620,7 +7031,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "the5spotbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://the5spot.live",
     "hasPA": true,
     "hasLighting": true,
@@ -7638,7 +7048,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@airporttavern.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://airporttavern.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7656,7 +7065,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thealibipalmsprings.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thealibipalmsprings.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7674,7 +7082,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thealleytaos.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thealleytaos.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7692,7 +7099,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@aquariumfargo.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://aquariumfargo.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7710,7 +7116,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@theargyros.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theargyros.org",
     "hasPA": true,
     "hasLighting": true,
@@ -7728,7 +7133,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "arrowbarbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thearrowbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7746,7 +7150,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@catalystclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://catalystclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7764,7 +7167,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thebadspacesalem@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebadspace.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7782,7 +7184,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@badlandercomplex.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://badlandercomplex.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7800,7 +7201,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thebarkfl@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebarkfl.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7818,7 +7218,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thebasementnashville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebasementnashville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7836,7 +7235,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thebasementnashville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebasementnashville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7848,13 +7246,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "333 S Boylston St",
+    "address": "333 S Boylston St, Los Angeles, CA 90017",
     "capacity": 1500,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@thebellwetherla.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(213) 347-1900",
     "website": "https://thebellwetherla.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7872,7 +7270,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thebendsbar@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebendsbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7890,7 +7287,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@bigdipperevents.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bigdipperevents.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7912,7 +7308,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "All-Ages"
     ],
     "contactEmail": "bigdipperevents@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.thebigdipperspokane.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7930,7 +7325,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thebishopbar@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebishopbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7948,7 +7342,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@blackcatdc.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://blackcatdc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7966,7 +7359,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@blacksheeprocks.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://blacksheeprocks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -7984,7 +7376,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theblacksheep.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theblacksheep.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8002,7 +7393,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "bluelagoonsc@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebluelagoon.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8020,7 +7410,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thebluelightlive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebluelightlive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8038,7 +7427,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thebluenote.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebluenote.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8059,7 +7447,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "All-Ages"
     ],
     "contactEmail": "booking@blueroombham.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.theblueroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8080,7 +7467,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Punk"
     ],
     "contactEmail": "blueroom@thirdmanrecords.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thirdmanrecords.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8098,7 +7484,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thebluebird.ws",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebluebird.ws",
     "hasPA": true,
     "hasLighting": true,
@@ -8116,7 +7501,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@rocktheboardwalk.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://rocktheboardwalk.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8134,7 +7518,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theboardwalksound.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theboardwalksound.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8152,7 +7535,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thebottlenecklive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebottlenecklive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8170,7 +7552,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "brassrailfw@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://brassrailfw.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8188,7 +7569,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thebroadberry.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thebroadberry.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8206,7 +7586,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "bugjarbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://bugjar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8224,7 +7603,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theburlky.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theburlky.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8242,7 +7620,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thecamel.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thecamel.org",
     "hasPA": true,
     "hasLighting": true,
@@ -8260,7 +7637,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@canopyclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://canopyclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8280,9 +7656,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@thecarlblackchevywoodsamphitheaternashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://thecarlblackchevywoodsamphitheaternashvilletn.com",
+    "contactEmail": "booking@thecarlblackchevywoodsamphitheater.com",
+    "website": "https://thecarlblackchevywoodsamphitheater.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -8293,13 +7668,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Diego",
     "state": "CA",
     "country": "US",
-    "address": "2501 Kettner Blvd",
+    "address": "2501 Kettner Blvd, San Diego, CA 92101",
     "capacity": 285,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@casbahmusic.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "casbahbooking@gmail.com",
+    "contactPhone": "(619) 232-4355",
     "website": "https://casbahmusic.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8317,7 +7692,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@catalystclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://catalystclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8335,7 +7709,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@catalystclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://catalystclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8347,7 +7720,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "Nashville, TN",
+    "address": "555 Charlie Roberts Rd, Pelham, TN 37366",
     "capacity": 450,
     "genres": [
       "Country",
@@ -8356,9 +7729,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@thecavernsnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://thecavernsnashvilletn.com",
+    "contactEmail": "info@thecaverns.com",
+    "contactPhone": "(931) 516-9724",
+    "website": "https://thecaverns.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -8375,7 +7748,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@cellardoorvisalia.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://cellardoorvisalia.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8393,7 +7765,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "theceltpub@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theceltpub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8414,7 +7785,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Soul"
     ],
     "contactEmail": "booking@chameleonspokane.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.thechameleonspokane.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8426,38 +7796,17 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Francisco",
     "state": "CA",
     "country": "US",
-    "address": "777 Valencia St",
+    "address": "777 Valencia St, San Francisco, CA 94110",
     "capacity": 500,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@thechapelsf.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(415) 551-5157",
     "website": "https://thechapelsf.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 500 guests] Verified live music venue in San Francisco, CA. Contact for booking and production specs."
-  },
-  {
-    "id": "bde1b109-f318-47c4-ba08-379f642ecce5",
-    "name": "The Coastal Grove Amphitheater",
-    "city": "San Diego",
-    "state": "CA",
-    "country": "US",
-    "address": "500 Ocean Way, San Diego, CA 92109",
-    "capacity": 1200,
-    "genres": [
-      "Reggae",
-      "Surf Rock",
-      "Indie Pop",
-      "Jam Band"
-    ],
-    "contactEmail": "events@coastalgrovesd.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.coastalgrovesd.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 1200 guests] Verified live music venue in San Diego, CA. Contact for booking and production specs."
   },
   {
     "id": "cee72963-1a47-430b-bb99-64379140037a",
@@ -8471,7 +7820,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thecobalt.ca",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thecobalt.ca",
     "hasPA": true,
     "hasLighting": true,
@@ -8489,7 +7837,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "colonytulsa@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thecolonytulsa.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8507,7 +7854,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "theconcertlounge@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theconcertlounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8525,32 +7871,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "bookings@continentalclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://continentalclub.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 200 guests] Verified live music venue in Austin, TX. Contact for booking and production specs."
-  },
-  {
-    "id": "988002c2-906c-46b5-b538-2b32ae743534",
-    "name": "The Copper Kettle Hall",
-    "city": "Chicago",
-    "state": "IL",
-    "country": "US",
-    "address": "310 S Michigan Ave, Chicago, IL 60604",
-    "capacity": 180,
-    "genres": [
-      "Blues",
-      "Jazz",
-      "Soul",
-      "Funk"
-    ],
-    "contactEmail": "booking@copperkettlechicago.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.copperkettlechicago.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 180 guests] Verified live music venue in Chicago, IL. Contact for booking and production specs."
   },
   {
     "id": "d7a14e18-d2e9-4dbe-bcde-d1e0a40c4955",
@@ -8564,7 +7888,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thecrepeplace.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thecrepeplace.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8585,8 +7908,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Electronic"
     ],
     "contactEmail": "booking@thecrocodile.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.thecrocodile.com",
+    "contactPhone": "(206) 441-4618",
+    "website": "https://thecrocodile.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 750 guests] Verified live music venue in Seattle, WA. Contact for booking and production specs."
@@ -8603,7 +7926,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thedelinorman@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thedeli.us",
     "hasPA": true,
     "hasLighting": true,
@@ -8621,7 +7943,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "depotbooking@livenation.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://depotslc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8639,7 +7960,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thedipredding.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thedipredding.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8657,7 +7977,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "divebarlvbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/thedivebarlv",
     "hasPA": true,
     "hasLighting": true,
@@ -8675,7 +7994,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "dollhutbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://dollhut.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8687,13 +8005,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Atlanta",
     "state": "GA",
     "country": "US",
-    "address": "488 Flat Shoals Ave SE",
+    "address": "488 Flat Shoals Ave SE, Atlanta, GA 30316",
     "capacity": 300,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@badearl.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(404) 522-3950",
     "website": "https://badearl.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8705,7 +8023,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "2412 Gallatin Ave, Nashville, TN 37206, USA",
+    "address": "2412 Gallatin Ave, Nashville, TN 37206",
     "capacity": 350,
     "genres": [
       "Country",
@@ -8713,9 +8031,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@theeastroomnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://theeastroomnashvilletn.com",
+    "contactEmail": "booking@theeastroom.com",
+    "contactPhone": "(615) 335-3137",
+    "website": "https://theeastroom.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -8726,59 +8044,17 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "1822 Sunset Blvd",
+    "address": "1822 Sunset Blvd, Los Angeles, CA 90026",
     "capacity": 350,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@theecho.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(213) 413-8200",
     "website": "https://theecho.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Los Angeles, CA. Contact for booking and production specs."
-  },
-  {
-    "id": "b829db16-ea8b-4b56-a9bc-04b7d348de2e",
-    "name": "The Echo Chamber Lounge",
-    "city": "Austin",
-    "state": "TX",
-    "country": "US",
-    "address": "1611 Red River St, Austin, TX 78701",
-    "capacity": 250,
-    "genres": [
-      "Indie Rock",
-      "Synthwave",
-      "Shoegaze",
-      "Dream Pop"
-    ],
-    "contactEmail": "shows@echoloungeaustin.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.echoloungeaustin.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 250 guests] Verified live music venue in Austin, TX. Contact for booking and production specs."
-  },
-  {
-    "id": "d59166d9-1015-4c76-a1c5-b1656349af62",
-    "name": "The Electric Grid Warehouse",
-    "city": "Denver",
-    "state": "CO",
-    "country": "US",
-    "address": "1280 Industrial Pkwy, Denver, CO 80216",
-    "capacity": 500,
-    "genres": [
-      "Electronic",
-      "Synthwave",
-      "Industrial",
-      "Darkwave"
-    ],
-    "contactEmail": "booking@electricwarehouse.co",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.electricwarehouse.co",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 500 guests] Verified live music venue in Denver, CO. Contact for booking and production specs."
   },
   {
     "id": "f0ed43f8-64c6-4c3e-9a64-946a6b9338f4",
@@ -8792,7 +8068,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@logjampresents.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://logjampresents.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8810,7 +8085,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "emptyglasswv@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://emptyglasswv.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8828,7 +8102,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@endnashville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://endnashville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8840,13 +8113,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Austin",
     "state": "TX",
     "country": "US",
-    "address": "8504 S Congress Ave",
+    "address": "8504 S Congress Ave, Austin, TX 78745",
     "capacity": 800,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@thefaroutaustin.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(512) 368-2457",
     "website": "https://thefaroutaustin.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8864,7 +8137,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thefaroutaustin.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thefaroutaustin.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8882,7 +8154,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "fillerbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thefiller.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8900,7 +8171,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thefixinto@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thefixinto.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8918,7 +8188,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "theforgebenwheeler@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theforgebenwheeler.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8936,7 +8205,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@foxsalinas.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://foxsalinas.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8954,7 +8222,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thefruityard.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thefruityardevents.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8972,7 +8239,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thegaragebarventura@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thegaragebarventura.com",
     "hasPA": true,
     "hasLighting": true,
@@ -8990,7 +8256,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thegaslightsocial.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thegaslightsocial.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9008,7 +8273,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thegemvenue.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thegemvenue.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9029,7 +8293,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Electronic"
     ],
     "contactEmail": "booking@thegetdownpdx.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.thegetdownmusicvenue.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9047,7 +8310,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theglasshouse.us",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theglasshouse.us",
     "hasPA": true,
     "hasLighting": true,
@@ -9065,7 +8327,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@goldenlightcantina.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://goldenlightcantina.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9083,7 +8344,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thegranada.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thegranada.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9101,7 +8361,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@flagstaffgreenroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://flagstaffgreenroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9121,9 +8380,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@thegreenroomnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://thegreenroomnashvilletn.com",
+    "contactEmail": "booking@thegreenroom.com",
+    "website": "https://thegreenroom.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -9140,7 +8398,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thegreyeagle.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thegreyeagle.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9158,7 +8415,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@grogshop.gs",
-    "contactPhone": "(555) 000-0000",
     "website": "https://grogshop.gs",
     "hasPA": true,
     "hasLighting": true,
@@ -9176,7 +8432,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@gryphontheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://gryphontheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -9194,7 +8449,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thehandlebar850.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thehandlebar850.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9212,7 +8466,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thehaulbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thehaulgp.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9230,7 +8483,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thehaunt.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thehaunt.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9248,7 +8500,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thehideawayjc@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thehideawayjc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9266,7 +8517,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hideoutchicago.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hideoutchicago.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9278,13 +8528,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Diego",
     "state": "CA",
     "country": "US",
-    "address": "5046 Newport Ave",
+    "address": "5046 Newport Ave, San Diego, CA 92107",
     "capacity": 350,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@thcobsd.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(619) 732-7010",
     "website": "https://thcobsd.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9302,7 +8552,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hollandreno.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hollandreno.org",
     "hasPA": true,
     "hasLighting": true,
@@ -9320,7 +8569,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@hollytheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://hollytheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -9338,7 +8586,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "hoodbarbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thehoodbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9356,7 +8603,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "birdbookingmacon@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thehummingbird.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9368,13 +8614,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Francisco",
     "state": "CA",
     "country": "US",
-    "address": "628 Divisadero St",
+    "address": "628 Divisadero St, San Francisco, CA 94117",
     "capacity": 500,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@theindependentsf.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(415) 771-1421",
     "website": "https://theindependentsf.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9386,13 +8632,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "San Diego",
     "state": "CA",
     "country": "US",
-    "address": "3090 Polk Ave",
+    "address": "3090 Polk Ave, San Diego, CA 92104",
     "capacity": 400,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@theirenic.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(619) 296-0310",
     "website": "https://theirenic.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9410,7 +8656,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@ivyroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://ivyroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9428,7 +8673,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thejamarcatabooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thejamarcata.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9446,7 +8690,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "jinxbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thejinx912.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9464,7 +8707,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thelincolncheyenne.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thelincolncheyenne.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9484,7 +8726,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Singer-Songwriter"
     ],
     "contactEmail": "booking@listeningroomcafe.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://listeningroomcafe.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9502,7 +8743,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thelonesomerose.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thelonesomerose.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9520,7 +8760,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thelostchurch.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thelostchurch.org",
     "hasPA": true,
     "hasLighting": true,
@@ -9538,7 +8777,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "lotusroomyakima@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/thelotusroomyakima",
     "hasPA": true,
     "hasLighting": true,
@@ -9556,7 +8794,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thelovingtouchferndale.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thelovingtouchferndale.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9574,7 +8811,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@venturatheater.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://venturatheater.net",
     "hasPA": true,
     "hasLighting": true,
@@ -9586,13 +8822,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Atlanta",
     "state": "GA",
     "country": "US",
-    "address": "50 Lower Alabama St",
+    "address": "75 MLK Jr Dr SW, Atlanta, GA 30303",
     "capacity": 1000,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@masqueradeatlanta.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(404) 577-8178",
     "website": "https://masqueradeatlanta.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9610,7 +8846,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "melodyinnbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://melodyindy.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9628,7 +8863,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@themerrywidow.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://themerrywidow.net",
     "hasPA": true,
     "hasLighting": true,
@@ -9646,7 +8880,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@themilestoneclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://themilestoneclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9664,7 +8897,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@icmill.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://icmill.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9682,7 +8914,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@miniplexevents.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://miniplexevents.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9694,13 +8925,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "6010 W Pico Blvd",
+    "address": "6010 W Pico Blvd, Los Angeles, CA 90035",
     "capacity": 250,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@themintla.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(323) 954-9400",
     "website": "https://themintla.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9718,7 +8949,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@mohawkaustin.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mohawkaustin.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9739,7 +8969,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Comedy"
     ],
     "contactEmail": "booking@stgpresents.org",
-    "contactPhone": "(555) 000-0000",
     "website": "www.themooretheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9757,7 +8986,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "mooseloungecda@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mooseloungecda.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9769,13 +8997,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "901 E 1st St",
+    "address": "901 E 1st St, Los Angeles, CA 90012",
     "capacity": 275,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@themoroccan.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(213) 395-0610",
     "website": "https://themoroccan.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9793,7 +9021,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "bookingmtlriverside@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/mtlriverside",
     "hasPA": true,
     "hasLighting": true,
@@ -9814,7 +9041,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Pop"
     ],
     "contactEmail": "booking@themulehouse.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://themulehouse.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9832,32 +9058,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@mystictheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://mystictheatre.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 550 guests] Verified live music venue in Petaluma, CA. Contact for booking and production specs."
-  },
-  {
-    "id": "9335fb20-5219-44c1-98e2-2b4456029ae0",
-    "name": "The Neon Mirage",
-    "city": "Las Vegas",
-    "state": "NV",
-    "country": "US",
-    "address": "720 E Fremont St, Las Vegas, NV 89101",
-    "capacity": 320,
-    "genres": [
-      "Synthwave",
-      "Electronic",
-      "Indie Pop",
-      "Glam Rock"
-    ],
-    "contactEmail": "live@neonmiragelv.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.neonmiragelv.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 320 guests] Verified live music venue in Las Vegas, NV. Contact for booking and production specs."
   },
   {
     "id": "435d060f-c5fe-44ac-97e8-8d7b950ca307",
@@ -9871,7 +9075,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thenewparish.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thenewparish.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9889,7 +9092,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thenickbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thenickrocks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9907,7 +9109,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "observatory@livenation.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://observatoryoc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9925,7 +9126,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@observatorysd.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://observatorysd.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9943,7 +9143,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@observatoryoc.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://observatoryoc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9961,7 +9160,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theolympicboise.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theolympicboise.com",
     "hasPA": true,
     "hasLighting": true,
@@ -9979,7 +9177,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@opolis.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://opolis.org",
     "hasPA": true,
     "hasLighting": true,
@@ -9997,7 +9194,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@orpheumflagstaff.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://orpheumflagstaff.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10009,13 +9205,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "2708 E Cesar E Chavez Ave",
+    "address": "2708 E Cesar E Chavez Ave, Los Angeles, CA 90033",
     "capacity": 400,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@theparamountla.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(323) 262-8303",
     "website": "https://theparamountla.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10033,7 +9229,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "info@thepearlvancouver.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thepearlvancouver.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10051,7 +9246,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@phoenixclubhouse.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://phoenixclubhouse.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10069,7 +9263,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thephoenixtheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thephoenixtheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10087,7 +9280,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thepilotlightknoxville@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thepilotlight.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10105,7 +9297,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thepinhook.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thepinhook.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10126,9 +9317,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@thepinnaclenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://thepinnaclenashvilletn.com",
+    "contactEmail": "booking@thepinnacle.com",
+    "website": "https://thepinnacle.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -10145,7 +9335,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thepourhousemusichall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thepourhousemusichall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10163,7 +9352,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "pressboxgrill@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://pressboxgrill.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10181,7 +9369,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@pressroomnh.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://pressroomnh.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10199,7 +9386,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "info@theprincesstheatre.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theprincesstheatre.net",
     "hasPA": true,
     "hasLighting": true,
@@ -10217,7 +9403,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "pyramidschemebooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://pyramidschemebar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10235,7 +9420,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "railyardlaramie@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://railyardlaramie.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10253,7 +9437,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "theravebooking@therave.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://therave.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10265,13 +9448,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Phoenix",
     "state": "AZ",
     "country": "US",
-    "address": "4633 N 30th St",
+    "address": "2303 E Indian School Rd, Phoenix, AZ 85016",
     "capacity": 300,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@therebellounge.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(602) 296-7013",
     "website": "https://therebellounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10289,7 +9472,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theredpiano.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theredpiano.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10307,7 +9489,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theregencylive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theregencylive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10325,7 +9506,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "remingtonbarbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://remingtonbar.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10343,7 +9523,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@revroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://revroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10361,7 +9540,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@rialtotheatre.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://rialtotheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10379,7 +9557,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theritzsanjose.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theritzsanjose.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10397,7 +9574,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@rockhouseelpaso.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://rockhouseelpaso.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10409,13 +9585,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "West Hollywood",
     "state": "CA",
     "country": "US",
-    "address": "9009 Sunset Blvd",
+    "address": "9009 Sunset Blvd, West Hollywood, CA 90069",
     "capacity": 500,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "theroxy@livenation.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "booking@theroxy.com",
+    "contactPhone": "(310) 278-9488",
     "website": "https://theroxy.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10436,7 +9612,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Avant-Garde"
     ],
     "contactEmail": "booking@theroyalroomseattle.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.theroyalroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10457,7 +9632,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Reggae"
     ],
     "contactEmail": "booking@theruinshoodriver.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.theruins.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10475,7 +9649,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thesaloonbbq@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesaloonbbq.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10493,7 +9666,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "sanctuarydetroitbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://sanctuarydetroit.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10511,7 +9683,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@thesandboxsb.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesandboxsb.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10529,7 +9700,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "sawdustsaloonbeaumont@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://sawdustsaloon.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10550,7 +9720,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Acoustic"
     ],
     "contactEmail": "info@theseasonsyakima.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.theseasonsperformancehall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10568,7 +9737,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thesecretgrouphtx.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesecretgrouphtx.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10586,7 +9754,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@jmaxproductions.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://senatortheatre.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10607,7 +9774,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Garage Rock"
     ],
     "contactEmail": "booking@shakedownbellingham.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.theshakedown.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10625,7 +9791,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@shaskeenpub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://shaskeenpub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10645,9 +9810,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Hip-Hop",
       "Indie"
     ],
-    "contactEmail": "booking@showboxpresents.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.theshowbox.com",
+    "contactEmail": "info@showboxpresents.com",
+    "contactPhone": "(206) 628-3151",
+    "website": "https://showboxpresents.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 1100 guests] Verified live music venue in Seattle, WA. Contact for booking and production specs."
@@ -10664,7 +9829,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@shredderboise.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://shredderboise.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10682,7 +9846,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thesignaltn.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesignaltn.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10694,13 +9857,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Cambridge",
     "state": "MA",
     "country": "US",
-    "address": "52 Church St",
+    "address": "52 Church St, Cambridge, MA 02138",
     "capacity": 525,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@sinclaircambridge.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "info@sinclaircambridge.com",
+    "contactPhone": "(617) 547-5200",
     "website": "https://sinclaircambridge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10718,7 +9881,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thesirenmorrby.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesirenmorrby.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10736,7 +9898,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "sirenssongtavern@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://sirenssongtavern.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10754,7 +9915,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theslowdown.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theslowdown.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10766,13 +9926,12 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "247 S Main St",
+    "address": "247 S Main St, Los Angeles, CA 90012",
     "capacity": 150,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@thesmell.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesmell.org",
     "hasPA": true,
     "hasLighting": true,
@@ -10790,7 +9949,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thesocial.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesocial.org",
     "hasPA": true,
     "hasLighting": true,
@@ -10808,7 +9966,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thesoutherncville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesoutherncville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10826,7 +9983,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thespotonkirk.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thespotonkirk.org",
     "hasPA": true,
     "hasLighting": true,
@@ -10846,7 +10002,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Honky Tonk"
     ],
     "contactEmail": "booking@thestageonbroadway.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thestageonbroadway.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10864,7 +10019,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "starhotelelko@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://starhotelelko.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10882,7 +10036,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@harlows.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://harlows.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10900,7 +10053,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thestatetheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thestatetheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -10912,7 +10064,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "402 12th Ave S",
+    "address": "402 12th Ave S, Nashville, TN 37203",
     "capacity": 350,
     "genres": [
       "Country",
@@ -10920,9 +10072,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@thestationinnnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://thestationinnnashvilletn.com",
+    "contactEmail": "booking@stationinn.com",
+    "contactPhone": "(615) 255-3207",
+    "website": "https://stationinn.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -10939,32 +10091,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@stoneponyonline.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://stoneponyonline.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 850 guests] Verified live music venue in Asbury Park, NJ. Contact for booking and production specs."
-  },
-  {
-    "id": "7017d49e-b4e6-4ad1-a866-32f308aa4ad4",
-    "name": "The Subterranean Cellar",
-    "city": "Seattle",
-    "state": "WA",
-    "country": "US",
-    "address": "412 Pike St, Seattle, WA 98101",
-    "capacity": 120,
-    "genres": [
-      "Grunge",
-      "Punk",
-      "Alternative Rock",
-      "Hardcore"
-    ],
-    "contactEmail": "booking@subterraneancementcellar.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.subterraneancellarmusic.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 120 guests] Verified live music venue in Seattle, WA. Contact for booking and production specs."
   },
   {
     "id": "8413e405-4bd1-4783-a76f-a272f53cdd5e",
@@ -10981,7 +10111,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Punk"
     ],
     "contactEmail": "booking@sunsettavern.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.thesunsettavern.com",
     "hasPA": true,
     "hasLighting": true,
@@ -10999,7 +10128,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "info@thesylvee.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thesylvee.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11019,9 +10147,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@thetajmahalnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://thetajmahalnashvilletn.com",
+    "contactEmail": "booking@thetajmahal.com",
+    "website": "https://thetajmahal.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -11038,7 +10165,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thetavernventura@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thetavernventura.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11056,7 +10182,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "thirstyhippobooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thirstyhippo.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11074,7 +10199,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theuctheatre.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theuctheatre.org",
     "hasPA": true,
     "hasLighting": true,
@@ -11092,7 +10216,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theusualplace.vegas",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theusualplace.vegas",
     "hasPA": true,
     "hasLighting": true,
@@ -11110,32 +10233,10 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thevanguardtulsa.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thevanguardtulsa.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Tulsa, OK. Contact for booking and production specs."
-  },
-  {
-    "id": "39c61eb8-ef15-4163-81c6-d2c01430dc68",
-    "name": "The Velvet Foundry",
-    "city": "Nashville",
-    "state": "TN",
-    "country": "US",
-    "address": "950 Troubadour Ave, Nashville, TN 37203",
-    "capacity": 400,
-    "genres": [
-      "Folk",
-      "Americana",
-      "Acoustic",
-      "Indie Pop"
-    ],
-    "contactEmail": "pitch@velvetfoundry.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.velvetfoundrynashville.com",
-    "hasPA": true,
-    "hasLighting": true,
-    "description": "[Capacity: 400 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
   },
   {
     "id": "e9e0d09e-f293-49a3-b48e-fc15f76e2f71",
@@ -11152,7 +10253,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "All-Ages"
     ],
     "contactEmail": "booking@theveraproject.org",
-    "contactPhone": "(555) 000-0000",
     "website": "www.theveraproject.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11172,7 +10272,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Singer-Songwriter"
     ],
     "contactEmail": "booking@thevinylloungenashville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thevinylloungenashville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11190,7 +10289,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@viperroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://viperroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11208,7 +10306,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@waitingroomlounge.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://waitingroomlounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11229,7 +10326,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Acoustic"
     ],
     "contactEmail": "events@walnuthousetn.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://walnuthouseevents.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11247,7 +10343,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@wayfarercm.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://wayfarercm.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11265,7 +10360,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thewestcotttheater.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thewestcotttheater.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11283,7 +10377,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@thewooly.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thewooly.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11301,7 +10394,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@yellowstonepocatello.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://yellowstonepocatello.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11313,7 +10405,7 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Nashville",
     "state": "TN",
     "country": "US",
-    "address": "623 7th Avenue South, Nashville, TN",
+    "address": "623 7th Ave S, Nashville, TN 37203",
     "capacity": 350,
     "genres": [
       "Country",
@@ -11321,9 +10413,9 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@thirdmanrecordsnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://thirdmanrecordsnashvilletn.com",
+    "contactEmail": "blueroom@thirdmanrecords.com",
+    "contactPhone": "(615) 891-4393",
+    "website": "https://thirdmanrecords.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -11340,7 +10432,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@thirstystreet.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://thirstystreet.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11358,7 +10449,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@threelinksdeepellum.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://threelinksdeepellum.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11376,7 +10466,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "tidballsbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tidballs.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11394,7 +10483,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "tikibaroc@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tikibaroc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11412,7 +10500,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "tiltwoclub@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tiltwoclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11430,7 +10517,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@tiogasequoia.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tiogasequoia.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11442,13 +10528,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "New Orleans",
     "state": "LA",
     "country": "US",
-    "address": "501 Napoleon Ave",
+    "address": "501 Napoleon Ave, New Orleans, LA 70115",
     "capacity": 800,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@tipitinas.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(504) 895-8477",
     "website": "https://tipitinas.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11466,7 +10552,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "toadsplac@aol.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://toadsplace.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11484,7 +10569,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@tonyvsgarage.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tonyvsgarage.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11504,7 +10588,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Honky Tonk"
     ],
     "contactEmail": "booking@tootsies.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tootsies.net",
     "hasPA": true,
     "hasLighting": true,
@@ -11522,7 +10605,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "totaldragrecords@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://totaldragrecords.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11540,7 +10622,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "totaldragrecords@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://totaldragrecords.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11558,7 +10639,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@towertheatreokc.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://towertheatreokc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11580,8 +10660,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie"
     ],
     "contactEmail": "booking@tractortavern.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "www.tractortavern.com",
+    "contactPhone": "(206) 789-3591",
+    "website": "https://tractortavern.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 380 guests] Verified live music venue in Seattle, WA. Contact for booking and production specs."
@@ -11598,7 +10678,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@treesdallas.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://treesdallas.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11619,9 +10698,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@trinitymusiccitynashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://trinitymusiccitynashvilletn.com",
+    "contactEmail": "booking@trinitymusiccity.com",
+    "website": "https://trinitymusiccity.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -11632,13 +10710,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "West Hollywood",
     "state": "CA",
     "country": "US",
-    "address": "9081 Santa Monica Blvd",
+    "address": "9081 Santa Monica Blvd, West Hollywood, CA 90069",
     "capacity": 500,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@troubadour.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(310) 276-1158",
     "website": "https://troubadour.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11656,7 +10734,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@tulipsftw.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tulipsftw.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11674,7 +10751,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@tumblerootbrewery.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://tumblerootbrewery.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11686,13 +10762,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "St. Paul",
     "state": "MN",
     "country": "US",
-    "address": "1601 University Ave W",
+    "address": "1601 University Ave W, St Paul, MN 55104",
     "capacity": 350,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@first-avenue.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "info@turfclub.net",
+    "contactPhone": "(651) 647-1009",
     "website": "https://turfclub.net",
     "hasPA": true,
     "hasLighting": true,
@@ -11704,13 +10780,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Ridgewood",
     "state": "NY",
     "country": "US",
-    "address": "1647 Weirfield St",
+    "address": "1647 Stanhope St, Ridgewood, NY 11385",
     "capacity": 250,
     "genres": [
       "Live Music"
     ],
-    "contactEmail": "booking@tveyenyc.com",
-    "contactPhone": "(555) 000-0000",
+    "contactEmail": "tveyenyc@gmail.com",
+    "contactPhone": "(347) 987-3783",
     "website": "https://tveyenyc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11728,7 +10804,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@underbellyjax.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://underbellyjax.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11746,7 +10821,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@theurbanloungeslc.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://theurbanloungeslc.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11758,13 +10832,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Phoenix",
     "state": "AZ",
     "country": "US",
-    "address": "130 N Central Ave",
+    "address": "130 N Central Ave, Phoenix, AZ 85004",
     "capacity": 250,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@valleybarphx.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(602) 368-6786",
     "website": "https://valleybarphx.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11784,9 +10858,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@vanderbiltuniversitymemorialgymnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://vanderbiltuniversitymemorialgymnashvilletn.com",
+    "contactEmail": "booking@vanderbiltuniversitymemorialgym.com",
+    "website": "https://vanderbiltuniversitymemorialgym.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -11803,7 +10876,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@varietalbeer.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://varietalbeer.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11821,7 +10893,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@velourlive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://velourlive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11839,7 +10910,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@venturamusichall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://venturamusichall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11857,7 +10927,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@victorynorthsavannah.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://victorynorthsavannah.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11875,7 +10944,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "vinosbrewpubbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://vinosbrewpub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11893,7 +10961,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@vinylmusichall.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://vinylmusichall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11911,7 +10978,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@renobrewhouse.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://renobrewhouse.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11932,7 +10998,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass"
     ],
     "contactEmail": "booking@volcanictheatrepub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.volcanictheatrepub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11950,7 +11015,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "vulturesbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://vulturesrocks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -11971,9 +11035,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@wchandytheatrenashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://wchandytheatrenashvilletn.com",
+    "contactEmail": "booking@wchandytheatre.com",
+    "website": "https://wchandytheatre.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -11993,7 +11056,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Comedy"
     ],
     "contactEmail": "booking@tpac.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://wmarocks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12014,9 +11076,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Bluegrass",
       "Folk"
     ],
-    "contactEmail": "booking@warmemorialbuildingnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://warmemorialbuildingnashvilletn.com",
+    "contactEmail": "booking@warmemorialbuilding.com",
+    "website": "https://warmemorialbuilding.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 450 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -12033,7 +11094,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@waveict.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://waveict.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12051,7 +11111,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "westsidebowl@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://westsidebowl.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12069,7 +11128,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "whartonsstillwater@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://facebook.com/whartonsportscenter",
     "hasPA": true,
     "hasLighting": true,
@@ -12087,7 +11145,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@whiskeyjacques.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://whiskeyjacques.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12105,7 +11162,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "whiskeyrichards@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://whiskeyrichards.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12123,7 +11179,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "whiskyagogo@earthlink.net",
-    "contactPhone": "(555) 000-0000",
     "website": "https://whiskyagogo.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12141,7 +11196,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@whistlinjacks.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://whistlinjacks.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12153,13 +11207,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Houston",
     "state": "TX",
     "country": "US",
-    "address": "2915 N Main St",
+    "address": "2915 N Main St, Houston, TX 77009",
     "capacity": 1200,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@whiteoakmusichall.com",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(713) 237-0370",
     "website": "https://whiteoakmusichall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12177,7 +11231,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "events@wienscellars.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://wienscellars.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12198,7 +11251,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Rock"
     ],
     "contactEmail": "booking@wildbuffalo.net",
-    "contactPhone": "(555) 000-0000",
     "website": "www.wildbuffalohouseofmusic.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12216,7 +11268,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "wildcatloungebooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://wildcatlounge.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12236,9 +11287,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@wildhorsesaloonnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://wildhorsesaloonnashvilletn.com",
+    "contactEmail": "booking@wildhorsesaloon.com",
+    "website": "https://wildhorsesaloon.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -12255,7 +11305,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@willspub.org",
-    "contactPhone": "(555) 000-0000",
     "website": "https://willspub.org",
     "hasPA": true,
     "hasLighting": true,
@@ -12275,9 +11324,8 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Indie",
       "Americana"
     ],
-    "contactEmail": "booking@windinthewillowsnashvilletn.com",
-    "contactPhone": "(555) 000-0000",
-    "website": "https://windinthewillowsnashvilletn.com",
+    "contactEmail": "booking@windinthewillows.com",
+    "website": "https://windinthewillows.com",
     "hasPA": true,
     "hasLighting": true,
     "description": "[Capacity: 350 guests] Verified live music venue in Nashville, TN. Contact for booking and production specs."
@@ -12294,7 +11342,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@winstonsbeachclub.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://winstonsbeachclub.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12312,7 +11359,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@wisehall.ca",
-    "contactPhone": "(555) 000-0000",
     "website": "https://wisehall.ca",
     "hasPA": true,
     "hasLighting": true,
@@ -12333,7 +11379,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Punk"
     ],
     "contactEmail": "booking@wonderballroom.com",
-    "contactPhone": "(555) 000-0000",
     "website": "www.wonderballroom.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12351,7 +11396,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@woolysdm.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://woolysdm.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12373,7 +11417,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "World"
     ],
     "contactEmail": "booking@wowhall.org",
-    "contactPhone": "(555) 000-0000",
     "website": "www.wowhall.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12391,7 +11434,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@wussows.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://wussows.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12409,7 +11451,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@xbklive.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://xbklive.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12427,7 +11468,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "yuccanorthbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://yuccanorth.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12445,7 +11485,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@yuccatap.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://yuccatap.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12463,7 +11502,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "booking@zanzabarlouisville.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://zanzabarlouisville.com",
     "hasPA": true,
     "hasLighting": true,
@@ -12475,13 +11513,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "2478 Fletcher Dr",
+    "address": "2478 Fletcher Dr, Los Angeles, CA 90039",
     "capacity": 300,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@zebulon.la",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(323) 522-3488",
     "website": "https://zebulon.la",
     "hasPA": true,
     "hasLighting": true,
@@ -12493,13 +11531,13 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
     "city": "Los Angeles",
     "state": "CA",
     "country": "US",
-    "address": "2478 Fletcher Dr",
+    "address": "2478 Fletcher Dr, Los Angeles, CA 90039",
     "capacity": 300,
     "genres": [
       "Live Music"
     ],
     "contactEmail": "booking@zebulon.la",
-    "contactPhone": "(555) 000-0000",
+    "contactPhone": "(323) 522-3488",
     "website": "https://zebulon.la",
     "hasPA": true,
     "hasLighting": true,
@@ -12517,7 +11555,6 @@ export const NATIONAL_SUPABASE_VENUES: Venue[] = [
       "Live Music"
     ],
     "contactEmail": "zenospubbooking@gmail.com",
-    "contactPhone": "(555) 000-0000",
     "website": "https://zenospub.com",
     "hasPA": true,
     "hasLighting": true,
