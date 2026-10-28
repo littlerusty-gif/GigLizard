@@ -10,7 +10,7 @@ import ReviewsModal from "./ReviewsModal";
 import { getRatingStats } from "../utils/reviewsManager";
 import { sanitizeInputText, escapeRegexSpecial, detectAutomatedBot, checkRapidHarvestingAttempt } from "../utils/antiScrape";
 import { getOwnerVenueEdits, getOwnerDeletedVenueIds, isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
-import { fetchProfiles, profileToVenue, getCachedProfiles, insertProfile } from "../lib/supabase";
+import { fetchProfiles, profileToVenue, getCachedProfiles, insertProfile, fetchAllVenuesFromDatabase, getCachedDatabaseVenues } from "../lib/supabase";
 import { CONTINENTAL_US_STATES } from "../constants/states";
 import { ProgrammaticVenueRoute, POPULAR_TOURING_CITIES, POPULAR_GENRE_CITY_ROUTES, parseProgrammaticVenuePath } from "../utils/venueSeoRoutes";
 import { useDirectoryCounts } from "../utils/directoryCounts";
@@ -143,8 +143,9 @@ export default function VenueDirectory({
         }
       }
 
-      // Query live registered venue profiles from Supabase
+      // Query live registered venue profiles and full database venues from Supabase
       let supabaseVenues: Venue[] = [];
+      let databaseVenues: Venue[] = getCachedDatabaseVenues();
       try {
         const cached = getCachedProfiles()
           .filter(p => (p.type || p.role) === "Venue")
@@ -157,8 +158,13 @@ export default function VenueDirectory({
             .filter(p => (p.type || p.role) === "Venue")
             .map(profileToVenue);
         }
+
+        const remoteDbVenues = await fetchAllVenuesFromDatabase();
+        if (isMounted && remoteDbVenues.length > 0) {
+          databaseVenues = remoteDbVenues;
+        }
       } catch (err) {
-        console.warn("Could not load Supabase venue profiles:", err);
+        console.warn("Could not load Supabase venues:", err);
       }
 
       let userVenueList: Venue[] = [];
@@ -180,26 +186,30 @@ export default function VenueDirectory({
         userVenueList = [userVenueObj];
       }
 
-      const rawMerged = [...userVenueList, ...supabaseVenues, ...customList, ...MUSIC_VENUES].filter(
+      const rawMerged = [...userVenueList, ...databaseVenues, ...supabaseVenues, ...customList, ...MUSIC_VENUES].filter(
         v => !(v as any).isPrivate && (v as any).venueType !== "house_show"
       );
       const deletedIds = new Set(getOwnerDeletedVenueIds());
       const ownerEdits = getOwnerVenueEdits();
 
-      const seenNames = new Set<string>();
+      const seenVenueKeys = new Set<string>();
       const deduplicatedVenues: Venue[] = [];
       for (let v of rawMerged) {
-        const key = v.name?.trim().toLowerCase();
-        if (deletedIds.has(v.id) || (key && deletedIds.has(key))) {
+        const nameKey = (v.name || "").trim().toLowerCase();
+        const cityKey = (v.city || "").trim().toLowerCase();
+        const stateKey = (v.state || "").trim().toUpperCase();
+        const compositeKey = `${nameKey}__${cityKey}__${stateKey}`;
+
+        if (deletedIds.has(v.id) || (nameKey && deletedIds.has(nameKey))) {
           continue;
         }
         if (ownerEdits[v.id]) {
           v = { ...v, ...ownerEdits[v.id] };
-        } else if (key && ownerEdits[key]) {
-          v = { ...v, ...ownerEdits[key] };
+        } else if (nameKey && ownerEdits[nameKey]) {
+          v = { ...v, ...ownerEdits[nameKey] };
         }
-        if (key && !seenNames.has(key)) {
-          seenNames.add(key);
+        if (compositeKey && !seenVenueKeys.has(compositeKey)) {
+          seenVenueKeys.add(compositeKey);
           deduplicatedVenues.push(v);
         }
       }
@@ -348,8 +358,22 @@ export default function VenueDirectory({
     }
 
     // 3. Search match
-    const text = `${venue.name} ${venue.city} ${venue.genres.join(" ")} ${venue.description}`.toLowerCase();
-    const matchesSearch = text.includes(searchTerm.toLowerCase());
+    let matchesSearch = true;
+    if (searchTerm.trim()) {
+      const targetText = `${venue.name} ${venue.city} ${venue.state || ""} ${venue.address} ${venue.genres.join(" ")} ${venue.description} ${venue.contactEmail}`.toLowerCase();
+      const cleanSearch = searchTerm.toLowerCase().replace(/[,]+/g, " ").trim();
+      const searchTokens = cleanSearch.split(/\s+/).filter(Boolean);
+      
+      matchesSearch = searchTokens.every(token => {
+        if (token === "ca" || token === "california") {
+          return venue.state?.toLowerCase() === "ca" || targetText.includes("ca") || targetText.includes("california");
+        }
+        if (token === "la") {
+          return (venue.city?.toLowerCase() === "los angeles") || (venue.state?.toLowerCase() === "la") || targetText.includes("la");
+        }
+        return targetText.includes(token);
+      });
+    }
 
     // 4. Capacity filter
     let matchesCapacity = true;

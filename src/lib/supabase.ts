@@ -1178,3 +1178,99 @@ export async function updateBandStagePlotUrl(params: {
 }
 
 
+const STORAGE_DATABASE_VENUES_CACHE = "giglizard_supabase_venues_cache_v1";
+
+/**
+ * Transforms a raw row from the public.venues table in Supabase into a typed Venue object
+ */
+export function supabaseRowToVenue(row: any): Venue {
+  let genres: string[] = ["Live Music"];
+  if (Array.isArray(row.genres_accepted) && row.genres_accepted.length > 0) {
+    genres = row.genres_accepted;
+  } else if (typeof row.genres_accepted === "string" && row.genres_accepted.trim()) {
+    try {
+      const parsed = JSON.parse(row.genres_accepted);
+      if (Array.isArray(parsed) && parsed.length > 0) genres = parsed;
+      else genres = row.genres_accepted.split(",").map((g: string) => g.trim()).filter(Boolean);
+    } catch {
+      genres = row.genres_accepted.split(",").map((g: string) => g.trim()).filter(Boolean);
+    }
+  }
+
+  const cleanState = (row.state || "").trim().toUpperCase();
+  const cleanCity = (row.city || "").trim();
+  const cleanAddress = (row.address || "").trim() || `${cleanCity}, ${cleanState}`;
+
+  return {
+    id: row.id || `venue-db-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: (row.name || "Live Music Venue").trim(),
+    city: cleanCity,
+    state: cleanState,
+    country: "US",
+    address: cleanAddress,
+    capacity: Number(row.capacity) || 150,
+    genres: genres.length > 0 ? genres : ["Live Music"],
+    contactEmail: (row.booking_email || row.email || "").trim(),
+    contactPhone: "(555) 000-0000",
+    website: (row.website || "").trim() || undefined,
+    hasPA: true,
+    hasLighting: true,
+    description: `[Capacity: ${row.capacity || 150} guests] Verified live music venue in ${cleanCity}, ${cleanState}.`
+  };
+}
+
+/**
+ * Retrieve cached database venues for instant synchronous initial render
+ */
+export function getCachedDatabaseVenues(): Venue[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_DATABASE_VENUES_CACHE);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Cache database venues to localStorage
+ */
+export function setCachedDatabaseVenues(venues: Venue[]) {
+  try {
+    localStorage.setItem(STORAGE_DATABASE_VENUES_CACHE, JSON.stringify(venues));
+  } catch (err) {
+    console.warn("[Supabase] Failed to cache database venues:", err);
+  }
+}
+
+/**
+ * Fetch all venues from the public.venues table in Supabase
+ */
+export async function fetchAllVenuesFromDatabase(): Promise<Venue[]> {
+  try {
+    const { data, error } = await supabase
+      .from("venues")
+      .select("*")
+      .order("name", { ascending: true })
+      .limit(2000);
+
+    if (error) {
+      console.warn("[Supabase] Notice querying venues table:", error.message);
+      return getCachedDatabaseVenues();
+    }
+
+    if (data && Array.isArray(data) && data.length > 0) {
+      const venues = data.map(supabaseRowToVenue);
+      setCachedDatabaseVenues(venues);
+      return venues;
+    }
+    return getCachedDatabaseVenues();
+  } catch (err) {
+    console.warn("[Supabase] Exception querying venues table:", err);
+    return getCachedDatabaseVenues();
+  }
+}
+
+
+

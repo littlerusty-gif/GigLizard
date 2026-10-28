@@ -62,17 +62,51 @@ export default function CityVenueDirectory({
   const stateCode = (programmaticRoute.stateCode || "TN").toUpperCase();
   const stateName = programmaticRoute.stateName || stateCode;
 
-  const [loading, setLoading] = useState(true);
-  const [venues, setVenues] = useState<VenueRecord[]>([]);
+  // Synchronously compute initial curated venue matches from MUSIC_VENUES
+  const initialLocalMatches = useMemo(() => {
+    return MUSIC_VENUES.filter(v => {
+      const matchCity = v.city?.toLowerCase() === city.toLowerCase() || v.address?.toLowerCase().includes(city.toLowerCase());
+      const matchState = v.state?.toUpperCase() === stateCode || v.address?.toUpperCase().includes(`, ${stateCode}`);
+      return matchCity && matchState;
+    }).map(lv => ({
+      id: lv.id,
+      name: lv.name,
+      city: lv.city || city,
+      state: lv.state || stateCode,
+      address: lv.address,
+      booking_email: lv.contactEmail,
+      website: lv.website,
+      capacity: lv.capacity || 200,
+      genres_accepted: lv.genres,
+      age_limit: "21+",
+      hasPA: lv.hasPA !== false,
+      hasLighting: lv.hasLighting !== false,
+      description: lv.description,
+      phone: lv.contactPhone
+    }));
+  }, [city, stateCode]);
+
+  const [loading, setLoading] = useState(() => initialLocalMatches.length === 0);
+  const [venues, setVenues] = useState<VenueRecord[]>(() => initialLocalMatches);
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<VenueRecord | null>(null);
+
+  // Keep venues in sync if city / stateCode route changes
+  useEffect(() => {
+    if (initialLocalMatches.length > 0) {
+      setVenues(initialLocalMatches);
+      setLoading(false);
+    }
+  }, [initialLocalMatches]);
 
   // Fetch venues for this specific city and state from Supabase
   useEffect(() => {
     let isMounted = true;
 
     async function loadCityVenues() {
-      setLoading(true);
+      if (initialLocalMatches.length === 0) {
+        setLoading(true);
+      }
       try {
         // 1. Query Supabase public.venues table
         const { data: supaVenues, error } = await supabase

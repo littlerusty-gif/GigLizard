@@ -512,11 +512,15 @@ function getProcessedVenuesList() {
   const seen = new Set<string>();
   const result: any[] = [];
   for (const v of allCurrentVenues) {
-    const key = v.name?.trim().toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const nameKey = (v.name || "").trim().toLowerCase();
+    const cityKey = (v.city || "").trim().toLowerCase();
+    const stateKey = (v.state || "").trim().toUpperCase();
+    const compositeKey = `${nameKey}__${cityKey}__${stateKey}`;
 
-    const override = serverVenueOverrides[v.id] || serverVenueOverrides[key];
+    if (seen.has(compositeKey)) continue;
+    seen.add(compositeKey);
+
+    const override = serverVenueOverrides[v.id] || serverVenueOverrides[nameKey];
     if (override) {
       result.push({ ...v, ...override });
     } else {

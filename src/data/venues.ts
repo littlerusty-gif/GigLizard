@@ -2,6 +2,7 @@ import { Venue } from "../types";
 import { WASHINGTON_VENUES } from "./waVenues";
 import { OREGON_VENUES } from "./orVenues";
 import { BC_VENUES } from "./bcVenues";
+import { NATIONAL_SUPABASE_VENUES } from "./nationalVenues";
 
 const NATIONAL_BASE_VENUES: Venue[] = [
   {
@@ -230,9 +231,26 @@ const NATIONAL_BASE_VENUES: Venue[] = [
   }
 ];
 
-export const MUSIC_VENUES: Venue[] = [
+const ALL_RAW_VENUES: Venue[] = [
   ...WASHINGTON_VENUES.map(v => ({ ...v, state: v.state || "WA", country: v.country || "US" })),
   ...OREGON_VENUES.map(v => ({ ...v, state: v.state || "OR", country: v.country || "US" })),
   ...BC_VENUES.map(v => ({ ...v, state: v.state || "BC", country: v.country || "CA" })),
-  ...NATIONAL_BASE_VENUES
+  ...NATIONAL_BASE_VENUES,
+  ...NATIONAL_SUPABASE_VENUES
 ];
+
+const seenVenueKeys = new Set<string>();
+export const MUSIC_VENUES: Venue[] = [];
+
+for (const venue of ALL_RAW_VENUES) {
+  const normName = (venue.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const normCity = (venue.city || "").trim().toLowerCase();
+  const normState = (venue.state || "").trim().toUpperCase();
+  const key = `${normName}__${normCity}__${normState}`;
+
+  if (!seenVenueKeys.has(key)) {
+    seenVenueKeys.add(key);
+    MUSIC_VENUES.push(venue);
+  }
+}
+
