@@ -9,6 +9,7 @@ interface IconProps {
   isSelected?: boolean;
   mixNumber?: number;
   theme?: "blueprint" | "stage" | "print";
+  kickType?: "single" | "dual";
 }
 
 /**
@@ -27,108 +28,247 @@ export const StageGearGraphic: React.FC<IconProps> = ({
   isDragging = false,
   isSelected = false,
   mixNumber = 1,
-  theme = "print"
+  theme = "print",
+  kickType = "single"
 }) => {
   const isPrint = theme === "print";
 
   const renderSvg = () => {
     switch (type) {
-      case "drum_kit":
+      case "drum_kit": {
+        const isDualKick = kickType === "dual";
         return (
-          <svg viewBox="0 0 140 140" className="w-full h-full select-none" fill="none">
-            <defs>
-              <filter id="gear-shadow" x="-10%" y="-10%" width="120%" height="120%">
-                <feDropShadow dx="0" dy="3" stdDeviation="3" floodOpacity="0.25" />
-              </filter>
-              <linearGradient id="drum-riser-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={isPrint ? "#f8fafc" : "#1e293b"} />
-                <stop offset="100%" stopColor={isPrint ? "#e2e8f0" : "#0f172a"} />
+          <div className="w-full h-full flex flex-col items-center justify-center relative">
+            <svg viewBox="0 0 140 140" className="w-full h-full select-none" fill="none">
+              <defs>
+                <filter id="gear-shadow" x="-10%" y="-10%" width="120%" height="120%">
+                  <feDropShadow dx="0" dy="3" stdDeviation="3" floodOpacity="0.25" />
+                </filter>
+                <linearGradient id="drum-riser-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={isPrint ? "#f8fafc" : "#1e293b"} />
+                  <stop offset="100%" stopColor={isPrint ? "#e2e8f0" : "#0f172a"} />
+                </linearGradient>
+                <radialGradient id="cymbal-gold-1" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#fef08a" />
+                  <stop offset="60%" stopColor="#eab308" />
+                  <stop offset="90%" stopColor="#ca8a04" />
+                  <stop offset="100%" stopColor="#a16207" />
+                </radialGradient>
+                <radialGradient id="cymbal-gold-2" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#fef9c3" />
+                  <stop offset="50%" stopColor="#facc15" />
+                  <stop offset="85%" stopColor="#d97706" />
+                  <stop offset="100%" stopColor="#92400e" />
+                </radialGradient>
+                <linearGradient id="chrome-rim" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#cbd5e1" />
+                  <stop offset="50%" stopColor="#ffffff" />
+                  <stop offset="100%" stopColor="#64748b" />
+                </linearGradient>
+              </defs>
+
+              {/* Defs for realistic drum kit styling matching user's reference image */}
+              <linearGradient id="drum-shell-lacquer" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#4a7c79" />
+                <stop offset="40%" stopColor="#649895" />
+                <stop offset="80%" stopColor="#3d6865" />
+                <stop offset="100%" stopColor="#2a4b48" />
               </linearGradient>
-              <radialGradient id="cymbal-gold-1" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#fef08a" />
-                <stop offset="60%" stopColor="#eab308" />
-                <stop offset="90%" stopColor="#ca8a04" />
-                <stop offset="100%" stopColor="#a16207" />
-              </radialGradient>
-              <radialGradient id="cymbal-gold-2" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#fef9c3" />
-                <stop offset="50%" stopColor="#facc15" />
-                <stop offset="85%" stopColor="#d97706" />
-                <stop offset="100%" stopColor="#92400e" />
-              </radialGradient>
-              <linearGradient id="chrome-rim" x1="0" y1="0" x2="1" y2="1">
+              <linearGradient id="chrome-lug" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#cbd5e1" />
                 <stop offset="50%" stopColor="#ffffff" />
-                <stop offset="100%" stopColor="#64748b" />
+                <stop offset="100%" stopColor="#94a3b8" />
               </linearGradient>
-            </defs>
+              <radialGradient id="kick-resonant-head" cx="45%" cy="45%" r="55%">
+                <stop offset="0%" stopColor="#1e293b" />
+                <stop offset="60%" stopColor="#0f172a" />
+                <stop offset="100%" stopColor="#020617" />
+              </radialGradient>
 
-            {/* Heavy-Duty Drum Riser Platform */}
-            <rect x="8" y="8" width="124" height="124" rx="10" fill="url(#drum-riser-grad)" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="2" filter="url(#gear-shadow)" />
-            {/* Riser Carpet Texture & Edging */}
-            <rect x="12" y="12" width="116" height="116" rx="7" fill="none" stroke={isPrint ? "#cbd5e1" : "#334155"} strokeWidth="1" strokeDasharray="3 3" />
-            <line x1="8" y1="8" x2="16" y2="16" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="1.5" />
-            <line x1="132" y1="8" x2="124" y2="16" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="1.5" />
-            <line x1="8" y1="132" x2="16" y2="124" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="1.5" />
-            <line x1="132" y1="132" x2="124" y2="124" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="1.5" />
+              {/* === ELEVATED CONCERT DRUM RISER PLATFORM === */}
+              {/* Main Deck Surface */}
+              <rect x="12" y="8" width="116" height="106" rx="4" fill="url(#drum-riser-grad)" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="1.8" filter="url(#gear-shadow)" />
+              {/* Deck Carpet Inset */}
+              <rect x="16" y="12" width="108" height="98" rx="2" fill="none" stroke={isPrint ? "#cbd5e1" : "#334155"} strokeWidth="0.8" strokeDasharray="3 3" />
+              {/* Front Fascia Drop (3D Depth) */}
+              <polygon points="12,114 12,122 128,122 128,114" fill={isPrint ? "#94a3b8" : "#334155"} stroke={isPrint ? "#64748b" : "#1e293b"} strokeWidth="1" />
+              <line x1="12" y1="114" x2="128" y2="114" stroke="#ffffff" strokeWidth="0.8" opacity="0.6" />
+              {/* Riser Front Legs with Rubber Feet */}
+              <rect x="16" y="122" width="5.5" height="12" rx="1" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
+              <rect x="15" y="131" width="7.5" height="3" rx="0.5" fill="#0f172a" />
+              <rect x="118.5" y="122" width="5.5" height="12" rx="1" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
+              <rect x="117.5" y="131" width="7.5" height="3" rx="0.5" fill="#0f172a" />
 
-            {/* Drum Throne Stool (Center Back) */}
-            <circle cx="70" cy="108" r="11" fill="#1e293b" stroke="#0f172a" strokeWidth="2.5" />
-            <circle cx="70" cy="108" r="9" fill="#334155" />
-            <circle cx="70" cy="108" r="2.5" fill="#94a3b8" />
+              {/* === DRUMMER'S THRONE (Upstage Center) === */}
+              <circle cx="70" cy="22" r="10.5" fill="#0f172a" stroke="#020617" strokeWidth="2" />
+              <circle cx="70" cy="22" r="8.5" fill="#1e293b" />
+              <circle cx="70" cy="22" r="2.8" fill="#334155" stroke="url(#chrome-rim)" strokeWidth="0.8" />
 
-            {/* Kick / Bass Drum (Facing Downstage) */}
-            <rect x="52" y="44" width="36" height="38" rx="6" fill="#0f172a" stroke="#020617" strokeWidth="2.5" />
-            <circle cx="70" cy="63" r="14" fill="#1e293b" stroke="url(#chrome-rim)" strokeWidth="2" />
-            {/* Resonance Hole */}
-            <circle cx="78" cy="67" r="4" fill="#000000" stroke="#475569" strokeWidth="1" />
-            <text x="70" y="62" fontSize="5" fontWeight="900" fill="#94a3b8" textAnchor="middle" letterSpacing="0.1em">KICK</text>
+              {/* === BASS DRUM(S) / KICK DRUM(S) (Facing Downstage To Crowd) === */}
+              {isDualKick ? (
+                /* --- DUAL KICK SETUP (Two Identical Deep Bass Drums from Reference Image) --- */
+                <g id="dual-kick-drums">
+                  {/* Left Kick Drum 1 */}
+                  <g id="kick-1">
+                    <line x1="32" y1="94" x2="24" y2="103" stroke="url(#chrome-rim)" strokeWidth="2.4" strokeLinecap="round" />
+                    <circle cx="24" cy="103" r="1.6" fill="#0f172a" />
+                    <rect x="32" y="52" width="34" height="46" rx="6" fill="url(#drum-shell-lacquer)" stroke="#0f172a" strokeWidth="2.4" filter="url(#gear-shadow)" />
+                    <circle cx="49" cy="74" r="14.5" fill="url(#kick-resonant-head)" stroke="url(#chrome-rim)" strokeWidth="2.2" />
+                    {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+                      <circle
+                        key={deg}
+                        cx={49 + 14.3 * Math.cos((deg * Math.PI) / 180)}
+                        cy={74 + 14.3 * Math.sin((deg * Math.PI) / 180)}
+                        r="1.2"
+                        fill="#ffffff"
+                        stroke="#334155"
+                        strokeWidth="0.5"
+                      />
+                    ))}
+                    <circle cx="56" cy="78" r="3.5" fill="#000000" stroke="#64748b" strokeWidth="1" />
+                    <rect x="42" y="69.5" width="14" height="5" rx="1" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.6" />
+                    <text x="49" y="73.5" fontSize="4" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.08em">KICK 1</text>
+                  </g>
 
-            {/* Snare Drum (Player's Left / Stage Right) */}
-            <circle cx="44" cy="86" r="13" fill="#ffffff" stroke="#0f172a" strokeWidth="2.5" />
-            <circle cx="44" cy="86" r="11.5" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1" />
-            <circle cx="44" cy="86" r="4" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.8" />
-            <line x1="33" y1="86" x2="55" y2="86" stroke="#94a3b8" strokeWidth="1" strokeDasharray="1 1" />
-            <text x="44" y="87" fontSize="4.5" fontWeight="bold" fill="#64748b" textAnchor="middle">SNARE</text>
+                  {/* Right Kick Drum 2 */}
+                  <g id="kick-2">
+                    <line x1="108" y1="94" x2="116" y2="103" stroke="url(#chrome-rim)" strokeWidth="2.4" strokeLinecap="round" />
+                    <circle cx="116" cy="103" r="1.6" fill="#0f172a" />
+                    <rect x="74" y="52" width="34" height="46" rx="6" fill="url(#drum-shell-lacquer)" stroke="#0f172a" strokeWidth="2.4" filter="url(#gear-shadow)" />
+                    <circle cx="91" cy="74" r="14.5" fill="url(#kick-resonant-head)" stroke="url(#chrome-rim)" strokeWidth="2.2" />
+                    {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+                      <circle
+                        key={deg}
+                        cx={91 + 14.3 * Math.cos((deg * Math.PI) / 180)}
+                        cy={74 + 14.3 * Math.sin((deg * Math.PI) / 180)}
+                        r="1.2"
+                        fill="#ffffff"
+                        stroke="#334155"
+                        strokeWidth="0.5"
+                      />
+                    ))}
+                    <circle cx="98" cy="78" r="3.5" fill="#000000" stroke="#64748b" strokeWidth="1" />
+                    <rect x="84" y="69.5" width="14" height="5" rx="1" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.6" />
+                    <text x="91" y="73.5" fontSize="4" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.08em">KICK 2</text>
+                  </g>
+                </g>
+              ) : (
+                /* --- SINGLE KICK SETUP (Identical Kit, One Centered Bass Drum) --- */
+                <g id="single-kick-drum">
+                  <line x1="48" y1="94" x2="40" y2="104" stroke="url(#chrome-rim)" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="40" cy="104" r="1.7" fill="#0f172a" />
+                  <line x1="92" y1="94" x2="100" y2="104" stroke="url(#chrome-rim)" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="100" cy="104" r="1.7" fill="#0f172a" />
+                  <rect x="49" y="52" width="42" height="48" rx="7" fill="url(#drum-shell-lacquer)" stroke="#0f172a" strokeWidth="2.5" filter="url(#gear-shadow)" />
+                  <circle cx="70" cy="75" r="16.5" fill="url(#kick-resonant-head)" stroke="url(#chrome-rim)" strokeWidth="2.4" />
+                  {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map((deg) => (
+                    <circle
+                      key={deg}
+                      cx={70 + 16.2 * Math.cos((deg * Math.PI) / 180)}
+                      cy={75 + 16.2 * Math.sin((deg * Math.PI) / 180)}
+                      r="1.2"
+                      fill="#ffffff"
+                      stroke="#334155"
+                      strokeWidth="0.5"
+                    />
+                  ))}
+                  <circle cx="79" cy="80" r="4.2" fill="#000000" stroke="#64748b" strokeWidth="1.2" />
+                  <rect x="62" y="70" width="16" height="5.5" rx="1" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.8" />
+                  <text x="70" y="74.2" fontSize="4.5" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.1em">KICK</text>
+                </g>
+              )}
 
-            {/* Rack Tom 1 (High Tom) */}
-            <circle cx="54" cy="38" r="9.5" fill="#f8fafc" stroke="#0f172a" strokeWidth="2" />
-            <circle cx="54" cy="38" r="7.5" fill="#e2e8f0" />
+              {/* === ELECTRONIC SAMPLE MULTI-PAD (Left) === */}
+              <g id="electronic-sample-pad">
+                <rect x="15" y="15" width="18" height="24" rx="2" fill="#18181b" stroke="#3f3f46" strokeWidth="1.5" />
+                <rect x="17" y="18" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
+                <rect x="22" y="18" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
+                <rect x="27" y="18" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
+                <rect x="17" y="25" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
+                <rect x="22" y="25" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
+                <rect x="27" y="25" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
+                <rect x="17" y="32.5" width="14" height="3.5" rx="0.5" fill="#0284c7" opacity="0.85" />
+              </g>
 
-            {/* Rack Tom 2 (Mid Tom) */}
-            <circle cx="86" cy="38" r="10.5" fill="#f8fafc" stroke="#0f172a" strokeWidth="2" />
-            <circle cx="86" cy="38" r="8.5" fill="#e2e8f0" />
+              {/* === SNARE DRUM (Player's Left / Stage Right) === */}
+              <g id="snare-drum">
+                <circle cx="43" cy="72" r="13" fill="#ffffff" stroke="#0f172a" strokeWidth="2.5" filter="url(#gear-shadow)" />
+                <circle cx="43" cy="72" r="11.5" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.5" />
+                <line x1="32" y1="72" x2="54" y2="72" stroke="#94a3b8" strokeWidth="1" strokeDasharray="1.5 1.5" />
+                <rect x="29" y="70.5" width="2" height="3" fill="#cbd5e1" stroke="#334155" strokeWidth="0.5" />
+                <text x="43" y="73.5" fontSize="4.5" fontWeight="900" fill="#475569" textAnchor="middle">SNARE</text>
+              </g>
 
-            {/* Floor Tom (Low Tom - Player's Right / Stage Left) */}
-            <circle cx="98" cy="84" r="14" fill="#f8fafc" stroke="#0f172a" strokeWidth="2.5" />
-            <circle cx="98" cy="84" r="12" fill="#e2e8f0" />
-            <text x="98" y="85.5" fontSize="4.5" fontWeight="bold" fill="#64748b" textAnchor="middle">FLOOR</text>
+              {/* === MOUNTED RACK TOMS (Matching teal lacquer & white heads from reference) === */}
+              {/* Tom 1 (High Tom) */}
+              <g id="tom-1">
+                <circle cx="56" cy="42" r="10.5" fill="#f8fafc" stroke="#2a4b48" strokeWidth="2.2" />
+                <circle cx="56" cy="42" r="9" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                <text x="56" y="43.5" fontSize="4" fontWeight="800" fill="#64748b" textAnchor="middle">TOM 1</text>
+              </g>
 
-            {/* Hi-Hat Cymbals (Stage Right) */}
-            <circle cx="26" cy="72" r="11" fill="url(#cymbal-gold-1)" stroke="#854d0e" strokeWidth="2" filter="url(#gear-shadow)" />
-            <circle cx="26" cy="72" r="3" fill="#ca8a04" stroke="#fef08a" strokeWidth="1" />
-            <circle cx="26" cy="72" r="0.8" fill="#451a03" />
+              {/* Tom 2 (Mid Tom) */}
+              <g id="tom-2">
+                <circle cx="84" cy="42" r="11" fill="#f8fafc" stroke="#2a4b48" strokeWidth="2.2" />
+                <circle cx="84" cy="42" r="9.5" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                <text x="84" y="43.5" fontSize="4" fontWeight="800" fill="#64748b" textAnchor="middle">TOM 2</text>
+              </g>
 
-            {/* Crash Cymbal L (Overhead Left) */}
-            <circle cx="28" cy="34" r="14" fill="url(#cymbal-gold-2)" stroke="#92400e" strokeWidth="2" filter="url(#gear-shadow)" />
-            <circle cx="28" cy="34" r="3.5" fill="#b45309" stroke="#fef08a" strokeWidth="1" />
+              {/* Floor Tom (Low Tom on Right) */}
+              <g id="floor-tom">
+                <circle cx="104" cy="74" r="14.5" fill="#f8fafc" stroke="#2a4b48" strokeWidth="2.6" filter="url(#gear-shadow)" />
+                <circle cx="104" cy="74" r="13" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.5" />
+                {[0, 60, 120, 180, 240, 300].map((deg) => (
+                  <circle
+                    key={deg}
+                    cx={104 + 13 * Math.cos((deg * Math.PI) / 180)}
+                    cy={74 + 13 * Math.sin((deg * Math.PI) / 180)}
+                    r="1"
+                    fill="#ffffff"
+                    stroke="#475569"
+                    strokeWidth="0.5"
+                  />
+                ))}
+                <text x="104" y="75.5" fontSize="4.5" fontWeight="900" fill="#64748b" textAnchor="middle">FLOOR</text>
+              </g>
 
-            {/* Ride Cymbal R (Stage Left) */}
-            <circle cx="112" cy="50" r="16" fill="url(#cymbal-gold-1)" stroke="#854d0e" strokeWidth="2" filter="url(#gear-shadow)" />
-            <circle cx="112" cy="50" r="4.5" fill="#ca8a04" stroke="#fef08a" strokeWidth="1" />
-            <circle cx="112" cy="50" r="1" fill="#451a03" />
+              {/* === HIGH-GLOSS GOLD LATHED CYMBALS ON CHROME BOOM STANDS === */}
+              {/* Hi-Hat (Stage Right / Audience Left) */}
+              <g id="hi-hat-cymbals">
+                <circle cx="23" cy="62" r="12" fill="url(#cymbal-gold-1)" stroke="#854d0e" strokeWidth="2" filter="url(#gear-shadow)" />
+                <circle cx="23" cy="62" r="9" fill="none" stroke="#ca8a04" strokeWidth="0.6" strokeDasharray="2 1" />
+                <circle cx="23" cy="62" r="3" fill="#eab308" stroke="#fef08a" strokeWidth="1" />
+                <circle cx="23" cy="62" r="1" fill="#1e293b" />
+              </g>
 
-            {/* Electronic Sample Pad (Roland SPD-SX style on Left) */}
-            <rect x="18" y="94" width="18" height="15" rx="2" fill="#18181b" stroke="#3f3f46" strokeWidth="1.5" />
-            {/* 6 sample trigger pads */}
-            <rect x="20" y="96" width="4" height="5" rx="0.5" fill="#3f3f46" />
-            <rect x="25" y="96" width="4" height="5" rx="0.5" fill="#3f3f46" />
-            <rect x="30" y="96" width="4" height="5" rx="0.5" fill="#3f3f46" />
-            <rect x="20" y="102" width="4" height="5" rx="0.5" fill="#3f3f46" />
-            <rect x="25" y="102" width="4" height="5" rx="0.5" fill="#3f3f46" />
-            <rect x="30" y="102" width="4" height="5" rx="0.5" fill="#3f3f46" />
+              {/* Left Crash Cymbal (High Boom Stand from Reference) */}
+              <g id="left-crash">
+                <circle cx="34" cy="33" r="15" fill="url(#cymbal-gold-2)" stroke="#92400e" strokeWidth="2.2" filter="url(#gear-shadow)" />
+                <circle cx="34" cy="33" r="11" fill="none" stroke="#d97706" strokeWidth="0.8" strokeDasharray="3 1" />
+                <circle cx="34" cy="33" r="3.8" fill="#facc15" stroke="#fef9c3" strokeWidth="1" />
+                <circle cx="34" cy="33" r="1.2" fill="#1e293b" />
+              </g>
+
+              {/* Right Splash / Crash (High Boom Stand from Reference) */}
+              <g id="right-splash">
+                <circle cx="106" cy="33" r="13" fill="url(#cymbal-gold-2)" stroke="#92400e" strokeWidth="2" filter="url(#gear-shadow)" />
+                <circle cx="106" cy="33" r="9.5" fill="none" stroke="#d97706" strokeWidth="0.7" strokeDasharray="2.5 1" />
+                <circle cx="106" cy="33" r="3.2" fill="#facc15" stroke="#fef9c3" strokeWidth="1" />
+                <circle cx="106" cy="33" r="1" fill="#1e293b" />
+              </g>
+
+              {/* Right Ride Cymbal (Stage Left / Audience Right) */}
+              <g id="ride-cymbal">
+                <circle cx="116" cy="54" r="17" fill="url(#cymbal-gold-1)" stroke="#854d0e" strokeWidth="2.4" filter="url(#gear-shadow)" />
+                <circle cx="116" cy="54" r="13" fill="none" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="3 1.5" />
+                <circle cx="116" cy="54" r="9" fill="none" stroke="#ca8a04" strokeWidth="0.7" strokeDasharray="2 1" />
+                <circle cx="116" cy="54" r="4.5" fill="#eab308" stroke="#fef08a" strokeWidth="1.2" />
+                <circle cx="116" cy="54" r="1.4" fill="#1e293b" />
+              </g>
           </svg>
-        );
+        </div>
+      );
+    }
 
       case "monitor_wedge":
         return (

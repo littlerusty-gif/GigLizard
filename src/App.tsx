@@ -4,7 +4,7 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { Venue, StageElement, TechRider, PosterConfig, UserAccount } from "./types";
 import Home from "./components/Home";
 import VenueDirectory from "./components/VenueDirectory";
-import StagePlotDesigner, { PRESET_PROFESSIONAL_LIVE_BAND } from "./components/StagePlotDesigner";
+import StagePlotDesigner, { PRESET_ROCK_4PIECE, PRESET_PROFESSIONAL_LIVE_BAND } from "./components/StagePlotDesigner";
 import TechRiderBuilder from "./components/TechRiderBuilder";
 import PosterDesigner from "./components/PosterDesigner";
 import BandAdvisor from "./components/BandAdvisor";
@@ -40,6 +40,7 @@ import {
 } from "./utils/adminMigration";
 import { ProgrammaticVenueRoute, parseProgrammaticVenuePath } from "./utils/venueSeoRoutes";
 import { useDirectoryCounts } from "./utils/directoryCounts";
+import { updatePageSeo } from "./utils/seoManager";
 import { 
   Music, MapPin, Sliders, FileText, Image, MessageSquare, 
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
@@ -428,6 +429,11 @@ export default function GigLizardApp() {
         window.scrollTo(0, 0);
       } catch (__) {}
     }
+  }, [activeTab]);
+
+  // Synchronize document title, meta tags, OpenGraph, and canonical link with active view
+  useEffect(() => {
+    updatePageSeo(activeTab);
   }, [activeTab]);
 
   // Track whether navigation state change originated from a browser popstate event
@@ -1143,7 +1149,7 @@ export default function GigLizardApp() {
   const [selectedVenueId, setSelectedVenueId] = useState<string>("showbox-seattle");
 
   // Stage items configuration
-  const [stageElements, setStageElements] = useState<StageElement[]>(PRESET_PROFESSIONAL_LIVE_BAND);
+  const [stageElements, setStageElements] = useState<StageElement[]>(PRESET_ROCK_4PIECE);
 
   // Tech rider inputs
   const [techRider, setTechRider] = useState<TechRider>({

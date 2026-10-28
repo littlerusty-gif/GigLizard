@@ -6,7 +6,7 @@ import {
   Download, Share2, Check, ExternalLink, Printer, Link, FileText,
   Image as ImageIcon, Eye, Phone, Mail, MapPin, Calendar, Clock,
   Volume2, ShieldCheck, Zap, Radio, Layers, Copy, Compass, Grid,
-  Maximize2, Cpu, Wrench, ChevronRight
+  Maximize2, Cpu, Wrench, ChevronRight, LogIn
 } from "lucide-react";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
@@ -79,62 +79,77 @@ const TOOLBOX_TEMPLATES: ToolboxItem[] = [
 export const PRESET_PROFESSIONAL_LIVE_BAND: StageElement[] = [
   // Upstage Center: Drums on Riser
   { id: "drums-kit", type: "drum_kit", label: "Drums & Riser", x: 50, y: 22, rotation: 0 },
-  { id: "drum-pad", type: "drum_pad", label: "SPD Sample Pad", x: 41, y: 16, rotation: 0 },
-  { id: "mon-drum", type: "monitor_wedge", label: "Drum Mix", x: 62, y: 18, rotation: 0, mixNumber: 5 },
-  { id: "iem-drum", type: "wired_iem", label: "Wired In-Ear", x: 69, y: 19, rotation: 0 },
+  { id: "drum-pad", type: "drum_pad", label: "SPD Sample Pad", x: 39, y: 17, rotation: 0 },
+  { id: "mon-drum", type: "monitor_wedge", label: "Drum Mix", x: 63, y: 18, rotation: 0, mixNumber: 5 },
+  { id: "iem-drum", type: "wired_iem", label: "Wired In-Ear", x: 71, y: 19, rotation: 0 },
 
   // Upstage Stage Right (Audience Left): Keys, Sax, DI & Out 4
-  { id: "sax-horns", type: "saxophone", label: "Saxophone", x: 32, y: 17, rotation: 0 },
-  { id: "keys-rig", type: "keyboard_rig", label: "Keyboards", x: 22, y: 24, rotation: 0 },
-  { id: "keys-di-1", type: "di_box", label: "Keys DI L", x: 32, y: 23, rotation: 0 },
-  { id: "keys-di-2", type: "di_box", label: "Keys DI R", x: 32, y: 28, rotation: 0 },
-  { id: "mon-keys", type: "monitor_wedge", label: "Keys Mix", x: 13, y: 19, rotation: 0, mixNumber: 4 },
-  { id: "keys-amp", type: "guitar_amp", label: "Side Fill", x: 9, y: 28, rotation: 0 },
+  { id: "sax-horns", type: "saxophone", label: "Saxophone", x: 31, y: 18, rotation: 0 },
+  { id: "keys-rig", type: "keyboard_rig", label: "Keyboards", x: 18, y: 25, rotation: 0 },
+  { id: "keys-di-1", type: "di_box", label: "Keys DI L", x: 28, y: 24, rotation: 0 },
+  { id: "keys-di-2", type: "di_box", label: "Keys DI R", x: 28, y: 31, rotation: 0 },
+  { id: "mon-keys", type: "monitor_wedge", label: "Keys Mix", x: 10, y: 18, rotation: 0, mixNumber: 4 },
+  { id: "keys-amp", type: "guitar_amp", label: "Side Fill", x: 7, y: 29, rotation: 0 },
 
   // Downstage Stage Right (Audience Left): Electric Guitar, Vox SR & Out 1
-  { id: "gtr-elec", type: "electric_guitar", label: "Electric Guitar", x: 15, y: 46, rotation: 0 },
-  { id: "vox-sr", type: "vocal_mic", label: "Vocal SR", x: 23, y: 47, rotation: 0 },
-  { id: "mon-gtr", type: "monitor_wedge", label: "Guitar Mix", x: 16, y: 57, rotation: 0, mixNumber: 1 },
+  { id: "gtr-elec", type: "electric_guitar", label: "Electric Guitar", x: 16, y: 62, rotation: 0 },
+  { id: "vox-sr", type: "vocal_mic", label: "Vocal SR", x: 24, y: 64, rotation: 0 },
+  { id: "mon-gtr", type: "monitor_wedge", label: "Guitar Mix", x: 17, y: 79, rotation: 0, mixNumber: 1 },
 
   // Downstage Center: Lead Vox, Wireless IEM, Dual Center Wedges (Out 2)
-  { id: "lead-vox", type: "vocal_mic", label: "Lead Vocal", x: 48, y: 50, rotation: 0 },
-  { id: "iem-lead", type: "iem_transmitter", label: "Wireless In-Ear", x: 54, y: 47, rotation: 0 },
-  { id: "mon-center", type: "dual_wedge", label: "Lead Mix Dual", x: 48, y: 59, rotation: 0, mixNumber: 2 },
+  { id: "lead-vox", type: "vocal_mic", label: "Lead Vocal", x: 48, y: 63, rotation: 0 },
+  { id: "iem-lead", type: "iem_transmitter", label: "Wireless In-Ear", x: 56, y: 60, rotation: 0 },
+  { id: "mon-center", type: "dual_wedge", label: "Lead Mix Dual", x: 48, y: 79, rotation: 0, mixNumber: 2 },
 
   // Downstage Stage Left (Audience Right): Bass Guitar, Bass DI & Out 3
-  { id: "bass-gtr", type: "bass_guitar", label: "Bass Guitar", x: 87, y: 46, rotation: 0 },
-  { id: "bass-di", type: "di_box", label: "Bass DI", x: 80, y: 55, rotation: 0 },
-  { id: "mon-bass", type: "monitor_wedge", label: "Bass Mix", x: 88, y: 57, rotation: 0, mixNumber: 3 },
+  { id: "bass-gtr", type: "bass_guitar", label: "Bass Guitar", x: 84, y: 62, rotation: 0 },
+  { id: "bass-di", type: "di_box", label: "Bass DI", x: 76, y: 74, rotation: 0 },
+  { id: "mon-bass", type: "monitor_wedge", label: "Bass Mix", x: 85, y: 79, rotation: 0, mixNumber: 3 },
 
   // Upstage Stage Left (Audience Right): Laptop Playback Rig & Bass Cab
-  { id: "laptop-rig", type: "laptop_rig", label: "Laptop / Tracks", x: 91, y: 16, rotation: 0 },
-  { id: "bass-cab", type: "bass_amp", label: "Bass Rig", x: 85, y: 28, rotation: 0 }
+  { id: "laptop-rig", type: "laptop_rig", label: "Laptop / Tracks", x: 91, y: 17, rotation: 0 },
+  { id: "bass-cab", type: "bass_amp", label: "Bass Rig", x: 86, y: 29, rotation: 0 }
 ];
 
-const PRESET_ROCK_4PIECE: StageElement[] = [
-  { id: "drums-1", type: "drum_kit", label: "Drums & Riser", x: 50, y: 22, rotation: 0 },
-  { id: "mon-drum", type: "monitor_wedge", label: "Drum Mix", x: 62, y: 19, rotation: 0, mixNumber: 4 },
-  { id: "gtr-amp", type: "guitar_amp", label: "Guitar Amp", x: 18, y: 30, rotation: 0 },
-  { id: "gtr-elec", type: "electric_guitar", label: "Guitar", x: 20, y: 48, rotation: 0 },
-  { id: "mon-gtr", type: "monitor_wedge", label: "Guitar Mix", x: 20, y: 60, rotation: 0, mixNumber: 2 },
-  { id: "lead-vox", type: "vocal_mic", label: "Lead Vox", x: 50, y: 50, rotation: 0 },
-  { id: "mon-vox", type: "monitor_wedge", label: "Lead Mix", x: 50, y: 60, rotation: 0, mixNumber: 1 },
-  { id: "bass-amp", type: "bass_amp", label: "Bass Amp", x: 82, y: 30, rotation: 0 },
-  { id: "bass-gtr", type: "bass_guitar", label: "Bass", x: 80, y: 48, rotation: 0 },
-  { id: "mon-bass", type: "monitor_wedge", label: "Bass Mix", x: 80, y: 60, rotation: 0, mixNumber: 3 }
+export const PRESET_ROCK_4PIECE: StageElement[] = [
+  { id: "drums-1", type: "drum_kit", label: "Drums & Riser", x: 50, y: 22, rotation: 0, kickType: "single" },
+  { id: "mon-drum", type: "monitor_wedge", label: "Drum Mix", x: 63, y: 19, rotation: 0, mixNumber: 4 },
+  { id: "gtr-amp", type: "guitar_amp", label: "Guitar Amp", x: 17, y: 28, rotation: 0 },
+  { id: "gtr-elec", type: "electric_guitar", label: "Guitar", x: 20, y: 62, rotation: 0 },
+  { id: "mon-gtr", type: "monitor_wedge", label: "Guitar Mix", x: 20, y: 79, rotation: 0, mixNumber: 2 },
+  { id: "lead-vox", type: "vocal_mic", label: "Lead Vox", x: 50, y: 63, rotation: 0 },
+  { id: "mon-vox", type: "monitor_wedge", label: "Lead Mix", x: 50, y: 79, rotation: 0, mixNumber: 1 },
+  { id: "bass-amp", type: "bass_amp", label: "Bass Amp", x: 83, y: 28, rotation: 0 },
+  { id: "bass-gtr", type: "bass_guitar", label: "Bass", x: 80, y: 62, rotation: 0 },
+  { id: "mon-bass", type: "monitor_wedge", label: "Bass Mix", x: 80, y: 79, rotation: 0, mixNumber: 3 }
+];
+
+export const DEFAULT_ROCK_INPUT_CHANNELS: InputChannel[] = [
+  { channel: 1, instrument: "KICK", micOrDi: "SHURE B52", stand: "Short Boom", phantomPower: false, notes: "Punchy, fast gate" },
+  { channel: 2, instrument: "SNARE UP", micOrDi: "SM57", stand: "Short Boom", phantomPower: false, notes: "Top snare head" },
+  { channel: 3, instrument: "HIHAT", micOrDi: "BETA 81", stand: "Short Boom", phantomPower: true, notes: "Tight cardioid condenser" },
+  { channel: 4, instrument: "TOM 1", micOrDi: "E604 / B56A", stand: "None", phantomPower: false, notes: "Rack tom rim clip" },
+  { channel: 5, instrument: "TOM 2", micOrDi: "BETA 52", stand: "Short Boom", phantomPower: false, notes: "Floor tom resonance" },
+  { channel: 6, instrument: "OH L", micOrDi: "KM184 / KSM32", stand: "Tall Boom", phantomPower: true, notes: "Stereo overhead left" },
+  { channel: 7, instrument: "OH R", micOrDi: "KM184 / KSM32", stand: "Tall Boom", phantomPower: true, notes: "Stereo overhead right" },
+  { channel: 8, instrument: "BASS (DI)", micOrDi: "RADIAL J48", stand: "None", phantomPower: true, notes: "Active direct box pre-EQ" },
+  { channel: 9, instrument: "BASS MIC", micOrDi: "AKG D112", stand: "Short Boom", phantomPower: false, notes: "Cab speaker cone mic" },
+  { channel: 10, instrument: "E.GUITAR", micOrDi: "SM57", stand: "Short Boom", phantomPower: false, notes: "Combo guitar amp cone" },
+  { channel: 11, instrument: "LEAD VOX", micOrDi: "BETA 58A", stand: "Tall Boom", phantomPower: false, notes: "Center frontline" },
+  { channel: 12, instrument: "GUITAR VOX", micOrDi: "SM58", stand: "Tall Boom", phantomPower: false, notes: "Stage right backing vocal" }
 ];
 
 const PRESET_ACOUSTIC_TRIO: StageElement[] = [
   { id: "cajon-drums", type: "drum_kit", label: "Percussion", x: 50, y: 24, rotation: 0 },
-  { id: "mon-cajon", type: "monitor_wedge", label: "Perc Mix", x: 50, y: 36, rotation: 0, mixNumber: 3 },
-  { id: "acoustic-gtr", type: "acoustic_guitar", label: "Acoustic Gtr", x: 24, y: 48, rotation: 0 },
-  { id: "vox-sr", type: "vocal_mic", label: "Vox SR", x: 24, y: 42, rotation: 0 },
-  { id: "mon-sr", type: "monitor_wedge", label: "Gtr Mix", x: 24, y: 58, rotation: 0, mixNumber: 1 },
-  { id: "di-acoustic", type: "di_box", label: "Acoustic DI", x: 16, y: 48, rotation: 0 },
-  { id: "bass-rig", type: "bass_amp", label: "Upright Bass", x: 76, y: 48, rotation: 0 },
-  { id: "vox-sl", type: "vocal_mic", label: "Vox SL", x: 76, y: 42, rotation: 0 },
-  { id: "mon-sl", type: "monitor_wedge", label: "Bass Mix", x: 76, y: 58, rotation: 0, mixNumber: 2 },
-  { id: "di-bass", type: "di_box", label: "Bass DI", x: 84, y: 48, rotation: 0 }
+  { id: "mon-cajon", type: "monitor_wedge", label: "Perc Mix", x: 50, y: 38, rotation: 0, mixNumber: 3 },
+  { id: "acoustic-gtr", type: "acoustic_guitar", label: "Acoustic Gtr", x: 24, y: 62, rotation: 0 },
+  { id: "vox-sr", type: "vocal_mic", label: "Vox SR", x: 24, y: 55, rotation: 0 },
+  { id: "mon-sr", type: "monitor_wedge", label: "Gtr Mix", x: 24, y: 79, rotation: 0, mixNumber: 1 },
+  { id: "di-acoustic", type: "di_box", label: "Acoustic DI", x: 15, y: 62, rotation: 0 },
+  { id: "bass-rig", type: "bass_amp", label: "Upright Bass", x: 76, y: 62, rotation: 0 },
+  { id: "vox-sl", type: "vocal_mic", label: "Vox SL", x: 76, y: 55, rotation: 0 },
+  { id: "mon-sl", type: "monitor_wedge", label: "Bass Mix", x: 76, y: 79, rotation: 0, mixNumber: 2 },
+  { id: "di-bass", type: "di_box", label: "Bass DI", x: 85, y: 62, rotation: 0 }
 ];
 
 /**
@@ -174,6 +189,7 @@ export default function StagePlotDesigner({
 }: StagePlotDesignerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const exportCardRef = useRef<HTMLDivElement>(null);
+  const dragOffset = useRef({ x: 0, y: 0 });
   
   // Selection & drag state
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -181,46 +197,102 @@ export default function StagePlotDesigner({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [snapToGrid, setSnapToGrid] = useState(true);
-  // Default to print theme (Studio White) for crystal-clear readability
-  const [stageTheme, setStageTheme] = useState<"blueprint" | "stage" | "print">("print");
-  const [activeToolboxTab, setActiveToolboxTab] = useState<"all" | "backline" | "mics" | "monitoring">("all");
-  
-  // Channel Input List state
-  const [inputChannels, setInputChannels] = useState<InputChannel[]>(DEFAULT_INPUT_CHANNELS);
-  const [monitorNotes, setMonitorNotes] = useState<string>(
-    "6 units 12\" monitors. They must all be the same model and with independent sends."
-  );
-  const [paNotes, setPaNotes] = useState<string>(
-    "PA equipment adjusted and sufficient to cover the entire audience area with a response that is as uniform as possible on all frequencies and a minimum pressure of 90 dB."
-  );
-  const [techContactPhone, setTechContactPhone] = useState<string>("(206) 628-3151");
-  const [prodContactPhone, setProdContactPhone] = useState<string>("(206) 628-3152");
-
-  // Persistence, Export & Sharing state
+  const [activeTabSection, setActiveTabSection] = useState<"patch" | "table" | "specs">("patch");
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [stagePlotUrl, setStagePlotUrl] = useState<string | null>(null);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [activeTabSection, setActiveTabSection] = useState<"patch" | "table" | "specs">("patch");
-  
-  // Toast notifications
   const [saveToast, setSaveToast] = useState<{ show: boolean; message: string; type: "success" | "error" | "info" }>({
     show: false,
     message: "",
     type: "success"
   });
 
-  const dragOffset = useRef({ x: 0, y: 0 });
+  // Default to print theme (Studio White) for crystal-clear readability
+  const [stageTheme, setStageTheme] = useState<"blueprint" | "stage" | "print">("print");
+  const [activeToolboxTab, setActiveToolboxTab] = useState<"all" | "backline" | "mics" | "monitoring">("all");
+  
+  // Channel Input List state - defaults to 4-piece rock band
+  const [inputChannels, setInputChannels] = useState<InputChannel[]>(DEFAULT_ROCK_INPUT_CHANNELS);
 
-  // Effective Band identification
+  // Monitor unit count calculated directly from placed stage elements (dual_wedge counts as 2 units)
+  const monitorUnitCount = useMemo(() => {
+    return elements.reduce((acc, el) => {
+      if (el.type === "monitor_wedge") return acc + 1;
+      if (el.type === "dual_wedge") return acc + 2;
+      return acc;
+    }, 0);
+  }, [elements]);
+
+  const placedMonitors = useMemo(() => {
+    return elements
+      .filter(e => e.type === "monitor_wedge" || e.type === "dual_wedge")
+      .sort((a, b) => (a.mixNumber || 99) - (b.mixNumber || 99));
+  }, [elements]);
+
+  const [userCustomizedMonitors, setUserCustomizedMonitors] = useState(false);
+  const [monitorNotes, setMonitorNotes] = useState<string>(() => {
+    const initialCount = elements.reduce((acc, el) => {
+      if (el.type === "monitor_wedge") return acc + 1;
+      if (el.type === "dual_wedge") return acc + 2;
+      return acc;
+    }, 0);
+    return `${initialCount || 4} units 12" monitors. They must all be the same model and with independent sends.`;
+  });
+
+  // Keep written monitor specification automatically in sync with the stage plot layout unless user customized
+  useEffect(() => {
+    if (!userCustomizedMonitors) {
+      setMonitorNotes(
+        `${monitorUnitCount} units 12" monitors. They must all be the same model and with independent sends.`
+      );
+    }
+  }, [monitorUnitCount, userCustomizedMonitors]);
+
+  const [paNotes, setPaNotes] = useState<string>(
+    "PA equipment adjusted and sufficient to cover the entire audience area with a response that is as uniform as possible on all frequencies and a minimum pressure of 90 dB."
+  );
+
+  // User Authentication & Band Contact Status
+  const isLoggedIn = Boolean(currentUser || currentAccount);
   const effectiveUserId = currentUser?.id || currentAccount?.id || null;
-  const effectiveEmail = currentAccount?.contactEmail || currentUser?.email || (bandProfile?.name ? `${bandProfile.name.toLowerCase().replace(/\s+/g, "")}@giglizard.com` : "booking@giglizard.us");
-  const effectiveBandName = bandProfile?.name || currentAccount?.name || "My band";
-  const effectiveBandCity = bandProfile?.city || currentAccount?.city || "Seattle, WA";
-  const effectiveBandContactPhone = (currentAccount?.contactPhone && !currentAccount.contactPhone.includes("555")) ? currentAccount.contactPhone : techContactPhone;
+  const effectiveBandName = currentAccount?.name || bandProfile?.name || "My band";
+  const effectiveBandCity = currentAccount?.city || bandProfile?.city || "Seattle, WA";
   const effectiveBandId = publicBandId || currentAccount?.id || `band-${effectiveBandName.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+
+  // Contact info - default to blank field if user is not signed in
+  const [techContactPhone, setTechContactPhone] = useState<string>(() => {
+    if (!currentUser && !currentAccount) return "";
+    return currentAccount?.contactPhone || "";
+  });
+  const [prodContactPhone, setProdContactPhone] = useState<string>(() => {
+    if (!currentUser && !currentAccount) return "";
+    return currentAccount?.contactPhone || "";
+  });
+  const [contactEmail, setContactEmail] = useState<string>(() => {
+    if (!currentUser && !currentAccount) return "";
+    return currentAccount?.contactEmail || currentUser?.email || "";
+  });
+
+  const effectiveBandContactPhone = techContactPhone;
+  const effectiveEmail = contactEmail;
+
+  // When user signs in, auto-fill with band contact info if fields are blank
+  useEffect(() => {
+    if (isLoggedIn) {
+      if (!techContactPhone && currentAccount?.contactPhone) {
+        setTechContactPhone(currentAccount.contactPhone);
+      }
+      if (!prodContactPhone && currentAccount?.contactPhone) {
+        setProdContactPhone(currentAccount.contactPhone);
+      }
+      if (!contactEmail && (currentAccount?.contactEmail || currentUser?.email)) {
+        setContactEmail(currentAccount?.contactEmail || currentUser?.email || "");
+      }
+    }
+  }, [isLoggedIn, currentAccount?.contactPhone, currentAccount?.contactEmail, currentUser?.email]);
 
   const isPublicSoundEngineerReview = Boolean(publicBandId && publicBandId !== currentAccount?.id);
 
@@ -255,6 +327,73 @@ export default function StagePlotDesigner({
     }, 4500);
   };
 
+  // Default to 4 piece rock band template when first opened
+  useEffect(() => {
+    if (elements.length === 0) {
+      onUpdateElements(PRESET_ROCK_4PIECE);
+      setInputChannels(DEFAULT_ROCK_INPUT_CHANNELS);
+    }
+  }, []);
+
+  // Click & Delete: Listen for Delete/Backspace keys to remove selected item
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedId) return;
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === "input" || targetTag === "textarea") return;
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        handleRemoveItem(selectedId);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, elements]);
+
+  // Toggle drum kit between single kick and dual kick
+  const handleToggleKickType = (id: string, kickType: "single" | "dual") => {
+    const updated = elements.map(el => {
+      if (el.id === id) {
+        return {
+          ...el,
+          kickType,
+          label: kickType === "dual" ? "Drums (Dual Kick)" : "Drums & Riser"
+        };
+      }
+      return el;
+    });
+    onUpdateElements(updated);
+
+    if (kickType === "dual") {
+      setInputChannels(prev => {
+        const hasKick2 = prev.some(c => c.instrument.toUpperCase().includes("KICK 2"));
+        if (!hasKick2) {
+          const kickIndex = prev.findIndex(c => c.instrument.toUpperCase().includes("KICK"));
+          if (kickIndex !== -1) {
+            const next = [...prev];
+            next[kickIndex] = { ...next[kickIndex], instrument: "KICK 1 (B52)" };
+            const newKick2: InputChannel = {
+              channel: next.length + 1,
+              instrument: "KICK 2 (B52)",
+              micOrDi: "SHURE B52",
+              stand: "Short Boom",
+              phantomPower: false,
+              notes: "Second bass drum"
+            };
+            next.splice(kickIndex + 1, 0, newKick2);
+            return next.map((c, idx) => ({ ...c, channel: idx + 1 }));
+          }
+        }
+        return prev;
+      });
+      triggerToast("Switched Drum Kit to Dual Kick (Double Bass) with Kick 1 & 2 channels.", "success");
+    } else {
+      triggerToast("Switched Drum Kit to Single Kick.", "info");
+    }
+  };
+
   // Automatic loading on mount / reopen
   useEffect(() => {
     let isCancelled = false;
@@ -263,7 +402,7 @@ export default function StagePlotDesigner({
       try {
         const result = await fetchBandStagePlotFromDatabase({
           userId: effectiveUserId,
-          officialEmail: effectiveEmail,
+          officialEmail: contactEmail || (bandProfile?.name ? `${bandProfile.name.toLowerCase().replace(/\s+/g, "")}@giglizard.com` : "booking@giglizard.us"),
           bandId: effectiveBandId
         });
 
@@ -274,7 +413,7 @@ export default function StagePlotDesigner({
           if (Array.isArray(data.elements) && data.elements.length > 0) {
             onUpdateElements(data.elements);
           } else if (elements.length === 0) {
-            onUpdateElements(PRESET_PROFESSIONAL_LIVE_BAND);
+            onUpdateElements(PRESET_ROCK_4PIECE);
           }
           if (Array.isArray(data.inputChannels) && data.inputChannels.length > 0) {
             setInputChannels(data.inputChannels);
@@ -285,6 +424,18 @@ export default function StagePlotDesigner({
           if (data.notes) {
             setMonitorNotes(data.notes);
           }
+          if (data.paNotes) {
+            setPaNotes(data.paNotes);
+          }
+          if (data.techContactPhone !== undefined) {
+            setTechContactPhone(data.techContactPhone);
+          }
+          if (data.prodContactPhone !== undefined) {
+            setProdContactPhone(data.prodContactPhone);
+          }
+          if (data.contactEmail !== undefined) {
+            setContactEmail(data.contactEmail);
+          }
           if (data.stagePlotUrl || result.stagePlotUrl) {
             setStagePlotUrl(data.stagePlotUrl || result.stagePlotUrl);
           }
@@ -292,12 +443,12 @@ export default function StagePlotDesigner({
             setLastSavedTime(new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' }));
           }
         } else if (elements.length === 0) {
-          onUpdateElements(PRESET_PROFESSIONAL_LIVE_BAND);
+          onUpdateElements(PRESET_ROCK_4PIECE);
         }
       } catch (err) {
         console.warn("Could not auto-load saved stage plot:", err);
         if (elements.length === 0) {
-          onUpdateElements(PRESET_PROFESSIONAL_LIVE_BAND);
+          onUpdateElements(PRESET_ROCK_4PIECE);
         }
       }
     }
@@ -307,7 +458,7 @@ export default function StagePlotDesigner({
     return () => {
       isCancelled = true;
     };
-  }, [effectiveUserId, effectiveEmail, effectiveBandId]);
+  }, [effectiveUserId, effectiveBandId]);
 
   // Add new element to stage setup
   const handleAddTemplateToStage = (template: ToolboxItem) => {
@@ -503,6 +654,10 @@ export default function StagePlotDesigner({
         inputChannels,
         theme: stageTheme,
         notes: monitorNotes,
+        paNotes,
+        techContactPhone,
+        prodContactPhone,
+        contactEmail,
         stagePlotUrl,
         updatedAt: now
       };
@@ -1032,7 +1187,51 @@ export default function StagePlotDesigner({
                       isSelected={isSelectedThis}
                       mixNumber={el.mixNumber}
                       theme={stageTheme}
+                      kickType={el.kickType}
                     />
+
+                    {/* Floating Click-and-Delete Button on Selected Element */}
+                    {isSelectedThis && (
+                      <button
+                        type="button"
+                        title="Delete item (Delete / Backspace)"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveItem(el.id);
+                          triggerToast(`Removed ${el.label} from stage plot`, "info");
+                        }}
+                        className="absolute -top-3 -right-3 z-[80] w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-lg border-2 border-white cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {/* Quick Kick Setup Pill above Drum Kit when selected */}
+                    {isSelectedThis && el.type === "drum_kit" && (
+                      <div 
+                        className="absolute -top-8 left-1/2 -translate-x-1/2 z-[80] bg-slate-900/95 backdrop-blur-xs text-white rounded-lg p-1 shadow-xl flex items-center gap-1 border border-slate-700 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleToggleKickType(el.id, "single")}
+                          className={`text-[9px] font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                            (el.kickType || "single") === "single" ? "bg-indigo-600 text-white" : "text-slate-300 hover:bg-slate-800"
+                          }`}
+                        >
+                          Single Kick
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleKickType(el.id, "dual")}
+                          className={`text-[9px] font-bold px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                            el.kickType === "dual" ? "bg-indigo-600 text-white" : "text-slate-300 hover:bg-slate-800"
+                          }`}
+                        >
+                          Dual Kick
+                        </button>
+                      </div>
+                    )}
 
                     {/* Inline Label Editing Popover */}
                     {isEditingThis && (
@@ -1063,6 +1262,44 @@ export default function StagePlotDesigner({
                 </div>
               );
             })}
+
+            {/* Downstage Edge Marker: "To Crowd" */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none flex flex-col items-center pb-2 select-none">
+              <div className={`w-full border-t border-dashed mb-1.5 transition-colors ${
+                stageTheme === "print"
+                  ? "border-slate-300"
+                  : stageTheme === "blueprint"
+                  ? "border-sky-500/30"
+                  : "border-slate-800"
+              }`} />
+              <div className={`flex items-center gap-2 px-4 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest border transition-colors shadow-xs ${
+                stageTheme === "print"
+                  ? "bg-slate-100/95 text-slate-800 border-slate-300"
+                  : stageTheme === "blueprint"
+                  ? "bg-[#061833]/90 text-sky-300 border-sky-600/50"
+                  : "bg-slate-900/95 text-slate-200 border-slate-700"
+              }`}>
+                <span className="text-[9px] text-red-500 font-bold">▼</span>
+                <span>To Crowd</span>
+                <span className="text-[9px] text-red-500 font-bold">▼</span>
+              </div>
+            </div>
+
+            {/* Subtle Stage Left / Stage Right Orientations */}
+            <div className="absolute bottom-2 left-4 pointer-events-none z-10 hidden sm:block select-none">
+              <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                stageTheme === "print" ? "text-slate-400" : "text-slate-600"
+              }`}>
+                Stage Right
+              </span>
+            </div>
+            <div className="absolute bottom-2 right-4 pointer-events-none z-10 hidden sm:block select-none">
+              <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                stageTheme === "print" ? "text-slate-400" : "text-slate-600"
+              }`}>
+                Stage Left
+              </span>
+            </div>
           </div>
 
           {/* Quick Context Action Bar for Selected Item */}
@@ -1079,6 +1316,31 @@ export default function StagePlotDesigner({
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Kick Setup Selector for Drum Kit */}
+                {selectedElement.type === "drum_kit" && (
+                  <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+                    <span className="text-[10px] font-bold text-indigo-300 px-1">Kick Setup:</span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleKickType(selectedElement.id, "single")}
+                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded cursor-pointer transition-colors ${
+                        (selectedElement.kickType || "single") === "single" ? "bg-indigo-600 text-white" : "text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Single Kick
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleKickType(selectedElement.id, "dual")}
+                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded cursor-pointer transition-colors ${
+                        selectedElement.kickType === "dual" ? "bg-indigo-600 text-white" : "text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Dual Kick
+                    </button>
+                  </div>
+                )}
+
                 {/* Mix Number Selector for Monitor Wedges */}
                 {(selectedElement.type === "monitor_wedge" || selectedElement.type === "dual_wedge") && (
                   <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
@@ -1267,11 +1529,18 @@ export default function StagePlotDesigner({
                       {monitorNotes}
                     </p>
                     <div className="flex flex-wrap gap-2 mt-1.5">
-                      <span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[10px] font-bold">OUT 1: Stage Right Guitar / Vox</span>
-                      <span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[10px] font-bold">OUT 2: Center Frontline Lead (Dual Wedges)</span>
-                      <span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[10px] font-bold">OUT 3: Stage Left Bass / Vox</span>
-                      <span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[10px] font-bold">OUT 4: Keyboards Rig</span>
-                      <span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[10px] font-bold">OUT 5: Drum Riser Wedge + Wired IEM</span>
+                      {placedMonitors.length > 0 ? (
+                        placedMonitors.map((mon, idx) => (
+                          <span key={mon.id} className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1.5">
+                            <span className="bg-red-600 text-white px-1.5 py-0.2 rounded font-black text-[9px]">
+                              OUT {mon.mixNumber || idx + 1}
+                            </span>
+                            <span>{mon.label} {mon.type === "dual_wedge" ? "(Dual Wedges - 2 units)" : "(1 unit)"}</span>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-400 text-[11px] italic">No monitor wedges placed on stage yet. Add wedges from the toolbox.</span>
+                      )}
                     </div>
                   </div>
 
@@ -1284,10 +1553,61 @@ export default function StagePlotDesigner({
                     </p>
                   </div>
 
-                  <div className="pt-2 text-[11px] text-slate-600 space-y-0.5">
-                    <div><strong>Sound technical contact:</strong> {effectiveBandContactPhone}</div>
-                    <div><strong>Production contact:</strong> {prodContactPhone}</div>
-                    <div><strong>Email:</strong> {effectiveEmail}</div>
+                  <div className="pt-3 border-t border-slate-100 text-xs text-slate-700 space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="font-black text-slate-900 uppercase tracking-wider text-[11px]">
+                        Band &amp; Technical Contacts:
+                      </div>
+                      {!isLoggedIn && onTriggerLogin && (
+                        <button
+                          type="button"
+                          onClick={onTriggerLogin}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors cursor-pointer w-fit"
+                        >
+                          <LogIn className="w-3.5 h-3.5" />
+                          <span>Sign in to auto-fill with band contact info</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Sound technical contact
+                        </label>
+                        <input
+                          type="text"
+                          value={techContactPhone}
+                          onChange={(e) => setTechContactPhone(e.target.value)}
+                          placeholder={isLoggedIn ? "Phone number..." : "e.g. (555) 234-5678"}
+                          className="w-full text-xs font-semibold px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Production contact
+                        </label>
+                        <input
+                          type="text"
+                          value={prodContactPhone}
+                          onChange={(e) => setProdContactPhone(e.target.value)}
+                          placeholder={isLoggedIn ? "Phone number..." : "e.g. (555) 345-6789"}
+                          className="w-full text-xs font-semibold px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={contactEmail}
+                          onChange={(e) => setContactEmail(e.target.value)}
+                          placeholder={isLoggedIn ? "band@contact.com" : "contact@yourband.com"}
+                          className="w-full text-xs font-semibold px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1380,13 +1700,36 @@ export default function StagePlotDesigner({
             {activeTabSection === "specs" && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Monitor Specification
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Monitor Specification
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        Stage Layout: {monitorUnitCount} units
+                      </span>
+                      {userCustomizedMonitors && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserCustomizedMonitors(false);
+                            setMonitorNotes(`${monitorUnitCount} units 12" monitors. They must all be the same model and with independent sends.`);
+                            triggerToast("Reset monitor specs to current stage layout.", "info");
+                          }}
+                          className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                        >
+                          Sync with Stage ({monitorUnitCount} units)
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <textarea
                     rows={3}
                     value={monitorNotes}
-                    onChange={(e) => setMonitorNotes(e.target.value)}
+                    onChange={(e) => {
+                      setUserCustomizedMonitors(true);
+                      setMonitorNotes(e.target.value);
+                    }}
                     className="w-full p-3 border border-slate-200 rounded-xl text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -1403,7 +1746,7 @@ export default function StagePlotDesigner({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1">
                       Sound Technical Contact Phone
@@ -1411,6 +1754,7 @@ export default function StagePlotDesigner({
                     <input
                       type="text"
                       value={techContactPhone}
+                      placeholder={isLoggedIn ? "" : "e.g. (555) 234-5678"}
                       onChange={(e) => setTechContactPhone(e.target.value)}
                       className="w-full p-2.5 border border-slate-200 rounded-lg text-xs"
                     />
@@ -1422,7 +1766,20 @@ export default function StagePlotDesigner({
                     <input
                       type="text"
                       value={prodContactPhone}
+                      placeholder={isLoggedIn ? "" : "e.g. (555) 345-6789"}
                       onChange={(e) => setProdContactPhone(e.target.value)}
+                      className="w-full p-2.5 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Official Contact Email
+                    </label>
+                    <input
+                      type="email"
+                      value={contactEmail}
+                      placeholder={isLoggedIn ? "" : "contact@yourband.com"}
+                      onChange={(e) => setContactEmail(e.target.value)}
                       className="w-full p-2.5 border border-slate-200 rounded-lg text-xs"
                     />
                   </div>
@@ -1534,7 +1891,7 @@ export default function StagePlotDesigner({
           </div>
 
           {/* Visual Stage Diagram Section */}
-          <div className="relative border-2 border-slate-900 rounded-lg h-[480px] w-full overflow-hidden bg-white">
+          <div className="relative border-2 border-slate-900 rounded-lg h-[500px] w-full overflow-hidden bg-white">
             {/* Top Pleated Stage Backdrop Curtain */}
             <div className="absolute top-0 left-0 right-0 h-12 pointer-events-none z-10 overflow-hidden">
               <svg className="w-full h-full select-none" viewBox="0 0 1000 48" preserveAspectRatio="none" fill="none">
@@ -1582,10 +1939,33 @@ export default function StagePlotDesigner({
                     rotation={el.rotation} 
                     mixNumber={el.mixNumber}
                     theme="print" 
+                    kickType={el.kickType}
                   />
                 </div>
               );
             })}
+
+            {/* Downstage Edge Marker: "To Crowd" */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none flex flex-col items-center pb-2 select-none">
+              <div className="w-full border-t border-dashed border-slate-300 mb-1.5" />
+              <div className="flex items-center gap-2 px-5 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-slate-100 text-slate-900 border border-slate-300 shadow-xs">
+                <span className="text-[10px] text-red-600 font-bold">▼</span>
+                <span>To Crowd</span>
+                <span className="text-[10px] text-red-600 font-bold">▼</span>
+              </div>
+            </div>
+
+            {/* Subtle Stage Left / Stage Right Orientations */}
+            <div className="absolute bottom-2 left-4 pointer-events-none z-10 select-none">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Stage Right
+              </span>
+            </div>
+            <div className="absolute bottom-2 right-4 pointer-events-none z-10 select-none">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Stage Left
+              </span>
+            </div>
           </div>
 
           {/* 3-Column Channel Input List matching reference document */}
@@ -1655,6 +2035,12 @@ export default function StagePlotDesigner({
             <div>
               <div className="font-black text-slate-900 uppercase">MONITORS:</div>
               <p className="text-slate-800">{monitorNotes}</p>
+              {placedMonitors.length > 0 && (
+                <p className="text-slate-600 text-[11px] mt-1 font-medium">
+                  <span className="font-bold text-slate-700">Mix Sends: </span>
+                  {placedMonitors.map((m, idx) => `OUT ${m.mixNumber ?? idx + 1}: ${m.label} (${m.type === "dual_wedge" ? 'Dual 12" Wedge' : '12" Wedge'})`).join(" • ")}
+                </p>
+              )}
             </div>
 
             <div>
@@ -1663,9 +2049,9 @@ export default function StagePlotDesigner({
             </div>
 
             <div className="text-[11px] text-slate-800 space-y-0.5 pt-1">
-              <div>Sound technical contact: {effectiveBandContactPhone}</div>
-              <div>Production contact: {prodContactPhone}</div>
-              <div>email: {effectiveEmail}</div>
+              <div>Sound technical contact: {techContactPhone || "________________________"}</div>
+              <div>Production contact: {prodContactPhone || "________________________"}</div>
+              <div>Email: {contactEmail || "________________________"}</div>
             </div>
           </div>
 

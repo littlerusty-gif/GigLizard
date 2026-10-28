@@ -46,6 +46,7 @@ export interface StageElement {
   rotation: number; // degrees: 0, 90, 180, 270
   mixNumber?: number; // Optional monitor aux mix number (1, 2, 3, etc.)
   notes?: string;
+  kickType?: "single" | "dual"; // Single or dual bass drums on drum kit
 }
 
 export interface InputChannel {
