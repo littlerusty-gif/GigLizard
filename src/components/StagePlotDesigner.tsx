@@ -37,11 +37,13 @@ interface ToolboxItem {
   defaultMic: string;
   iconName: string;
   defaultMix?: number;
+  kickType?: "single" | "dual";
 }
 
 const TOOLBOX_TEMPLATES: ToolboxItem[] = [
   // Backline & Instruments
-  { type: "drum_kit", label: "Drum Kit & Riser", category: "backline", defaultMic: "Beta 52 / SM57 / Overheads", iconName: "Drums" },
+  { type: "drum_kit", label: "Drums (Single Kick)", category: "backline", defaultMic: "Beta 52 / SM57 / Overheads", iconName: "Drums", kickType: "single" },
+  { type: "drum_kit", label: "Drums (Double Kick)", category: "backline", defaultMic: "Dual Beta 52 / 4 Toms / Booms", iconName: "Double Bass Drums", kickType: "dual" },
   { type: "drum_pad", label: "SPD Sample Pad", category: "backline", defaultMic: "Dual 1/4\" Stereo DI", iconName: "Sample Pad" },
   { type: "electric_guitar", label: "Electric Guitar", category: "backline", defaultMic: "Shure SM57 on Amp Cone", iconName: "Elec Gtr" },
   { type: "guitar_amp", label: "Guitar Amp (2x12)", category: "backline", defaultMic: "Shure SM57 / Sennheiser e906", iconName: "Gtr Amp" },
@@ -359,7 +361,7 @@ export default function StagePlotDesigner({
         return {
           ...el,
           kickType,
-          label: kickType === "dual" ? "Drums (Dual Kick)" : "Drums & Riser"
+          label: kickType === "dual" ? "Drums (Double Kick)" : "Drums (Single Kick)"
         };
       }
       return el;
@@ -373,10 +375,10 @@ export default function StagePlotDesigner({
           const kickIndex = prev.findIndex(c => c.instrument.toUpperCase().includes("KICK"));
           if (kickIndex !== -1) {
             const next = [...prev];
-            next[kickIndex] = { ...next[kickIndex], instrument: "KICK 1 (B52)" };
+            next[kickIndex] = { ...next[kickIndex], instrument: "KICK 1 (SHURE B52)" };
             const newKick2: InputChannel = {
               channel: next.length + 1,
-              instrument: "KICK 2 (B52)",
+              instrument: "KICK 2 (SHURE B52)",
               micOrDi: "SHURE B52",
               stand: "Short Boom",
               phantomPower: false,
@@ -388,8 +390,20 @@ export default function StagePlotDesigner({
         }
         return prev;
       });
-      triggerToast("Switched Drum Kit to Dual Kick (Double Bass) with Kick 1 & 2 channels.", "success");
+      triggerToast("Switched Drum Kit to Double Kick (Dual Bass) with Kick 1 & 2 channels.", "success");
     } else {
+      setInputChannels(prev => {
+        const hasKick2 = prev.some(c => c.instrument.toUpperCase().includes("KICK 2"));
+        if (hasKick2) {
+          const filtered = prev.filter(c => !c.instrument.toUpperCase().includes("KICK 2"));
+          const kickIndex = filtered.findIndex(c => c.instrument.toUpperCase().includes("KICK"));
+          if (kickIndex !== -1) {
+            filtered[kickIndex] = { ...filtered[kickIndex], instrument: "KICK (SHURE B52)" };
+          }
+          return filtered.map((c, idx) => ({ ...c, channel: idx + 1 }));
+        }
+        return prev;
+      });
       triggerToast("Switched Drum Kit to Single Kick.", "info");
     }
   };
@@ -470,10 +484,36 @@ export default function StagePlotDesigner({
       x: Math.min(80, Math.max(20, 50 + spawnOffset - 8)),
       y: Math.min(80, Math.max(20, 50 + spawnOffset - 8)),
       rotation: 0,
-      mixNumber: template.defaultMix
+      mixNumber: template.defaultMix,
+      kickType: template.kickType || (template.type === "drum_kit" ? "single" : undefined)
     };
     onUpdateElements([...elements, newEl]);
     setSelectedId(newEl.id);
+
+    if (template.type === "drum_kit" && template.kickType === "dual") {
+      setInputChannels(prev => {
+        const hasKick2 = prev.some(c => c.instrument.toUpperCase().includes("KICK 2"));
+        if (!hasKick2) {
+          const kickIndex = prev.findIndex(c => c.instrument.toUpperCase().includes("KICK"));
+          if (kickIndex !== -1) {
+            const next = [...prev];
+            next[kickIndex] = { ...next[kickIndex], instrument: "KICK 1 (SHURE B52)" };
+            const newKick2: InputChannel = {
+              channel: next.length + 1,
+              instrument: "KICK 2 (SHURE B52)",
+              micOrDi: "SHURE B52",
+              stand: "Short Boom",
+              phantomPower: false,
+              notes: "Second bass drum"
+            };
+            next.splice(kickIndex + 1, 0, newKick2);
+            return next.map((c, idx) => ({ ...c, channel: idx + 1 }));
+          }
+        }
+        return prev;
+      });
+    }
+
     triggerToast(`Added ${template.label} to stage. Drag to place.`, "info");
   };
 
@@ -949,15 +989,15 @@ export default function StagePlotDesigner({
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2 max-h-[440px] overflow-y-auto pr-1" id="toolbox-items-list">
             {TOOLBOX_TEMPLATES.filter(tmpl => activeToolboxTab === "all" || tmpl.category === activeToolboxTab).map((tmpl) => (
               <button
-                key={tmpl.type}
+                key={`${tmpl.type}-${tmpl.label}`}
                 type="button"
-                id={`btn-toolbox-${tmpl.type}`}
+                id={`btn-toolbox-${tmpl.type}-${tmpl.kickType || "default"}`}
                 onClick={() => handleAddTemplateToStage(tmpl)}
                 className="w-full flex items-center justify-between text-left p-2 rounded-xl border border-slate-200/90 hover:border-indigo-400 hover:bg-indigo-50/30 text-xs font-bold text-slate-800 group transition-all cursor-pointer shadow-2xs"
               >
                 <div className="flex items-center gap-2.5 truncate">
                   <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center p-0.5 shrink-0 border border-slate-200 group-hover:border-indigo-300">
-                    <StageGearGraphic type={tmpl.type} label="" theme="print" mixNumber={tmpl.defaultMix || 1} />
+                    <StageGearGraphic type={tmpl.type} label="" theme="print" mixNumber={tmpl.defaultMix || 1} kickType={tmpl.kickType} />
                   </div>
                   <div className="truncate">
                     <div className="truncate text-xs text-slate-900">{tmpl.label}</div>
@@ -1228,7 +1268,7 @@ export default function StagePlotDesigner({
                             el.kickType === "dual" ? "bg-indigo-600 text-white" : "text-slate-300 hover:bg-slate-800"
                           }`}
                         >
-                          Dual Kick
+                          Double Kick
                         </button>
                       </div>
                     )}
@@ -1336,7 +1376,7 @@ export default function StagePlotDesigner({
                         selectedElement.kickType === "dual" ? "bg-indigo-600 text-white" : "text-slate-300 hover:bg-slate-700"
                       }`}
                     >
-                      Dual Kick
+                      Double Kick
                     </button>
                   </div>
                 )}

@@ -67,13 +67,24 @@ export const StageGearGraphic: React.FC<IconProps> = ({
                 </linearGradient>
               </defs>
 
-              {/* Defs for realistic drum kit styling matching user's reference image */}
-              <linearGradient id="drum-shell-lacquer" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#4a7c79" />
-                <stop offset="40%" stopColor="#649895" />
-                <stop offset="80%" stopColor="#3d6865" />
-                <stop offset="100%" stopColor="#2a4b48" />
+              {/* Defs for realistic drum kit styling matching user's reference attachments */}
+              <linearGradient id="drum-shell-black" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#27272a" />
+                <stop offset="40%" stopColor="#3f3f46" />
+                <stop offset="70%" stopColor="#18181b" />
+                <stop offset="100%" stopColor="#09090b" />
               </linearGradient>
+              <linearGradient id="drumhead-white" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ffffff" />
+                <stop offset="70%" stopColor="#f8fafc" />
+                <stop offset="100%" stopColor="#e2e8f0" />
+              </linearGradient>
+              <radialGradient id="cymbal-dark" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#71717a" />
+                <stop offset="45%" stopColor="#52525b" />
+                <stop offset="85%" stopColor="#27272a" />
+                <stop offset="100%" stopColor="#09090b" />
+              </radialGradient>
               <linearGradient id="chrome-lug" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#cbd5e1" />
                 <stop offset="50%" stopColor="#ffffff" />
@@ -85,186 +96,297 @@ export const StageGearGraphic: React.FC<IconProps> = ({
                 <stop offset="100%" stopColor="#020617" />
               </radialGradient>
 
-              {/* === ELEVATED CONCERT DRUM RISER PLATFORM === */}
-              {/* Main Deck Surface */}
-              <rect x="12" y="8" width="116" height="106" rx="4" fill="url(#drum-riser-grad)" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="1.8" filter="url(#gear-shadow)" />
-              {/* Deck Carpet Inset */}
-              <rect x="16" y="12" width="108" height="98" rx="2" fill="none" stroke={isPrint ? "#cbd5e1" : "#334155"} strokeWidth="0.8" strokeDasharray="3 3" />
-              {/* Front Fascia Drop (3D Depth) */}
-              <polygon points="12,114 12,122 128,122 128,114" fill={isPrint ? "#94a3b8" : "#334155"} stroke={isPrint ? "#64748b" : "#1e293b"} strokeWidth="1" />
-              <line x1="12" y1="114" x2="128" y2="114" stroke="#ffffff" strokeWidth="0.8" opacity="0.6" />
-              {/* Riser Front Legs with Rubber Feet */}
-              <rect x="16" y="122" width="5.5" height="12" rx="1" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
-              <rect x="15" y="131" width="7.5" height="3" rx="0.5" fill="#0f172a" />
-              <rect x="118.5" y="122" width="5.5" height="12" rx="1" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
-              <rect x="117.5" y="131" width="7.5" height="3" rx="0.5" fill="#0f172a" />
-
-              {/* === DRUMMER'S THRONE (Upstage Center) === */}
-              <circle cx="70" cy="22" r="10.5" fill="#0f172a" stroke="#020617" strokeWidth="2" />
-              <circle cx="70" cy="22" r="8.5" fill="#1e293b" />
-              <circle cx="70" cy="22" r="2.8" fill="#334155" stroke="url(#chrome-rim)" strokeWidth="0.8" />
-
-              {/* === BASS DRUM(S) / KICK DRUM(S) (Facing Downstage To Crowd) === */}
               {isDualKick ? (
-                /* --- DUAL KICK SETUP (Two Identical Deep Bass Drums from Reference Image) --- */
-                <g id="dual-kick-drums">
-                  {/* Left Kick Drum 1 */}
-                  <g id="kick-1">
-                    <line x1="32" y1="94" x2="24" y2="103" stroke="url(#chrome-rim)" strokeWidth="2.4" strokeLinecap="round" />
-                    <circle cx="24" cy="103" r="1.6" fill="#0f172a" />
-                    <rect x="32" y="52" width="34" height="46" rx="6" fill="url(#drum-shell-lacquer)" stroke="#0f172a" strokeWidth="2.4" filter="url(#gear-shadow)" />
-                    <circle cx="49" cy="74" r="14.5" fill="url(#kick-resonant-head)" stroke="url(#chrome-rim)" strokeWidth="2.2" />
+                /* === DOUBLE KICK DRUM KIT (Matching Attachment images__1__b4c30184.jpg) === */
+                <g id="double-kick-kit">
+                  {/* Clean Concert Stage Riser Platform */}
+                  <rect x="8" y="10" width="124" height="114" rx="4" fill="url(#drum-riser-grad)" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="1.8" filter="url(#gear-shadow)" />
+                  <rect x="12" y="14" width="116" height="106" rx="2" fill="none" stroke={isPrint ? "#cbd5e1" : "#334155"} strokeWidth="0.8" strokeDasharray="3 3" />
+                  <polygon points="8,124 8,131 132,131 132,124" fill={isPrint ? "#94a3b8" : "#334155"} stroke={isPrint ? "#64748b" : "#1e293b"} strokeWidth="1" />
+                  <line x1="8" y1="124" x2="132" y2="124" stroke="#ffffff" strokeWidth="0.8" opacity="0.6" />
+                  <rect x="12" y="131" width="5.5" height="7" rx="1" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
+                  <rect x="122.5" y="131" width="5.5" height="7" rx="1" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
+
+                  {/* Drummer Throne behind kick setup */}
+                  <circle cx="70" cy="22" r="9.5" fill="#0f172a" stroke="#020617" strokeWidth="1.8" />
+                  <circle cx="70" cy="22" r="7.5" fill="#1e293b" />
+                  <circle cx="70" cy="22" r="2.2" fill="#334155" stroke="url(#chrome-rim)" strokeWidth="0.8" />
+
+                  {/* 1. LEFT AND RIGHT DUAL KICK DRUMS (Side-by-side) */}
+                  {/* Left Bass Drum (Kick 1) */}
+                  <g id="dual-kick-1">
+                    <line x1="32" y1="92" x2="18" y2="108" stroke="#0f172a" strokeWidth="2.8" strokeLinecap="round" />
+                    <circle cx="18" cy="108" r="2" fill="#0f172a" />
+                    <circle cx="48" cy="80" r="21" fill="#09090b" stroke="#0f172a" strokeWidth="2.4" filter="url(#gear-shadow)" />
+                    <circle cx="48" cy="80" r="23.5" fill="none" stroke="url(#chrome-rim)" strokeWidth="2.2" />
+                    <circle cx="48" cy="80" r="18.5" fill="none" stroke="#27272a" strokeWidth="1" />
+                    <circle cx="56" cy="85" r="3.8" fill="#000000" stroke="#52525b" strokeWidth="1" />
                     {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
-                      <circle
+                      <rect
                         key={deg}
-                        cx={49 + 14.3 * Math.cos((deg * Math.PI) / 180)}
-                        cy={74 + 14.3 * Math.sin((deg * Math.PI) / 180)}
-                        r="1.2"
+                        x={48 + 22.5 * Math.cos((deg * Math.PI) / 180) - 1.4}
+                        y={80 + 22.5 * Math.sin((deg * Math.PI) / 180) - 1.4}
+                        width="2.8"
+                        height="2.8"
+                        rx="0.5"
                         fill="#ffffff"
-                        stroke="#334155"
-                        strokeWidth="0.5"
+                        stroke="#0f172a"
+                        strokeWidth="0.7"
                       />
                     ))}
-                    <circle cx="56" cy="78" r="3.5" fill="#000000" stroke="#64748b" strokeWidth="1" />
-                    <rect x="42" y="69.5" width="14" height="5" rx="1" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.6" />
-                    <text x="49" y="73.5" fontSize="4" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.08em">KICK 1</text>
+                    <rect x="41" y="76" width="14" height="4.5" rx="0.8" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.7" />
+                    <text x="48" y="79.5" fontSize="3.8" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.08em">KICK 1</text>
                   </g>
 
-                  {/* Right Kick Drum 2 */}
-                  <g id="kick-2">
-                    <line x1="108" y1="94" x2="116" y2="103" stroke="url(#chrome-rim)" strokeWidth="2.4" strokeLinecap="round" />
-                    <circle cx="116" cy="103" r="1.6" fill="#0f172a" />
-                    <rect x="74" y="52" width="34" height="46" rx="6" fill="url(#drum-shell-lacquer)" stroke="#0f172a" strokeWidth="2.4" filter="url(#gear-shadow)" />
-                    <circle cx="91" cy="74" r="14.5" fill="url(#kick-resonant-head)" stroke="url(#chrome-rim)" strokeWidth="2.2" />
+                  {/* Right Bass Drum (Kick 2) */}
+                  <g id="dual-kick-2">
+                    <line x1="108" y1="92" x2="122" y2="108" stroke="#0f172a" strokeWidth="2.8" strokeLinecap="round" />
+                    <circle cx="122" cy="108" r="2" fill="#0f172a" />
+                    <circle cx="92" cy="80" r="21" fill="#09090b" stroke="#0f172a" strokeWidth="2.4" filter="url(#gear-shadow)" />
+                    <circle cx="92" cy="80" r="23.5" fill="none" stroke="url(#chrome-rim)" strokeWidth="2.2" />
+                    <circle cx="92" cy="80" r="18.5" fill="none" stroke="#27272a" strokeWidth="1" />
+                    <circle cx="100" cy="85" r="3.8" fill="#000000" stroke="#52525b" strokeWidth="1" />
                     {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
-                      <circle
+                      <rect
                         key={deg}
-                        cx={91 + 14.3 * Math.cos((deg * Math.PI) / 180)}
-                        cy={74 + 14.3 * Math.sin((deg * Math.PI) / 180)}
-                        r="1.2"
+                        x={92 + 22.5 * Math.cos((deg * Math.PI) / 180) - 1.4}
+                        y={80 + 22.5 * Math.sin((deg * Math.PI) / 180) - 1.4}
+                        width="2.8"
+                        height="2.8"
+                        rx="0.5"
                         fill="#ffffff"
-                        stroke="#334155"
-                        strokeWidth="0.5"
+                        stroke="#0f172a"
+                        strokeWidth="0.7"
                       />
                     ))}
-                    <circle cx="98" cy="78" r="3.5" fill="#000000" stroke="#64748b" strokeWidth="1" />
-                    <rect x="84" y="69.5" width="14" height="5" rx="1" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.6" />
-                    <text x="91" y="73.5" fontSize="4" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.08em">KICK 2</text>
+                    <rect x="85" y="76" width="14" height="4.5" rx="0.8" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.7" />
+                    <text x="92" y="79.5" fontSize="3.8" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.08em">KICK 2</text>
+                  </g>
+
+                  {/* Center Coupling / Clamp between Bass Drums */}
+                  <rect x="67.5" y="77" width="5" height="6" rx="1" fill="#475569" stroke="#0f172a" strokeWidth="1" />
+
+                  {/* 2. HEAVY-DUTY CURVED RACK BAR SYSTEM (Above Kick Drums) */}
+                  <path d="M 26 56 Q 70 42 114 56" stroke="url(#chrome-rim)" strokeWidth="3" fill="none" strokeLinecap="round" />
+                  <path d="M 26 56 Q 70 42 114 56" stroke="#0f172a" strokeWidth="0.8" fill="none" />
+                  <line x1="26" y1="56" x2="26" y2="104" stroke="#0f172a" strokeWidth="2.4" />
+                  <line x1="114" y1="56" x2="114" y2="104" stroke="#0f172a" strokeWidth="2.4" />
+
+                  {/* 3. FOUR MOUNTED RACK TOMS (Angled arc across the rack) */}
+                  {/* Tom 1 (Far Left, Angled Outward) */}
+                  <g id="rack-tom-1" transform="rotate(-18 35 44)">
+                    <rect x="28" y="38" width="14" height="15" rx="1.5" fill="#18181b" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                    <line x1="31.5" y1="40" x2="31.5" y2="51" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="35" y1="40" x2="35" y2="51" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="38.5" y1="40" x2="38.5" y2="51" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <ellipse cx="35" cy="38" rx="7" ry="3.2" fill="url(#drumhead-white)" stroke="#0f172a" strokeWidth="1.6" />
+                    <ellipse cx="35" cy="53" rx="7" ry="1.8" fill="none" stroke="url(#chrome-rim)" strokeWidth="1" />
+                  </g>
+
+                  {/* Tom 2 (Center Left) */}
+                  <g id="rack-tom-2" transform="rotate(-6 52 38)">
+                    <rect x="45" y="32" width="15" height="16" rx="1.5" fill="#18181b" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                    <line x1="49" y1="34" x2="49" y2="46" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="52.5" y1="34" x2="52.5" y2="46" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="56" y1="34" x2="56" y2="46" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <ellipse cx="52.5" cy="32" rx="7.5" ry="3.5" fill="url(#drumhead-white)" stroke="#0f172a" strokeWidth="1.6" />
+                    <ellipse cx="52.5" cy="48" rx="7.5" ry="2" fill="none" stroke="url(#chrome-rim)" strokeWidth="1" />
+                  </g>
+
+                  {/* Tom 3 (Center Right) */}
+                  <g id="rack-tom-3" transform="rotate(6 72 38)">
+                    <rect x="64.5" y="32" width="15" height="16" rx="1.5" fill="#18181b" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                    <line x1="68.5" y1="34" x2="68.5" y2="46" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="72" y1="34" x2="72" y2="46" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="75.5" y1="34" x2="75.5" y2="46" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <ellipse cx="72" cy="32" rx="7.5" ry="3.5" fill="url(#drumhead-white)" stroke="#0f172a" strokeWidth="1.6" />
+                    <ellipse cx="72" cy="48" rx="7.5" ry="2" fill="none" stroke="url(#chrome-rim)" strokeWidth="1" />
+                  </g>
+
+                  {/* Tom 4 (Far Right, Angled Outward) */}
+                  <g id="rack-tom-4" transform="rotate(18 89 44)">
+                    <rect x="82" y="38" width="14" height="15" rx="1.5" fill="#18181b" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                    <line x1="85.5" y1="40" x2="85.5" y2="51" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="89" y1="40" x2="89" y2="51" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="92.5" y1="40" x2="92.5" y2="51" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <ellipse cx="89" cy="38" rx="7" ry="3.2" fill="url(#drumhead-white)" stroke="#0f172a" strokeWidth="1.6" />
+                    <ellipse cx="89" cy="53" rx="7" ry="1.8" fill="none" stroke="url(#chrome-rim)" strokeWidth="1" />
+                  </g>
+
+                  {/* 4. HIGH-MOUNTED BOOM CYMBALS (Left and Right from 3D render) */}
+                  {/* Left High Boom Crash Stand */}
+                  <g id="dual-left-crash">
+                    <path d="M 8 108 L 18 94 L 28 108 M 18 94 L 18 42" stroke="#0f172a" strokeWidth="2.4" strokeLinecap="round" />
+                    <line x1="12" y1="52" x2="26" y2="20" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" />
+                    <rect x="10" y="50" width="4" height="5" rx="1" fill="#1e293b" stroke="#0f172a" strokeWidth="0.8" />
+                    <g transform="rotate(-34 26 20)">
+                      <ellipse cx="26" cy="20" rx="17" ry="5.5" fill="url(#cymbal-dark)" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                      <ellipse cx="26" cy="20" rx="4.5" ry="1.8" fill="#71717a" stroke="#0f172a" strokeWidth="1" />
+                      <circle cx="26" cy="20" r="1.2" fill="#0f172a" />
+                    </g>
+                  </g>
+
+                  {/* Left Hi-Hat Stand */}
+                  <g id="dual-hi-hat">
+                    <path d="M 12 108 L 18 96 L 24 108 M 18 96 L 18 56" stroke="#0f172a" strokeWidth="1.8" strokeLinecap="round" />
+                    <g transform="rotate(-10 18 58)">
+                      <ellipse cx="18" cy="57" rx="10" ry="3.2" fill="url(#cymbal-dark)" stroke="#0f172a" strokeWidth="1.6" />
+                      <ellipse cx="18" cy="59" rx="10" ry="3.2" fill="url(#cymbal-dark)" stroke="#0f172a" strokeWidth="1.6" />
+                    </g>
+                  </g>
+
+                  {/* Center Splash Cymbal */}
+                  <g id="dual-splash">
+                    <line x1="72" y1="42" x2="72" y2="28" stroke="#0f172a" strokeWidth="1.6" />
+                    <g transform="rotate(8 72 26)">
+                      <ellipse cx="72" cy="26" rx="8.5" ry="2.8" fill="url(#cymbal-dark)" stroke="#0f172a" strokeWidth="1.5" />
+                      <circle cx="72" cy="26" r="1" fill="#0f172a" />
+                    </g>
+                  </g>
+
+                  {/* Right High Boom Crash / Ride Stand */}
+                  <g id="dual-right-crash">
+                    <path d="M 112 108 L 122 94 L 132 108 M 122 94 L 122 42" stroke="#0f172a" strokeWidth="2.4" strokeLinecap="round" />
+                    <line x1="128" y1="52" x2="114" y2="20" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" />
+                    <rect x="126" y="50" width="4" height="5" rx="1" fill="#1e293b" stroke="#0f172a" strokeWidth="0.8" />
+                    <g transform="rotate(34 114 20)">
+                      <ellipse cx="114" cy="20" rx="18" ry="5.8" fill="url(#cymbal-dark)" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                      <ellipse cx="114" cy="20" rx="4.5" ry="1.8" fill="#71717a" stroke="#0f172a" strokeWidth="1" />
+                      <circle cx="114" cy="20" r="1.2" fill="#0f172a" />
+                    </g>
                   </g>
                 </g>
               ) : (
-                /* --- SINGLE KICK SETUP (Identical Kit, One Centered Bass Drum) --- */
-                <g id="single-kick-drum">
-                  <line x1="48" y1="94" x2="40" y2="104" stroke="url(#chrome-rim)" strokeWidth="2.5" strokeLinecap="round" />
-                  <circle cx="40" cy="104" r="1.7" fill="#0f172a" />
-                  <line x1="92" y1="94" x2="100" y2="104" stroke="url(#chrome-rim)" strokeWidth="2.5" strokeLinecap="round" />
-                  <circle cx="100" cy="104" r="1.7" fill="#0f172a" />
-                  <rect x="49" y="52" width="42" height="48" rx="7" fill="url(#drum-shell-lacquer)" stroke="#0f172a" strokeWidth="2.5" filter="url(#gear-shadow)" />
-                  <circle cx="70" cy="75" r="16.5" fill="url(#kick-resonant-head)" stroke="url(#chrome-rim)" strokeWidth="2.4" />
-                  {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map((deg) => (
-                    <circle
-                      key={deg}
-                      cx={70 + 16.2 * Math.cos((deg * Math.PI) / 180)}
-                      cy={75 + 16.2 * Math.sin((deg * Math.PI) / 180)}
-                      r="1.2"
-                      fill="#ffffff"
-                      stroke="#334155"
-                      strokeWidth="0.5"
-                    />
-                  ))}
-                  <circle cx="79" cy="80" r="4.2" fill="#000000" stroke="#64748b" strokeWidth="1.2" />
-                  <rect x="62" y="70" width="16" height="5.5" rx="1" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.8" />
-                  <text x="70" y="74.2" fontSize="4.5" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.1em">KICK</text>
+                /* === SINGLE KICK DRUM KIT (Matching Attachment il_794xN.8719639962_np70_d2bc52d7.webp) === */
+                <g id="single-kick-kit">
+                  {/* Clean Concert Stage Riser Platform */}
+                  <rect x="8" y="10" width="124" height="114" rx="4" fill="url(#drum-riser-grad)" stroke={isPrint ? "#94a3b8" : "#475569"} strokeWidth="1.8" filter="url(#gear-shadow)" />
+                  <rect x="12" y="14" width="116" height="106" rx="2" fill="none" stroke={isPrint ? "#cbd5e1" : "#334155"} strokeWidth="0.8" strokeDasharray="3 3" />
+                  <polygon points="8,124 8,131 132,131 132,124" fill={isPrint ? "#94a3b8" : "#334155"} stroke={isPrint ? "#64748b" : "#1e293b"} strokeWidth="1" />
+                  <line x1="8" y1="124" x2="132" y2="124" stroke="#ffffff" strokeWidth="0.8" opacity="0.6" />
+                  <rect x="12" y="131" width="5.5" height="7" rx="1" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
+                  <rect x="122.5" y="131" width="5.5" height="7" rx="1" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
+
+                  {/* Drummer Throne behind kick */}
+                  <circle cx="70" cy="24" r="9" fill="#0f172a" stroke="#020617" strokeWidth="1.8" />
+                  <circle cx="70" cy="24" r="7" fill="#1e293b" />
+                  <circle cx="70" cy="24" r="2.2" fill="#334155" stroke="url(#chrome-rim)" strokeWidth="0.8" />
+
+                  {/* 1. LEFT BOOM STAND & CRASH CYMBAL (High boom arm angled inward) */}
+                  <g id="single-left-crash-boom">
+                    <path d="M 12 108 L 24 94 L 36 108 M 24 94 L 24 48" stroke="#0f172a" strokeWidth="2.4" strokeLinecap="round" />
+                    <line x1="16" y1="103" x2="24" y2="98" stroke="#0f172a" strokeWidth="1.4" />
+                    <line x1="32" y1="103" x2="24" y2="98" stroke="#0f172a" strokeWidth="1.4" />
+                    <circle cx="12" cy="108" r="1.5" fill="#0f172a" />
+                    <circle cx="36" cy="108" r="1.5" fill="#0f172a" />
+                    <circle cx="24" cy="48" r="2.5" fill="#475569" stroke="#0f172a" strokeWidth="1" />
+                    <line x1="14" y1="60" x2="38" y2="30" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" />
+                    <rect x="12" y="58" width="4.5" height="5" rx="1" fill="#1e293b" stroke="#0f172a" strokeWidth="0.8" />
+                    <g transform="rotate(-22 38 30)">
+                      <ellipse cx="38" cy="30" rx="16" ry="5.5" fill="url(#cymbal-gold-1)" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                      <ellipse cx="38" cy="30" rx="4" ry="1.6" fill="#eab308" stroke="#0f172a" strokeWidth="1" />
+                      <circle cx="38" cy="30" r="1.2" fill="#0f172a" />
+                    </g>
+                  </g>
+
+                  {/* 2. FLOOR TOM ON THE LEFT */}
+                  <g id="single-floor-tom">
+                    <line x1="20" y1="72" x2="16" y2="98" stroke="#0f172a" strokeWidth="1.8" strokeLinecap="round" />
+                    <circle cx="16" cy="98" r="1.5" fill="#0f172a" />
+                    <line x1="38" y1="72" x2="42" y2="98" stroke="#0f172a" strokeWidth="1.8" strokeLinecap="round" />
+                    <circle cx="42" cy="98" r="1.5" fill="#0f172a" />
+                    <line x1="29" y1="74" x2="29" y2="100" stroke="#0f172a" strokeWidth="1.6" strokeLinecap="round" />
+                    <circle cx="29" cy="100" r="1.5" fill="#0f172a" />
+                    <rect x="19" y="56" width="20" height="22" rx="2" fill="#09090b" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                    <line x1="24" y1="58" x2="24" y2="76" stroke="url(#chrome-rim)" strokeWidth="1.4" />
+                    <line x1="29" y1="58" x2="29" y2="76" stroke="url(#chrome-rim)" strokeWidth="1.4" />
+                    <line x1="34" y1="58" x2="34" y2="76" stroke="url(#chrome-rim)" strokeWidth="1.4" />
+                    <ellipse cx="29" cy="56" rx="10" ry="4.5" fill="url(#drumhead-white)" stroke="#0f172a" strokeWidth="2" />
+                    <ellipse cx="29" cy="78" rx="10" ry="2.5" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.5" />
+                  </g>
+
+                  {/* 3. CENTER KICK DRUM (Huge bold bass drum with tension claws & angled spurs) */}
+                  <g id="single-center-kick">
+                    <line x1="53" y1="88" x2="40" y2="106" stroke="#0f172a" strokeWidth="2.8" strokeLinecap="round" />
+                    <circle cx="40" cy="106" r="2" fill="#0f172a" />
+                    <line x1="87" y1="88" x2="100" y2="106" stroke="#0f172a" strokeWidth="2.8" strokeLinecap="round" />
+                    <circle cx="100" cy="106" r="2" fill="#0f172a" />
+                    <circle cx="70" cy="78" r="23" fill="#020617" stroke="#0f172a" strokeWidth="2.5" filter="url(#gear-shadow)" />
+                    <circle cx="70" cy="78" r="25.5" fill="none" stroke="url(#chrome-rim)" strokeWidth="2.4" />
+                    <circle cx="70" cy="78" r="20.5" fill="none" stroke="#334155" strokeWidth="1" />
+                    <circle cx="80" cy="84" r="4.2" fill="#000000" stroke="#475569" strokeWidth="1.2" />
+                    {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map((deg) => (
+                      <rect
+                        key={deg}
+                        x={70 + 24.5 * Math.cos((deg * Math.PI) / 180) - 1.5}
+                        y={78 + 24.5 * Math.sin((deg * Math.PI) / 180) - 1.5}
+                        width="3"
+                        height="3"
+                        rx="0.6"
+                        fill="#ffffff"
+                        stroke="#0f172a"
+                        strokeWidth="0.8"
+                      />
+                    ))}
+                    <rect x="62" y="73" width="16" height="5" rx="1" fill="#1e293b" stroke="#cbd5e1" strokeWidth="0.8" />
+                    <text x="70" y="77" fontSize="4.2" fontWeight="900" fill="#f8fafc" textAnchor="middle" letterSpacing="0.08em">KICK</text>
+                    <line x1="70" y1="54" x2="70" y2="44" stroke="#0f172a" strokeWidth="2.5" />
+                    <line x1="58" y1="44" x2="82" y2="44" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" />
+                  </g>
+
+                  {/* 4. TWO RACK TOMS (Mounted on center post) */}
+                  <g id="single-tom-1">
+                    <rect x="47" y="38" width="16" height="15" rx="1.5" fill="#09090b" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                    <line x1="51" y1="40" x2="51" y2="52" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="55" y1="40" x2="55" y2="52" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="59" y1="40" x2="59" y2="52" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <ellipse cx="55" cy="38" rx="8" ry="3.8" fill="url(#drumhead-white)" stroke="#0f172a" strokeWidth="1.8" />
+                    <ellipse cx="55" cy="53" rx="8" ry="2" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                  </g>
+                  <g id="single-tom-2">
+                    <rect x="69" y="38" width="18" height="16" rx="1.5" fill="#09090b" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                    <line x1="73.5" y1="40" x2="73.5" y2="53" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="78" y1="40" x2="78" y2="53" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="82.5" y1="40" x2="82.5" y2="53" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <ellipse cx="78" cy="38" rx="9" ry="4" fill="url(#drumhead-white)" stroke="#0f172a" strokeWidth="1.8" />
+                    <ellipse cx="78" cy="54" rx="9" ry="2.2" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                  </g>
+
+                  {/* 5. SNARE DRUM ON BASKET STAND (Right of kick) */}
+                  <g id="single-snare-drum">
+                    <path d="M 88 106 L 97 94 L 106 106 M 97 94 L 97 70" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" />
+                    <path d="M 87 62 L 92 68 L 97 70 L 102 68 L 107 62" stroke="#0f172a" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+                    <rect x="87" y="58" width="20" height="11" rx="1.5" fill="#09090b" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                    <line x1="91" y1="60" x2="91" y2="68" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="97" y1="60" x2="97" y2="68" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <line x1="103" y1="60" x2="103" y2="68" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                    <rect x="85.5" y="61" width="2" height="4" fill="#ffffff" stroke="#0f172a" strokeWidth="0.8" />
+                    <ellipse cx="97" cy="58" rx="10" ry="4.2" fill="url(#drumhead-white)" stroke="#0f172a" strokeWidth="1.8" />
+                    <ellipse cx="97" cy="69" rx="10" ry="2.2" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.2" />
+                  </g>
+
+                  {/* 6. RIGHT RIDE/CRASH CYMBAL STAND */}
+                  <g id="single-right-cymbal">
+                    <path d="M 98 108 L 109 94 L 120 108 M 109 94 L 109 38" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" />
+                    <g transform="rotate(16 108 30)">
+                      <ellipse cx="108" cy="30" rx="17" ry="5.8" fill="url(#cymbal-gold-1)" stroke="#0f172a" strokeWidth="2" filter="url(#gear-shadow)" />
+                      <ellipse cx="108" cy="30" rx="4.5" ry="1.8" fill="#eab308" stroke="#0f172a" strokeWidth="1" />
+                      <circle cx="108" cy="30" r="1.2" fill="#0f172a" />
+                    </g>
+                  </g>
+
+                  {/* 7. HI-HAT STAND (Far Right) */}
+                  <g id="single-hi-hat">
+                    <path d="M 116 108 L 122 96 L 128 108 M 122 96 L 122 36" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+                    <polygon points="120,107 124,107 122,102" fill="#0f172a" />
+                    <g transform="rotate(-8 122 52)">
+                      <ellipse cx="122" cy="51" rx="11" ry="3.6" fill="url(#cymbal-gold-2)" stroke="#0f172a" strokeWidth="1.8" filter="url(#gear-shadow)" />
+                      <ellipse cx="122" cy="53" rx="11" ry="3.6" fill="url(#cymbal-gold-2)" stroke="#0f172a" strokeWidth="1.8" />
+                      <circle cx="122" cy="51" r="2.5" fill="#eab308" stroke="#0f172a" strokeWidth="0.8" />
+                    </g>
+                  </g>
                 </g>
               )}
-
-              {/* === ELECTRONIC SAMPLE MULTI-PAD (Left) === */}
-              <g id="electronic-sample-pad">
-                <rect x="15" y="15" width="18" height="24" rx="2" fill="#18181b" stroke="#3f3f46" strokeWidth="1.5" />
-                <rect x="17" y="18" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
-                <rect x="22" y="18" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
-                <rect x="27" y="18" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
-                <rect x="17" y="25" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
-                <rect x="22" y="25" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
-                <rect x="27" y="25" width="4" height="5.5" rx="0.6" fill="#3f3f46" />
-                <rect x="17" y="32.5" width="14" height="3.5" rx="0.5" fill="#0284c7" opacity="0.85" />
-              </g>
-
-              {/* === SNARE DRUM (Player's Left / Stage Right) === */}
-              <g id="snare-drum">
-                <circle cx="43" cy="72" r="13" fill="#ffffff" stroke="#0f172a" strokeWidth="2.5" filter="url(#gear-shadow)" />
-                <circle cx="43" cy="72" r="11.5" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.5" />
-                <line x1="32" y1="72" x2="54" y2="72" stroke="#94a3b8" strokeWidth="1" strokeDasharray="1.5 1.5" />
-                <rect x="29" y="70.5" width="2" height="3" fill="#cbd5e1" stroke="#334155" strokeWidth="0.5" />
-                <text x="43" y="73.5" fontSize="4.5" fontWeight="900" fill="#475569" textAnchor="middle">SNARE</text>
-              </g>
-
-              {/* === MOUNTED RACK TOMS (Matching teal lacquer & white heads from reference) === */}
-              {/* Tom 1 (High Tom) */}
-              <g id="tom-1">
-                <circle cx="56" cy="42" r="10.5" fill="#f8fafc" stroke="#2a4b48" strokeWidth="2.2" />
-                <circle cx="56" cy="42" r="9" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.2" />
-                <text x="56" y="43.5" fontSize="4" fontWeight="800" fill="#64748b" textAnchor="middle">TOM 1</text>
-              </g>
-
-              {/* Tom 2 (Mid Tom) */}
-              <g id="tom-2">
-                <circle cx="84" cy="42" r="11" fill="#f8fafc" stroke="#2a4b48" strokeWidth="2.2" />
-                <circle cx="84" cy="42" r="9.5" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.2" />
-                <text x="84" y="43.5" fontSize="4" fontWeight="800" fill="#64748b" textAnchor="middle">TOM 2</text>
-              </g>
-
-              {/* Floor Tom (Low Tom on Right) */}
-              <g id="floor-tom">
-                <circle cx="104" cy="74" r="14.5" fill="#f8fafc" stroke="#2a4b48" strokeWidth="2.6" filter="url(#gear-shadow)" />
-                <circle cx="104" cy="74" r="13" fill="none" stroke="url(#chrome-rim)" strokeWidth="1.5" />
-                {[0, 60, 120, 180, 240, 300].map((deg) => (
-                  <circle
-                    key={deg}
-                    cx={104 + 13 * Math.cos((deg * Math.PI) / 180)}
-                    cy={74 + 13 * Math.sin((deg * Math.PI) / 180)}
-                    r="1"
-                    fill="#ffffff"
-                    stroke="#475569"
-                    strokeWidth="0.5"
-                  />
-                ))}
-                <text x="104" y="75.5" fontSize="4.5" fontWeight="900" fill="#64748b" textAnchor="middle">FLOOR</text>
-              </g>
-
-              {/* === HIGH-GLOSS GOLD LATHED CYMBALS ON CHROME BOOM STANDS === */}
-              {/* Hi-Hat (Stage Right / Audience Left) */}
-              <g id="hi-hat-cymbals">
-                <circle cx="23" cy="62" r="12" fill="url(#cymbal-gold-1)" stroke="#854d0e" strokeWidth="2" filter="url(#gear-shadow)" />
-                <circle cx="23" cy="62" r="9" fill="none" stroke="#ca8a04" strokeWidth="0.6" strokeDasharray="2 1" />
-                <circle cx="23" cy="62" r="3" fill="#eab308" stroke="#fef08a" strokeWidth="1" />
-                <circle cx="23" cy="62" r="1" fill="#1e293b" />
-              </g>
-
-              {/* Left Crash Cymbal (High Boom Stand from Reference) */}
-              <g id="left-crash">
-                <circle cx="34" cy="33" r="15" fill="url(#cymbal-gold-2)" stroke="#92400e" strokeWidth="2.2" filter="url(#gear-shadow)" />
-                <circle cx="34" cy="33" r="11" fill="none" stroke="#d97706" strokeWidth="0.8" strokeDasharray="3 1" />
-                <circle cx="34" cy="33" r="3.8" fill="#facc15" stroke="#fef9c3" strokeWidth="1" />
-                <circle cx="34" cy="33" r="1.2" fill="#1e293b" />
-              </g>
-
-              {/* Right Splash / Crash (High Boom Stand from Reference) */}
-              <g id="right-splash">
-                <circle cx="106" cy="33" r="13" fill="url(#cymbal-gold-2)" stroke="#92400e" strokeWidth="2" filter="url(#gear-shadow)" />
-                <circle cx="106" cy="33" r="9.5" fill="none" stroke="#d97706" strokeWidth="0.7" strokeDasharray="2.5 1" />
-                <circle cx="106" cy="33" r="3.2" fill="#facc15" stroke="#fef9c3" strokeWidth="1" />
-                <circle cx="106" cy="33" r="1" fill="#1e293b" />
-              </g>
-
-              {/* Right Ride Cymbal (Stage Left / Audience Right) */}
-              <g id="ride-cymbal">
-                <circle cx="116" cy="54" r="17" fill="url(#cymbal-gold-1)" stroke="#854d0e" strokeWidth="2.4" filter="url(#gear-shadow)" />
-                <circle cx="116" cy="54" r="13" fill="none" stroke="#ca8a04" strokeWidth="0.8" strokeDasharray="3 1.5" />
-                <circle cx="116" cy="54" r="9" fill="none" stroke="#ca8a04" strokeWidth="0.7" strokeDasharray="2 1" />
-                <circle cx="116" cy="54" r="4.5" fill="#eab308" stroke="#fef08a" strokeWidth="1.2" />
-                <circle cx="116" cy="54" r="1.4" fill="#1e293b" />
-              </g>
           </svg>
         </div>
       );

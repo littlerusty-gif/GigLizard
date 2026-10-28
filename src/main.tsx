@@ -18,18 +18,14 @@ if (typeof window !== 'undefined' && window.fetch) {
   } catch (_) {}
 }
 
-try {
-  analytics.init({
-    projectKey: 'hck_pk_vYte28EY2OYwgTW9mqPV5-I41Q4w-ygw',
-    install: {
-      framework: 'vite-react',
-      frameworkVersion: '19',
-      agent: 'other',
-    },
-  });
-} catch (err) {
-  console.warn('[HeyCatch] Analytics init notice:', err);
-}
+analytics.init({
+  projectKey: 'hck_pk_vYte28EY2OYwgTW9mqPV5-I41Q4w-ygw',
+  install: {
+    framework: 'vite-react',
+    frameworkVersion: '19',
+    agent: 'other',
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

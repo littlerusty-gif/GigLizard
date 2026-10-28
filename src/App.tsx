@@ -1132,6 +1132,17 @@ export default function GigLizardApp() {
   const handleUpdateAccount = (account: UserAccount) => {
     setCurrentAccount(account);
     localStorage.setItem("current_user_account_v1", JSON.stringify(account));
+    const identId = account.id || account.email || account.contactEmail;
+    if (identId) {
+      analytics.setIdentity(
+        identId,
+        {
+          email: account.email || account.contactEmail || "",
+          name: account.name || "Musician",
+          plan: account.hasPaidAccess ? "pro" : "free",
+        }
+      );
+    }
   };
 
   const handleLogOut = async () => {

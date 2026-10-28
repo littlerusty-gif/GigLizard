@@ -200,7 +200,16 @@ export default function PayPalAccessModal({
 
       localStorage.setItem("venue_user_profile_v1", JSON.stringify(updatedAccount));
 
-      // HeyCatch: Track subscription started and update user plan property
+      // HeyCatch: Identify subscriber and track subscription started
+      const identityId = updatedAccount.id || resolvedEmail;
+      analytics.setIdentity(
+        identityId,
+        {
+          email: resolvedEmail,
+          name: updatedAccount.name || resolvedEmail.split("@")[0],
+          plan: "pro",
+        }
+      );
       analytics.setPersonProperties({ plan: "pro" });
       analytics.trackEvent("subscription_started", { plan: "pro", amount: 9.99 });
 
