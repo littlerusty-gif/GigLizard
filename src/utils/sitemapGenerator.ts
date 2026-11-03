@@ -10,6 +10,7 @@
 
 import { POPULAR_TOURING_CITIES, POPULAR_GENRE_CITY_ROUTES } from "./venueSeoRoutes";
 import { MUSIC_VENUES } from "../data/venues";
+import { TOUR_ARTICLES } from "../data/tourArticles";
 
 export interface SitemapEntry {
   url: string;
@@ -196,6 +197,38 @@ export function getCoreSitemapEntries(): SitemapEntry[] {
     lastmod: today,
     changefreq: "daily",
     priority: "0.85"
+  });
+
+  // Legal & Privacy Policy
+  entries.push({
+    url: "https://www.giglizard.us/privacy",
+    lastmod: today,
+    changefreq: "monthly",
+    priority: "0.70"
+  });
+
+  entries.push({
+    url: "https://www.giglizard.us/privacy-policy",
+    lastmod: today,
+    changefreq: "monthly",
+    priority: "0.70"
+  });
+
+  // 5. Tour Advice Master Articles (10 Dedicated Playbooks)
+  entries.push({
+    url: "https://www.giglizard.us/articles",
+    lastmod: today,
+    changefreq: "weekly",
+    priority: "0.90"
+  });
+
+  TOUR_ARTICLES.forEach(article => {
+    entries.push({
+      url: `https://www.giglizard.us/articles/${article.slug}`,
+      lastmod: article.updatedDate || today,
+      changefreq: "monthly",
+      priority: "0.85"
+    });
   });
 
   // 5. Popular Genre Hubs (e.g. /venues/rock, /venues/punk)

@@ -16,6 +16,7 @@ interface FooterProps {
   onOpenCustomers?: () => void;
   onOpenFaq?: () => void;
   onOpenVerification?: () => void;
+  onOpenPrivacy?: () => void;
   userEmail?: string;
   userName?: string;
 }
@@ -34,6 +35,7 @@ export default function Footer({
   onOpenCustomers,
   onOpenFaq,
   onOpenVerification,
+  onOpenPrivacy,
   userEmail,
   userName
 }: FooterProps) {
@@ -273,16 +275,24 @@ export default function Footer({
 
             <span className="text-slate-700 hidden sm:inline">•</span>
 
-            <button
-              type="button"
-              onClick={() => setShowPrivacyNotice(true)}
+            <a
+              href="/privacy"
+              onClick={(e) => {
+                if (onOpenPrivacy) {
+                  e.preventDefault();
+                  onOpenPrivacy();
+                } else {
+                  e.preventDefault();
+                  setShowPrivacyNotice(true);
+                }
+              }}
               className="text-slate-400 hover:text-emerald-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
               id="footer-btn-privacy-policy"
               title="View GigLizard Privacy Policy"
             >
               <Lock className="w-3.5 h-3.5 text-emerald-400" />
               <span>Privacy Policy</span>
-            </button>
+            </a>
 
             {onOpenSecurity && (
               <>
@@ -410,6 +420,14 @@ export default function Footer({
             </div>
 
             <div className="text-xs text-slate-350 space-y-2.5 leading-relaxed">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1 text-amber-200">
+                <p className="font-bold text-amber-300">Third-Party Vendors &amp; Advertising Cookies:</p>
+                <p>Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website.</p>
+                <p className="text-[11px] text-amber-200/80">
+                  Users may opt out of personalized advertising by visiting Google Ads Settings (google.com/settings/ads) or www.aboutads.info.
+                </p>
+              </div>
+
               <p>
                 <strong>Data Privacy Commitment:</strong> GigLizard strictly protects artist and venue data. We never sell, rent, or lease contact listings, booking emails, or private phone records to third-party data brokers or marketing services.
               </p>
@@ -421,13 +439,26 @@ export default function Footer({
               </p>
             </div>
 
-            <div className="pt-2 flex justify-end border-t border-slate-800">
+            <div className="pt-2 flex items-center justify-between border-t border-slate-800">
+              <a
+                href="/privacy"
+                onClick={(e) => {
+                  setShowPrivacyNotice(false);
+                  if (onOpenPrivacy) {
+                    e.preventDefault();
+                    onOpenPrivacy();
+                  }
+                }}
+                className="text-xs font-bold text-emerald-400 hover:text-emerald-300 underline"
+              >
+                View Full Privacy Policy Page &rarr;
+              </a>
               <button
                 type="button"
                 onClick={() => setShowPrivacyNotice(false)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl cursor-pointer transition-all"
               >
-                Close Privacy Policy
+                Close
               </button>
             </div>
           </div>

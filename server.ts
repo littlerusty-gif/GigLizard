@@ -12,6 +12,7 @@ import { MUSIC_VENUES } from "./src/data/venues";
 import { resolveBandAgency } from "./src/utils/bookingAgencies";
 import { parseProgrammaticVenuePath } from "./src/utils/venueSeoRoutes";
 import { generateSitemapXml, generateDynamicSupabaseSitemap } from "./src/utils/sitemapGenerator";
+import { TOUR_ARTICLES, getArticleBySlug } from "./src/data/tourArticles";
 
 dotenv.config();
 
@@ -1799,10 +1800,52 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     canonical: "https://giglizard.us/tools/poster-designer",
     heading: "Free Gig Poster Maker & Concert Flyer Generator",
     subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
+  },
+  "/articles": {
+    title: "Tour Advice Playbooks & Road Wisdom (10 Original Articles) | GigLizard",
+    description: "10 master tour advice articles for DIY bands: route corridors, van gas budgets, cold-emailing bookers, stage plots, and midnight settlements.",
+    canonical: "https://www.giglizard.us/articles",
+    heading: "Tour Advice & Road Strategy Playbooks (10 Master Guides)",
+    subhead: "Believable, real-world touring guides written by touring musicians and veteran sound engineers."
+  },
+  "/tour-advice": {
+    title: "Tour Advice Playbooks & Road Wisdom (10 Original Articles) | GigLizard",
+    description: "10 master tour advice articles for DIY bands: route corridors, van gas budgets, cold-emailing bookers, stage plots, and midnight settlements.",
+    canonical: "https://www.giglizard.us/articles",
+    heading: "Tour Advice & Road Strategy Playbooks (10 Master Guides)",
+    subhead: "Believable, real-world touring guides written by touring musicians and veteran sound engineers."
+  },
+  "/privacy": {
+    title: "Privacy Policy | GigLizard",
+    description: "GigLizard Privacy Policy: Learn how we protect artist, band, and venue data, and our policies on cookies, third-party advertising, and payment security.",
+    canonical: "https://www.giglizard.us/privacy",
+    heading: "GigLizard Privacy Policy",
+    subhead: "Transparent data protection commitments, cookie disclosures, and privacy standards for musicians and venues."
+  },
+  "/privacy-policy": {
+    title: "Privacy Policy | GigLizard",
+    description: "GigLizard Privacy Policy: Learn how we protect artist, band, and venue data, and our policies on cookies, third-party advertising, and payment security.",
+    canonical: "https://www.giglizard.us/privacy",
+    heading: "GigLizard Privacy Policy",
+    subhead: "Transparent data protection commitments, cookie disclosures, and privacy standards for musicians and venues."
   }
 };
 
 function getRouteNoscriptSnippet(cleanPath: string): string {
+  if (cleanPath === "/privacy" || cleanPath === "/privacy-policy") {
+    return `
+        <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
+          <h2>GigLizard Privacy Policy</h2>
+          <div style="margin-bottom: 20px; padding: 15px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px;">
+            <h3>Third-Party Vendors &amp; Advertising Cookies</h3>
+            <p><strong>Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website.</strong></p>
+            <p>Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to GigLizard and/or other sites on the Internet. Users may opt out of personalized advertising by visiting Google Ads Settings (google.com/settings/ads) or www.aboutads.info.</p>
+          </div>
+          <h3>Data Privacy Commitment</h3>
+          <p>GigLizard strictly protects artist and venue data. We never sell, rent, or lease contact listings, booking emails, or private phone records to third-party data brokers or marketing services.</p>
+          <p>All subscription transactions are securely processed via standard 256-bit encrypted PayPal checkout pipelines. GigLizard never stores credit card or raw banking credentials on its servers.</p>
+        </div>`;
+  }
   if (cleanPath === "/pricing") {
     return `
         <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
@@ -1959,16 +2002,86 @@ function getRouteNoscriptSnippet(cleanPath: string): string {
           </dl>
         </div>`;
   }
+  if (cleanPath === "/articles" || cleanPath === "/tour-advice") {
+    return `
+        <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
+          <h2>Tour Advice Playbooks &amp; Road Wisdom (10 Master Guides)</h2>
+          <p>Believable, real-world touring guides written by touring musicians and live sound engineers for independent bands.</p>
+          <ul style="padding-left: 20px; line-height: 1.8;">
+            ${TOUR_ARTICLES.map(art => `
+              <li style="margin-bottom: 12px;">
+                <strong><a href="/articles/${art.slug}">${art.title}</a></strong> (${art.category} • ${art.readTimeMinutes} min read) — ${art.excerpt}
+              </li>
+            `).join("\n            ")}
+          </ul>
+        </div>`;
+  }
+  if (cleanPath.startsWith("/articles/")) {
+    const slug = cleanPath.replace(/^\/articles\//, "");
+    const article = getArticleBySlug(slug);
+    if (article) {
+      return `
+        <article style="margin-top: 25px; padding: 30px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.7; max-width: 900px; margin-left: auto; margin-right: auto;">
+          <header style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
+            <p style="font-size: 13px; text-transform: uppercase; font-weight: bold; color: #047857; margin-bottom: 8px;">${article.category} • ${article.readTimeMinutes} min read</p>
+            <h1 style="font-size: 28px; line-height: 1.3; color: #0f172a; margin-bottom: 12px;">${article.title}</h1>
+            <p style="font-size: 16px; color: #475569; font-weight: 500; margin-bottom: 15px;">${article.excerpt}</p>
+            <p style="font-size: 13px; color: #64748b;">By <strong>${article.author.name}</strong> (${article.author.role}) • Published on ${article.publishDate}</p>
+          </header>
+
+          <section style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 18px 20px; border-radius: 8px; margin-bottom: 30px;">
+            <h3 style="margin-top: 0; color: #065f46; font-size: 17px;">Key Road Takeaways</h3>
+            <ul style="padding-left: 20px; margin-bottom: 0;">
+              ${article.keyTakeaways.map(t => `<li style="margin-bottom: 6px; color: #1e293b;">${t}</li>`).join("\n              ")}
+            </ul>
+          </section>
+
+          ${article.sections.map(sec => `
+            <section style="margin-bottom: 30px;">
+              <h2 style="font-size: 22px; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 15px;">${sec.heading}</h2>
+              ${sec.content.map(p => `<p style="margin-bottom: 14px; color: #334155; font-size: 15px;">${p}</p>`).join("\n              ")}
+              ${sec.bulletList ? `
+                <ul style="padding-left: 24px; margin-top: 10px; margin-bottom: 15px;">
+                  ${sec.bulletList.map(bp => `<li style="margin-bottom: 8px; color: #334155;">${bp}</li>`).join("\n                  ")}
+                </ul>
+              ` : ""}
+            </section>
+          `).join("\n          ")}
+
+          ${article.faq && article.faq.length > 0 ? `
+            <section style="margin-top: 35px; border-top: 2px solid #e2e8f0; padding-top: 25px;">
+              <h3 style="font-size: 20px; color: #0f172a; margin-bottom: 15px;">Frequently Asked Questions</h3>
+              <dl>
+                ${article.faq.map(item => `
+                  <dt style="font-weight: bold; color: #1e293b; margin-top: 16px; font-size: 16px;">${item.q}</dt>
+                  <dd style="margin-left: 0; margin-top: 6px; color: #475569; font-size: 14px; line-height: 1.6;">${item.a}</dd>
+                `).join("\n                ")}
+              </dl>
+            </section>
+          ` : ""}
+        </article>`;
+    }
+  }
   return "";
 }
 
 function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
   const cleanPath = reqPath.split("?")[0].replace(/\/$/, "") || "/";
   
-  // 1. Check if this is a programmatic venue directory route (e.g. /venues/austin-tx, /venues/rock/chicago, /venues/seattle-wa)
+  // 1. Check if this is a programmatic venue directory route or tour article route
   const prog = cleanPath.startsWith("/venues/") ? parseProgrammaticVenuePath(cleanPath) : null;
+  const articleSlug = cleanPath.startsWith("/articles/") ? cleanPath.replace(/^\/articles\//, "") : null;
+  const article = articleSlug ? getArticleBySlug(articleSlug) : null;
   
-  const meta: RouteMetadata = prog
+  const meta: RouteMetadata = article
+    ? {
+        title: article.seoTitle.includes("GigLizard") ? article.seoTitle : `${article.seoTitle} | GigLizard`,
+        description: article.metaDescription,
+        canonical: `https://www.giglizard.us/articles/${article.slug}`,
+        heading: article.title,
+        subhead: article.excerpt
+      }
+    : prog
     ? {
         title: prog.title,
         description: prog.description,
@@ -1979,6 +2092,13 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
     : (ROUTE_METADATA_MAP[cleanPath] || ROUTE_METADATA_MAP["/"]);
 
   let html = rawTemplate;
+  // Ensure Google AdSense script is present between <head></head> tags on every rendered page
+  if (!html.includes("ca-pub-9512474787890878")) {
+    html = html.replace(
+      "<head>",
+      `<head>\n    <!-- Google AdSense -->\n    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9512474787890878"\n     crossorigin="anonymous"></script>`
+    );
+  }
   html = html.replace(/<title>.*?<\/title>/s, `<title>${meta.title}</title>`);
   html = html.replace(/<meta name="description" content=".*?" \/>/s, `<meta name="description" content="${meta.description}" />`);
   html = html.replace(/<link rel="canonical" href=".*?" \/>/s, `<link rel="canonical" href="${meta.canonical}" />`);
@@ -2060,8 +2180,70 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
     
     html = html.replace("</main>", noscriptContent);
   } else {
-    // Inject custom SoftwareApplication + FAQPage JSON-LD structured data for stage plot & poster tools
-    if (cleanPath === "/plot" || cleanPath === "/tools/stage-plot" || cleanPath === "/stage-plot") {
+    // Inject custom Schema.org structured data for articles, stage plot & poster tools
+    if (article) {
+      const articleSchema = {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Article",
+            "@id": `https://www.giglizard.us/articles/${article.slug}#article`,
+            "headline": article.title,
+            "description": article.metaDescription,
+            "inLanguage": "en-US",
+            "author": {
+              "@type": "Person",
+              "name": article.author.name,
+              "jobTitle": article.author.role
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "GigLizard",
+              "url": "https://www.giglizard.us"
+            },
+            "datePublished": article.publishDate,
+            "dateModified": article.updatedDate,
+            "mainEntityOfPage": `https://www.giglizard.us/articles/${article.slug}`
+          },
+          ...(article.faq && article.faq.length > 0 ? [{
+            "@type": "FAQPage",
+            "@id": `https://www.giglizard.us/articles/${article.slug}#faq`,
+            "mainEntity": article.faq.map(item => ({
+              "@type": "Question",
+              "name": item.q,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": item.a
+              }
+            }))
+          }] : [])
+        ]
+      };
+      html = html.replace(
+        "</head>",
+        `    <script type="application/ld+json">\n    ${JSON.stringify(articleSchema, null, 2)}\n    </script>\n  </head>`
+      );
+    } else if (cleanPath === "/articles" || cleanPath === "/tour-advice") {
+      const articleListSchema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Tour Advice Playbooks & Road Wisdom",
+        "description": "10 original touring guides and playbooks written by touring musicians and live sound engineers.",
+        "url": "https://www.giglizard.us/articles",
+        "numberOfItems": TOUR_ARTICLES.length,
+        "itemListElement": TOUR_ARTICLES.map((art, idx) => ({
+          "@type": "ListItem",
+          "position": idx + 1,
+          "name": art.title,
+          "url": `https://www.giglizard.us/articles/${art.slug}`,
+          "description": art.excerpt
+        }))
+      };
+      html = html.replace(
+        "</head>",
+        `    <script type="application/ld+json">\n    ${JSON.stringify(articleListSchema, null, 2)}\n    </script>\n  </head>`
+      );
+    } else if (cleanPath === "/plot" || cleanPath === "/tools/stage-plot" || cleanPath === "/stage-plot") {
       const stagePlotSchema = {
         "@context": "https://schema.org",
         "@graph": [

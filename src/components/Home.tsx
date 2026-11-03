@@ -7,8 +7,10 @@ import {
   HelpCircle, UserCheck, LogOut, ArrowRight, Lock, LogIn,
   Compass, Navigation, CheckCircle, X, ShieldCheck, Clock, CheckCircle2,
   KeyRound, Eye, EyeOff, Headphones, ExternalLink, Settings, AlertCircle, RefreshCw,
-  RotateCcw, Heart, Award, ThumbsUp, ChevronDown, ChevronUp, Scale, FileSpreadsheet, Layers, BarChart3
+  RotateCcw, Heart, Award, ThumbsUp, ChevronDown, ChevronUp, Scale, FileSpreadsheet, Layers, BarChart3,
+  BookOpen
 } from "lucide-react";
+import { TOUR_ARTICLES } from "../data/tourArticles";
 import CaptchaChallenge from "./CaptchaChallenge";
 import PayPalAccessModal from "./PayPalAccessModal";
 import AboutMissionModal from "./AboutMissionModal";
@@ -40,7 +42,8 @@ interface HomeProps {
   currentAccount: UserAccount | null;
   currentUser?: any | null;
   onSetCurrentUser?: (user: any) => void;
-  onSelectTab: (tab: "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "admin" | "pricing" | "compare" | "about" | "features" | "guide" | "customers" | "changelog" | "verification") => void;
+  onSelectTab: (tab: any, pushToHistory?: boolean) => void;
+  onSelectArticle?: (slug: string) => void;
   onRegisterAccount: (account: UserAccount) => void;
   onUpdatePricing: (isPremium: boolean) => void;
   onUpdateAccount?: (account: UserAccount) => void;
@@ -53,6 +56,7 @@ export default function Home({
   currentUser,
   onSetCurrentUser,
   onSelectTab, 
+  onSelectArticle,
   onRegisterAccount, 
   onUpdatePricing,
   onUpdateAccount,
@@ -1130,9 +1134,13 @@ export default function Home({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="four-core-elements-row">
           
           {/* Feature 1: Stage Plot Designer */}
-          <div 
-            onClick={() => onSelectTab("plot")}
-            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-orange-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between" 
+          <a 
+            href="/plot"
+            onClick={(e) => {
+              e.preventDefault();
+              onSelectTab("plot");
+            }}
+            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-orange-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between text-left no-underline" 
             id="element-responsive-stage"
           >
             <div className="space-y-3">
@@ -1141,7 +1149,7 @@ export default function Home({
                   <Sliders className="w-5 h-5" />
                 </div>
                 <span className="text-xs text-orange-700 font-semibold">
-                  Interactive Canvas
+                  Dedicated Tool (/plot)
                 </span>
               </div>
               <div>
@@ -1159,14 +1167,18 @@ export default function Home({
             </div>
 
             <div className="pt-2 text-xs font-bold text-orange-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-              Launch Plot Designer ($0) <ArrowRight className="w-3.5 h-3.5" />
+              Open Plot Designer Page ($0) <ArrowRight className="w-3.5 h-3.5" />
             </div>
-          </div>
+          </a>
 
           {/* Feature 2: Tech Rider Builder */}
-          <div 
-            onClick={() => onSelectTab("rider")}
-            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-blue-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between" 
+          <a 
+            href="/rider"
+            onClick={(e) => {
+              e.preventDefault();
+              onSelectTab("rider");
+            }}
+            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-blue-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between text-left no-underline" 
             id="element-professional-tech"
           >
             <div className="space-y-3">
@@ -1175,7 +1187,7 @@ export default function Home({
                   <FileText className="w-5 h-5" />
                 </div>
                 <span className="text-xs text-blue-700 font-semibold">
-                  Live Sound Specs
+                  Dedicated Tool (/rider)
                 </span>
               </div>
               <div>
@@ -1193,14 +1205,18 @@ export default function Home({
             </div>
 
             <div className="pt-2 text-xs font-bold text-blue-700 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-              Make Tech Rider ($0) <ArrowRight className="w-3.5 h-3.5" />
+              Open Tech Rider Page ($0) <ArrowRight className="w-3.5 h-3.5" />
             </div>
-          </div>
+          </a>
 
           {/* Feature 3: Concert Poster Designer */}
-          <div 
-            onClick={() => onSelectTab("poster")}
-            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-emerald-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between" 
+          <a 
+            href="/poster"
+            onClick={(e) => {
+              e.preventDefault();
+              onSelectTab("poster");
+            }}
+            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-emerald-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between text-left no-underline" 
             id="element-promo-poster"
           >
             <div className="space-y-3">
@@ -1209,7 +1225,7 @@ export default function Home({
                   <Image className="w-5 h-5" />
                 </div>
                 <span className="text-xs text-emerald-700 font-semibold">
-                  Gig Flyer Studio
+                  Dedicated Tool (/poster)
                 </span>
               </div>
               <div>
@@ -1227,14 +1243,18 @@ export default function Home({
             </div>
 
             <div className="pt-2 text-xs font-bold text-emerald-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-              Open Flyer Editor ($0) <ArrowRight className="w-3.5 h-3.5" />
+              Open Poster Studio Page ($0) <ArrowRight className="w-3.5 h-3.5" />
             </div>
-          </div>
+          </a>
 
           {/* Feature 4: Smart Tour Planner */}
-          <div 
-            onClick={() => onSelectTab("tour")}
-            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-rose-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between" 
+          <a 
+            href="/tour"
+            onClick={(e) => {
+              e.preventDefault();
+              onSelectTab("tour");
+            }}
+            className="group bg-white rounded-2xl border border-gray-200/80 hover:border-rose-300 p-5 space-y-4 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between text-left no-underline" 
             id="element-ai-tour-scheduler"
           >
             <div className="space-y-3">
@@ -1243,7 +1263,7 @@ export default function Home({
                   <Compass className="w-5 h-5" />
                 </div>
                 <span className="text-xs text-rose-700 font-semibold">
-                  Route &amp; Gas Budgets
+                  Dedicated Tool (/tour)
                 </span>
               </div>
               <div>
@@ -1261,10 +1281,89 @@ export default function Home({
             </div>
 
             <div className="pt-2 text-xs font-bold text-rose-600 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-              Plan Tour Route ($0) <ArrowRight className="w-3.5 h-3.5" />
+              Open Tour Planner Page ($0) <ArrowRight className="w-3.5 h-3.5" />
             </div>
+          </a>
+
+        </div>
+      </section>
+
+      {/* Tour Advice & Road Playbooks (10 Dedicated Articles) */}
+      <section className="space-y-6 scroll-mt-20" id="tour-advice-playbooks">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>10 Tour Advice Playbooks</span>
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+                100% Free / No Paywalls
+              </span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+              Real Road Wisdom from Working Musicians
+            </h2>
+            <p className="text-xs md:text-sm text-gray-500 max-w-2xl leading-relaxed">
+              Written by Pacific Northwest touring artist Little Rusty. Master van fuel budgets, cold venue outreach, stage plots, line checks, and midnight settlements without fluff or amateur theory.
+            </p>
           </div>
 
+          <a
+            href="/articles"
+            onClick={(e) => {
+              e.preventDefault();
+              onSelectTab("articles");
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md shrink-0 cursor-pointer group"
+          >
+            <span>View All 10 Playbooks (/articles)</span>
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+          </a>
+        </div>
+
+        {/* 3 Featured Articles Preview Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {TOUR_ARTICLES.slice(0, 3).map((art) => (
+            <a
+              key={art.id}
+              href={`/articles/${art.slug}`}
+              onClick={(e) => {
+                e.preventDefault();
+                if (onSelectArticle) {
+                  onSelectArticle(art.slug);
+                } else {
+                  onSelectTab("articles");
+                }
+              }}
+              className="group bg-white rounded-2xl border border-gray-200/80 hover:border-emerald-400 p-5 space-y-3 transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between text-left no-underline"
+            >
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-extrabold uppercase tracking-wider text-[10px] border border-emerald-200/60">
+                    {art.category}
+                  </span>
+                  <span className="text-gray-400 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{art.readTimeMinutes} min</span>
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors leading-snug line-clamp-2">
+                  {art.title}
+                </h3>
+                <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                  {art.excerpt}
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-emerald-700">
+                <span>By {art.author.name}</span>
+                <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  Read Guide <ArrowRight className="w-3 h-3" />
+                </span>
+              </div>
+            </a>
+          ))}
         </div>
       </section>
 

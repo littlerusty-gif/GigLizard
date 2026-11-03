@@ -108,6 +108,12 @@ export const SEO_CONFIG: Record<string, SeoMetadata> = {
     description: "Answers to common questions regarding booking DIY tours, stage plot formats, tech rider standards, and venue contact verification.",
     keywords: "touring faq, band booking questions, stage plot faq, tech rider questions",
     canonicalUrl: "https://www.giglizard.us/faq"
+  },
+  articles: {
+    title: "Tour Advice Playbooks & Road Wisdom (10 Articles) | GigLizard",
+    description: "Actionable tour advice articles for DIY bands: route corridors, van gas budgets, cold-emailing bookers, stage plots, soundcheck etiquette, and deal negotiation.",
+    keywords: "diy tour advice, band touring articles, how to route band tour, stage plot guide, cold email talent buyers, band van maintenance",
+    canonicalUrl: "https://www.giglizard.us/articles"
   }
 };
 

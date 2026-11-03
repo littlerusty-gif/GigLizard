@@ -28,6 +28,10 @@ import TouringGuidePage from "./components/TouringGuidePage";
 import ChangelogPage from "./components/ChangelogPage";
 import { CustomersPage } from "./components/CustomersPage";
 import VerificationPage from "./components/VerificationPage";
+import TourAdviceHub from "./components/TourAdviceHub";
+import TourArticlePage from "./components/TourArticlePage";
+import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
+import { TOUR_ARTICLES, getArticleBySlug } from "./data/tourArticles";
 import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
 import { recordLiveVisit } from "./utils/analyticsStore";
@@ -46,7 +50,7 @@ import {
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
   Compass, Navigation, ShieldCheck, BarChart3, Crown, LogIn, HelpCircle,
   RefreshCw, Download, CheckCircle2, AlertTriangle, X, Menu, DollarSign, Scale,
-  UserCheck, Building, Clock
+  UserCheck, Building, Clock, BookOpen, Palette
 } from "lucide-react";
 
 // Default preset values for first-load
@@ -68,14 +72,30 @@ const INITIAL_RIDER_INPUTS = [
 
 export default function GigLizardApp() {
   const { venueCountStr, bandCountStr } = useDirectoryCounts();
-  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin" | "compare" | "about" | "features" | "guide" | "changelog" | "customers" | "verification";
-  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin", "compare", "about", "features", "guide", "changelog", "customers", "verification"];
+  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin" | "compare" | "about" | "features" | "guide" | "changelog" | "customers" | "verification" | "articles" | "privacy";
+  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin", "compare", "about", "features", "guide", "changelog", "customers", "verification", "articles", "privacy"];
 
   // Mobile navigation drawer toggle state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Android back-swipe / double-tap exit state
   const [showExitToast, setShowExitToast] = useState(false);
   const lastBackPressTimeRef = useRef<number>(0);
+
+  const getInitialArticleSlug = (): string | null => {
+    try {
+      const cleanPath = window.location.pathname.toLowerCase().replace(/\/$/, "");
+      if (cleanPath.startsWith("/articles/")) {
+        return cleanPath.replace(/^\/articles\//, "");
+      }
+      const rawHash = window.location.hash.replace("#", "").toLowerCase();
+      if (rawHash.startsWith("articles/")) {
+        return rawHash.replace(/^articles\//, "");
+      }
+    } catch (_) {}
+    return null;
+  };
+
+  const [selectedArticleSlug, setSelectedArticleSlug] = useState<string | null>(getInitialArticleSlug);
 
   const isStoredAccountOwner = (): boolean => {
     try {
@@ -134,6 +154,8 @@ export default function GigLizardApp() {
       if (cleanPath === "/poster" || cleanPath === "/poster-designer" || cleanPath === "/tools/poster-designer") return "poster";
       if (cleanPath === "/advisor" || cleanPath === "/help" || cleanPath === "/faq") return "advisor";
       if (cleanPath === "/verification" || cleanPath === "/audit" || cleanPath === "/freshness") return "verification";
+      if (cleanPath === "/articles" || cleanPath === "/tour-advice" || cleanPath.startsWith("/articles/")) return "articles";
+      if (cleanPath === "/privacy" || cleanPath === "/privacy-policy") return "privacy";
 
       const rawHash = window.location.hash.replace("#", "").toLowerCase();
       if (rawHash === "venues" || rawHash.startsWith("venues/")) return "venues";
@@ -439,23 +461,52 @@ export default function GigLizardApp() {
   // Track whether navigation state change originated from a browser popstate event
   const isNavigatingViaPopstateRef = useRef<boolean>(false);
 
+  const TAB_PATH_MAP: Record<TabType, string> = {
+    home: "/",
+    venues: "/venues",
+    bands: "/bands",
+    plot: "/plot",
+    rider: "/rider",
+    poster: "/poster",
+    tour: "/tour",
+    pricing: "/pricing",
+    compare: "/compare",
+    about: "/about",
+    features: "/features",
+    guide: "/touring-guide",
+    changelog: "/changelog",
+    customers: "/customers",
+    verification: "/verification",
+    advisor: "/faq",
+    articles: "/articles",
+    privacy: "/privacy",
+    admin: "/admin"
+  };
+
   const setActiveTab = (tab: TabType, pushToHistory = true) => {
     if (tab !== "venues") {
       setProgrammaticVenueRoute(null);
     }
+    if (tab !== "articles") {
+      setSelectedArticleSlug(null);
+    }
     if (tab === "admin" && currentAccount?.contactEmail?.trim().toLowerCase() !== "littlerusty@gmail.com") {
       setActiveTabState("home");
       try {
-        window.history.replaceState({ tab: "home" }, "", "#home");
+        window.history.replaceState({ tab: "home" }, "", "/");
       } catch (e) {}
       return;
     }
     setActiveTabState(tab);
     try {
+      const targetPath = (tab === "articles" && selectedArticleSlug)
+        ? `/articles/${selectedArticleSlug}`
+        : (TAB_PATH_MAP[tab] || `/${tab}`);
+
       if (pushToHistory && !isNavigatingViaPopstateRef.current) {
-        window.history.pushState({ tab }, "", `#${tab}`);
-      } else if (window.location.hash !== `#${tab}`) {
-        window.history.replaceState({ tab }, "", `#${tab}`);
+        window.history.pushState({ tab, slug: selectedArticleSlug }, "", targetPath);
+      } else {
+        window.history.replaceState({ tab, slug: selectedArticleSlug }, "", targetPath);
       }
     } catch (e) {
       console.error(e);
@@ -491,6 +542,8 @@ export default function GigLizardApp() {
       faq: "Tour Booking & Directory FAQ | GigLizard",
       guide: "DIY Tour Playbook - How to Book & Route Live Shows",
       verification: "Directory Verification Log & Freshness Audits | GigLizard",
+      articles: "Tour Advice Playbooks & Road Wisdom (10 Articles) | GigLizard",
+      privacy: "GigLizard Privacy Policy - Data Protection & Cookie Disclosures",
       admin: "Owner Management Dashboard | GigLizard"
     };
 
@@ -510,6 +563,8 @@ export default function GigLizardApp() {
       customers: "Real touring case studies and road stories from independent bands booking clubs, routing tours, and filling dates across the Lower 48.",
       guide: "Practical DIY tour playbook for independent musicians: find bookable clubs, pitch talent buyers, coordinate co-bills, and budget van fuel.",
       verification: `Live moderation queue, dated venue audits, and human corroboration records for ${venueCountStr} music venues and ${bandCountStr} active band contacts across the Lower 48.`,
+      articles: "10 master tour advice articles for DIY bands: route corridors, van gas budgets, cold-emailing bookers, stage plots, and midnight settlements.",
+      privacy: "GigLizard Privacy Policy: Learn how we protect artist and venue data, and our policies on cookies, third-party advertising, and payment security.",
       faq: "Frequently asked questions about venue booking inboxes, $9.99 flat band passes, 7-day money-back refunds, and DIY touring tools."
     };
 
@@ -530,6 +585,8 @@ export default function GigLizardApp() {
       guide: "https://www.giglizard.us/touring-guide",
       advisor: "https://www.giglizard.us/faq",
       verification: "https://www.giglizard.us/verification",
+      articles: "https://www.giglizard.us/articles",
+      privacy: "https://www.giglizard.us/privacy",
       admin: "https://www.giglizard.us/admin"
     };
 
@@ -537,7 +594,20 @@ export default function GigLizardApp() {
     let pageDesc = descriptions[activeTab] || descriptions.home;
     let canonicalHref = canonicals[activeTab] || "https://www.giglizard.us/";
 
-    if (activeTab === "venues" && programmaticVenueRoute) {
+    if (activeTab === "articles") {
+      if (selectedArticleSlug) {
+        const found = getArticleBySlug(selectedArticleSlug);
+        if (found) {
+          pageTitle = found.seoTitle.includes("GigLizard") ? found.seoTitle : `${found.title} | GigLizard`;
+          pageDesc = found.metaDescription;
+          canonicalHref = `https://www.giglizard.us/articles/${found.slug}`;
+        }
+      } else {
+        pageTitle = "Tour Advice Playbooks & Road Wisdom (10 Articles) | GigLizard";
+        pageDesc = "10 master tour advice articles for DIY bands: route corridors, van gas budgets, cold-emailing bookers, stage plots, and midnight settlements.";
+        canonicalHref = "https://www.giglizard.us/articles";
+      }
+    } else if (activeTab === "venues" && programmaticVenueRoute) {
       pageTitle = programmaticVenueRoute.title;
       pageDesc = programmaticVenueRoute.description;
       canonicalHref = `https://www.giglizard.us${programmaticVenueRoute.canonicalPath}`;
@@ -650,6 +720,33 @@ export default function GigLizardApp() {
     }
     if (clean === "rider" || clean === "tech-rider") {
       setActiveTabState("rider");
+      return true;
+    }
+    if (clean.startsWith("articles/")) {
+      const slug = clean.replace(/^articles\//, "");
+      setSelectedArticleSlug(slug);
+      setActiveTabState("articles");
+      return true;
+    }
+    if (clean === "articles" || clean === "tour-advice") {
+      setSelectedArticleSlug(null);
+      setActiveTabState("articles");
+      return true;
+    }
+    if (clean === "tour" || clean === "planner") {
+      setActiveTabState("tour");
+      return true;
+    }
+    if (clean === "bands") {
+      setActiveTabState("bands");
+      return true;
+    }
+    if (clean === "changelog" || clean === "updates") {
+      setActiveTabState("changelog");
+      return true;
+    }
+    if (clean === "privacy" || clean === "privacy-policy") {
+      setActiveTabState("privacy");
       return true;
     }
     return false;
@@ -953,7 +1050,41 @@ export default function GigLizardApp() {
             setActiveTabState("home");
           } else {
             setActiveTabState(targetTab);
+            if (e.state.slug) {
+              setSelectedArticleSlug(e.state.slug);
+            } else if (targetTab !== "articles") {
+              setSelectedArticleSlug(null);
+            }
           }
+          return;
+        }
+
+        const currentPath = window.location.pathname.toLowerCase().replace(/\/$/, "");
+        if (currentPath.startsWith("/articles/")) {
+          const slug = currentPath.replace(/^\/articles\//, "");
+          setSelectedArticleSlug(slug);
+          setActiveTabState("articles");
+          return;
+        }
+        if (currentPath === "/articles" || currentPath === "/tour-advice") {
+          setSelectedArticleSlug(null);
+          setActiveTabState("articles");
+          return;
+        }
+        if (currentPath === "/plot" || currentPath === "/stage-plot" || currentPath === "/tools/stage-plot") {
+          setActiveTabState("plot");
+          return;
+        }
+        if (currentPath === "/rider" || currentPath === "/tech-rider") {
+          setActiveTabState("rider");
+          return;
+        }
+        if (currentPath === "/poster" || currentPath === "/poster-designer" || currentPath === "/tools/poster-designer") {
+          setActiveTabState("poster");
+          return;
+        }
+        if (currentPath === "/tour") {
+          setActiveTabState("tour");
           return;
         }
 
@@ -1390,9 +1521,9 @@ export default function GigLizardApp() {
             <nav className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/70 shrink-0" id="main-nav">
               <a
                 href="/venues"
-                onClick={(e) => { e.preventDefault(); setActiveTab("venues"); window.history.pushState(null, '', '/venues'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("venues"); }}
                 id="tab-btn-venues"
-                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === "venues"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -1404,9 +1535,9 @@ export default function GigLizardApp() {
 
               <a
                 href="/bands"
-                onClick={(e) => { e.preventDefault(); setActiveTab("bands"); window.history.pushState(null, '', '/bands'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("bands"); }}
                 id="tab-btn-bands"
-                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === "bands"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -1417,10 +1548,52 @@ export default function GigLizardApp() {
               </a>
 
               <a
+                href="/plot"
+                onClick={(e) => { e.preventDefault(); setActiveTab("plot"); }}
+                id="tab-btn-plot"
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "plot"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Stage Plot</span>
+              </a>
+
+              <a
+                href="/rider"
+                onClick={(e) => { e.preventDefault(); setActiveTab("rider"); }}
+                id="tab-btn-rider"
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "rider"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Rider</span>
+              </a>
+
+              <a
+                href="/poster"
+                onClick={(e) => { e.preventDefault(); setActiveTab("poster"); }}
+                id="tab-btn-poster"
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "poster"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <Palette className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                <span>Posters</span>
+              </a>
+
+              <a
                 href="/tour"
-                onClick={(e) => { e.preventDefault(); setActiveTab("tour"); window.history.pushState(null, '', '/tour'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("tour"); }}
                 id="tab-btn-tour"
-                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === "tour"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -1431,24 +1604,24 @@ export default function GigLizardApp() {
               </a>
 
               <a
-                href="/features"
-                onClick={(e) => { e.preventDefault(); setActiveTab("features"); window.history.pushState(null, '', '/features'); }}
-                id="tab-btn-features"
-                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                  activeTab === "features"
+                href="/articles"
+                onClick={(e) => { e.preventDefault(); setSelectedArticleSlug(null); setActiveTab("articles"); }}
+                id="tab-btn-articles"
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "articles"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
-                <span>Features</span>
+                <BookOpen className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Tour Advice</span>
               </a>
 
               <a
                 href="/pricing"
-                onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); window.history.pushState(null, '', '/pricing'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); }}
                 id="tab-btn-pricing"
-                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === "pricing"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -1525,7 +1698,7 @@ export default function GigLizardApp() {
             <div className="grid grid-cols-2 gap-2">
               <a
                 href="/venues"
-                onClick={(e) => { e.preventDefault(); setActiveTab("venues"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/venues'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("venues"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "venues" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1535,7 +1708,7 @@ export default function GigLizardApp() {
               </a>
               <a
                 href="/bands"
-                onClick={(e) => { e.preventDefault(); setActiveTab("bands"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/bands'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("bands"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "bands" ? "bg-amber-50 text-amber-900 border border-amber-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1544,8 +1717,38 @@ export default function GigLizardApp() {
                 <span>Bands</span>
               </a>
               <a
+                href="/plot"
+                onClick={(e) => { e.preventDefault(); setActiveTab("plot"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "plot" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <Sliders className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Stage Plot</span>
+              </a>
+              <a
+                href="/rider"
+                onClick={(e) => { e.preventDefault(); setActiveTab("rider"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "rider" ? "bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Tech Rider</span>
+              </a>
+              <a
+                href="/poster"
+                onClick={(e) => { e.preventDefault(); setActiveTab("poster"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "poster" ? "bg-purple-50 text-purple-900 border border-purple-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <Palette className="w-4 h-4 text-purple-600 shrink-0" />
+                <span>Posters</span>
+              </a>
+              <a
                 href="/tour"
-                onClick={(e) => { e.preventDefault(); setActiveTab("tour"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/tour'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("tour"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "tour" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1554,8 +1757,18 @@ export default function GigLizardApp() {
                 <span>Tour Master</span>
               </a>
               <a
+                href="/articles"
+                onClick={(e) => { e.preventDefault(); setSelectedArticleSlug(null); setActiveTab("articles"); setIsMobileMenuOpen(false); }}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === "articles" ? "bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
+                }`}
+              >
+                <BookOpen className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Tour Advice</span>
+              </a>
+              <a
                 href="/pricing"
-                onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/pricing'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold transition-all ${
                   activeTab === "pricing" ? "bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1565,7 +1778,7 @@ export default function GigLizardApp() {
               </a>
               <a
                 href="/compare"
-                onClick={(e) => { e.preventDefault(); setActiveTab("compare"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/compare'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("compare"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
                   activeTab === "compare" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1575,7 +1788,7 @@ export default function GigLizardApp() {
               </a>
               <a
                 href="/features"
-                onClick={(e) => { e.preventDefault(); setActiveTab("features"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/features'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("features"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
                   activeTab === "features" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1585,7 +1798,7 @@ export default function GigLizardApp() {
               </a>
               <a
                 href="/customers"
-                onClick={(e) => { e.preventDefault(); setActiveTab("customers"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/customers'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("customers"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
                   activeTab === "customers" ? "bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1595,7 +1808,7 @@ export default function GigLizardApp() {
               </a>
               <a
                 href="/about"
-                onClick={(e) => { e.preventDefault(); setActiveTab("about"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/about'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("about"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
                   activeTab === "about" ? "bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1605,7 +1818,7 @@ export default function GigLizardApp() {
               </a>
               <a
                 href="/changelog"
-                onClick={(e) => { e.preventDefault(); setActiveTab("changelog"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/changelog'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("changelog"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
                   activeTab === "changelog" ? "bg-slate-200 text-slate-900 border border-slate-300 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1615,7 +1828,7 @@ export default function GigLizardApp() {
               </a>
               <a
                 href="/advisor"
-                onClick={(e) => { e.preventDefault(); setActiveTab("advisor"); setIsMobileMenuOpen(false); window.history.pushState(null, '', '/advisor'); }}
+                onClick={(e) => { e.preventDefault(); setActiveTab("advisor"); setIsMobileMenuOpen(false); }}
                 className={`flex items-center gap-2 p-2.5 min-h-[44px] rounded-xl text-xs font-bold transition-all ${
                   activeTab === "advisor" ? "bg-purple-50 text-purple-900 border border-purple-200 shadow-xs" : "bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60"
                 }`}
@@ -1785,6 +1998,10 @@ export default function GigLizardApp() {
               currentUser={currentUser}
               onSetCurrentUser={setCurrentUser}
               onSelectTab={setActiveTab}
+              onSelectArticle={(slug) => {
+                setSelectedArticleSlug(slug);
+                setActiveTab("articles", true);
+              }}
               onRegisterAccount={handleRegisterAccount}
               onUpdatePricing={handleUpdatePricing}
               onUpdateAccount={handleUpdateAccount}
@@ -1978,6 +2195,35 @@ export default function GigLizardApp() {
           </div>
         )}
 
+        {activeTab === "articles" && (
+          <div className="space-y-6" id="view-articles-wrapper">
+            {selectedArticleSlug && getArticleBySlug(selectedArticleSlug) ? (
+              <TourArticlePage 
+                article={getArticleBySlug(selectedArticleSlug)!}
+                onSelectTab={setActiveTab}
+                onSelectArticle={(slug) => {
+                  setSelectedArticleSlug(slug);
+                  setActiveTab("articles", true);
+                }}
+              />
+            ) : (
+              <TourAdviceHub 
+                onSelectTab={setActiveTab}
+                onSelectArticle={(slug) => {
+                  setSelectedArticleSlug(slug);
+                  setActiveTab("articles", true);
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === "privacy" && (
+          <div className="space-y-6" id="view-privacy-wrapper">
+            <PrivacyPolicyPage onSelectTab={setActiveTab} />
+          </div>
+        )}
+
         {activeTab === "admin" && (
           currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" ? (
             <div className="space-y-6" id="view-admin-wrapper">
@@ -2059,6 +2305,7 @@ export default function GigLizardApp() {
         onOpenCustomers={() => setActiveTab("customers")}
         onOpenFaq={() => setActiveTab("advisor")}
         onOpenVerification={() => setActiveTab("verification")}
+        onOpenPrivacy={() => setActiveTab("privacy")}
         userEmail={currentAccount?.contactEmail || currentUser?.email || ""}
         userName={currentAccount?.name || ""}
       />
