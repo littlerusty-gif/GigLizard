@@ -1,0 +1,66 @@
+[
+  {
+    "timestamp": "2026-11-02T23:05:11.084Z",
+    "dayName": "Friday",
+    "dayIndex": 5,
+    "theme": "Friday Weekend Show Prep & Live Sound Etiquette",
+    "mode": "daily_credits",
+    "status": "autonomous_archived",
+    "venue": {
+      "id": "11050f26-3fd4-4c82-87dd-9b8cba00c617",
+      "name": "Leftwoods",
+      "city": "Amarillo",
+      "state": "TX"
+    },
+    "text": "📍 Friday Stage Focus: Leftwoods • Amarillo, TX (250 cap)\n\n🎛️ Soundcheck Etiquette: Arrive 20 mins before load-in, hand the sound tech your 1-page stage plot & channel patch list, and confirm +48V phantom power on vocal/acoustic mics.\n\nFree stage plot builder: https://www.giglizard.us/venues\n#GigNight #LiveMusic #WeekendShows #Soundcheck #GigLizard #DIYTouring",
+    "imageUrl": "https://giglizard.us/og-image.png"
+  },
+  {
+    "timestamp": "2026-11-02T23:03:56.912Z",
+    "dayName": "Monday",
+    "dayIndex": 1,
+    "theme": "Monday Booking Advance & Corridor Routing Push",
+    "mode": "daily_credits",
+    "status": "autonomous_archived",
+    "venue": {
+      "id": "506fc663-466e-4d03-9585-db586d94f759",
+      "name": "Mr. Smalls Theatre",
+      "city": "Millvale",
+      "state": "PA"
+    },
+    "text": "📍 Monday Booking Push: Mr. Smalls Theatre • Millvale, PA (800 cap)\n\n🚐 Tour Booking Rule: Pitch talent buyers Monday morning with a clean 3-sentence email + stage plot link. Securing Millvale, PA dates 6 weeks out saves van gas and locks your weekend routing.\n\nFree 650+ directory: https://www.giglizard.us/venues\n#MusicBooking #TourBooking #MondayMotivation #GigLizard #DIYTouring #BandLife",
+    "imageUrl": "https://giglizard.us/og-image.png"
+  },
+  {
+    "timestamp": "2026-11-02T23:03:39.923Z",
+    "dayName": "Friday",
+    "dayIndex": 5,
+    "theme": "Friday Weekend Show Prep & Live Sound Etiquette",
+    "mode": "primary",
+    "status": "autonomous_archived",
+    "venue": {
+      "id": "d69788fd-17b3-40ce-a293-1cb989b318bc",
+      "name": "Vultures",
+      "city": "Colorado Springs",
+      "state": "CO"
+    },
+    "text": "📍 Friday Night Stage: Vultures (Colorado Springs, CO)\n\n⚡ Live Performance Tip: Fast 15-minute changeovers keep club bookers calling you back. Pack your cables over-under and label every pedal power supply.\n\nSearch 650+ free stages: https://www.giglizard.us/venues\n#GigNight #LiveMusic #WeekendShows #Soundcheck #GigLizard #DIYTouring",
+    "imageUrl": "https://giglizard.us/og-image.png"
+  },
+  {
+    "timestamp": "2026-11-02T23:03:34.023Z",
+    "dayName": "Monday",
+    "dayIndex": 1,
+    "theme": "Monday Booking Advance & Corridor Routing Push",
+    "mode": "primary",
+    "status": "autonomous_archived",
+    "venue": {
+      "id": "39cf706c-9193-4454-ba38-25f1e4646f16",
+      "name": "Mohawk Place",
+      "city": "Buffalo",
+      "state": "NY"
+    },
+    "text": "📍 Monday Booking Push: Mohawk Place • Buffalo, NY (230 cap)\n\n🚐 Tour Booking Rule: Pitch talent buyers Monday morning with a clean 3-sentence email + stage plot link. Securing Buffalo, NY dates 6 weeks out saves van gas and locks your weekend routing.\n\nFree 650+ directory: https://www.giglizard.us/venues\n#MusicBooking #TourBooking #MondayMotivation #GigLizard #DIYTouring #BandLife",
+    "imageUrl": "https://giglizard.us/og-image.png"
+  }
+]
