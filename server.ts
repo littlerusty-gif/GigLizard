@@ -193,6 +193,13 @@ Sitemap: https://www.giglizard.us/sitemap.xml
 `);
 });
 
+// Authorized Digital Sellers (ads.txt) file for Google AdSense
+app.get("/ads.txt", (req, res) => {
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send("google.com, pub-9512474787890878, DIRECT, f08c47fec0942fa0\n");
+});
+
 // Dynamic & cached XML Sitemap (sitemaps.org schema 0.9) querying Supabase unique city/states & venue IDs
 app.get("/sitemap.xml", async (req, res) => {
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
