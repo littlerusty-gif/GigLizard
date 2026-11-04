@@ -30,7 +30,7 @@ export default function TourAdviceHub({
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   const categories = useMemo(() => {
-    return ["All", "Routing & Logistics", "Venue Booking", "Live Sound & Tech", "Tour Finances", "Promotion & Merch"];
+    return ["All", "Routing & Logistics", "Venue Booking", "Live Sound & Tech", "Studio & Recording", "Promotion & Merch", "Tour Finances"];
   }, []);
 
   const filteredArticles = useMemo(() => {
@@ -57,17 +57,17 @@ export default function TourAdviceHub({
           <div className="flex flex-wrap items-center gap-2.5">
             <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Independent Tour Advice Library</span>
+              <span>Independent Band &amp; Tour Advice Library</span>
             </span>
-            <span className="text-xs text-slate-400 font-bold">10 Master Road Playbooks</span>
+            <span className="text-xs text-slate-400 font-bold">{TOUR_ARTICLES.length} Master Playbooks</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight max-w-3xl">
-            Real Touring Wisdom from the Road, Not Amateurs on the Web.
+            Real Wisdom for Gigging, Studio Recording, Merch &amp; Tour Life.
           </h1>
 
           <p className="text-base sm:text-lg text-slate-300 max-w-2xl font-medium leading-relaxed">
-            Written and copyrighted by Pacific Northwest touring artist and sound engineer Little Rusty. Actionable blueprints on van fuel economics, soundcheck discipline, cold venue pitches, stage plots, and midnight cash settlements.
+            Written and copyrighted by Pacific Northwest touring artist and sound engineer Little Rusty. Actionable blueprints on studio tracking discipline, merch sizing ratios, DIY in-ear monitor racks, van fuel corridors, and booking real tours.
           </p>
 
           {/* Quick Tool Navigation Pills */}

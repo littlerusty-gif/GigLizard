@@ -1802,18 +1802,18 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
   },
   "/articles": {
-    title: "Tour Advice Playbooks & Road Wisdom (10 Original Articles) | GigLizard",
-    description: "10 master tour advice articles for DIY bands: route corridors, van gas budgets, cold-emailing bookers, stage plots, and midnight settlements.",
+    title: "Tour Advice, Studio Recording & Merch Playbooks (20 Guides) | GigLizard",
+    description: "20 expert guides for independent bands: studio pre-production, drum tracking phase, merch size ratios, garment blanks, DIY in-ear rigs, and tour routing.",
     canonical: "https://www.giglizard.us/articles",
-    heading: "Tour Advice & Road Strategy Playbooks (10 Master Guides)",
-    subhead: "Believable, real-world touring guides written by touring musicians and veteran sound engineers."
+    heading: "Tour Advice, Studio Recording & Merch Strategy (20 Master Guides)",
+    subhead: "Believable, real-world road and studio guides written by touring musicians and veteran sound engineers."
   },
   "/tour-advice": {
-    title: "Tour Advice Playbooks & Road Wisdom (10 Original Articles) | GigLizard",
-    description: "10 master tour advice articles for DIY bands: route corridors, van gas budgets, cold-emailing bookers, stage plots, and midnight settlements.",
+    title: "Tour Advice, Studio Recording & Merch Playbooks (20 Guides) | GigLizard",
+    description: "20 expert guides for independent bands: studio pre-production, drum tracking phase, merch size ratios, garment blanks, DIY in-ear rigs, and tour routing.",
     canonical: "https://www.giglizard.us/articles",
-    heading: "Tour Advice & Road Strategy Playbooks (10 Master Guides)",
-    subhead: "Believable, real-world touring guides written by touring musicians and veteran sound engineers."
+    heading: "Tour Advice, Studio Recording & Merch Strategy (20 Master Guides)",
+    subhead: "Believable, real-world road and studio guides written by touring musicians and veteran sound engineers."
   },
   "/privacy": {
     title: "Privacy Policy | GigLizard",
@@ -2005,8 +2005,8 @@ function getRouteNoscriptSnippet(cleanPath: string): string {
   if (cleanPath === "/articles" || cleanPath === "/tour-advice") {
     return `
         <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
-          <h2>Tour Advice Playbooks &amp; Road Wisdom (10 Master Guides)</h2>
-          <p>Believable, real-world touring guides written by touring musicians and live sound engineers for independent bands.</p>
+          <h2>Tour Advice, Studio Recording &amp; Merch Strategy (${TOUR_ARTICLES.length} Master Guides)</h2>
+          <p>Believable, real-world touring, recording, and merchandise guides written by touring musicians and live sound engineers for independent bands.</p>
           <ul style="padding-left: 20px; line-height: 1.8;">
             ${TOUR_ARTICLES.map(art => `
               <li style="margin-bottom: 12px;">

@@ -18,7 +18,7 @@ export interface TourArticle {
   seoTitle: string;
   metaDescription: string;
   keywords: string[];
-  category: "Routing & Logistics" | "Venue Booking" | "Live Sound & Tech" | "Tour Finances" | "Promotion & Merch";
+  category: "Routing & Logistics" | "Venue Booking" | "Live Sound & Tech" | "Tour Finances" | "Promotion & Merch" | "Studio & Recording";
   author: {
     name: string;
     role: string;
@@ -39,7 +39,9 @@ export interface TourArticle {
   faq: ArticleFaq[];
 }
 
-export const TOUR_ARTICLES: TourArticle[] = [
+import { EXTRA_TOUR_ARTICLES } from "./extraTourArticles";
+
+const BASE_TOUR_ARTICLES: TourArticle[] = [
   {
     id: "art-1",
     slug: "route-diy-tour-without-bleeding-gas-money",
@@ -877,6 +879,11 @@ export const TOUR_ARTICLES: TourArticle[] = [
       }
     ]
   }
+];
+
+export const TOUR_ARTICLES: TourArticle[] = [
+  ...BASE_TOUR_ARTICLES,
+  ...EXTRA_TOUR_ARTICLES
 ];
 
 export function getArticleBySlug(slug: string): TourArticle | undefined {
