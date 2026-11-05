@@ -28,7 +28,7 @@ import { sanitizeInputText } from "../utils/antiScrape";
 import { isAccessActive, getAccessStatusDetails, isBandBanned, isPerpetualPassEmail } from "../utils/accessControl";
 import { recordLiveSignup } from "../utils/analyticsStore";
 import { resolveBandMusicLinks, categorizeUserMusicLink } from "../utils/musicLinks";
-import { insertProfile, supabase, saveVenueToDatabase } from "../lib/supabase";
+import { insertProfile, supabase, saveVenueToDatabase, resolveAccountFromDatabase, linkAuthUidToBand } from "../lib/supabase";
 import { isEmailAlreadyRegistered, normalizeEmail } from "../utils/directoryStore";
 import { useDirectoryCounts } from "../utils/directoryCounts";
 
@@ -119,8 +119,205 @@ export default function Home({
   const [loginRole, setLoginRole] = useState<"Band" | "Venue">("Band");
   const [loginError, setLoginError] = useState("");
   const [isLoginCaptchaVerified, setIsLoginCaptchaVerified] = useState(false);
+  // Hero section inline auth state
+  const [heroRole, setHeroRole] = useState<"Band" | "Venue" | "Sound Engineer" | "Guest">("Band");
+  const [heroEmail, setHeroEmail] = useState("");
+  const [heroPassword, setHeroPassword] = useState("");
+  const [heroShowPassword, setHeroShowPassword] = useState(false);
+  const [heroLoginError, setHeroLoginError] = useState("");
+  const [heroLoginSuccess, setHeroLoginSuccess] = useState("");
+  const [heroLoginLoading, setHeroLoginLoading] = useState(false);
+  const [heroShowForgotLink, setHeroShowForgotLink] = useState(false);
 
-  // User login states
+  const handleHeroSignIn = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setHeroLoginError("");
+    setHeroLoginSuccess("");
+
+    const cleanEmail = sanitizeInputText(heroEmail.trim(), 100);
+    const cleanPassword = heroPassword.trim();
+
+    if (!cleanEmail) {
+      setHeroLoginError("Please enter your email address.");
+      setHeroShowForgotLink(true);
+      return;
+    }
+    if (!cleanPassword) {
+      setHeroLoginError("Please enter your password.");
+      setHeroShowForgotLink(true);
+      return;
+    }
+
+    setHeroLoginLoading(true);
+
+    // 1. Platform Owner (littlerusty@gmail.com)
+    if (cleanEmail.toLowerCase() === "littlerusty@gmail.com") {
+      const customPasswordsMap: Record<string, string> = (() => {
+        try { return JSON.parse(localStorage.getItem("user_custom_passwords_v1") || "{}"); } catch { return {}; }
+      })();
+      const expectedPass = customPasswordsMap[cleanEmail.toLowerCase()] || "L,eilani1228";
+      if (cleanPassword === expectedPass) {
+        const ownerAccount: UserAccount = {
+          id: "41c6fde8-9462-4402-a0f1-79155786fb03",
+          email: "littlerusty@gmail.com",
+          role: "Band",
+          type: "Band",
+          name: "Dr Hadit",
+          city: "Seattle, WA",
+          isPremium: true,
+          hasPaidAccess: true,
+          autoRenew: true,
+          accessExpiresAt: new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString(),
+          contactEmail: "littlerusty@gmail.com",
+          genre: "Alternative Rock / Synthwave",
+          bio: "Platform Owner & Artist (Dr Hadit) • Lifetime VIP Owner with full unmasked access for life.",
+          experienceLevel: "National Act"
+        };
+        try {
+          localStorage.setItem("current_user_account_v1", JSON.stringify(ownerAccount));
+        } catch (_) {}
+        analytics.setIdentity(ownerAccount.id, { email: ownerAccount.email, name: ownerAccount.name, plan: "pro" });
+        setHeroLoginSuccess("✅ Logged in successfully as Platform Owner!");
+        setHeroLoginLoading(false);
+        setTimeout(() => {
+          onRegisterAccount(ownerAccount);
+        }, 400);
+        return;
+      }
+    }
+
+    // 2. Supabase Auth Sign In
+    try {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPassword,
+      });
+
+      if (!signInError && signInData?.user) {
+        await linkAuthUidToBand(signInData.user.id, signInData.user.email || cleanEmail);
+        const resolved = await resolveAccountFromDatabase(signInData.user.id, signInData.user.email || cleanEmail);
+        const isVip = cleanEmail === 'giglizard.us@gmail.com' || isPerpetualPassEmail(cleanEmail) || resolved.isOwner;
+        const roleType = (resolved.role || heroRole || "Band") as "Band" | "Venue" | "Sound Engineer";
+        const finalName = resolved.isOwner || cleanEmail === "littlerusty@gmail.com" ? "Dr Hadit" : resolved.name;
+
+        const payload: UserAccount = {
+          id: resolved.bandRecord?.id || resolved.profileRecord?.id || signInData.user.id,
+          email: cleanEmail,
+          role: roleType,
+          type: roleType,
+          name: finalName,
+          city: resolved.city || "Seattle, WA",
+          isPremium: Boolean(resolved.profileRecord?.is_premium || resolved.profileRecord?.is_paid || isVip),
+          hasPaidAccess: Boolean(resolved.profileRecord?.is_paid || resolved.profileRecord?.is_premium || isVip),
+          autoRenew: Boolean(resolved.profileRecord?.auto_renew ?? true),
+          accessExpiresAt: resolved.profileRecord?.access_expires_at || (isVip ? new Date(Date.now() + 36500 * 24 * 60 * 60 * 1000).toISOString() : undefined),
+          contactEmail: cleanEmail,
+          genre: Array.isArray(resolved.bandRecord?.genres) 
+            ? resolved.bandRecord.genres.join(", ") 
+            : (resolved.bandRecord?.genres || resolved.profileRecord?.genres || resolved.profileRecord?.genre || undefined),
+          bio: resolved.bandRecord?.bio || resolved.profileRecord?.bio || undefined,
+          website: resolved.bandRecord?.website || resolved.profileRecord?.website || resolved.profileRecord?.primary_link || undefined,
+          musicUrl: resolved.bandRecord?.music_url || resolved.profileRecord?.music_url || undefined,
+          epkUrl: resolved.bandRecord?.epk_url || resolved.profileRecord?.epk_url || undefined,
+          contactPhone: resolved.profileRecord?.phone || undefined,
+          experienceLevel: "Local"
+        };
+
+        try {
+          localStorage.setItem("current_user_account_v1", JSON.stringify(payload));
+        } catch (_) {}
+        analytics.setIdentity(payload.id, { email: cleanEmail, name: payload.name, plan: payload.isPremium ? "pro" : "free" });
+        setHeroLoginSuccess(`✅ Welcome back, ${payload.name}!`);
+        setHeroLoginLoading(false);
+        setTimeout(() => {
+          onRegisterAccount(payload);
+        }, 400);
+        return;
+      }
+    } catch (_) {}
+
+    // 3. Check custom registered bands / venues in localStorage
+    try {
+      const savedBands = JSON.parse(localStorage.getItem("custom_available_bands_v1") || "[]");
+      const matchedBand = Array.isArray(savedBands) ? savedBands.find(b => b.contactEmail?.toLowerCase() === cleanEmail.toLowerCase()) : null;
+      if (matchedBand) {
+        const customPasswordsMap: Record<string, string> = JSON.parse(localStorage.getItem("user_custom_passwords_v1") || "{}");
+        const expectedPass = customPasswordsMap[cleanEmail.toLowerCase()] || matchedBand.password || "password";
+        if (cleanPassword === expectedPass) {
+          const bandAccount: UserAccount = {
+            id: matchedBand.id || "band_" + Math.random().toString(36).substring(2, 9),
+            email: cleanEmail,
+            role: "Band",
+            type: "Band",
+            name: matchedBand.name || "Musician",
+            city: matchedBand.city || "Seattle, WA",
+            isPremium: false,
+            hasPaidAccess: false,
+            contactEmail: cleanEmail,
+            genre: matchedBand.genre,
+            bio: matchedBand.bio
+          };
+          localStorage.setItem("current_user_account_v1", JSON.stringify(bandAccount));
+          analytics.setIdentity(bandAccount.id, { email: cleanEmail, name: bandAccount.name, plan: "free" });
+          setHeroLoginSuccess(`✅ Welcome back, ${bandAccount.name}!`);
+          setHeroLoginLoading(false);
+          setTimeout(() => {
+            onRegisterAccount(bandAccount);
+          }, 400);
+          return;
+        }
+      }
+    } catch (_) {}
+
+    setHeroLoginLoading(false);
+    setHeroLoginError("Invalid email or password. Please check your credentials or reset your password.");
+    setHeroShowForgotLink(true);
+  };
+
+  const handleHeroSignUp = () => {
+    if (heroEmail.trim()) {
+      window.dispatchEvent(new CustomEvent("giglizard_open_login", { 
+        detail: { mode: "signup", email: heroEmail.trim(), role: heroRole } 
+      }));
+    } else {
+      const regSection = document.getElementById("register");
+      if (regSection) {
+        regSection.scrollIntoView({ behavior: "smooth" });
+      } else if (onOpenSignIn) {
+        onOpenSignIn(heroRole);
+      }
+    }
+  };
+
+  const handleHeroForgotPassword = () => {
+    window.dispatchEvent(new CustomEvent("giglizard_open_login", { 
+      detail: { mode: "forgot", email: heroEmail.trim() } 
+    }));
+  };
+
+  const handleHeroGuestSignIn = () => {
+    const guestId = "guest_" + Math.random().toString(36).substring(2, 9);
+    const guestAccount: UserAccount = {
+      id: guestId,
+      type: "Guest",
+      role: "Guest",
+      name: "Guest Explorer",
+      city: "Touring USA",
+      contactEmail: `guest_${guestId}@giglizard.us`,
+      isPremium: false,
+      hasPaidAccess: false,
+      genre: "Music Fan & Explorer",
+      bio: "Guest session exploring GigLizard live music venues and stage tools."
+    };
+    try {
+      localStorage.setItem("current_user_account_v1", JSON.stringify(guestAccount));
+    } catch (_) {}
+    analytics.setIdentity(guestId, { email: guestAccount.contactEmail, name: guestAccount.name, plan: "free" });
+    setHeroLoginSuccess("✅ Welcome! Signed in as Guest Explorer.");
+    setTimeout(() => {
+      onRegisterAccount(guestAccount);
+    }, 400);
+  };
 
   const handleUserLogin = () => {
     setLoginError("");
@@ -870,50 +1067,181 @@ export default function Home({
               </button>
             </div>
 
-            {/* Quick Role Sign-In Bar: Band, Venue, Sound Engineer, Guest */}
+            {/* Clean Inline Sign-In & Sign-Up Panel */}
             {!currentAccount && (
-              <div className="pt-1 flex flex-wrap items-center justify-center lg:justify-start gap-2 text-xs">
-                <span className="text-slate-400 font-semibold flex items-center gap-1">
-                  <LogIn className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Sign in as:</span>
-                </span>
-                <div className="inline-flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => onOpenSignIn ? onOpenSignIn("Band") : window.dispatchEvent(new CustomEvent("open-login-modal", { detail: { role: "Band" } }))}
-                    className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-indigo-500/50 transition-all font-semibold flex items-center gap-1 cursor-pointer active:scale-95"
-                    title="Sign in as a Band or Artist"
-                  >
-                    <Users className="w-3 h-3 text-indigo-400" />
-                    <span>Band</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onOpenSignIn ? onOpenSignIn("Venue") : window.dispatchEvent(new CustomEvent("open-login-modal", { detail: { role: "Venue" } }))}
-                    className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-emerald-500/50 transition-all font-semibold flex items-center gap-1 cursor-pointer active:scale-95"
-                    title="Sign in as a Venue Promoter or Talent Buyer"
-                  >
-                    <Building className="w-3 h-3 text-emerald-400" />
-                    <span>Venue</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onOpenSignIn ? onOpenSignIn("Sound Engineer") : window.dispatchEvent(new CustomEvent("open-login-modal", { detail: { role: "Sound Engineer" } }))}
-                    className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-amber-500/50 transition-all font-semibold flex items-center gap-1 cursor-pointer active:scale-95"
-                    title="Sign in as a Live Sound Engineer or Stage Tech"
-                  >
-                    <Headphones className="w-3 h-3 text-amber-400" />
-                    <span>Sound Tech</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onOpenSignIn ? onOpenSignIn("Guest") : window.dispatchEvent(new CustomEvent("open-login-modal", { detail: { role: "Guest" } }))}
-                    className="px-2.5 py-1 rounded-lg bg-purple-950/70 hover:bg-purple-900 text-purple-200 hover:text-white border border-purple-800/60 hover:border-purple-500/80 transition-all font-semibold flex items-center gap-1 cursor-pointer active:scale-95"
-                    title="Sign in or continue as a Guest Explorer"
-                  >
-                    <User className="w-3 h-3 text-purple-300" />
-                    <span>Guest</span>
-                  </button>
+              <div className="pt-2 max-w-xl mx-auto lg:mx-0 w-full" id="hero-inline-auth-panel">
+                <div className="bg-slate-900/95 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xs space-y-3.5">
+                  
+                  {/* Role Selector Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                    <div className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <LogIn className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Sign in as:</span>
+                    </div>
+                    
+                    {/* 4 Role Selector Tabs */}
+                    <div className="grid grid-cols-4 gap-1 p-0.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => { setHeroRole("Band"); setHeroLoginError(""); setHeroShowForgotLink(false); }}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          heroRole === "Band"
+                            ? "bg-indigo-600 text-white shadow-xs"
+                            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                        }`}
+                      >
+                        <Users className="w-3 h-3 text-indigo-200" />
+                        <span>Band</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setHeroRole("Venue"); setHeroLoginError(""); setHeroShowForgotLink(false); }}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          heroRole === "Venue"
+                            ? "bg-emerald-600 text-white shadow-xs"
+                            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                        }`}
+                      >
+                        <Building className="w-3 h-3 text-emerald-200" />
+                        <span>Venue</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setHeroRole("Sound Engineer"); setHeroLoginError(""); setHeroShowForgotLink(false); }}
+                        className={`py-1.5 px-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
+                          heroRole === "Sound Engineer"
+                            ? "bg-amber-500 text-slate-950 font-black shadow-xs"
+                            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                        }`}
+                        title="Sound Engineer"
+                      >
+                        <Headphones className="w-3 h-3 text-amber-200" />
+                        <span className="truncate">Sound</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setHeroRole("Guest"); setHeroLoginError(""); setHeroShowForgotLink(false); }}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          heroRole === "Guest"
+                            ? "bg-purple-600 text-white shadow-xs"
+                            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                        }`}
+                      >
+                        <User className="w-3 h-3 text-purple-200" />
+                        <span>Guest</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Feedback / Error Message with Forgot Password Link */}
+                  {heroLoginError && (
+                    <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 space-y-1.5 animate-in fade-in">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                        <span className="font-semibold">{heroLoginError}</span>
+                      </div>
+                      {heroShowForgotLink && (
+                        <div className="pt-1 border-t border-rose-500/20 flex items-center justify-between text-[11.5px]">
+                          <span className="text-slate-400">Can't remember your password?</span>
+                          <button
+                            type="button"
+                            onClick={handleHeroForgotPassword}
+                            className="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer"
+                          >
+                            Forgot password? Reset here →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {heroLoginSuccess && (
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="font-semibold">{heroLoginSuccess}</span>
+                    </div>
+                  )}
+
+                  {/* Inputs & Actions */}
+                  {heroRole === "Guest" ? (
+                    <div className="space-y-2 py-1">
+                      <p className="text-xs text-slate-400 leading-snug">
+                        Explore 4,800+ venues, create drag-and-drop stage plots, and calculate van fuel costs with zero password or signup friction.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleHeroGuestSignIn}
+                        className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                      >
+                        <Sparkles className="w-4 h-4 text-purple-200" />
+                        <span>Continue as Guest Explorer (Instant Access)</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleHeroSignIn} className="space-y-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <input
+                            type="email"
+                            value={heroEmail}
+                            onChange={(e) => { setHeroEmail(e.target.value); setHeroLoginError(""); }}
+                            placeholder={
+                              heroRole === "Band" ? "band@email.com" : heroRole === "Venue" ? "booking@venue.com" : "tech@domain.com"
+                            }
+                            autoComplete="email"
+                            className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 text-xs focus:outline-hidden focus:border-indigo-500 transition-colors"
+                          />
+                        </div>
+                        <div className="relative">
+                          <input
+                            type={heroShowPassword ? "text" : "password"}
+                            value={heroPassword}
+                            onChange={(e) => { setHeroPassword(e.target.value); setHeroLoginError(""); }}
+                            placeholder="Password"
+                            autoComplete="current-password"
+                            className="w-full pl-3 pr-9 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 text-xs focus:outline-hidden focus:border-indigo-500 transition-colors"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setHeroShowPassword(prev => !prev)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer"
+                            aria-label="Toggle password visibility"
+                          >
+                            {heroShowPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <button
+                          type="submit"
+                          disabled={heroLoginLoading}
+                          className="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 disabled:opacity-60"
+                        >
+                          {heroLoginLoading ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Signing In...</span>
+                            </>
+                          ) : (
+                            <>
+                              <LogIn className="w-3.5 h-3.5" />
+                              <span>Sign In as {heroRole === "Sound Engineer" ? "Sound Tech" : heroRole}</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleHeroSignUp}
+                          className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1"
+                          title="Register a new account"
+                        >
+                          <span>Sign Up</span>
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               </div>
             )}
@@ -1624,174 +1952,7 @@ export default function Home({
         </div>
       </section>
 
-      {/* Market Landscape & Competitor Comparison Section */}
-      <section className="bg-slate-900 text-white rounded-3xl p-6 md:p-10 border border-slate-800 space-y-8 scroll-mt-20 shadow-xl" id="market-comparison-section">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="text-xs text-indigo-400 font-semibold tracking-wide">
-              Market Landscape · Transparent Comparison
-            </div>
-            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-              Why Touring Bands Choose GigLizard Over Sonicbids, Prism & Spreadsheets
-            </h2>
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              Prism is built for venue operators; Gigwell targets agencies; Sonicbids paywalls gig discovery; spreadsheets are chaos. GigLizard is the only sub-$10 self-serve touring toolkit built for DIY bands.
-            </p>
-          </div>
 
-          <button
-            type="button"
-            onClick={() => onSelectTab("compare")}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-2 shrink-0 self-start md:self-auto"
-            id="home-btn-full-matrix"
-          >
-            <BarChart3 className="w-4 h-4 text-indigo-200" />
-            <span>Full 5-Platform Matrix</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* 4 Competitive Wedge Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: vs Sonicbids */}
-          <div className="bg-slate-800/70 rounded-2xl border border-slate-700/60 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/50 transition-all">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-slate-400">Closest Rival</span>
-                <span className="font-bold text-rose-400">$240+/year</span>
-              </div>
-              <h3 className="text-sm font-bold text-white">vs. Sonicbids</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Paywalls stage browsing with locked annual recurring plans. GigLizard gives you {venueCountStr} venues, {bandCountStr} touring bands, and verified booking emails 100% free.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> Free Venue Discovery
-            </div>
-          </div>
-
-          {/* Card 2: vs Prism.fm */}
-          <div className="bg-slate-800/70 rounded-2xl border border-slate-700/60 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/50 transition-all">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-slate-400">Category Leader</span>
-                <span className="font-bold text-slate-400">Enterprise Demo</span>
-              </div>
-              <h3 className="text-sm font-bold text-white">vs. Prism.fm</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Tailored for box offices and mega-promoters at thousands/year. GigLizard is made for working artists with flat, single passes.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> Band-First Focus
-            </div>
-          </div>
-
-          {/* Card 3: vs Gigwell */}
-          <div className="bg-slate-800/70 rounded-2xl border border-slate-700/60 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/50 transition-all">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-slate-400">Agency Tool</span>
-                <span className="font-bold text-rose-400">From $396/yr</span>
-              </div>
-              <h3 className="text-sm font-bold text-white">vs. Gigwell</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Billed strictly annually for talent agencies. GigLizard offers a flat $9.99 30-day tour pass with zero annual contracts.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> No Annual Lock-in
-            </div>
-          </div>
-
-          {/* Card 4: vs Spreadsheets */}
-          <div className="bg-slate-800/70 rounded-2xl border border-slate-700/60 p-5 space-y-3 flex flex-col justify-between hover:border-indigo-400/50 transition-all">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-slate-400">Default Habit</span>
-                <span className="font-bold text-slate-400">DIY Chaos</span>
-              </div>
-              <h3 className="text-sm font-bold text-white">vs. Spreadsheets</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Replaces broken tabs and guess-work with automated driving routes, fuel budgets, and clean stage plot canvases.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-slate-700/60 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-400" /> Complete Stage Suite
-            </div>
-          </div>
-        </div>
-
-        {/* Mini Comparison Bar */}
-        <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-300">
-              Only GigLizard bundles <strong>interactive stage plotting, patch list generation & gig flyers</strong> for <strong>$0</strong>.
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => onSelectTab("venues")}
-              className="text-indigo-400 hover:text-indigo-300 font-semibold hover:underline cursor-pointer"
-            >
-              Browse {venueCountStr} Free Venues →
-            </button>
-            <span className="text-slate-700">·</span>
-            <button
-              type="button"
-              onClick={() => onSelectTab("compare")}
-              className="text-amber-400 hover:text-amber-300 font-semibold hover:underline cursor-pointer"
-            >
-              See All 10 Dimensions →
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Third-Party Trust Signals & Community Recency Strip (D3.5, D3.1) */}
-      <section className="bg-white rounded-3xl p-5 md:p-6 border border-gray-200/90 shadow-xs flex flex-col md:flex-row items-center justify-between gap-5 text-xs">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 border border-amber-300/40">
-            <Award className="w-5 h-5 text-amber-500" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span className="font-black text-slate-900 text-xs">Weekly Human Directory Moderation</span>
-              <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
-                Audited October 2026
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500 mt-0.5">
-              Live-verified talent buyer contacts, active booking emails, and 100% 7-day money-back guarantee.
-            </p>
-          </div>
-        </div>
-
-        {/* Third-Party Profile Stub & Date Recency */}
-        <div className="flex flex-wrap items-center gap-2 text-[11px]">
-          <button
-            type="button"
-            onClick={() => onSelectTab("verification")}
-            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>14+ Verified This Week · Log →</span>
-          </button>
-          <a
-            href="https://www.trustpilot.com/review/giglizard.us"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200/80 font-bold hover:bg-emerald-100 transition-all flex items-center gap-1.5"
-            title="Trustpilot Review Profile for GigLizard"
-          >
-            <span>Trustpilot Profile</span>
-            <ExternalLink className="w-3 h-3 text-emerald-600" />
-          </a>
-        </div>
-      </section>
 
       {/* Scope Honesty Notice (Who GigLizard Is and Is NOT For) - D2.B */}
       <section className="bg-white border border-gray-200/90 rounded-3xl p-6 md:p-8 space-y-5 shadow-xs">
@@ -1986,24 +2147,7 @@ export default function Home({
 
         </div>
 
-        {/* Payment Trust Badges Bar */}
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-gray-200/80 p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-            <div>
-              <p className="font-black text-slate-900 text-xs">Bank-Grade 256-Bit SSL Checkout</p>
-              <p className="text-[10.5px] text-gray-500">Encrypted merchant pipeline processed via PayPal & Stripe</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5 font-bold text-[10px] text-slate-600">
-            <span className="px-2 py-1 bg-slate-100 rounded border border-gray-200">Visa</span>
-            <span className="px-2 py-1 bg-slate-100 rounded border border-gray-200">Mastercard</span>
-            <span className="px-2 py-1 bg-slate-100 rounded border border-gray-200">American Express</span>
-            <span className="px-2 py-1 bg-slate-100 rounded border border-gray-200">Discover</span>
-            <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded border border-indigo-200">PayPal</span>
-            <span className="px-2 py-1 bg-slate-100 rounded border border-gray-200">Apple Pay</span>
-          </div>
-        </div>
+
 
         {/* In-Place FAQ: Answering Data Freshness & Renewal Objections (D1.4, D3.1) */}
         <div className="max-w-3xl mx-auto space-y-4 pt-6 border-t border-gray-200/80" id="homepage-freshness-faq">

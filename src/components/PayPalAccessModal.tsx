@@ -201,7 +201,7 @@ export default function PayPalAccessModal({
       localStorage.setItem("venue_user_profile_v1", JSON.stringify(updatedAccount));
 
       // HeyCatch: Identify subscriber and track subscription started
-      const identityId = updatedAccount.id || resolvedEmail;
+      const identityId = updatedAccount.id || (resolvedEmail ? "usr_" + btoa(resolvedEmail.toLowerCase()).replace(/=+$/, "") : "usr_anon");
       analytics.setIdentity(
         identityId,
         {

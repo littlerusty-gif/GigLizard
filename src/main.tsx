@@ -7,6 +7,7 @@ import './index.css';
 
 analytics.init({
   projectKey: 'hck_pk_vYte28EY2OYwgTW9mqPV5-I41Q4w-ygw',
+  site: 'landing',
   install: {
     framework: 'vite-react',
     frameworkVersion: '6',

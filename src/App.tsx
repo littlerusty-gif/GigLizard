@@ -1294,7 +1294,7 @@ export default function GigLizardApp() {
   const handleUpdateAccount = (account: UserAccount) => {
     setCurrentAccount(account);
     localStorage.setItem("current_user_account_v1", JSON.stringify(account));
-    const identId = account.id || account.email || account.contactEmail;
+    const identId = account.id || (account.contactEmail ? "usr_" + btoa(account.contactEmail.toLowerCase()).replace(/=+$/, "") : "usr_anon");
     if (identId) {
       analytics.setIdentity(
         identId,

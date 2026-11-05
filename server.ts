@@ -204,6 +204,12 @@ app.use("/api/", (req, res, next) => {
   next();
 });
 
+// HeyCatch channel attribution short links: /<char> -> /?utm_source=heycatch&utm_campaign=<char> (302)
+app.get(/^\/([a-z0-9])$/, (req, res) => {
+  const char = req.params[0];
+  res.redirect(302, `/?utm_source=heycatch&utm_campaign=${char}`);
+});
+
 // 4. Crawlers & SEO Endpoints (robots.txt, sitemap.xml, Google verification, llms.txt)
 app.get("/robots.txt", (req, res) => {
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
