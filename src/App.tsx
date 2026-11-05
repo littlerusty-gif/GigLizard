@@ -1502,7 +1502,7 @@ export default function GigLizardApp() {
       )}
 
       {/* Visual Workspace Bar Header */}
-      <header className="bg-white border-b border-gray-200/60 sticky top-0 z-50 py-2 sm:py-3 md:py-4 px-3 sm:px-6 md:px-8 max-w-full overflow-x-hidden" id="main-header">
+      <header className="bg-white border-b border-gray-200/60 sticky top-0 z-50 py-2 sm:py-3 md:py-4 px-3 sm:px-6 md:px-8 w-full" id="main-header">
         <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 sm:gap-4" id="header-inner">
           
           {/* Logo pinned on the far left */}
@@ -1611,7 +1611,7 @@ export default function GigLizardApp() {
               {/* Free Tools ▾ Dropdown (Hover & Click for ADHD-Friendly Scanning) */}
               <div 
                 ref={toolsDropdownRef}
-                className="relative group"
+                className="relative group z-50"
                 onMouseEnter={() => setIsToolsDropdownOpen(true)}
                 onMouseLeave={() => setIsToolsDropdownOpen(false)}
               >
@@ -1634,13 +1634,13 @@ export default function GigLizardApp() {
 
                 {/* Dropdown Menu - rendered in DOM to preserve all internal link equity & audit scores */}
                 <div 
-                  className={`absolute left-0 top-full pt-1.5 z-50 transition-all duration-150 ${
+                  className={`absolute left-0 top-full pt-1.5 z-[100] transition-all duration-150 ${
                     isToolsDropdownOpen 
                       ? "opacity-100 visible translate-y-0" 
                       : "opacity-0 invisible -translate-y-1 pointer-events-none group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto"
                   }`}
                 >
-                  <div className="w-72 sm:w-80 rounded-2xl bg-white p-2 shadow-2xl border border-slate-200/90 text-left space-y-1">
+                  <div className="w-72 sm:w-80 rounded-2xl bg-white p-2 shadow-2xl border border-slate-200/90 text-left space-y-1 relative z-[101]">
                     <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1 flex items-center justify-between">
                       <span>Production &amp; Tour Tools</span>
                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">100% Free</span>
