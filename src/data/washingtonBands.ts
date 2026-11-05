@@ -10,7 +10,8 @@ export const WASHINGTON_BANDS: AvailableBand[] = [
     bio: "High-octane Pacific Northwest rock and live touring performance. Powered by Dr Hadit with heavy overdrive riffs, sharp rhythms, and soaring anthems.",
     contactEmail: "littlerusty@gmail.com",
     contactPhone: "(206) 555-0199",
-    website: "www.drhadit.com",
+    website: "https://www.drhadit.com",
+    imageUrl: "/assets/founder/little_rusty_live_mic.webp",
     experienceLevel: "National Act"
   },
   {

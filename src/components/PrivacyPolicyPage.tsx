@@ -46,44 +46,60 @@ export default function PrivacyPolicyPage({ onSelectTab }: PrivacyPolicyPageProp
       {/* Main Policy Content */}
       <article className="bg-white rounded-3xl border border-gray-200/80 p-6 sm:p-10 shadow-sm space-y-8 text-slate-700 text-sm leading-relaxed">
         
-        {/* Third-Party Advertising & Cookie Disclosure (Mandated by Google AdSense) */}
-        <section className="bg-amber-50/80 border-2 border-amber-300 rounded-2xl p-6 space-y-3" id="advertising-cookies">
-          <div className="flex items-center gap-2 text-amber-900 font-black text-base">
+        {/* Dedicated Section: Google AdSense & Third-Party Advertising */}
+        <section className="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-6 sm:p-7 space-y-4 shadow-xs" id="google-adsense-advertising">
+          <div className="flex items-center gap-2.5 text-amber-950 font-black text-lg">
             <Cookie className="w-5 h-5 text-amber-600 shrink-0" />
-            <h2>Third-Party Vendors &amp; Advertising Cookies</h2>
+            <h2>Google AdSense &amp; Third-Party Advertising</h2>
           </div>
-          <p className="text-amber-950 font-bold leading-relaxed">
-            Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website.
-          </p>
-          <p className="text-amber-900/90 text-xs sm:text-sm leading-relaxed">
-            Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to GigLizard and/or other sites on the Internet.
-          </p>
-          <div className="pt-2 text-xs text-amber-950 space-y-1.5">
-            <p className="font-semibold">How to manage your ad preferences:</p>
-            <ul className="list-disc pl-5 space-y-1">
+          
+          <div className="space-y-3 text-amber-950">
+            <p className="font-bold text-sm sm:text-base leading-relaxed">
+              Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites.
+            </p>
+            <p className="text-xs sm:text-sm leading-relaxed text-amber-900/95 font-medium">
+              Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website. Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to GigLizard and/or other sites on the Internet.
+            </p>
+          </div>
+
+          <div className="p-4 bg-white/80 rounded-xl border border-amber-200/90 space-y-2 text-xs text-amber-950">
+            <p className="font-bold text-slate-900 flex items-center gap-1.5">
+              <span>How to Opt Out of Personalized Advertising:</span>
+            </p>
+            <ul className="list-disc pl-5 space-y-1.5 leading-relaxed text-slate-700">
               <li>
                 Users may opt out of personalized advertising by visiting{" "}
                 <a 
                   href="https://www.google.com/settings/ads" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="font-bold underline text-amber-950 hover:text-indigo-700 inline-flex items-center gap-0.5"
+                  className="font-bold underline text-indigo-700 hover:text-indigo-900 inline-flex items-center gap-0.5"
                 >
-                  Google Ads Settings <ExternalLink className="w-3 h-3" />
+                  Google Ads Settings (https://www.google.com/settings/ads) <ExternalLink className="w-3 h-3" />
                 </a>.
               </li>
               <li>
-                Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting{" "}
+                Alternatively, users can opt out of a third-party vendor's use of cookies for personalized advertising by visiting{" "}
                 <a 
                   href="https://www.aboutads.info/choices/" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="font-bold underline text-amber-950 hover:text-indigo-700 inline-flex items-center gap-0.5"
+                  className="font-bold underline text-indigo-700 hover:text-indigo-900 inline-flex items-center gap-0.5"
                 >
                   www.aboutads.info <ExternalLink className="w-3 h-3" />
                 </a>.
               </li>
             </ul>
+          </div>
+
+          <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-950 space-y-1">
+            <p className="font-bold flex items-center gap-1.5 text-emerald-900">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Strict Protection of Personal &amp; Mobile SMS Data</span>
+            </p>
+            <p className="text-emerald-800 leading-relaxed">
+              We strictly reaffirm that no sensitive personal data, mobile phone numbers, or mobile SMS consent records are ever shared with third parties or advertisers for marketing or promotional purposes. All contact details and artist communications remain private and secure within GigLizard.
+            </p>
           </div>
         </section>
 

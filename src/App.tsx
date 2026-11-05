@@ -31,6 +31,7 @@ import VerificationPage from "./components/VerificationPage";
 import TourAdviceHub from "./components/TourAdviceHub";
 import TourArticlePage from "./components/TourArticlePage";
 import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
+import ContactPage from "./components/ContactPage";
 import { TOUR_ARTICLES, getArticleBySlug } from "./data/tourArticles";
 import Footer from "./components/Footer";
 import gigLizardLogo from "./assets/images/giglizard_logo_hd.png";
@@ -72,8 +73,8 @@ const INITIAL_RIDER_INPUTS = [
 
 export default function GigLizardApp() {
   const { venueCountStr, bandCountStr } = useDirectoryCounts();
-  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin" | "compare" | "about" | "features" | "guide" | "changelog" | "customers" | "verification" | "articles" | "privacy";
-  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin", "compare", "about", "features", "guide", "changelog", "customers", "verification", "articles", "privacy"];
+  type TabType = "home" | "venues" | "plot" | "rider" | "poster" | "advisor" | "bands" | "tour" | "pricing" | "admin" | "compare" | "about" | "features" | "guide" | "changelog" | "customers" | "verification" | "articles" | "privacy" | "contact";
+  const validTabs: TabType[] = ["home", "venues", "plot", "rider", "poster", "advisor", "bands", "tour", "pricing", "admin", "compare", "about", "features", "guide", "changelog", "customers", "verification", "articles", "privacy", "contact"];
 
   // Mobile navigation drawer toggle state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -156,6 +157,7 @@ export default function GigLizardApp() {
       if (cleanPath === "/verification" || cleanPath === "/audit" || cleanPath === "/freshness") return "verification";
       if (cleanPath === "/articles" || cleanPath === "/tour-advice" || cleanPath.startsWith("/articles/")) return "articles";
       if (cleanPath === "/privacy" || cleanPath === "/privacy-policy") return "privacy";
+      if (cleanPath === "/contact" || cleanPath === "/contact-us") return "contact";
 
       const rawHash = window.location.hash.replace("#", "").toLowerCase();
       if (rawHash === "venues" || rawHash.startsWith("venues/")) return "venues";
@@ -167,6 +169,7 @@ export default function GigLizardApp() {
       if (rawHash === "features" || rawHash === "tools") return "features";
       if (rawHash === "changelog" || rawHash === "updates") return "changelog";
       if (rawHash === "customers" || rawHash === "stories" || rawHash === "case-studies") return "customers";
+      if (rawHash === "contact" || rawHash === "contact-us") return "contact";
       if (rawHash === "guide" || rawHash.includes("touring-guide")) return "guide";
       if (validTabs.includes(rawHash as TabType)) {
         if (rawHash === "admin" && !isOwner) return "home";
@@ -480,6 +483,7 @@ export default function GigLizardApp() {
     advisor: "/faq",
     articles: "/articles",
     privacy: "/privacy",
+    contact: "/contact",
     admin: "/admin"
   };
 
@@ -544,6 +548,7 @@ export default function GigLizardApp() {
       verification: "Directory Verification Log & Freshness Audits | GigLizard",
       articles: "Tour Advice Playbooks & Road Wisdom (10 Articles) | GigLizard",
       privacy: "GigLizard Privacy Policy - Data Protection & Cookie Disclosures",
+      contact: "Contact GigLizard - Direct Founder & Booking Support",
       admin: "Owner Management Dashboard | GigLizard"
     };
 
@@ -565,6 +570,7 @@ export default function GigLizardApp() {
       verification: `Live moderation queue, dated venue audits, and human corroboration records for ${venueCountStr} music venues and ${bandCountStr} active band contacts across the Lower 48.`,
       articles: "10 master tour advice articles for DIY bands: route corridors, van gas budgets, cold-emailing bookers, stage plots, and midnight settlements.",
       privacy: "GigLizard Privacy Policy: Learn how we protect artist and venue data, and our policies on cookies, third-party advertising, and payment security.",
+      contact: "Contact Little Rusty and the GigLizard team for venue moderation reports, artist support, or direct questions. Direct response within 4 hours.",
       faq: "Frequently asked questions about venue booking inboxes, $9.99 flat band passes, 7-day money-back refunds, and DIY touring tools."
     };
 
@@ -572,9 +578,9 @@ export default function GigLizardApp() {
       home: "https://www.giglizard.us/",
       venues: "https://www.giglizard.us/venues",
       bands: "https://www.giglizard.us/bands",
-      plot: "https://giglizard.us/tools/stage-plot",
+      plot: "https://www.giglizard.us/tools/stage-plot",
       rider: "https://www.giglizard.us/rider",
-      poster: "https://giglizard.us/tools/poster-designer",
+      poster: "https://www.giglizard.us/tools/poster-designer",
       tour: "https://www.giglizard.us/tour",
       pricing: "https://www.giglizard.us/pricing",
       compare: "https://www.giglizard.us/compare",
@@ -587,6 +593,7 @@ export default function GigLizardApp() {
       verification: "https://www.giglizard.us/verification",
       articles: "https://www.giglizard.us/articles",
       privacy: "https://www.giglizard.us/privacy",
+      contact: "https://www.giglizard.us/contact",
       admin: "https://www.giglizard.us/admin"
     };
 
@@ -703,11 +710,8 @@ export default function GigLizardApp() {
       setActiveTabState("verification");
       return true;
     }
-    if (clean === "customers" || clean === "stories" || clean === "testimonials") {
-      setActiveTabState("home");
-      setTimeout(() => {
-        document.getElementById("stories-from-the-road")?.scrollIntoView({ behavior: "smooth" });
-      }, 150);
+    if (clean === "customers" || clean === "stories" || clean === "case-studies") {
+      setActiveTabState("customers");
       return true;
     }
     if (clean === "plot" || clean === "stage-plot" || clean === "tools/stage-plot") {
@@ -747,6 +751,10 @@ export default function GigLizardApp() {
     }
     if (clean === "privacy" || clean === "privacy-policy") {
       setActiveTabState("privacy");
+      return true;
+    }
+    if (clean === "contact" || clean === "contact-us") {
+      setActiveTabState("contact");
       return true;
     }
     return false;
@@ -1444,9 +1452,14 @@ export default function GigLizardApp() {
             {/* Inner circle container (mobile: w-[85vw] max-w-[360px] aspect-square; desktop: md:w-[500px] md:max-w-[500px] md:h-[500px] aspect-square) */}
             <div className="relative w-[85vw] max-w-[360px] md:w-[500px] md:max-w-[500px] md:h-[500px] aspect-square rounded-full overflow-hidden shadow-[0_0_45px_rgba(16,185,129,0.5),0_0_90px_rgba(5,150,105,0.25)] border-2 border-emerald-500/70 bg-[#121212] flex items-center justify-center">
               <img 
-                src="/icon-512.png" 
+                src="/icon-512.webp" 
                 alt="GigLizard: The Ultimate Live Music Stage Director" 
+                width={512}
+                height={512}
                 className="w-full h-full object-contain block"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/icon-512.png";
+                }}
               />
             </div>
           </div>
@@ -1479,8 +1492,10 @@ export default function GigLizardApp() {
               title="GigLizard Home"
             >
               <img
-                src={gigLizardLogo || "/giglizard_logo.png"}
+                src="/giglizard_logo.webp"
                 alt="GigLizard"
+                width={360}
+                height={96}
                 className="h-10 sm:h-14 md:h-20 lg:h-24 max-w-[140px] sm:max-w-[200px] md:max-w-[320px] lg:max-w-[420px] w-auto object-contain flex-shrink-0 transition-transform group-hover:scale-102"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
@@ -1615,6 +1630,34 @@ export default function GigLizardApp() {
               >
                 <BookOpen className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>Tour Advice</span>
+              </a>
+
+              <a
+                href="/features"
+                onClick={(e) => { e.preventDefault(); setActiveTab("features"); }}
+                id="tab-btn-features"
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "features"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Features</span>
+              </a>
+
+              <a
+                href="/compare"
+                onClick={(e) => { e.preventDefault(); setActiveTab("compare"); }}
+                id="tab-btn-compare"
+                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                  activeTab === "compare"
+                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <Scale className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Compare</span>
               </a>
 
               <a
@@ -2224,6 +2267,12 @@ export default function GigLizardApp() {
           </div>
         )}
 
+        {activeTab === "contact" && (
+          <div className="space-y-6" id="view-contact-wrapper">
+            <ContactPage onSelectTab={setActiveTab} />
+          </div>
+        )}
+
         {activeTab === "admin" && (
           currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" ? (
             <div className="space-y-6" id="view-admin-wrapper">
@@ -2306,6 +2355,7 @@ export default function GigLizardApp() {
         onOpenFaq={() => setActiveTab("advisor")}
         onOpenVerification={() => setActiveTab("verification")}
         onOpenPrivacy={() => setActiveTab("privacy")}
+        onOpenContactPage={() => setActiveTab("contact")}
         userEmail={currentAccount?.contactEmail || currentUser?.email || ""}
         userName={currentAccount?.name || ""}
       />

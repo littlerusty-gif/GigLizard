@@ -3,7 +3,7 @@ import {
   X, Shield, Heart, MapPin, Music, Building, Users, 
   Sparkles, Award, CheckCircle2, Mail, ExternalLink, ShieldCheck 
 } from "lucide-react";
-import { FounderAvatar } from "./ProductPreviews";
+import { FounderAvatar, FOUNDER_PHOTOS } from "./ProductPreviews";
 import { useDirectoryCounts } from "../utils/directoryCounts";
 
 interface AboutMissionModalProps {
@@ -68,6 +68,40 @@ export default function AboutMissionModal({ isOpen, onClose, onSelectTab }: Abou
           <div className="pt-2 border-t border-slate-800 not-italic flex items-center justify-between text-[11px] text-slate-400 font-sans">
             <span className="font-bold text-amber-400">— Little Rusty, Creator & Musician</span>
             <span className="text-slate-400">Portland, OR</span>
+          </div>
+        </div>
+
+        {/* Real Photos Strip */}
+        <div className="space-y-2">
+          <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Music className="w-3.5 h-3.5 text-indigo-400" />
+            <span>On the Road &amp; Behind the Console</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {FOUNDER_PHOTOS.map((photo) => (
+              <div 
+                key={photo.id}
+                className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden group shadow-sm"
+              >
+                <div className="aspect-4/3 w-full overflow-hidden bg-slate-900">
+                  <img
+                    src={photo.srcWebp}
+                    alt={photo.title}
+                    width={photo.width}
+                    height={photo.height}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = photo.srcJpg;
+                    }}
+                  />
+                </div>
+                <div className="p-2 text-left">
+                  <p className="text-[10px] font-bold text-white line-clamp-1">{photo.title}</p>
+                  <p className="text-[9px] text-indigo-400 line-clamp-1">{photo.role}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

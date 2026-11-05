@@ -249,6 +249,12 @@ export default function UserLoginModal({
             localStorage.removeItem("giglizard_active_user");
           } catch (_) {}
 
+          // HeyCatch: identify returning subscriber/member on sign-in
+          analytics.setIdentity(
+            payload.id,
+            { email: cleanEmail, name: payload.name, plan: payload.isPremium ? "pro" : "free" }
+          );
+
           setSuccessMessage(`✅ Welcome back! Logged in as ${roleType}: ${payload.name}.`);
           setTimeout(() => {
             onLoginSuccess(payload);
@@ -284,6 +290,11 @@ export default function UserLoginModal({
           localStorage.setItem("current_user_account_v1", JSON.stringify(ownerAccount));
           localStorage.removeItem("giglizard_active_user");
         } catch (_) {}
+        analytics.setIdentity(ownerAccount.id, {
+          email: ownerAccount.email,
+          name: ownerAccount.name,
+          plan: "pro"
+        });
         setSuccessMessage("✅ Logged in successfully as Platform Owner! Lifetime Full Access Enabled.");
         setTimeout(() => {
           onLoginSuccess(ownerAccount);

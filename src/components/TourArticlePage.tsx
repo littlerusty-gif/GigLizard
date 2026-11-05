@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { 
-  TourArticle, 
-  TOUR_ARTICLES 
-} from "../data/tourArticles";
+import { TourArticle, TOUR_ARTICLES } from "../data/tourArticles";
+import { FounderAvatar } from "./ProductPreviews";
 import AdSenseBanner from "./AdSenseBanner";
 import { 
   ArrowLeft, 
@@ -301,9 +299,7 @@ export default function TourArticlePage({
         {/* Author Bio Box */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center font-black text-white text-base shadow-md">
-              LR
-            </div>
+            <FounderAvatar size="md" className="shrink-0" />
             <div>
               <h4 className="font-black text-white text-base">Written by {article.author.name}</h4>
               <p className="text-xs text-slate-400">{article.author.role}</p>

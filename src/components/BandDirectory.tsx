@@ -1066,19 +1066,31 @@ export default function BandDirectory({
           >
             <div className="space-y-3">
               <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="text-base font-black text-gray-900 tracking-tight flex items-center gap-1.5">
-                    {band.name}
-                    {band.experienceLevel === "National Act" && (
-                      <span className="text-amber-500" title="National Act">
-                        <Star className="w-4 h-4 fill-amber-400" />
-                      </span>
-                    )}
-                  </h4>
-                  <p className="text-xs text-gray-400 font-medium flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-rose-500" />
-                    Hometown: {band.city}
-                  </p>
+                <div className="flex items-start gap-3">
+                  {band.imageUrl && (
+                    <img 
+                      src={band.imageUrl} 
+                      alt={band.name}
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-xl object-cover border border-gray-200 shadow-2xs shrink-0"
+                      loading="lazy"
+                    />
+                  )}
+                  <div>
+                    <h4 className="text-base font-black text-gray-900 tracking-tight flex items-center gap-1.5">
+                      {band.name}
+                      {band.experienceLevel === "National Act" && (
+                        <span className="text-amber-500" title="National Act">
+                          <Star className="w-4 h-4 fill-amber-400" />
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-xs text-gray-400 font-medium flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                      Hometown: {band.city}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-1">

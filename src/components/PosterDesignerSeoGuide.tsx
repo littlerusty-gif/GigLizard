@@ -6,7 +6,7 @@ export default function PosterDesignerSeoGuide() {
   useEffect(() => {
     const pageTitle = "Free Gig Poster Maker & Concert Flyer Generator | GigLizard";
     const pageDescription = "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.";
-    const canonicalUrl = "https://giglizard.us/tools/poster-designer";
+    const canonicalUrl = "https://www.giglizard.us/tools/poster-designer";
 
     document.title = pageTitle;
 
@@ -39,11 +39,11 @@ export default function PosterDesignerSeoGuide() {
       "@graph": [
         {
           "@type": ["WebApplication", "SoftwareApplication"],
-          "@id": "https://giglizard.us/tools/poster-designer#software",
+          "@id": "https://www.giglizard.us/tools/poster-designer#software",
           "name": "GigLizard Gig Poster Maker",
           "applicationCategory": "MultimediaApplication",
           "operatingSystem": "Web",
-          "url": "https://giglizard.us/tools/poster-designer",
+          "url": "https://www.giglizard.us/tools/poster-designer",
           "description": pageDescription,
           "offers": {
             "@type": "Offer",
@@ -54,7 +54,7 @@ export default function PosterDesignerSeoGuide() {
         },
         {
           "@type": "FAQPage",
-          "@id": "https://giglizard.us/tools/poster-designer#faq",
+          "@id": "https://www.giglizard.us/tools/poster-designer#faq",
           "mainEntity": [
             {
               "@type": "Question",

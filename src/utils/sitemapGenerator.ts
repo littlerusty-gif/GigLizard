@@ -214,6 +214,13 @@ export function getCoreSitemapEntries(): SitemapEntry[] {
     priority: "0.70"
   });
 
+  entries.push({
+    url: "https://www.giglizard.us/contact",
+    lastmod: today,
+    changefreq: "monthly",
+    priority: "0.75"
+  });
+
   // 5. Tour Advice Master Articles (10 Dedicated Playbooks)
   entries.push({
     url: "https://www.giglizard.us/articles",

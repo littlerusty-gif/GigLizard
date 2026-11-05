@@ -1925,9 +1925,9 @@ export default function StagePlotDesigner({
         >
           {/* Header */}
           <div className="text-center pb-2">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            <div role="heading" aria-level={1} className="text-3xl font-black text-slate-900 tracking-tight">
               {effectiveBandName}
-            </h1>
+            </div>
           </div>
 
           {/* Visual Stage Diagram Section */}

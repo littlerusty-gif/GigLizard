@@ -56,7 +56,38 @@ const MAX_REQUESTS_PER_WINDOW = 80;
 
 app.use(express.json({ limit: "1mb" }));
 
-// 1. Anti-Scraping & Security HTTP Headers Middleware
+// 0. Production Canonical Domain (https://www.giglizard.us) 301 Redirect Middleware
+app.use((req, res, next) => {
+  const rawHost = (req.headers["x-forwarded-host"] as string || req.headers.host || "").toLowerCase().split(":")[0];
+  const proto = (req.headers["x-forwarded-proto"] as string || req.protocol || "http").toLowerCase();
+
+  const isLocalhost = 
+    rawHost === "localhost" || 
+    rawHost === "127.0.0.1" || 
+    rawHost === "0.0.0.0" || 
+    rawHost.endsWith(".local") ||
+    rawHost === "";
+
+  // Cloud Run / AI Studio preview environment domains (ais-dev-...run.app, ais-pre-...run.app)
+  const isInternalPreview = rawHost.endsWith(".run.app") || rawHost.includes("google") || rawHost.includes("aistudio");
+
+  // If request hits apex domain giglizard.us (non-www), 301 redirect to https://www.giglizard.us
+  if (rawHost === "giglizard.us") {
+    return res.redirect(301, `https://www.giglizard.us${req.originalUrl || req.url}`);
+  }
+
+  // In production outside internal preview/localhost:
+  // Strictly enforce https://www.giglizard.us (redirect insecure HTTP and any non-canonical domain)
+  if (!isLocalhost && !isInternalPreview) {
+    if (rawHost !== "www.giglizard.us" || proto !== "https") {
+      return res.redirect(301, `https://www.giglizard.us${req.originalUrl || req.url}`);
+    }
+  }
+
+  next();
+});
+
+// 1. Anti-Scraping & Security HTTP Headers Middleware (t_security_headers)
 app.use((req, res, next) => {
   // Prevent MIME-sniffing
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -66,6 +97,11 @@ app.use((req, res, next) => {
   res.setHeader("X-XSS-Protection", "1; mode=block");
   // Referrer policy
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Content-Security-Policy-Report-Only
+  res.setHeader(
+    "Content-Security-Policy-Report-Only",
+    "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.google.com https://www.googletagmanager.com https://in.heycatch.ai; connect-src 'self' https: wss: https://in.heycatch.ai; img-src 'self' https: data: blob:; style-src 'self' https: 'unsafe-inline'; font-src 'self' https: data:;"
+  );
   // Anti-Scraping Robots Directive (prevents bulk crawler indexing / caching of sensitive API endpoints)
   if (req.path.startsWith("/api/")) {
     res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet, noimageindex");
@@ -216,6 +252,13 @@ app.get("/sitemap.xml", async (req, res) => {
     console.error("Error generating dynamic Supabase sitemap, falling back to sync:", err);
     res.send(generateSitemapXml());
   }
+});
+
+// IndexNow verification key endpoint (t_sitemap_fresh)
+app.get(["/giglizard2026indexnowkeyb487.txt", "/indexnow-key.txt"], (req, res) => {
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send("giglizard2026indexnowkeyb487\n");
 });
 
 // Google Search Console dynamic HTML file verification handler
@@ -1641,18 +1684,18 @@ interface RouteMetadata {
 
 const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   "/": {
-    title: "GigLizard - Free Venue Directory & DIY Tour Tools",
+    title: "GigLizard - Free Venue Directory & DIY Tour Booking Tools",
     description: "Find 650+ music venues and 4,850+ touring bands for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
     canonical: "https://www.giglizard.us/",
     heading: "Find Venues, Book Shows - 650+ Venues Across the USA",
-    subhead: "Find music venues for free, calculate AI tour routes with drive times & van gas budgets, and build pro stage plots & riders for $0 — stop watching wishy-washy middle dates stay open on your tour calendar."
+    subhead: "GigLizard is a free nationwide independent music venue directory and DIY tour booking platform for touring bands, venues, and sound engineers across the Lower 48."
   },
   "/pricing": {
-    title: "GigLizard Pricing - Free Venues, $9.99 Band Contacts Pass",
+    title: "GigLizard Pricing - Free Venue Discovery & $9.99 30-Day Band Pass",
     description: "Transparent DIY tour pricing: 650+ venues and 4,850+ touring bands, plus stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.",
     canonical: "https://www.giglizard.us/pricing",
     heading: "Access to Venues - FREE / Access to Band Contacts - $9.99",
-    subhead: "Venues and production tools are 100% free for all bands forever. Get a flat 30-day all-access pass for $9.99 with zero recurring billing traps."
+    subhead: "GigLizard Pricing is a transparent two-tier access model offering 100% free venue discovery forever and an optional $9.99 flat 30-day pass for unmasked touring band booking contacts."
   },
   "/about": {
     title: "About GigLizard - Built by DIY Musicians in Portland",
@@ -1762,21 +1805,21 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   "/tools/stage-plot": {
     title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
     description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
-    canonical: "https://giglizard.us/tools/stage-plot",
+    canonical: "https://www.giglizard.us/tools/stage-plot",
     heading: "Free Stage Plot Maker & Band Input List Template",
     subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
   },
   "/stage-plot": {
     title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
     description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
-    canonical: "https://giglizard.us/tools/stage-plot",
+    canonical: "https://www.giglizard.us/tools/stage-plot",
     heading: "Free Stage Plot Maker & Band Input List Template",
     subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
   },
   "/plot": {
     title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
     description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
-    canonical: "https://giglizard.us/tools/stage-plot",
+    canonical: "https://www.giglizard.us/tools/stage-plot",
     heading: "Free Stage Plot Maker & Band Input List Template",
     subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
   },
@@ -1790,21 +1833,21 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   "/tools/poster-designer": {
     title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
     description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
-    canonical: "https://giglizard.us/tools/poster-designer",
+    canonical: "https://www.giglizard.us/tools/poster-designer",
     heading: "Free Gig Poster Maker & Concert Flyer Generator",
     subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
   },
   "/poster-designer": {
     title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
     description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
-    canonical: "https://giglizard.us/tools/poster-designer",
+    canonical: "https://www.giglizard.us/tools/poster-designer",
     heading: "Free Gig Poster Maker & Concert Flyer Generator",
     subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
   },
   "/poster": {
     title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
     description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
-    canonical: "https://giglizard.us/tools/poster-designer",
+    canonical: "https://www.giglizard.us/tools/poster-designer",
     heading: "Free Gig Poster Maker & Concert Flyer Generator",
     subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
   },
@@ -1835,6 +1878,20 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     canonical: "https://www.giglizard.us/privacy",
     heading: "GigLizard Privacy Policy",
     subhead: "Transparent data protection commitments, cookie disclosures, and privacy standards for musicians and venues."
+  },
+  "/contact": {
+    title: "Contact GigLizard - Direct Founder & Booking Support",
+    description: "Contact Little Rusty and the GigLizard team for venue moderation reports, artist support, or direct questions. Direct response within 4 hours.",
+    canonical: "https://www.giglizard.us/contact",
+    heading: "Contact GigLizard & Little Rusty",
+    subhead: "GigLizard Contact is a direct communication channel to Little Rusty and our human venue moderation team. Reach us via email or web message with guaranteed response in under 4 hours."
+  },
+  "/contact-us": {
+    title: "Contact GigLizard - Direct Founder & Booking Support",
+    description: "Contact Little Rusty and the GigLizard team for venue moderation reports, artist support, or direct questions. Direct response within 4 hours.",
+    canonical: "https://www.giglizard.us/contact",
+    heading: "Contact GigLizard & Little Rusty",
+    subhead: "GigLizard Contact is a direct communication channel to Little Rusty and our human venue moderation team. Reach us via email or web message with guaranteed response in under 4 hours."
   }
 };
 
@@ -1843,10 +1900,12 @@ function getRouteNoscriptSnippet(cleanPath: string): string {
     return `
         <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
           <h2>GigLizard Privacy Policy</h2>
-          <div style="margin-bottom: 20px; padding: 15px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px;">
-            <h3>Third-Party Vendors &amp; Advertising Cookies</h3>
-            <p><strong>Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website.</strong></p>
-            <p>Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to GigLizard and/or other sites on the Internet. Users may opt out of personalized advertising by visiting Google Ads Settings (google.com/settings/ads) or www.aboutads.info.</p>
+          <div style="margin-bottom: 20px; padding: 20px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px;">
+            <h3>Google AdSense &amp; Third-Party Advertising</h3>
+            <p><strong>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites.</strong></p>
+            <p>Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website. Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to GigLizard and/or other sites on the Internet.</p>
+            <p>Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads">Google Ads Settings (https://www.google.com/settings/ads)</a> or <a href="https://www.aboutads.info/choices/">www.aboutads.info</a>.</p>
+            <p><strong>SMS &amp; Sensitive Personal Data Protection:</strong> No sensitive personal data, mobile phone numbers, or mobile SMS consent records are shared with third parties or advertisers for marketing purposes.</p>
           </div>
           <h3>Data Privacy Commitment</h3>
           <p>GigLizard strictly protects artist and venue data. We never sell, rent, or lease contact listings, booking emails, or private phone records to third-party data brokers or marketing services.</p>
@@ -2256,18 +2315,18 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
         "@graph": [
           {
             "@type": ["WebApplication", "SoftwareApplication"],
-            "@id": "https://giglizard.us/tools/stage-plot#software",
+            "@id": "https://www.giglizard.us/tools/stage-plot#software",
             "name": "GigLizard Stage Plot & Input List Maker",
             "applicationCategory": "MultimediaApplication",
             "operatingSystem": "Web",
-            "url": "https://giglizard.us/tools/stage-plot",
+            "url": "https://www.giglizard.us/tools/stage-plot",
             "description": "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
             "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
             "keywords": "free stage plot maker, stage plot creator, band input list template, tech rider builder, drum and amp stage diagram"
           },
           {
             "@type": "FAQPage",
-            "@id": "https://giglizard.us/tools/stage-plot#faq",
+            "@id": "https://www.giglizard.us/tools/stage-plot#faq",
             "mainEntity": [
               {
                 "@type": "Question",
@@ -2307,18 +2366,18 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
         "@graph": [
           {
             "@type": ["WebApplication", "SoftwareApplication"],
-            "@id": "https://giglizard.us/tools/poster-designer#software",
+            "@id": "https://www.giglizard.us/tools/poster-designer#software",
             "name": "GigLizard Gig Poster Maker",
             "applicationCategory": "MultimediaApplication",
             "operatingSystem": "Web",
-            "url": "https://giglizard.us/tools/poster-designer",
+            "url": "https://www.giglizard.us/tools/poster-designer",
             "description": "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
             "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
             "keywords": "free gig poster maker, band flyer generator, concert poster designer, tour flyer maker, printable band poster template"
           },
           {
             "@type": "FAQPage",
-            "@id": "https://giglizard.us/tools/poster-designer#faq",
+            "@id": "https://www.giglizard.us/tools/poster-designer#faq",
             "mainEntity": [
               {
                 "@type": "Question",
@@ -2352,6 +2411,37 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
         "</head>",
         `    <script type="application/ld+json">\n    ${JSON.stringify(posterSchema, null, 2)}\n    </script>\n  </head>`
       );
+    } else if (!article && !prog) {
+      // Subpage WebPage structured data with Organization sameAs (g_structured_data, a_sameas)
+      const pageSchema = {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": `${meta.canonical}#webpage`,
+        "url": meta.canonical,
+        "name": meta.title,
+        "description": meta.description,
+        "isPartOf": {
+          "@type": "WebSite",
+          "@id": "https://www.giglizard.us/#website",
+          "name": "GigLizard",
+          "url": "https://www.giglizard.us"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "@id": "https://www.giglizard.us/#organization",
+          "name": "GigLizard",
+          "url": "https://www.giglizard.us",
+          "sameAs": [
+            "https://www.linkedin.com/in/littlerusty",
+            "https://www.trustpilot.com/review/giglizard.us",
+            "https://drhadit.bandcamp.com"
+          ]
+        }
+      };
+      html = html.replace(
+        "</head>",
+        `    <script type="application/ld+json">\n    ${JSON.stringify(pageSchema, null, 2)}\n    </script>\n  </head>`
+      );
     }
 
     const routeSnippet = getRouteNoscriptSnippet(cleanPath);
@@ -2361,6 +2451,63 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
   }
 
   return html;
+}
+
+// Route existence validator for soft-404 defense (t_soft404)
+function isValidRoute(cleanPath: string): boolean {
+  if (cleanPath === "/" || cleanPath === "") return true;
+  if (ROUTE_METADATA_MAP[cleanPath]) return true;
+  if (cleanPath.startsWith("/articles/")) {
+    const slug = cleanPath.replace(/^\/articles\//, "");
+    return !!getArticleBySlug(slug);
+  }
+  if (cleanPath.startsWith("/venues/")) {
+    const venueSub = cleanPath.replace(/^\/venues\//, "");
+    return !!parseProgrammaticVenuePath(venueSub);
+  }
+  if (cleanPath.startsWith("/stage-plot/")) {
+    return true;
+  }
+  if (cleanPath === "/admin") return true;
+  return false;
+}
+
+function render404Page(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 Page Not Found | GigLizard</title>
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://www.giglizard.us/404" />
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #020617; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 20px; padding: 40px; max-width: 500px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+    h1 { font-size: 3rem; margin: 0 0 10px; color: #6366f1; font-weight: 900; }
+    h2 { font-size: 1.5rem; margin: 0 0 15px; color: #f8fafc; }
+    p { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px; }
+    .links { display: flex; flex-direction: column; gap: 10px; }
+    a { display: inline-block; padding: 12px 20px; border-radius: 12px; font-weight: 700; text-decoration: none; font-size: 0.9rem; transition: background 0.2s; }
+    .primary { background: #4f46e5; color: white; }
+    .primary:hover { background: #4338ca; }
+    .secondary { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+    .secondary:hover { background: #334155; color: white; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>404</h1>
+    <h2>Page Not Found</h2>
+    <p>The page or venue corridor you're looking for doesn't exist or may have been moved.</p>
+    <div class="links">
+      <a href="/" class="primary">Return to GigLizard Home</a>
+      <a href="/venues" class="secondary">Browse 650+ Venues</a>
+      <a href="/pricing" class="secondary">View Pricing</a>
+    </div>
+  </div>
+</body>
+</html>`;
 }
 
 // Process-wide stability guards to prevent unexpected exit during dev restarts
@@ -2397,6 +2544,12 @@ async function startServer() {
       ) {
         return next();
       }
+
+      const cleanPath = req.path.replace(/\/$/, "") || "/";
+      if (!isValidRoute(cleanPath)) {
+        return res.status(404).set({ "Content-Type": "text/html" }).send(render404Page());
+      }
+
       try {
         const template = fs.readFileSync(path.resolve("index.html"), "utf-8");
         const customHtml = renderHtmlForRoute(template, req.path);
@@ -2413,6 +2566,11 @@ async function startServer() {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, { index: false }));
     app.get("*", (req, res) => {
+      const cleanPath = req.path.replace(/\/$/, "") || "/";
+      if (!isValidRoute(cleanPath)) {
+        return res.status(404).set({ "Content-Type": "text/html" }).send(render404Page());
+      }
+
       const templatePath = path.join(distPath, "index.html");
       if (fs.existsSync(templatePath)) {
         const template = fs.readFileSync(templatePath, "utf-8");

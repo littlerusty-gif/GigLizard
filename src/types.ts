@@ -110,6 +110,7 @@ export interface AvailableBand {
   password?: string;
   epkUrl?: string | null;
   musicUrl?: string | null;
+  imageUrl?: string | null;
   // Booking Agency Representation
   hasBookingAgency?: boolean;
   bookingAgency?: string | null; // e.g. "Intrepid Artists", "Ground Control Touring", etc.

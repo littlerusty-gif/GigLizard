@@ -15,8 +15,9 @@ const STATIC_BANDS: AvailableBand[] = [
     bio: "Seattle-based touring musician, songwriter, and live sound engineer. Founder of GigLizard. Gritty Pacific Northwest rock with melodic hooks, tube overdrive, and road-tested live energy.",
     contactEmail: "littlerusty@gmail.com",
     contactPhone: "(206) 555-0199",
-    website: "https://giglizard.com",
+    website: "https://www.giglizard.us",
     musicUrl: "https://drhadit.bandcamp.com",
+    imageUrl: "/assets/founder/little_rusty_live_mic.webp",
     experienceLevel: "Regional Tour"
   },
   {
@@ -29,6 +30,7 @@ const STATIC_BANDS: AvailableBand[] = [
     contactPhone: "(206) 555-0199",
     website: "https://www.drhadit.com",
     musicUrl: "https://drhadit.bandcamp.com",
+    imageUrl: "/assets/founder/little_rusty_live_mic.webp",
     experienceLevel: "National Act"
   },
   {

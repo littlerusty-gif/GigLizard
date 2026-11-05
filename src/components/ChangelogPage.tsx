@@ -4,6 +4,7 @@ import {
   ArrowRight, Users, Sliders, FileText, Compass, DollarSign 
 } from "lucide-react";
 import { useDirectoryCounts } from "../utils/directoryCounts";
+import { Breadcrumbs, RelatedLinks } from "./RelatedLinks";
 
 interface ChangelogPageProps {
   onSelectTab: (tab: any) => void;
@@ -69,6 +70,8 @@ export default function ChangelogPage({ onSelectTab, onOpenRegister }: Changelog
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 space-y-10 animate-fade-in" id="changelog-page-root">
+      <Breadcrumbs items={[{ label: "Changelog", path: "/changelog" }]} />
+
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-indigo-200">
@@ -78,8 +81,9 @@ export default function ChangelogPage({ onSelectTab, onOpenRegister }: Changelog
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
           GigLizard Changelog
         </h1>
+        {/* Definition up front (g_definition) */}
         <p className="text-xs md:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
-          Dated updates, newly verified venues, and touring tools shipped for working DIY bands. Built and maintained in Portland, OR by Little Rusty.
+          GigLizard Changelog is the official chronological release log of platform features, venue verification updates, and touring tooling improvements. Dated updates, newly verified venues, and touring tools shipped for working DIY bands. Built and maintained in Portland, OR by Little Rusty.
         </p>
       </div>
 
@@ -147,6 +151,9 @@ export default function ChangelogPage({ onSelectTab, onOpenRegister }: Changelog
           </button>
         </div>
       </div>
+
+      {/* Related links block (t_orphan_pages, c_internal_links) */}
+      <RelatedLinks currentPath="/changelog" onSelectTab={onSelectTab} />
     </div>
   );
 }

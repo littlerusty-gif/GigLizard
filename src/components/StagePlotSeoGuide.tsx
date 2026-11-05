@@ -6,7 +6,7 @@ export default function StagePlotSeoGuide() {
   useEffect(() => {
     const pageTitle = "Free Stage Plot Maker & Band Input List Template | GigLizard";
     const pageDescription = "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.";
-    const canonicalUrl = "https://giglizard.us/tools/stage-plot";
+    const canonicalUrl = "https://www.giglizard.us/tools/stage-plot";
 
     document.title = pageTitle;
 
@@ -39,11 +39,11 @@ export default function StagePlotSeoGuide() {
       "@graph": [
         {
           "@type": ["WebApplication", "SoftwareApplication"],
-          "@id": "https://giglizard.us/tools/stage-plot#software",
+          "@id": "https://www.giglizard.us/tools/stage-plot#software",
           "name": "GigLizard Stage Plot & Input List Maker",
           "applicationCategory": "MultimediaApplication",
           "operatingSystem": "Web",
-          "url": "https://giglizard.us/tools/stage-plot",
+          "url": "https://www.giglizard.us/tools/stage-plot",
           "description": pageDescription,
           "offers": {
             "@type": "Offer",
@@ -54,7 +54,7 @@ export default function StagePlotSeoGuide() {
         },
         {
           "@type": "FAQPage",
-          "@id": "https://giglizard.us/tools/stage-plot#faq",
+          "@id": "https://www.giglizard.us/tools/stage-plot#faq",
           "mainEntity": [
             {
               "@type": "Question",

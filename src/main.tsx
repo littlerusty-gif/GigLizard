@@ -5,6 +5,15 @@ import { Analytics } from '@vercel/analytics/react';
 import App from './App.tsx';
 import './index.css';
 
+analytics.init({
+  projectKey: 'hck_pk_vYte28EY2OYwgTW9mqPV5-I41Q4w-ygw',
+  install: {
+    framework: 'vite-react',
+    frameworkVersion: '6',
+    agent: 'other',
+  },
+});
+
 // Ensure window.fetch has a setter if sandboxed environment made it getter-only
 if (typeof window !== 'undefined' && window.fetch) {
   try {
@@ -17,15 +26,6 @@ if (typeof window !== 'undefined' && window.fetch) {
     });
   } catch (_) {}
 }
-
-analytics.init({
-  projectKey: 'hck_pk_vYte28EY2OYwgTW9mqPV5-I41Q4w-ygw',
-  install: {
-    framework: 'vite-react',
-    frameworkVersion: '19',
-    agent: 'other',
-  },
-});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

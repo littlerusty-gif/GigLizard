@@ -17,6 +17,7 @@ interface FooterProps {
   onOpenFaq?: () => void;
   onOpenVerification?: () => void;
   onOpenPrivacy?: () => void;
+  onOpenContactPage?: () => void;
   userEmail?: string;
   userName?: string;
 }
@@ -36,6 +37,7 @@ export default function Footer({
   onOpenFaq,
   onOpenVerification,
   onOpenPrivacy,
+  onOpenContactPage,
   userEmail,
   userName
 }: FooterProps) {
@@ -49,7 +51,9 @@ export default function Footer({
   }, []);
 
   const handleOpenContact = () => {
-    if (onOpenContact) {
+    if (onOpenContactPage) {
+      onOpenContactPage();
+    } else if (onOpenContact) {
       onOpenContact();
     } else {
       setShowContactModal(true);
@@ -70,10 +74,10 @@ export default function Footer({
               <span>© 2026 GigLizard. All rights reserved.</span>
             </p>
             <p className="text-[11px] text-slate-400">
-              Nationwide Independent Touring & Stage Directory (Lower 48). Stage plotting, routing, and booking workspace.
+              Nationwide Independent Touring &amp; Stage Directory (Lower 48). Stage plotting, routing, and booking workspace.
             </p>
             <p className="text-[11px] text-slate-400">
-              Little Rusty built this in Portland · <button type="button" onClick={handleOpenContact} className="text-indigo-400 hover:underline cursor-pointer">Contact Support via Web Form</button>
+              Little Rusty built this in Portland · <a href="https://www.giglizard.us/contact" onClick={(e) => { e.preventDefault(); handleOpenContact(); }} className="text-indigo-400 hover:underline">Contact Support</a> · <a href="mailto:giglizard.us@gmail.com" className="text-slate-300 hover:underline">giglizard.us@gmail.com</a>
             </p>
             {/* Verification & Trust Signals (D3.5, D3.1) */}
             <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-[11px]">
@@ -92,8 +96,37 @@ export default function Footer({
             </div>
           </div>
 
-          {/* Legal Navigation Links */}
+          {/* Legal Navigation Links (a_contact, c_internal_links) */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-semibold" id="footer-legal-links">
+            <a
+              href="https://www.giglizard.us/about"
+              onClick={(e) => { e.preventDefault(); onOpenAbout?.(); }}
+              className="text-slate-300 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+              id="footer-link-about-direct"
+            >
+              <span>About GigLizard</span>
+            </a>
+            <span className="text-slate-700 hidden sm:inline">•</span>
+
+            <a
+              href="https://www.giglizard.us/contact"
+              onClick={(e) => { e.preventDefault(); handleOpenContact(); }}
+              className="text-slate-300 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900"
+              id="footer-link-contact-direct"
+            >
+              <span>Contact</span>
+            </a>
+            <span className="text-slate-700 hidden sm:inline">•</span>
+
+            <a
+              href="mailto:giglizard.us@gmail.com"
+              className="text-slate-300 hover:text-indigo-400 hover:underline transition-colors flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-slate-900"
+              id="footer-link-email-direct"
+            >
+              <Mail className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Email</span>
+            </a>
+            <span className="text-slate-700 hidden sm:inline">•</span>
             {onOpenPricing && (
               <>
                 <a
@@ -432,11 +465,15 @@ export default function Footer({
             </div>
 
             <div className="text-xs text-slate-350 space-y-2.5 leading-relaxed">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1 text-amber-200">
-                <p className="font-bold text-amber-300">Third-Party Vendors &amp; Advertising Cookies:</p>
-                <p>Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website.</p>
-                <p className="text-[11px] text-amber-200/80">
-                  Users may opt out of personalized advertising by visiting Google Ads Settings (google.com/settings/ads) or www.aboutads.info.
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1.5 text-amber-200">
+                <p className="font-bold text-amber-300">Google AdSense &amp; Third-Party Advertising:</p>
+                <p>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites. Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website.</p>
+                <p>Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to GigLizard and/or other sites on the Internet.</p>
+                <p className="text-[11px] text-amber-200/90 pt-1">
+                  Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="underline font-bold text-white hover:text-emerald-300">Google Ads Settings</a> (https://www.google.com/settings/ads) or <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="underline font-bold text-white hover:text-emerald-300">www.aboutads.info</a>.
+                </p>
+                <p className="text-[11px] text-emerald-300 font-medium pt-0.5">
+                  No sensitive personal data or mobile SMS information is shared with third parties or advertisers for marketing purposes.
                 </p>
               </div>
 

@@ -5,6 +5,7 @@ import {
   Fuel, ShieldCheck, ChevronDown, ChevronUp, Sparkles, BookOpen
 } from "lucide-react";
 import { useDirectoryCounts } from "../utils/directoryCounts";
+import { Breadcrumbs, RelatedLinks } from "./RelatedLinks";
 
 interface TouringGuidePageProps {
   onSelectTab: (tab: any) => void;
@@ -36,6 +37,7 @@ export default function TouringGuidePage({ onSelectTab, onOpenRegister }: Tourin
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-fade-in" id="touring-guide-page">
+      <Breadcrumbs items={[{ label: "DIY Touring Guide", path: "/touring-guide" }]} />
       
       {/* Category Hero */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
@@ -46,8 +48,9 @@ export default function TouringGuidePage({ onSelectTab, onOpenRegister }: Tourin
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
           How to Book a DIY Tour Across the Lower 48 Without an Agent
         </h1>
+        {/* Definition up front (g_definition) */}
         <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-2xl mx-auto">
-          The battle-tested playbook for 3–6 piece self-managed bands: how to lock anchor dates, fill open middle dates in corridor cities, coordinate local co-bills, and show up looking 100% professional.
+          GigLizard DIY Touring Guide is a comprehensive operational manual for independent musicians routing self-booked live tours across the Lower 48 without booking agents. The battle-tested playbook for 3–6 piece self-managed bands: how to lock anchor dates, fill open middle dates in corridor cities, coordinate local co-bills, and show up looking 100% professional.
         </p>
       </div>
 
@@ -150,6 +153,8 @@ export default function TouringGuidePage({ onSelectTab, onOpenRegister }: Tourin
         </div>
       </div>
 
+      {/* Related links block (t_orphan_pages, c_internal_links) */}
+      <RelatedLinks currentPath="/touring-guide" onSelectTab={onSelectTab} />
     </div>
   );
 }

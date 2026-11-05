@@ -7,6 +7,7 @@ import {
 import { UserAccount } from "../types";
 import SatisfactionGuaranteeModal from "./SatisfactionGuaranteeModal";
 import { useDirectoryCounts } from "../utils/directoryCounts";
+import { Breadcrumbs, RelatedLinks } from "./RelatedLinks";
 
 interface PricingPageProps {
   currentAccount: UserAccount | null;
@@ -99,6 +100,7 @@ export default function PricingPage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-fade-in" id="pricing-page-root">
+      <Breadcrumbs items={[{ label: "Pricing & Tiers", path: "/pricing" }]} />
       
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -109,8 +111,9 @@ export default function PricingPage({
           Access to Venues - FREE<br />
           <span className="text-indigo-600">Access to Band Contacts - $9.99</span>
         </h1>
+        {/* Definition up front (g_definition) */}
         <p className="text-sm text-gray-600 leading-relaxed max-w-xl mx-auto">
-          Venue discovery and our complete stage-production tool suite are 100% free forever. Pay only for unmasked band booking contacts when you're actively routing a tour.
+          GigLizard Pricing is a transparent two-tier access model offering 100% free venue discovery forever and an optional $9.99 flat 30-day pass for unmasked touring band booking contacts. Pay only when actively routing a tour with zero auto-renewal billing traps.
         </p>
 
         {/* Third-Party Signal Strip (D3.5, D3.1) */}
@@ -120,7 +123,7 @@ export default function PricingPage({
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-emerald-700 hover:text-emerald-900 hover:underline inline-flex items-center gap-1"
-            title="External Review Platform Profile (Claimed / Pending Activation)"
+            title="Trustpilot Review Profile for GigLizard"
           >
             <span>Trustpilot Profile</span>
             <ArrowRight className="w-3 h-3 text-emerald-600" />
@@ -465,6 +468,9 @@ export default function PricingPage({
           })}
         </div>
       </div>
+
+      {/* Related links block (t_orphan_pages, c_internal_links) */}
+      <RelatedLinks currentPath="/pricing" onSelectTab={onSelectTab} />
 
       {/* Satisfaction Guarantee Modal */}
       <SatisfactionGuaranteeModal

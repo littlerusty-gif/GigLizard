@@ -185,9 +185,9 @@ export const TourPrintModal: React.FC<TourPrintModalProps> = ({ tourPlan, bandNa
                 <Music className="w-4 h-4" />
                 <span>GigLizard Tour Master Run-of-Show</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              <div role="heading" aria-level={1} className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 {tourPlan.tourTitle || `${bandName || "Touring Band"} Run`}
-              </h1>
+              </div>
               <p className="text-sm font-bold text-slate-600 mt-0.5">
                 Route: {tourPlan.startingCity} → {tourPlan.destinationCity} &bull; {tourPlan.stops.length} Tour Dates
               </p>

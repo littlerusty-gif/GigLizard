@@ -3,8 +3,9 @@ import {
   Building, ShieldCheck, Music, Users, Award, 
   Mail, MapPin, Sparkles, CheckCircle2, ArrowRight, Heart, ExternalLink 
 } from "lucide-react";
-import { FounderAvatar } from "./ProductPreviews";
+import { FounderAvatar, FounderGallery } from "./ProductPreviews";
 import { useDirectoryCounts } from "../utils/directoryCounts";
+import { Breadcrumbs, RelatedLinks } from "./RelatedLinks";
 
 interface AboutPageProps {
   onSelectTab: (tab: any) => void;
@@ -15,6 +16,7 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
   const { venueCountStr, bandCountStr } = useDirectoryCounts();
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-fade-in" id="about-page-root">
+      <Breadcrumbs items={[{ label: "About GigLizard", path: "/about" }]} />
       
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -25,8 +27,9 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
           Built in the Pacific Northwest by Little Rusty from Portland
         </h1>
+        {/* Definition up front (g_definition) */}
         <p className="text-sm text-gray-600 leading-relaxed max-w-xl mx-auto">
-          Independent live music touring shouldn't be gatekept behind $30/month corporate agency tools or dead-end scrapers.
+          GigLizard is an independent live music directory and tour planning platform built in Portland, Oregon by Little Rusty, connecting touring bands, verified grassroots venues, and sound engineers across the Lower 48 without corporate subscription paywalls.
         </p>
       </div>
 
@@ -62,9 +65,9 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-800 text-indigo-300 hover:text-white transition-colors"
-              title="Little Rusty's Profile (Verified Platform Operator)"
+              title="Little Rusty's Profile (Touring Musician &amp; Live Sound Engineer)"
             >
-              <span>Operator Profile</span>
+              <span>Musician Profile</span>
               <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
             </a>
           </div>
@@ -91,6 +94,24 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
           <span className="text-slate-400 text-[11px]">GigLizard Independent Touring Network • Lower 48 + DC</span>
         </div>
       </div>
+
+      {/* Real Photos of Little Rusty on the Road, in the Studio & Behind the Console */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-gray-200 pb-3">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600">
+              <Music className="w-3.5 h-3.5" />
+              <span>Real Musician &amp; Sound Tech Credentials</span>
+            </div>
+            <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mt-1">
+              Little Rusty on the Road, in the Booth &amp; Behind the Console
+            </h2>
+          </div>
+          <span className="text-xs text-gray-500 font-medium">Portland, OR • Lower 48 Touring</span>
+        </div>
+        
+        <FounderGallery />
+      </section>
 
       {/* Core Principles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -150,6 +171,9 @@ export default function AboutPage({ onSelectTab, onOpenRegister }: AboutPageProp
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {/* Related links block (t_orphan_pages, c_internal_links) */}
+      <RelatedLinks currentPath="/about" onSelectTab={onSelectTab} />
     </div>
   );
 }

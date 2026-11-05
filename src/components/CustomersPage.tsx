@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowLeft, CheckCircle2, Star, ShieldCheck, MapPin, ExternalLink, Calendar, Music2, Quote, ArrowRight, UserCheck } from "lucide-react";
 import { useDirectoryCounts } from "../utils/directoryCounts";
+import { Breadcrumbs, RelatedLinks } from "./RelatedLinks";
 
 interface CustomersPageProps {
   onSelectTab: (tab: any) => void;
@@ -130,6 +131,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
   const { venueCountStr, bandCountStr } = useDirectoryCounts();
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-12">
+      <Breadcrumbs items={[{ label: "Customer Stories", path: "/customers" }]} />
+      
       {/* Back button */}
       <div>
         <button
@@ -150,8 +153,9 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
           How DIY Bands Book Real Shows Across the Lower 48
         </h1>
+        {/* Definition up front (g_definition) */}
         <p className="text-base sm:text-lg text-slate-300">
-          No agency gatekeepers. No $33/mo recurring software subscriptions. Here is how self-booked independent touring acts use GigLizard to fill open tour dates, coordinate co-bills, and arrive looking professional.
+          GigLizard Customer Stories is a collection of verified touring case studies and routing benchmarks from independent bands booking live shows across the United States. No agency gatekeepers. No $33/mo recurring software subscriptions. Here is how self-booked independent touring acts use GigLizard to fill open tour dates, coordinate co-bills, and arrive looking professional.
         </p>
       </div>
 
@@ -324,6 +328,9 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           Free forever, no credit card needed • 7-day money-back guarantee on the $9.99 pass
         </div>
       </div>
+
+      {/* Related links block (t_orphan_pages, c_internal_links) */}
+      <RelatedLinks currentPath="/customers" onSelectTab={onSelectTab} />
     </div>
   );
 };

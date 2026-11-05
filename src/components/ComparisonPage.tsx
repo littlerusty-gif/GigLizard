@@ -8,6 +8,8 @@ import {
   CheckCircle2, Compass, Sliders, FileText, Image
 } from "lucide-react";
 
+import { Breadcrumbs, RelatedLinks } from "./RelatedLinks";
+
 interface ComparisonPageProps {
   onSelectTab: (tab: any) => void;
   onOpenCheckout: () => void;
@@ -51,6 +53,7 @@ export default function ComparisonPage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-12 animate-fade-in" id="comparison-page-root">
+      <Breadcrumbs items={[{ label: "Compare Alternatives", path: "/compare" }, ...(activeVsSlug !== "all" ? [{ label: `vs ${activeVsSlug === "prism" ? "Prism.fm" : activeVsSlug === "sonicbids" ? "Sonicbids" : "Gigwell"}`, path: `/vs/${activeVsSlug === "prism" ? "prism-fm" : activeVsSlug}` }] : [])]} />
       
       {/* Competitor /vs Subroute Navigation Pills (D5.3, D1.4) */}
       <div className="flex flex-wrap items-center justify-center gap-2 pb-2 border-b border-gray-200">
@@ -285,8 +288,9 @@ export default function ComparisonPage({
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
           How GigLizard Compares to Every Alternative
         </h1>
+        {/* Definition up front (g_definition) */}
         <p className="text-xs md:text-sm text-slate-600 leading-relaxed max-w-2xl mx-auto">
-          Prism.fm leads the live-music operations category at scale (10,000+ venues claimed); Gigwell and Muzeek serve agents and mid-size operators; Sonicbids is the closest self-serve rival for DIY bands; TYFRA is an emerging all-in-one; spreadsheets remain the default. <strong>GigLizard undercuts all of them on price and gives DIY bands stage-production tools for $0.</strong>
+          The GigLizard Comparison Matrix is a head-to-head live music operational benchmark evaluating DIY touring tools, enterprise venue software, agency management suites, and pay-to-apply booking directories. Prism.fm leads the live-music operations category at scale (10,000+ venues claimed); Gigwell and Muzeek serve agents and mid-size operators; Sonicbids is the closest self-serve rival for DIY bands; TYFRA is an emerging all-in-one; spreadsheets remain the default. <strong>GigLizard undercuts all of them on price and gives DIY bands stage-production tools for $0.</strong>
         </p>
 
         {/* Quick Jump Buttons */}
@@ -412,6 +416,11 @@ export default function ComparisonPage({
           </div>
         </div>
 
+        {/* Mobile Swipe Hint */}
+        <div className="block md:hidden text-center text-[11px] text-slate-500 font-medium py-1">
+          ← Swipe horizontally to compare all platforms →
+        </div>
+
         {/* Scrollable Matrix Table */}
         <div className="bg-white rounded-3xl border border-gray-200/90 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
@@ -478,7 +487,7 @@ export default function ComparisonPage({
                     Hero Headline (h1)
                   </td>
                   <td className="py-3.5 px-5 bg-indigo-50/40 font-bold text-indigo-950">
-                    “Find Venues, Book Shows - {venueCountStr} Venues Across the USA”
+                    “Find Venues, Book Shows - 4,800+ Bookable Venues Across the Lower 48”
                   </td>
                   <td className="py-3.5 px-5 text-gray-650 italic">
                     “Run a More Powerful, Profitable Live Events Business”
@@ -505,7 +514,7 @@ export default function ComparisonPage({
                     Hero Subhead
                   </td>
                   <td className="py-3.5 px-5 bg-indigo-50/40 text-indigo-950">
-                    Free-forever venue discovery & direct booking emails. AI tour routes, drive times & pro stage plots.
+                    Discover independent clubs and verified talent buyer contacts for free. Calculate tour routes with drive times &amp; van gas budgets, swap shows with local acts, and export pro stage plots in minutes.
                   </td>
                   <td className="py-3.5 px-5 text-gray-650 text-[11px]">
                     “Smarter Operations. More Profitable Events.”
@@ -1102,6 +1111,9 @@ export default function ComparisonPage({
           </button>
         </div>
       </div>
+
+      {/* Related links block (t_orphan_pages, c_internal_links) */}
+      <RelatedLinks currentPath="/compare" onSelectTab={onSelectTab} />
 
     </div>
   );

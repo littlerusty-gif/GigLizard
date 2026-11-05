@@ -358,17 +358,117 @@ export function FounderAvatar({ className = "", size = "md" }: { className?: str
     <div className={`relative inline-block shrink-0 ${className}`}>
       <div className={`${sizeClasses} rounded-2xl bg-gradient-to-tr from-amber-500 via-indigo-600 to-rose-500 p-0.5 shadow-lg overflow-hidden`}>
         <img
-          src="/little_rusty_founder.jpg"
+          src="/little_rusty_founder.webp"
           alt="Little Rusty — Touring Musician & Live Sound Engineer"
+          width={64}
+          height={64}
           className="w-full h-full object-cover rounded-[14px]"
           loading="lazy"
           onError={(e) => {
-            // Graceful fallback if image blocked
-            (e.currentTarget as HTMLElement).style.display = "none";
+            (e.currentTarget as HTMLImageElement).src = "/little_rusty_founder.jpg";
           }}
         />
       </div>
       <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Little Rusty • Portland, OR (Active Musician & Audio Engineer)" />
+    </div>
+  );
+}
+
+export interface FounderPhoto {
+  id: string;
+  title: string;
+  role: string;
+  desc: string;
+  srcWebp: string;
+  srcJpg: string;
+  width: number;
+  height: number;
+  aspect: string;
+}
+
+export const FOUNDER_PHOTOS: FounderPhoto[] = [
+  {
+    id: "festival-stage",
+    title: "Festival Stage Production & FOH",
+    role: "Front-of-House Audio Engineer",
+    desc: "Stage rigging, radio comms, and audio coordination at massive outdoor festival concert stages.",
+    srcWebp: "/assets/founder/little_rusty_festival.webp",
+    srcJpg: "/assets/founder/little_rusty_festival.jpg",
+    width: 800,
+    height: 1067,
+    aspect: "aspect-[3/4]"
+  },
+  {
+    id: "soundboard-mixing",
+    title: "Live Soundboard Console & Patch Mixing",
+    role: "Live Audio Mixing Engineer",
+    desc: "Multi-channel analog/digital console tuning, stage monitors, and soundcheck balance for live acts.",
+    srcWebp: "/assets/founder/little_rusty_soundboard.webp",
+    srcJpg: "/assets/founder/little_rusty_soundboard.jpg",
+    width: 800,
+    height: 583,
+    aspect: "aspect-[4/3]"
+  },
+  {
+    id: "studio-tracking",
+    title: "Studio Vocal Booth & Headphone Mix",
+    role: "Studio Producer & Vocal Tracking",
+    desc: "Behind the studio glass tracking vocals, overdub stems, and critical headphone reference monitoring.",
+    srcWebp: "/assets/founder/little_rusty_studio.webp",
+    srcJpg: "/assets/founder/little_rusty_studio.jpg",
+    width: 800,
+    height: 600,
+    aspect: "aspect-[4/3]"
+  },
+  {
+    id: "live-frontman",
+    title: "Touring Frontman & Lead Vocalist",
+    role: "Dr Hadit / Knucklebone / 7AT Frontman",
+    desc: "Delivering high-energy live rock sets on the microphone with amplifiers blazing across Northwest venues.",
+    srcWebp: "/assets/founder/little_rusty_live_mic.webp",
+    srcJpg: "/assets/founder/little_rusty_live_mic.jpg",
+    width: 800,
+    height: 1067,
+    aspect: "aspect-[3/4]"
+  }
+];
+
+export function FounderGallery({ className = "" }: { className?: string }) {
+  return (
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
+      {FOUNDER_PHOTOS.map((photo) => (
+        <div 
+          key={photo.id}
+          className="group relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg hover:border-indigo-500/50 transition-all flex flex-col justify-between"
+        >
+          <div className={`relative ${photo.aspect} w-full overflow-hidden bg-slate-950`}>
+            <img
+              src={photo.srcWebp}
+              alt={photo.title}
+              width={photo.width}
+              height={photo.height}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = photo.srcJpg;
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+            <span className="absolute top-2.5 right-2.5 text-[10px] bg-slate-950/80 backdrop-blur-xs text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30 font-mono">
+              Verified
+            </span>
+          </div>
+          <div className="p-3.5 space-y-1 bg-slate-900/90 flex-1 flex flex-col justify-between">
+            <div>
+              <h4 className="font-black text-white text-xs leading-snug">{photo.title}</h4>
+              <p className="text-[11px] text-indigo-400 font-semibold">{photo.role}</p>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed pt-1 border-t border-slate-800/80">
+              {photo.desc}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -392,6 +492,8 @@ export function BandVisualBadge({
         <img 
           src={imageUrl} 
           alt={name ? `${name} verified photo` : "Verified Artist"} 
+          width={44}
+          height={44}
           className="w-full h-full object-cover rounded-[9px]" 
           loading="lazy"
         />

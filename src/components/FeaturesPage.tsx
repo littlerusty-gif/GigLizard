@@ -11,6 +11,8 @@ import {
   VenueDirectoryScreenshot
 } from "./ProductPreviews";
 
+import { Breadcrumbs, RelatedLinks } from "./RelatedLinks";
+
 interface FeaturesPageProps {
   onSelectTab: (tab: any) => void;
 }
@@ -18,6 +20,7 @@ interface FeaturesPageProps {
 export default function FeaturesPage({ onSelectTab }: FeaturesPageProps) {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-16 animate-fade-in" id="features-page-root">
+      <Breadcrumbs items={[{ label: "Features", path: "/features" }]} />
       
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -29,8 +32,9 @@ export default function FeaturesPage({ onSelectTab }: FeaturesPageProps) {
           Book the gig. Route the van.<br />
           <span className="text-indigo-600">Show up looking pro.</span>
         </h1>
+        {/* Definition up front (g_definition) */}
         <p className="text-sm text-gray-600 leading-relaxed max-w-xl mx-auto">
-          From finding the club and calculating van gas, to handing the house sound engineer an exact patch list before soundcheck.
+          GigLizard Features is a free production and routing suite for touring indie bands, providing an interactive stage plot designer, input patch tech rider builder, gig flyer generator, gas-calculating tour planner, and nationwide venue directory. From finding the club to handing the house sound engineer an exact patch list before soundcheck.
         </p>
       </div>
 
@@ -205,6 +209,9 @@ export default function FeaturesPage({ onSelectTab }: FeaturesPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Related links block (t_orphan_pages, c_internal_links) */}
+      <RelatedLinks currentPath="/features" onSelectTab={onSelectTab} />
 
     </div>
   );
