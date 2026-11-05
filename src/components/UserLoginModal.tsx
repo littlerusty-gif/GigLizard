@@ -8,7 +8,8 @@ import { recordLiveSignup } from "../utils/analyticsStore";
 import { 
   X, Lock, LogIn, Eye, EyeOff, CheckCircle2, 
   AlertCircle, KeyRound, ShieldCheck, UserCheck,
-  UserPlus, Headphones, Users, Building, Send, RefreshCw, ArrowLeft
+  UserPlus, Headphones, Users, Building, Send, RefreshCw, ArrowLeft,
+  User, Sparkles
 } from "lucide-react";
 
 interface UserLoginModalProps {
@@ -18,6 +19,7 @@ interface UserLoginModalProps {
   onOpenCheckout?: () => void;
   initialMode?: "login" | "signup" | "forgot";
   initialEmail?: string;
+  initialRole?: "Band" | "Venue" | "Sound Engineer" | "Guest";
 }
 
 export default function UserLoginModal({
@@ -26,12 +28,13 @@ export default function UserLoginModal({
   onLoginSuccess,
   onOpenCheckout,
   initialMode = "login",
-  initialEmail = ""
+  initialEmail = "",
+  initialRole = "Band"
 }: UserLoginModalProps) {
   const [loginEmail, setLoginEmail] = useState(initialEmail);
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loginRole, setLoginRole] = useState<"Band" | "Venue" | "Sound Engineer">("Venue");
+  const [loginRole, setLoginRole] = useState<"Band" | "Venue" | "Sound Engineer" | "Guest">(initialRole || "Band");
   const [modalMode, setModalMode] = useState<"login" | "signup" | "forgot">(initialMode);
   const [signupName, setSignupName] = useState("");
   const [signupCity, setSignupCity] = useState("Seattle, WA");
@@ -49,6 +52,31 @@ export default function UserLoginModal({
   const [captchaInput, setCaptchaInput] = useState("");
   const [captchaVerified, setCaptchaVerified] = useState(false);
 
+  const handleGuestSignIn = () => {
+    const guestId = "guest_" + Math.random().toString(36).substring(2, 9);
+    const guestAccount: UserAccount = {
+      id: guestId,
+      type: "Guest",
+      role: "Guest",
+      name: "Guest Explorer",
+      city: "Touring USA",
+      contactEmail: `guest_${guestId}@giglizard.us`,
+      isPremium: false,
+      hasPaidAccess: false,
+      genre: "Music Fan & Explorer",
+      bio: "Guest session exploring GigLizard live music venues and stage tools."
+    };
+    try {
+      localStorage.setItem("current_user_account_v1", JSON.stringify(guestAccount));
+    } catch (_) {}
+    analytics.setIdentity(guestId, { email: guestAccount.contactEmail, name: guestAccount.name, plan: "free" });
+    setSuccessMessage("✅ Welcome! Signed in as Guest Explorer.");
+    setTimeout(() => {
+      onLoginSuccess(guestAccount);
+      onClose();
+    }, 400);
+  };
+
   useEffect(() => {
     if (isOpen) {
       setErrorMessage("");
@@ -56,6 +84,9 @@ export default function UserLoginModal({
       setResetEmailSent(false);
       if (initialMode) {
         setModalMode(initialMode);
+      }
+      if (initialRole) {
+        setLoginRole(initialRole);
       }
       if (initialEmail) {
         setLoginEmail(initialEmail);
@@ -68,7 +99,7 @@ export default function UserLoginModal({
       setCaptchaInput("");
       setCaptchaVerified(false);
     }
-  }, [isOpen, initialMode, initialEmail]);
+  }, [isOpen, initialMode, initialEmail, initialRole]);
 
   const handleVerifyCaptcha = () => {
     if (parseInt(captchaInput.trim(), 10) === captchaNumA + captchaNumB) {
@@ -940,7 +971,7 @@ export default function UserLoginModal({
           {modalMode === "signup" && (
             <div className="space-y-1">
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {loginRole === "Band" ? "Band / Artist Name" : (loginRole === "Venue" ? "Venue Name" : "Sound Engineer Name")} *
+                {loginRole === "Band" ? "Band / Artist Name" : (loginRole === "Venue" ? "Venue Name" : (loginRole === "Sound Engineer" ? "Sound Engineer Name" : "Your Name / Organization"))} *
               </label>
               <input
                 type="text"
@@ -949,7 +980,7 @@ export default function UserLoginModal({
                   setSignupName(e.target.value);
                   setErrorMessage("");
                 }}
-                placeholder={loginRole === "Band" ? "e.g. Pacific Echoes" : (loginRole === "Venue" ? "e.g. Starry Lounge" : "e.g. Dave Sound Tech")}
+                placeholder={loginRole === "Band" ? "e.g. Pacific Echoes" : (loginRole === "Venue" ? "e.g. Starry Lounge" : (loginRole === "Sound Engineer" ? "e.g. Dave Sound Tech" : "e.g. Alex (Promoter / Music Fan)"))}
                 required={modalMode === "signup"}
                 className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-all"
               />
@@ -1038,47 +1069,62 @@ export default function UserLoginModal({
             </div>
           )}
 
-          {/* Role selector */}
-          <div className="flex justify-between items-center pt-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Account Role:
-            </span>
-            <div className="flex gap-1.5">
+          {/* Role selector with 4 roles: Band, Venue, Sound Engineer, Guest */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Sign In / Register As:
+              </span>
+              <span className="text-[10px] text-indigo-400 font-semibold">{loginRole} Role</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               <button
                 type="button"
                 onClick={() => setLoginRole("Band")}
-                className={`text-[11px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                className={`text-[11px] font-black px-2 py-2 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
                   loginRole === "Band" 
-                    ? "bg-indigo-600 text-white shadow-xs" 
+                    ? "bg-indigo-600 text-white shadow-xs border border-indigo-400" 
                     : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
                 }`}
               >
-                <Users className="w-3 h-3" />
+                <Users className="w-3.5 h-3.5" />
                 <span>Band</span>
               </button>
               <button
                 type="button"
                 onClick={() => setLoginRole("Venue")}
-                className={`text-[11px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                className={`text-[11px] font-black px-2 py-2 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
                   loginRole === "Venue" 
-                    ? "bg-emerald-600 text-white shadow-xs" 
+                    ? "bg-emerald-600 text-white shadow-xs border border-emerald-400" 
                     : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
                 }`}
               >
-                <Building className="w-3 h-3" />
+                <Building className="w-3.5 h-3.5" />
                 <span>Venue</span>
               </button>
               <button
                 type="button"
                 onClick={() => setLoginRole("Sound Engineer")}
-                className={`text-[11px] font-black px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                className={`text-[11px] font-black px-2 py-2 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
                   loginRole === "Sound Engineer" 
-                    ? "bg-amber-600 text-white shadow-xs" 
+                    ? "bg-amber-600 text-white shadow-xs border border-amber-400" 
                     : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
                 }`}
               >
-                <Headphones className="w-3 h-3" />
-                <span>Engineer</span>
+                <Headphones className="w-3.5 h-3.5" />
+                <span>Sound Tech</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginRole("Guest")}
+                className={`text-[11px] font-black px-2 py-2 rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                  loginRole === "Guest" 
+                    ? "bg-purple-600 text-white shadow-xs border border-purple-400" 
+                    : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Guest</span>
               </button>
             </div>
           </div>
@@ -1129,10 +1175,32 @@ export default function UserLoginModal({
             ) : (
               <>
                 <LogIn className="w-4 h-4" />
-                <span>Sign In to Your Account</span>
+                <span>Sign In as {loginRole}</span>
               </>
             )}
           </button>
+
+          {/* Quick 1-Click Guest Sign In Option */}
+          <div className="pt-2 text-center">
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-800" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
+                <span className="bg-slate-900 px-2 text-slate-500">or explore freely</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGuestSignIn}
+              id="btn-guest-sign-in"
+              className="w-full py-2.5 px-3 bg-slate-950 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-purple-500/50 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+            >
+              <User className="w-3.5 h-3.5 text-purple-400" />
+              <span>Continue as Guest (No Password Required)</span>
+            </button>
+          </div>
         </form>
         )}
 

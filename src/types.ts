@@ -129,7 +129,7 @@ export interface BandProfile {
   musicUrl?: string | null;
 }
 
-export type AccountType = "Band" | "Venue" | "Sound Engineer";
+export type AccountType = "Band" | "Venue" | "Sound Engineer" | "Guest";
 
 export interface TourVenueStop {
   id?: string;

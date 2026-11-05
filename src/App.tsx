@@ -223,6 +223,13 @@ export default function GigLizardApp() {
   const [showGuaranteeModal, setShowGuaranteeModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState<"login" | "signup" | "forgot">("login");
   const [loginModalEmail, setLoginModalEmail] = useState("");
+  const [loginModalRole, setLoginModalRole] = useState<"Band" | "Venue" | "Sound Engineer" | "Guest">("Band");
+
+  const handleOpenSignIn = (role: "Band" | "Venue" | "Sound Engineer" | "Guest" = "Band") => {
+    setLoginModalRole(role);
+    setLoginModalMode("login");
+    setShowUserLoginModal(true);
+  };
 
   // 1. Initial state MUST default to null, never mock Dr Hadit data
   const [currentUser, setCurrentUser] = useState<any | null>(null);
@@ -1524,8 +1531,31 @@ export default function GigLizardApp() {
             </button>
           </div>
 
-          {/* Mobile Right Controls: Compact + Claim Pill + Hamburger Menu (< md) */}
+          {/* Mobile Right Controls: Sign In + Claim Pill + Hamburger Menu (< md) */}
           <div className="flex md:hidden items-center gap-1.5 shrink-0" id="header-mobile-controls">
+            {!isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => handleOpenSignIn("Band")}
+                className="flex items-center justify-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-2xs transition-colors shrink-0"
+                id="header-mobile-signin-btn"
+                title="Sign in as Band, Venue, Sound Engineer, or Guest"
+              >
+                <LogIn className="w-3 h-3 text-indigo-200" />
+                <span>Sign In</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowEditAccountModal(true)}
+                className="flex items-center justify-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-xl bg-slate-900 text-white shadow-2xs transition-colors shrink-0"
+                title="Account Settings"
+              >
+                <Settings className="w-3 h-3 text-slate-300" />
+                <span>Account</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => { setShowArtistRegistrationModal(true); setIsMobileMenuOpen(false); }}
@@ -1801,13 +1831,10 @@ export default function GigLizardApp() {
             ) : (
               <button
                 type="button"
-                onClick={() => {
-                  setLoginModalMode("login");
-                  setShowUserLoginModal(true);
-                }}
+                onClick={() => handleOpenSignIn("Band")}
                 id="tab-btn-sign-in"
                 className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
-                title="Sign in to your profile"
+                title="Sign in as Band, Venue, Sound Engineer, or Guest"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
@@ -1985,9 +2012,9 @@ export default function GigLizardApp() {
             </button>
 
             {/* Dynamic Account / Auth Row in mobile menu */}
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+            <div className="pt-2 border-t border-slate-100 space-y-2">
               {isAuthenticated ? (
-                <>
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 truncate">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
                     <span className="truncate">{isOwnerUser ? "Dr Hadit (Owner)" : (currentAccount?.name || currentUser?.name || "Dr Hadit")}</span>
@@ -2000,16 +2027,53 @@ export default function GigLizardApp() {
                     <Settings className="w-3.5 h-3.5 text-indigo-600" />
                     <span>Account</span>
                   </button>
-                </>
+                </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => { setLoginModalMode("login"); setShowUserLoginModal(true); setIsMobileMenuOpen(false); }}
-                  className="w-full py-2 text-xs font-black rounded-xl bg-indigo-600 text-white flex items-center justify-center gap-1.5 shadow-xs"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Sign In to GigLizard</span>
-                </button>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => { handleOpenSignIn("Band"); setIsMobileMenuOpen(false); }}
+                    className="w-full py-2.5 text-xs font-black rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4 text-indigo-200" />
+                    <span>Sign In to GigLizard</span>
+                  </button>
+
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
+                    <div className="text-[11px] font-bold text-slate-500 mb-1.5 text-center">Quick sign in by role:</div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { handleOpenSignIn("Band"); setIsMobileMenuOpen(false); }}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 text-[11px] font-bold text-center"
+                      >
+                        Band
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { handleOpenSignIn("Venue"); setIsMobileMenuOpen(false); }}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 text-[11px] font-bold text-center"
+                      >
+                        Venue
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { handleOpenSignIn("Sound Engineer"); setIsMobileMenuOpen(false); }}
+                        className="py-1.5 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 text-[11px] font-bold text-center truncate"
+                        title="Sound Engineer"
+                      >
+                        Sound
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { handleOpenSignIn("Guest"); setIsMobileMenuOpen(false); }}
+                        className="py-1.5 px-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 text-[11px] font-bold text-center"
+                      >
+                        Guest
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {currentAccount?.contactEmail?.trim().toLowerCase() === "littlerusty@gmail.com" && (
@@ -2143,6 +2207,7 @@ export default function GigLizardApp() {
               onUpdateAccount={handleUpdateAccount}
               onLogOut={handleLogOut}
               onTriggerEditAccount={() => setShowEditAccountModal(true)}
+              onOpenSignIn={handleOpenSignIn}
             />
           </div>
         )}
@@ -2449,6 +2514,7 @@ export default function GigLizardApp() {
         onOpenVerification={() => setActiveTab("verification")}
         onOpenPrivacy={() => setActiveTab("privacy")}
         onOpenContactPage={() => setActiveTab("contact")}
+        onOpenSignIn={handleOpenSignIn}
         userEmail={currentAccount?.contactEmail || currentUser?.email || ""}
         userName={currentAccount?.name || ""}
       />
@@ -2555,6 +2621,7 @@ export default function GigLizardApp() {
         onClose={() => setShowUserLoginModal(false)}
         initialMode={loginModalMode}
         initialEmail={loginModalEmail}
+        initialRole={loginModalRole}
         onLoginSuccess={(account) => {
           handleUpdateAccount(account);
           setShowUserLoginModal(false);

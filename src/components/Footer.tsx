@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Shield, Scale, Lock, Heart, CheckCircle2, X, Mail } from "lucide-react";
+import { Shield, Scale, Lock, Heart, CheckCircle2, X, Mail, LogIn } from "lucide-react";
 import ContactModal from "./ContactModal";
 
 interface FooterProps {
@@ -18,6 +18,7 @@ interface FooterProps {
   onOpenVerification?: () => void;
   onOpenPrivacy?: () => void;
   onOpenContactPage?: () => void;
+  onOpenSignIn?: (role?: "Band" | "Venue" | "Sound Engineer" | "Guest") => void;
   userEmail?: string;
   userName?: string;
 }
@@ -38,6 +39,7 @@ export default function Footer({
   onOpenVerification,
   onOpenPrivacy,
   onOpenContactPage,
+  onOpenSignIn,
   userEmail,
   userName
 }: FooterProps) {
@@ -98,6 +100,22 @@ export default function Footer({
 
           {/* Legal Navigation Links (a_contact, c_internal_links) */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-semibold" id="footer-legal-links">
+            {onOpenSignIn && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onOpenSignIn()}
+                  className="text-slate-200 hover:text-indigo-400 hover:underline transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-slate-900 font-bold"
+                  id="footer-btn-sign-in"
+                  title="Sign in as Band, Venue, Sound Engineer, or Guest"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Sign In</span>
+                </button>
+                <span className="text-slate-700 hidden sm:inline">•</span>
+              </>
+            )}
+
             <a
               href="https://www.giglizard.us/about"
               onClick={(e) => { e.preventDefault(); onOpenAbout?.(); }}
