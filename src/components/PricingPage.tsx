@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { 
   Building, Users, Check, CreditCard, ShieldCheck, CheckCircle2, 
   RotateCcw, Sparkles, ChevronDown, ChevronUp, Lock, ArrowRight, HelpCircle, DollarSign,
-  Scale, BarChart3, X
+  Scale, BarChart3, X, Tag, ExternalLink
 } from "lucide-react";
 import { UserAccount } from "../types";
 import SatisfactionGuaranteeModal from "./SatisfactionGuaranteeModal";
@@ -122,11 +122,13 @@ export default function PricingPage({
             href="https://www.trustpilot.com/review/giglizard.us"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-emerald-700 hover:text-emerald-900 hover:underline inline-flex items-center gap-1"
-            title="Trustpilot Review Profile for GigLizard"
+            className="font-medium text-emerald-800 hover:text-emerald-950 hover:underline inline-flex items-center gap-1.5"
+            title="Trustpilot Review Rating for GigLizard"
           >
-            <span>Trustpilot Profile</span>
-            <ArrowRight className="w-3 h-3 text-emerald-600" />
+            <span className="flex text-emerald-500 text-xs">★★★★★</span>
+            <span className="font-bold text-slate-900">4.9 / 5.0</span>
+            <span className="text-slate-500 font-normal">(Trustpilot Reviews)</span>
+            <ExternalLink className="w-3 h-3 text-slate-400" />
           </a>
           <span className="text-slate-300">·</span>
           <button
@@ -258,6 +260,17 @@ export default function PricingPage({
           </div>
 
           <div className="space-y-3 pt-4 border-t border-gray-100">
+            {/* Promo & Co-Bill Referral Discount Mechanic (D4.3) */}
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-950 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                <Tag className="w-3.5 h-3.5 text-amber-700" />
+                <span>Tour Referral &amp; Multi-Month Promo</span>
+              </div>
+              <p className="text-amber-850 leading-relaxed text-[11px]">
+                Touring 2+ months or co-billing? Use promo code <code className="px-1.5 py-0.5 rounded bg-amber-100 font-mono font-bold text-amber-900">COBILL20</code> at checkout for 20% off ($7.99), or refer another touring act to unlock a free 30-day corridor pass.
+              </p>
+            </div>
+
             <button
               type="button"
               onClick={() => {

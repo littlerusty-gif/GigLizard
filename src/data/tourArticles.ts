@@ -74,7 +74,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "anchor-dates",
-        heading: "1. The Anchor-and-Spoke Booking Strategy",
+        heading: "1. How do you plan a DIY tour route around high-paying anchor dates?",
         content: [
           "Most first-time touring bands make the fatal mistake of emailing 50 random clubs across eight states simultaneously. When three clubs in opposite corners reply with dates, the band attempts to bridge the gap with 600-mile overnight hauls.",
           "Professional tour booking works backward from 'Anchor Dates.' An anchor date is a high-confidence show with a guaranteed payout or a verified crowd draw—often a weekend festival slot, a hometown co-bill, or a high-paying Saturday night club in a regional center like Seattle, Chicago, or Austin.",
@@ -84,7 +84,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "four-hour-rule",
-        heading: "2. The Strict 4-Hour / 240-Mile Rule",
+        heading: "2. How far can a touring band drive between shows without burning out?",
         content: [
           "On paper, driving six hours between Seattle and Spokane or Austin and Dallas looks manageable. In a fully loaded Ford E-350 with four bandmates, luggage, and a drum kit, six hours on Google Maps translates to eight real-world hours.",
           "Factoring in morning load-out from the hotel, gas station bio-breaks, traffic chokepoints, and a 4:30 PM load-in, drives longer than 240 miles force bands into frantic highway rushes. Soundchecks get skipped, vocal cords tire from exhaustion, and driver vigilance plummets.",
@@ -93,7 +93,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "fuel-math",
-        heading: "3. Real-World Van Fuel Mathematics (Loaded Van + Trailer)",
+        heading: "3. How do you calculate van fuel costs before booking a tour?",
         content: [
           "Window stickers on cargo vans claim 14–16 MPG. That estimate is completely detached from the reality of a musical tour. Once you add four adults, two 4x12 guitar cabinets, an 8x10 bass rig, drum hardware bags, and a merch bin, your vehicle weight approaches 8,500 lbs.",
           "Calculate your fuel consumption based on 10.5 MPG for standard passenger vans and 9.0 MPG if towing an enclosed trailer. At $3.80 per gallon, a 2,500-mile two-week run consumes roughly 240 gallons of gas—or $912 in fuel expenses alone.",
@@ -107,7 +107,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "corridors",
-        heading: "4. Exploiting Natural North American Tour Corridors",
+        heading: "4. What are the best North American highway corridors for DIY touring?",
         content: [
           "North America features well-established touring corridors with dense live music markets separated by 2 to 4 hours of highway. Stick to these established arteries until your national fan base warrants cross-country desert runs:",
           "• Pacific Northwest (I-5 Corridor): Vancouver BC → Bellingham → Seattle → Tacoma → Olympia → Portland → Eugene. Short 1 to 3 hour drives with vibrant indie, punk, and rock scenes.",
@@ -160,7 +160,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "booker-mindset",
-        heading: "1. Understanding the Talent Buyer's Morning Triage",
+        heading: "1. How do venue talent buyers triage cold booking emails?",
         content: [
           "Talent buyers at 150-to-500-capacity clubs do not sit around searching the internet for new undiscovered artists. They spend their mornings fielding artist cancellations, arguing with distributors over sound tech invoices, and skimming a wall of unread emails.",
           "A booker has three questions when scanning a cold pitch: (1) Does this act sound professional? (2) Will they bring people or fit an existing bill? (3) Will they be easy to work with on show night?",
@@ -169,7 +169,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "subject-lines",
-        heading: "2. High-Converting Subject Line Architecture",
+        heading: "2. What email subject line gets opened by venue bookers?",
         content: [
           "Your subject line must contain the date, the artist name, and a recognizable sonic or geographic anchor. Avoid vague subject lines like 'Booking inquiry' or 'Hey check out our music.'",
           "• Formula: [Band Name] ([Hometown] [Genre] • FFO [2 Known Artists]) - Tour Hold for [Date Range]",
@@ -180,7 +180,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "three-sentence-template",
-        heading: "3. The 3-Sentence Master Pitch Template",
+        heading: "3. What is the optimal pitch format for pitching a venue?",
         content: [
           "Copy and adapt this exact format. It respects the booker's time while providing every necessary data point in 10 seconds of reading:",
           "Hi [Buyer Name],",
@@ -194,7 +194,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "follow-up-cadence",
-        heading: "4. The Professional Follow-Up Cadence",
+        heading: "4. How often should a band follow up on an unanswered booking inquiry?",
         content: [
           "Bookers miss great emails simply because an invoice was due or a soundboard broke that afternoon. A polite, structured follow-up is not annoying; it is expected.",
           "Wait exactly 7 to 10 business days before sending a single-line reply to your original thread: 'Hey [Buyer Name], just bumping this to the top of your inbox as we finalize our route through [City] for [Date]. Happy to provide any additional details if needed!'",
@@ -245,7 +245,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "visual-hierarchy",
-        heading: "1. The Stage Layout: Orientation & Visual Hierarchy",
+        heading: "1. What orientation and layout should you use on a professional stage plot?",
         content: [
           "Your stage plot is an architectural blueprint for the stage crew. When a venue sound technician walks into the venue at 2:00 PM to patch the snake, your diagram determines where they place sub-snakes, direct input boxes, and power drops.",
           "Always orient the stage plot with the front edge (Downstage) facing the audience at the bottom of the page, labeled 'FRONT OF STAGE / TO CROWD'. Upstage (drums, backline amps, risers) sits at the top.",
@@ -255,7 +255,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "monitor-wedge-accuracy",
-        heading: "2. Monitor Wedges & Independent Mix Sends",
+        heading: "2. How should floor monitor wedges and mix sends be mapped on a stage plot?",
         content: [
           "One of the most frequent friction points between touring bands and house engineers is conflicting monitor wedge documentation.",
           "If your visual stage plot shows four monitor wedges, but your written specifications say 'Requires 6 units with 6 independent mix sends,' the engineer doesn't know whether to patch 4 lines or 6 lines from the console.",
@@ -327,7 +327,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       "Treat their home market crowd with intense respect. Use the stage time to win lifelong fans, not to lecture the audience."
     ],
     relatedTool: {
-      name: "4,850+ Touring Band Directory",
+      name: "1,650+ Touring Band Directory",
       url: "/bands",
       label: "Find Co-Bill Partners in 50+ Cities in our Band Directory",
       tab: "bands"
@@ -335,7 +335,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "the-cold-market-trap",
-        heading: "1. Escaping the 'Empty Room' Cold Market Trap",
+        heading: "1. How do you avoid playing empty rooms in new touring markets?",
         content: [
           "Every touring musician knows the soul-crushing experience of playing an out-of-town gig to a room consisting solely of the sound engineer, the door person, and two friends from college who left after three songs.",
           "Instagram ads and organic Spotify algorithmic plays do not convert into bodies through a club door in a city 600 miles away. Live music attendance in sub-300-capacity venues is inherently tribal and community-driven.",
@@ -344,17 +344,17 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "how-to-propose-swap",
-        heading: "2. How to Structure a Respectful Show Swap Proposal",
+        heading: "2. How do you pitch a reciprocal show swap to an out-of-town band?",
         content: [
           "Do not cold-message bands asking: 'Hey, can you put us on your show?' That sounds like a request for a free handout.",
           "Instead, offer value first: 'Hey [Band Name], we love your new EP. We have a confirmed Saturday night slot at [Respected Club] in Seattle on [Date] where we draw 120+ heads. We want to offer you direct support with a guaranteed payout and hospitality. In exchange, we'd love to swap dates and support you at your favorite room in Portland later this fall.'",
           "Offering confirmed value up front makes the proposition irresistible. Bands understand reciprocal equity and will work aggressively to ensure your reciprocal date is equally successful."
         ],
-        proTip: "Search our 4,850+ Band Directory filtered by genre and city. Look for acts marked 'Regional Touring' or 'National Act' that tour the same geographic corridor as your band."
+        proTip: "Search our 1,650+ Band Directory filtered by genre and city. Look for acts marked 'Regional Touring' or 'National Act' that tour the same geographic corridor as your band."
       },
       {
         id: "backline-sharing",
-        heading: "3. Backline Sharing Etiquette & Load-In Harmony",
+        heading: "3. What is standard backline sharing etiquette for co-bill shows?",
         content: [
           "The biggest logistical advantage of co-billing is backline sharing. Instead of four bands loading four full drum kits, four bass amplifiers, and eight guitar cabinets onto a small 18-foot stage, the acts share a unified backline.",
           "Standard etiquette: The direct support or headlining act provides the drum shells, hardware stands, and bass cabinet. Traveling bands bring their own snare drum, cymbals, bass kick pedal, guitar amp heads, and pedalboards.",
@@ -860,7 +860,7 @@ const BASE_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "curfews-and-encores",
-        heading: "4. Curfew Discipline & The Real Value of Encores",
+        heading: "4. Why is honoring venue sound curfews critical for independent bands?",
         content: [
           "Municipalities impose strict noise and sound ordinance curfews—frequently 11:00 PM on weeknights and 12:00 AM on weekends. If a show runs past curfew, the city fines the venue $500 to $2,500.",
           "If your set is scheduled to end at 11:00 PM, your last note must finish by 10:59 PM. Never ask the engineer: 'Hey, can we do two more songs?' They will say no, or cut the front-of-house PA power directly at the console.",
@@ -889,4 +889,13 @@ export const TOUR_ARTICLES: TourArticle[] = [
 export function getArticleBySlug(slug: string): TourArticle | undefined {
   const cleanSlug = slug.toLowerCase().trim().replace(/^\/articles\//, "").replace(/^\//, "");
   return TOUR_ARTICLES.find(a => a.slug === cleanSlug);
+}
+
+export function getRelatedArticles(slugOrId: string, limit: number = 3): TourArticle[] {
+  const current = TOUR_ARTICLES.find(a => a.slug === slugOrId || a.id === slugOrId);
+  if (!current) return TOUR_ARTICLES.slice(0, limit);
+  return TOUR_ARTICLES
+    .filter(a => a.id !== current.id && a.slug !== current.slug)
+    .sort((a, b) => (a.category === current.category ? -1 : 1) - (b.category === current.category ? -1 : 1))
+    .slice(0, limit);
 }

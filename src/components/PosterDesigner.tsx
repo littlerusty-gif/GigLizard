@@ -934,10 +934,10 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
       <div className="w-full bg-white rounded-2xl border border-gray-100 p-5 sm:p-7 space-y-6 shadow-xs" id="designer-controls">
         <div className="border-b border-gray-100 pb-3" id="control-intro">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5" id="controls-title">
-              <Layers className="w-4 h-4 text-indigo-500" />
-              Concert Poster Designer
-            </h3>
+            <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2" id="controls-title">
+              <Layers className="w-5 h-5 text-indigo-500" />
+              Gig Poster Maker &amp; Concert Flyer Studio
+            </h1>
             {saveToast && !saveToast.isError && (
               <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 animate-fade-in flex items-center gap-1">
                 <Check className="w-3 h-3 text-emerald-600" />
@@ -1602,13 +1602,15 @@ export default function PosterDesigner({ config, onChangeConfig, currentUser, cu
               </h5>
 
               {/* Main Headline band title */}
-              <h1 
+              <div 
+                role="heading"
+                aria-level={2}
                 className={`leading-none font-bold select-all tracking-tighter ${c.bandNameClasses} ${getFontFamilyClass(config.fontStyle)} ${!config.bandName ? 'opacity-40 italic' : ''}`} 
                 style={c.bandNameStyle}
                 id="poster-band-preview"
               >
                 {config.bandName || "The Midnight Echoes"}
-              </h1>
+              </div>
 
               {/* Supporting Acts / Openers appearing under the headlining act */}
               {config.supportingActs && (

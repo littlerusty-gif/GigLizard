@@ -56,6 +56,12 @@ export default function TourArticlePage({
   const prevArticle = currentIndex > 0 ? TOUR_ARTICLES[currentIndex - 1] : null;
   const nextArticle = currentIndex < TOUR_ARTICLES.length - 1 ? TOUR_ARTICLES[currentIndex + 1] : null;
 
+  // 3-5 Related articles by shared category / topic cluster (t_orphan_pages)
+  const relatedArticles = TOUR_ARTICLES
+    .filter(a => a.slug !== article.slug)
+    .sort((a, b) => (a.category === article.category ? -1 : 1) - (b.category === article.category ? -1 : 1))
+    .slice(0, 3);
+
   const getToolIcon = (tab: string) => {
     switch (tab) {
       case "tour":
@@ -124,8 +130,37 @@ export default function TourArticlePage({
           className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer group"
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          <span>All 10 Tour Advice Playbooks</span>
+          <span>All Tour Advice Playbooks</span>
         </button>
+
+        {/* Semantic Breadcrumbs (t_orphan_pages, c_internal_links) */}
+        <nav aria-label="Breadcrumb" className="text-xs text-slate-400">
+          <ol className="flex flex-wrap items-center gap-2">
+            <li>
+              <a 
+                href="/" 
+                onClick={(e) => { e.preventDefault(); onSelectTab("home"); }} 
+                className="hover:text-emerald-400 transition-colors"
+              >
+                Home
+              </a>
+            </li>
+            <li className="text-slate-600">/</li>
+            <li>
+              <a 
+                href="/articles" 
+                onClick={(e) => { e.preventDefault(); onSelectTab("articles"); }} 
+                className="hover:text-emerald-400 transition-colors"
+              >
+                Tour Advice
+              </a>
+            </li>
+            <li className="text-slate-600">/</li>
+            <li className="text-slate-200 font-semibold truncate max-w-xs sm:max-w-md" aria-current="page">
+              {article.title}
+            </li>
+          </ol>
+        </nav>
 
         {/* Hero Header */}
         <header className="space-y-4">
@@ -309,6 +344,44 @@ export default function TourArticlePage({
             {article.author.bio} Little Rusty built GigLizard to end the paywalling and predatory subscription pricing that independent touring bands face every day. All production tools, stage plots, and venue directories remain 100% free forever.
           </p>
         </div>
+
+        {/* Semantic Related Articles Block (t_orphan_pages, c_internal_links) */}
+        <aside aria-label="Related" className="pt-8 border-t border-slate-800 space-y-4">
+          <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-400" />
+            <span>Related Tour &amp; Production Playbooks</span>
+          </h2>
+          <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {relatedArticles.map((rel) => (
+              <li key={rel.slug} className="bg-slate-900/60 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 transition-all flex flex-col justify-between">
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block font-mono">
+                    {rel.category}
+                  </span>
+                  <a
+                    href={`/articles/${rel.slug}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onSelectArticle(rel.slug);
+                    }}
+                    className="text-sm font-bold text-white hover:text-emerald-400 transition-colors line-clamp-2"
+                  >
+                    {rel.title}
+                  </a>
+                  <p className="text-xs text-slate-400 line-clamp-2 mt-1">
+                    {rel.excerpt}
+                  </p>
+                </div>
+                <div className="pt-3 mt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+                  <span>{rel.readTimeMinutes} min read</span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1 group-hover:translate-x-0.5">
+                    Read Playbook &rarr;
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </aside>
 
         {/* Previous & Next Article Navigation */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-800">

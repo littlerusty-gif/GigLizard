@@ -253,10 +253,24 @@ Date:                                     Date:`;
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" id="rider-builder-panel">
-      {/* 2-Columns Settings Area */}
-      <div className="lg:col-span-2 space-y-6" id="rider-form-section">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-6 space-y-4" id="rider-meta-block">
+    <div className="space-y-6" id="rider-builder-panel">
+      {/* Page Header Banner */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <Sliders className="w-6 h-6 text-indigo-600" />
+            Live Sound Tech Rider Builder &amp; Soundboard Patch List
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Build standardized 16/24/32-channel audio patch sheets, mic requirements, phantom power switches, and hospitality riders for venue production engineers.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* 2-Columns Settings Area */}
+        <div className="lg:col-span-2 space-y-6" id="rider-form-section">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-6 space-y-4" id="rider-meta-block">
           <div className="flex items-center justify-between border-b border-gray-50 pb-3" id="rider-header-row">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-indigo-500" />
@@ -630,5 +644,6 @@ Date:                                     Date:`;
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

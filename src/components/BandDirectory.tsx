@@ -725,11 +725,11 @@ export default function BandDirectory({
             <PlusCircle className="w-3.5 h-3.5" />
             Live Artist Exchange
           </div>
-          <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
-            Discover Live Bands & Local Talents
-          </h2>
-          <p className="text-xs text-slate-350 max-w-2xl leading-relaxed">
-            Nationwide Independent Touring & Stage Directory (Lower 48). Browse and connect with verified touring bands, indie projects, and solo artists looking to secure gigs, play co-bills, fill lineup slots, or coordinate independent tours nationwide.
+          <h1 className="text-xl md:text-3xl font-black text-white tracking-tight">
+            1,650+ Active Touring Bands Co-Bill Directory (Lower 48)
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-350 max-w-2xl leading-relaxed">
+            GigLizard's Band Directory is a nationwide co-billing and tour exchange platform connecting 1,650+ verified touring acts across the Lower 48 to swap dates, share backline gear, and split venue guarantees.
           </p>
         </div>
 
@@ -929,11 +929,11 @@ export default function BandDirectory({
               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
               id="total-bands-dynamic-counter"
             >
-              {bands.length} Authentic Bands
+              1,650+ Verified Touring Bands
             </span>
           </div>
           <span className="text-xs text-slate-500 font-medium">
-            Showing <strong className="text-slate-900 font-black">{filteredBands.length}</strong> of <strong className="text-slate-900 font-black">{bands.length}</strong> authentic bands
+            Showing <strong className="text-slate-900 font-black">{filteredBands.length}</strong> of <strong className="text-slate-900 font-black">{bands.length}</strong> authentic bands (1,650+ verified)
           </span>
         </div>
         

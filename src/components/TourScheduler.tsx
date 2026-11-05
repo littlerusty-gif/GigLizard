@@ -2239,10 +2239,10 @@ export const TourScheduler: React.FC<TourSchedulerProps> = ({
                 <span>Tour Planning &amp; Corridor Optimizer</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-                Design Your Next Tour Route
+                DIY Tour Route Planner &amp; Van Gas Calculator
               </h1>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                Step-by-step guided tour creator that optimizes driving legs along interstate corridors, connects you with stages from our live venue directory, and budgets your lodging and gas expenses.
+                The GigLizard Tour Planner is an interactive tour routing workspace that calculates driving legs, highway gas costs, and hotel lodging budgets between 650+ verified Lower 48 live music clubs.
               </p>
             </div>
           </div>

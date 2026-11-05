@@ -7,7 +7,7 @@ import {
 } from "@paypal/react-paypal-js";
 import { 
   Lock, CheckCircle2, ShieldCheck, X, Settings, 
-  Zap, RefreshCw, AlertCircle, CreditCard, Shield, Clock, Sparkles, Check
+  Zap, RefreshCw, AlertCircle, CreditCard, Shield, Clock, Sparkles, Check, Tag
 } from "lucide-react";
 import { UserAccount } from "../types";
 import { getAccessStatusDetails, isUserLoggedIn } from "../utils/accessControl";
@@ -29,6 +29,7 @@ const sanitizeAndResolveClientId = (customKey?: string): string => {
 
 interface PayPalButtonsWrapperProps {
   isProcessing: boolean;
+  totalAmount?: string;
   onSuccess: (orderId?: string) => void;
   onError: (msg: string) => void;
   onUseDirectCheckout: () => void;
@@ -37,6 +38,7 @@ interface PayPalButtonsWrapperProps {
 
 function PayPalButtonsWrapper({
   isProcessing,
+  totalAmount = "10.83",
   onSuccess,
   onError,
   onUseDirectCheckout,
@@ -100,10 +102,10 @@ function PayPalButtonsWrapper({
             intent: "CAPTURE",
             purchase_units: [
               {
-                description: "30-Day All-Access Band Directory Pass ($9.99) + Platform Transaction Fee ($0.84)",
+                description: `30-Day All-Access Band Directory Pass + Platform Fee ($${totalAmount} total)`,
                 amount: {
                   currency_code: "USD",
-                  value: "10.83"
+                  value: totalAmount
                 }
               }
             ]
@@ -161,6 +163,28 @@ export default function PayPalAccessModal({
   const accessDetails = getAccessStatusDetails(currentAccount);
   const isLoggedIn = isUserLoggedIn(currentAccount);
   const [guestEmail, setGuestEmail] = useState("");
+
+  // Promo code & referral discount mechanic (D4.3)
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoError, setPromoError] = useState("");
+
+  const handleApplyPromo = (codeToApply?: string) => {
+    const clean = (codeToApply || promoCodeInput).trim().toUpperCase();
+    if (clean === "COBILL20") {
+      setPromoApplied(true);
+      setPromoError("");
+      setPromoCodeInput("COBILL20");
+    } else {
+      setPromoError("Invalid code. Use COBILL20 for 20% off.");
+    }
+  };
+
+  const basePrice = 9.99;
+  const discountAmount = promoApplied ? 2.00 : 0;
+  const passPrice = basePrice - discountAmount;
+  const platformFee = 0.84;
+  const totalAmount = (passPrice + platformFee).toFixed(2);
 
   const handleSaveCustomKey = (e: React.FormEvent) => {
     e.preventDefault();
@@ -323,8 +347,17 @@ export default function PayPalAccessModal({
           <div className="space-y-2 text-xs">
             <div className="flex justify-between items-center text-slate-300">
               <span className="font-semibold text-white">30-Day All-Access Band Directory Pass</span>
-              <span className="font-mono font-bold text-white">$9.99 USD</span>
+              <span className={`font-mono font-bold ${promoApplied ? "line-through text-slate-500" : "text-white"}`}>$9.99 USD</span>
             </div>
+
+            {promoApplied && (
+              <div className="flex justify-between items-center text-emerald-400 font-semibold text-[11.5px]">
+                <span className="flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-emerald-400" /> Co-Bill Tour Promo (COBILL20)
+                </span>
+                <span className="font-mono font-bold">-$2.00 USD</span>
+              </div>
+            )}
 
             <div className="flex justify-between items-center text-slate-400 text-[11px]">
               <span className="flex items-center gap-1">
@@ -348,13 +381,43 @@ export default function PayPalAccessModal({
             </div>
           </div>
 
+          {/* Promo Code Input Field (D4.3) */}
+          <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Promo code (e.g. COBILL20)"
+                value={promoCodeInput}
+                onChange={(e) => setPromoCodeInput(e.target.value)}
+                disabled={promoApplied}
+                className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 outline-none uppercase font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => handleApplyPromo()}
+                disabled={promoApplied}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all cursor-pointer"
+              >
+                {promoApplied ? "Applied ✓" : "Apply"}
+              </button>
+            </div>
+            {promoError && (
+              <p className="text-[10.5px] text-rose-400 font-medium">{promoError}</p>
+            )}
+            {promoApplied && (
+              <p className="text-[10.5px] text-emerald-400 font-medium">20% discount applied to your 30-day band pass!</p>
+            )}
+          </div>
+
           {/* Itemized Total */}
           <div className="flex justify-between items-center pt-3 border-t border-slate-800">
             <div>
               <span className="text-xs font-black text-white block">Total Due Today:</span>
-              <span className="text-[10px] text-slate-400">Band Directory Pass ($9.99) + Platform Fee ($0.84)</span>
+              <span className="text-[10px] text-slate-400">
+                Band Pass (${passPrice.toFixed(2)}) + Platform Fee ($0.84)
+              </span>
             </div>
-            <span className="text-xl font-black text-amber-400 font-mono">$10.83 USD</span>
+            <span className="text-xl font-black text-amber-400 font-mono">${totalAmount} USD</span>
           </div>
         </div>
 
@@ -442,6 +505,7 @@ export default function PayPalAccessModal({
             >
               <PayPalButtonsWrapper
                 isProcessing={isProcessing}
+                totalAmount={totalAmount}
                 onSuccess={(orderId) => handleCompleteAccessUpgrade(orderId)}
                 onError={(msg) => setErrorMessage(msg)}
                 onUseDirectCheckout={() => handleCompleteAccessUpgrade(`DIRECT-CARD-${Date.now()}`)}

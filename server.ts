@@ -12,7 +12,7 @@ import { MUSIC_VENUES } from "./src/data/venues";
 import { resolveBandAgency } from "./src/utils/bookingAgencies";
 import { parseProgrammaticVenuePath } from "./src/utils/venueSeoRoutes";
 import { generateSitemapXml, generateDynamicSupabaseSitemap } from "./src/utils/sitemapGenerator";
-import { TOUR_ARTICLES, getArticleBySlug } from "./src/data/tourArticles";
+import { TOUR_ARTICLES, getArticleBySlug, getRelatedArticles } from "./src/data/tourArticles";
 
 dotenv.config();
 
@@ -97,11 +97,10 @@ app.use((req, res, next) => {
   res.setHeader("X-XSS-Protection", "1; mode=block");
   // Referrer policy
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  // Content-Security-Policy-Report-Only
-  res.setHeader(
-    "Content-Security-Policy-Report-Only",
-    "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.google.com https://www.googletagmanager.com https://in.heycatch.ai; connect-src 'self' https: wss: https://in.heycatch.ai; img-src 'self' https: data: blob:; style-src 'self' https: 'unsafe-inline'; font-src 'self' https: data:;"
-  );
+  // Content-Security-Policy & Report-Only
+  const cspDirectives = "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.google.com https://www.googletagmanager.com https://in.heycatch.ai; connect-src 'self' https: wss: https://in.heycatch.ai; img-src 'self' https: data: blob:; style-src 'self' https: 'unsafe-inline'; font-src 'self' https: data:;";
+  res.setHeader("Content-Security-Policy", cspDirectives);
+  res.setHeader("Content-Security-Policy-Report-Only", cspDirectives);
   // Anti-Scraping Robots Directive (prevents bulk crawler indexing / caching of sensitive API endpoints)
   if (req.path.startsWith("/api/")) {
     res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet, noimageindex");
@@ -289,12 +288,12 @@ app.get("/llms.txt", (req, res) => {
 GigLizard is a self-serve live music touring platform founded by Seattle-based touring musician and sound engineer Little Rusty (frontman of Dr Hadit). It replaces expensive enterprise software and messy spreadsheets with integrated tools for DIY and regional touring acts.
 
 ## Core Capabilities
-- 650+ Independent Venue Directory & 4,850+ Touring Bands: Search live music stages across all 48 continental states with verified booking emails, capacities, and stage specs (100% Free Forever, No credit card required).
+- 650+ Independent Venue Directory & 1,650+ Touring Bands: Search live music stages across all 48 continental states with verified booking emails, capacities, and stage specs (100% Free Forever, No credit card required).
 - Smart Tour Planner: AI-driven tour routing with Google Maps, drive times, van fuel expense calculation, and corridor stop suggestions ($0 Free).
 - Stage Plot Designer: Interactive drag-and-drop gear canvas to map drums, monitor wedges, pedalboards, and mic booms with instant PNG/PDF export ($0 Free).
 - Tech Rider Builder: Formatted soundboard patch list compiler with mic choices, +48V phantom power switches, and channel mapping ($0 Free).
 - Concert Poster Designer: Vintage halftone and modern neon flyer generator for social promo and print ($0 Free).
-- 4,850+ Verified Band Co-Bill Directory: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
+- 1,650+ Verified Band Co-Bill Directory: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
 
 ## Pricing
 - Venue Discovery & Production Tools: $0 (100% Free Forever, No credit card required).
@@ -1690,53 +1689,53 @@ interface RouteMetadata {
 
 const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   "/": {
-    title: "GigLizard - Free Venue Directory & DIY Tour Booking Tools",
-    description: "Find 650+ music venues and 4,850+ touring bands for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
+    title: "GigLizard — Nationwide Music Venue Directory & DIY Tour Booking Suite",
+    description: "Find 650+ music venues and 1,650+ touring bands for free, calculate AI tour routes with Google Maps, and create pro stage plots & riders with zero recurring subscription fees.",
     canonical: "https://www.giglizard.us/",
-    heading: "Find Venues, Book Shows - 650+ Venues Across the USA",
+    heading: "Independent Bands: Find Venues, Book Shows - 4,800+ Bookable Rooms Across the Lower 48",
     subhead: "GigLizard is a free nationwide independent music venue directory and DIY tour booking platform for touring bands, venues, and sound engineers across the Lower 48."
   },
   "/pricing": {
     title: "GigLizard Pricing - Free Venue Discovery & $9.99 30-Day Band Pass",
-    description: "Transparent DIY tour pricing: 650+ venues and 4,850+ touring bands, plus stage plot tools free forever. $9.99 30-day pass for band contacts with zero auto-renewal.",
+    description: "Venues free forever. $9.99 flat 30-day pass unlocks verified band booking contacts - no auto-renewal.",
     canonical: "https://www.giglizard.us/pricing",
     heading: "Access to Venues - FREE / Access to Band Contacts - $9.99",
     subhead: "GigLizard Pricing is a transparent two-tier access model offering 100% free venue discovery forever and an optional $9.99 flat 30-day pass for unmasked touring band booking contacts."
   },
   "/about": {
     title: "About GigLizard - Built by DIY Musicians in Portland",
-    description: "GigLizard was founded in Portland by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
+    description: "About GigLizard: built in Portland by touring musician Little Rusty to give independent bands free venue access without subscription paywalls.",
     canonical: "https://www.giglizard.us/about",
     heading: "Built in the Pacific Northwest by Little Rusty from Portland",
     subhead: "Independent live music touring shouldn't be gatekept behind $30/month corporate agency tools or dead-end scrapers."
   },
   "/features": {
     title: "GigLizard Features - Free Tour Planner, Plots & Riders",
-    description: "Free touring toolkit for independent bands: 650+ venue directory, 4,850+ active touring bands, AI route planner with drive times, drag-and-drop stage plots, and tech riders.",
+    description: "Free touring toolkit for independent bands: 650+ venue directory, 1,650+ touring bands, route planner with fuel estimates, and stage plots.",
     canonical: "https://www.giglizard.us/features",
     heading: "Book the Gig. Route the Van. Show Up Looking Pro.",
     subhead: "The complete production & booking workspace for independent and regional touring acts across the Lower 48."
   },
   "/compare": {
     title: "GigLizard vs Rivals - Sonicbids, Prism & Spreadsheets",
-    description: "Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory (650+ clubs & 4,850+ bands) and $9.99 flat pass vs $30/mo recurring subscriptions.",
+    description: "Compare GigLizard against Sonicbids, Prism.fm, and Gigwell. Free venue directory and $9.99 flat pass vs $30/mo recurring subscriptions.",
     canonical: "https://www.giglizard.us/compare",
     heading: "How GigLizard Compares to Every Alternative",
     subhead: "Prism leads enterprise venue management; Gigwell serves agencies from $33/mo; Sonicbids paywalls gig discovery. GigLizard undercuts all of them with $0 tools and a $9.99 pass."
   },
   "/vs/sonicbids": {
     title: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
-    description: "Compare GigLizard and Sonicbids. Search 650+ venues and 4,850+ bands for free with no pay-to-apply submission fees and zero recurring subscriptions.",
+    description: "Compare GigLizard and Sonicbids. Search 650+ venues and 1,650+ bands for free with no pay-to-apply submission fees and zero recurring subscriptions.",
     canonical: "https://www.giglizard.us/vs/sonicbids",
     heading: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
-    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 650+ verified venue inboxes and 4,850+ touring bands 100% free forever."
+    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 650+ verified venue inboxes and 1,650+ touring bands 100% free forever."
   },
   "/vs/giglizard-vs-sonicbids": {
     title: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
-    description: "Compare GigLizard and Sonicbids. Search 650+ venues and 4,850+ bands for free with no pay-to-apply submission fees and zero recurring subscriptions.",
+    description: "Compare GigLizard and Sonicbids. Search 650+ venues and 1,650+ bands for free with no pay-to-apply submission fees and zero recurring subscriptions.",
     canonical: "https://www.giglizard.us/vs/sonicbids",
     heading: "GigLizard vs Sonicbids: Stop Paying to Apply for Gigs",
-    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 650+ verified venue inboxes and 4,850+ touring bands 100% free forever."
+    subhead: "Sonicbids forces artists to pay $20-$35/mo recurring just to submit to venues. GigLizard gives you 650+ verified venue inboxes and 1,650+ touring bands 100% free forever."
   },
   "/vs/prism-fm": {
     title: "GigLizard vs Prism.fm - Built for DIY Bands vs Arenas",
@@ -1747,7 +1746,7 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   },
   "/vs/gigwell": {
     title: "GigLizard vs Gigwell - Free DIY Tools vs $33/mo Plan",
-    description: "Compare GigLizard vs Gigwell. Free venue directory (650+ clubs & 4,850+ bands) and $9.99 flat pass vs $33/mo annual-only contracts for agency rosters.",
+    description: "Compare GigLizard vs Gigwell. Free venue directory (650+ clubs & 1,650+ bands) and $9.99 flat pass vs $33/mo annual-only contracts for agency rosters.",
     canonical: "https://www.giglizard.us/vs/gigwell",
     heading: "GigLizard vs Gigwell: Free DIY Tooling vs $33/mo Contracts",
     subhead: "Gigwell targets talent agencies with $33/mo ($396/year upfront) lock-in contracts. GigLizard charges $9.99 for a single 30-day pass with zero recurring billing."
@@ -1761,7 +1760,7 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   },
   "/customers": {
     title: "GigLizard Case Studies - How DIY Bands Book Tours",
-    description: "Real touring case studies and road stories from independent bands booking clubs, routing tours, and filling dates across the Lower 48.",
+    description: "Case studies from real independent touring acts routing runs, booking club dates, and filling middle dates with GigLizard.",
     canonical: "https://www.giglizard.us/customers",
     heading: "How DIY Bands & Venues Book Real Shows Across the Lower 48",
     subhead: "Verified case studies from touring musicians booking clubs, routing tours, and filling middle dates without agency gatekeepers."
@@ -1778,27 +1777,27 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
     description: "Frequently asked questions about venue booking inboxes, $9.99 flat band passes, 7-day money-back refunds, and DIY touring tools.",
     canonical: "https://www.giglizard.us/faq",
     heading: "Tour Booking, Pass Pricing & Verification FAQ",
-    subhead: "Transparent answers to common questions about our 650+ venue directory, 4,850+ touring bands, band passes, and DIY tools."
+    subhead: "Transparent answers to common questions about our 650+ venue directory, 1,650+ touring bands, band passes, and DIY tools."
   },
   "/verification": {
     title: "Directory Verification Log & Freshness Audits | GigLizard",
-    description: "Live moderation queue, dated venue audits, and human corroboration records for 650+ music venues and 4,850+ active band contacts across the Lower 48.",
+    description: "Live moderation log and dated verification audits for 650+ music venues and 1,650+ active touring bands across the Lower 48.",
     canonical: "https://www.giglizard.us/verification",
-    heading: "How We Verify 650+ Venues & 4,850+ Bands Without Stale Scraping",
+    heading: "How We Verify 650+ Venues & 1,650+ Bands Without Stale Scraping",
     subhead: "Live moderation queue, dated audit entries, and community bounce reports resolved within 24 hours."
   },
   "/venues": {
-    title: "Free Venue Directory (650+ Clubs) | GigLizard",
-    description: "Search 650+ verified live music clubs and 4,850+ touring bands across the Lower 48 with direct booking emails and specs.",
+    title: "650+ Live Music Clubs & Verified Venue Booking Inboxes | GigLizard",
+    description: "Search 650+ verified live music clubs across the Lower 48 with direct booking emails, stage specs, and house PA details.",
     canonical: "https://www.giglizard.us/venues",
-    heading: "Find Venues & Bands, Book Shows - 650+ Venues & 4,850+ Bands Across the USA",
+    heading: "Find Venues & Bands, Book Shows - 650+ Venues & 1,650+ Bands Across the USA",
     subhead: "Browse live music venues by city, state, capacity, and genre. 100% free with verified booking emails and stage sound specs."
   },
   "/bands": {
     title: "Touring Bands & Co-Bills ($9.99 Pass) | GigLizard",
-    description: "Browse 4,850+ active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.",
+    description: "Browse 1,650+ active touring bands across the Lower 48 seeking co-bills and shared dates. Flat 30-day pass for $9.99 with no auto-renewal.",
     canonical: "https://www.giglizard.us/bands",
-    heading: "4,850+ Active Touring Bands Across the Lower 48",
+    heading: "1,650+ Active Touring Bands Across the Lower 48",
     subhead: "Find compatible touring acts to swap shows and fill rooms in every tour stop."
   },
   "/tour": {
@@ -1810,49 +1809,49 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
   },
   "/tools/stage-plot": {
     title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
-    description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
+    description: "Free drag-and-drop stage plot maker and band input list template. Export clean PDF plots for house sound engineers in minutes.",
     canonical: "https://www.giglizard.us/tools/stage-plot",
     heading: "Free Stage Plot Maker & Band Input List Template",
     subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
   },
   "/stage-plot": {
     title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
-    description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
+    description: "Free drag-and-drop stage plot maker and band input list template. Export clean PDF plots for house sound engineers in minutes.",
     canonical: "https://www.giglizard.us/tools/stage-plot",
     heading: "Free Stage Plot Maker & Band Input List Template",
     subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
   },
   "/plot": {
     title: "Free Stage Plot Maker & Band Input List Template | GigLizard",
-    description: "Build professional stage plots, patch lists, and tech riders online for free. Drag-and-drop gear layout, printable PDF export for sound engineers and venues.",
+    description: "Free drag-and-drop stage plot maker and band input list template. Export clean PDF plots for house sound engineers in minutes.",
     canonical: "https://www.giglizard.us/tools/stage-plot",
     heading: "Free Stage Plot Maker & Band Input List Template",
     subhead: "Drag-and-drop live stage equipment, vocal mic boom layouts, monitor wedges, and standard 16/24-channel input patch lists."
   },
   "/rider": {
     title: "Tech Rider & Soundboard Patch Builder | GigLizard",
-    description: "Compile formatted soundboard patch lists, mic choices, and +48V phantom power switches for venue sound engineers.",
+    description: "Build professional tech riders and soundboard channel patch lists with mic choices and +48V phantom power switches.",
     canonical: "https://www.giglizard.us/rider",
     heading: "Live Sound Tech Rider & Channel Patch List Builder",
     subhead: "Send organized input lists to house sound engineers so soundcheck runs smooth."
   },
   "/tools/poster-designer": {
     title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
-    description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
+    description: "Free gig poster maker and concert flyer designer. Create print-ready 300 DPI flyers and Instagram story banners.",
     canonical: "https://www.giglizard.us/tools/poster-designer",
     heading: "Free Gig Poster Maker & Concert Flyer Generator",
     subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
   },
   "/poster-designer": {
     title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
-    description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
+    description: "Free gig poster maker and concert flyer designer. Create print-ready 300 DPI flyers and Instagram story banners.",
     canonical: "https://www.giglizard.us/tools/poster-designer",
     heading: "Free Gig Poster Maker & Concert Flyer Generator",
     subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
   },
   "/poster": {
     title: "Free Gig Poster Maker & Concert Flyer Generator | GigLizard",
-    description: "Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions.",
+    description: "Free gig poster maker and concert flyer designer. Create print-ready 300 DPI flyers and Instagram story banners.",
     canonical: "https://www.giglizard.us/tools/poster-designer",
     heading: "Free Gig Poster Maker & Concert Flyer Generator",
     subhead: "Design custom gig posters, tour date flyers, and social banners for your live shows. Print-ready 300 DPI exports and Instagram story dimensions."
@@ -1902,198 +1901,285 @@ const ROUTE_METADATA_MAP: Record<string, RouteMetadata> = {
 };
 
 function getRouteNoscriptSnippet(cleanPath: string): string {
+  if (cleanPath === "/venues") {
+    return `
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Venues</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">650+ Live Music Clubs &amp; Verified Venue Booking Inboxes</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard's Venue Directory is a free nationwide independent music venue directory connecting touring bands and sound engineers with 650+ live music clubs, stages, and DIY spaces across the Lower 48 with direct booking emails, room capacities, and house audio specs.</p>
+        
+        <h2 style="font-size: 20px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 30px; margin-bottom: 15px;">Browse Key Regional Touring Corridors</h2>
+        <ul style="padding-left: 20px; line-height: 1.8;">
+          <li><a href="/venues/washington" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">Washington &amp; Pacific Northwest Venues</a> — Seattle, Tacoma, Spokane live music clubs.</li>
+          <li><a href="/venues/oregon" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">Oregon Live Music Venues</a> — Portland, Eugene, Bend independent stages.</li>
+          <li><a href="/venues/california" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">California Coastal Venues</a> — San Francisco, Los Angeles, San Diego, Sacramento.</li>
+          <li><a href="/venues/texas" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">Texas Triangle Venues</a> — Austin, Dallas, Houston, San Antonio club stages.</li>
+          <li><a href="/venues/illinois" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">Midwest Corridor Venues</a> — Chicago, Peoria, Rockford live rooms.</li>
+          <li><a href="/venues/new-york" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">New York &amp; Tri-State Venues</a> — Brooklyn, Manhattan, Buffalo, Rochester stages.</li>
+          <li><a href="/venues/tennessee" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">Tennessee &amp; Southeast Venues</a> — Nashville, Memphis, Knoxville, Chattanooga.</li>
+        </ul>
+
+        <h2 style="font-size: 20px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-top: 30px; margin-bottom: 15px;">Verified Club Inboxes &amp; Capacity Specs (${MUSIC_VENUES.length}+ Stages)</h2>
+        <p style="font-size: 15px; color: #475569; margin-bottom: 15px;">Every venue listing includes verified booking talent buyer contact info, room capacity, and house sound specs with zero paywall.</p>
+        <ul style="padding-left: 20px; line-height: 1.6;">
+          ${MUSIC_VENUES.slice(0, 20).map(v => `<li><strong>${v.name}</strong> (Capacity: ${v.capacity}) — ${v.address} | Genres: ${v.genres.join(", ")} | Booking Email: ${v.contactEmail}</li>`).join("\n          ")}
+        </ul>
+        
+        <p style="margin-top: 30px; font-size: 14px; color: #475569; background: #f8fafc; padding: 18px 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          Need production tools for your run? Create your <a href="/plot" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">free stage plot</a>, build a <a href="/rider" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">tech rider</a>, plan your <a href="/tour" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">tour route and gas budget</a>, or read our <a href="/tour-advice" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">tour advice playbooks</a>.
+        </p>`;
+  }
   if (cleanPath === "/privacy" || cleanPath === "/privacy-policy") {
     return `
-        <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
-          <h2>GigLizard Privacy Policy</h2>
-          <div style="margin-bottom: 20px; padding: 20px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px;">
-            <h3>Google AdSense &amp; Third-Party Advertising</h3>
-            <p><strong>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites.</strong></p>
-            <p>Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website. Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to GigLizard and/or other sites on the Internet.</p>
-            <p>Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads">Google Ads Settings (https://www.google.com/settings/ads)</a> or <a href="https://www.aboutads.info/choices/">www.aboutads.info</a>.</p>
-            <p><strong>SMS &amp; Sensitive Personal Data Protection:</strong> No sensitive personal data, mobile phone numbers, or mobile SMS consent records are shared with third parties or advertisers for marketing purposes.</p>
-          </div>
-          <h3>Data Privacy Commitment</h3>
-          <p>GigLizard strictly protects artist and venue data. We never sell, rent, or lease contact listings, booking emails, or private phone records to third-party data brokers or marketing services.</p>
-          <p>All subscription transactions are securely processed via standard 256-bit encrypted PayPal checkout pipelines. GigLizard never stores credit card or raw banking credentials on its servers.</p>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Privacy Policy</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">GigLizard Privacy Policy</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Privacy Policy outlines our commitment to data protection, transparency, and artist privacy for touring bands, venue talent buyers, and live audio engineers across our platform.</p>
+        <div style="margin-bottom: 20px; padding: 20px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px;">
+          <h2 style="font-size: 18px; color: #92400e; margin-top: 0;">Google AdSense &amp; Third-Party Advertising</h2>
+          <p><strong>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites.</strong></p>
+          <p>Third-party vendors (including Google) use cookies to serve ads based on a user's prior visits to your website. Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to GigLizard and/or other sites on the Internet.</p>
+          <p>Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads">Google Ads Settings (https://www.google.com/settings/ads)</a> or <a href="https://www.aboutads.info/choices/">www.aboutads.info</a>.</p>
+          <p><strong>SMS &amp; Sensitive Personal Data Protection:</strong> No sensitive personal data, mobile phone numbers, or mobile SMS consent records are shared with third parties or advertisers for marketing purposes.</p>
+        </div>
+        <h2 style="font-size: 18px; color: #0f172a;">Data Privacy Commitment</h2>
+        <p>GigLizard strictly protects artist and venue data. We never sell, rent, or lease contact listings, booking emails, or private phone records to third-party data brokers or marketing services.</p>
+        <p>All subscription transactions are securely processed via standard 256-bit encrypted PayPal checkout pipelines. GigLizard never stores credit card or raw banking credentials on its servers.</p>`;
   }
   if (cleanPath === "/pricing") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Simple, Musician-Friendly Pricing • Zero Hidden Traps</h2>
-          <div style="margin-bottom: 15px;">
-            <h3>Free Forever Tier ($0)</h3>
-            <p>Unlimited access to our 650+ nationwide music venue directory with verified booking emails, AI tour routing with gas estimation, drag-and-drop stage plot designer, soundboard tech rider builder, and concert poster maker. No credit card required.</p>
-          </div>
-          <div>
-            <h3>30-Day Band Directory Contacts Pass ($9.99 flat)</h3>
-            <p>Full access to 4,850+ active touring band contacts, co-bill matching, and show-swap messaging across all 48 continental states. Single payment, zero recurring billing or auto-renewals, protected by a 7-day 100% money-back satisfaction guarantee.</p>
-          </div>
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Pricing</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">GigLizard Pricing — Free Venue Discovery &amp; $9.99 Band Pass</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Pricing is a transparent two-tier access model offering 100% free venue discovery forever and an optional $9.99 flat 30-day pass for touring band booking contacts with zero recurring billing.</p>
+        <div style="margin-bottom: 15px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">Free Forever Tier ($0)</h2>
+          <p>Unlimited access to our 650+ nationwide music venue directory with verified booking emails, AI tour routing with gas estimation, drag-and-drop stage plot designer, soundboard tech rider builder, and concert poster maker. No credit card required.</p>
+        </div>
+        <div style="padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">30-Day Band Directory Contacts Pass ($9.99 flat)</h2>
+          <p>Full access to 1,650+ active touring band contacts, co-bill matching, and show-swap messaging across all 48 continental states. Single payment, zero recurring billing or auto-renewals, protected by a 7-day 100% money-back satisfaction guarantee.</p>
         </div>`;
   }
   if (cleanPath === "/compare" || cleanPath.startsWith("/vs/")) {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Why Independent Bands Switch to GigLizard</h2>
-          <p>GigLizard was created by touring musicians fed up with predatory subscriptions and clunky enterprise software.</p>
-          <ul>
-            <li><strong>vs Sonicbids:</strong> Sonicbids charges $240/yr with recurring billing traps. GigLizard provides 650+ free verified venues and an optional $9.99 30-day band pass with no renewals.</li>
-            <li><strong>vs Prism.fm:</strong> Prism.fm is designed for large venues at $300-$500/month. GigLizard gives DIY artists lightweight routing and soundboard rider tools for $0.</li>
-            <li><strong>vs Gigwell:</strong> Gigwell charges $1,200+/yr for booking agency workflows. GigLizard gives independent bands instant direct access to booking emails with zero commission fees.</li>
-          </ul>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Comparison</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Why Independent Bands Switch to GigLizard</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard is an independent DIY alternative to expensive corporate booking platforms like Sonicbids, Prism.fm, and Gigwell, built specifically for working touring musicians.</p>
+        <ul style="padding-left: 20px; line-height: 1.8;">
+          <li><strong>vs Sonicbids:</strong> Sonicbids charges $240/yr with recurring billing traps. GigLizard provides 650+ free verified venues and an optional $9.99 30-day band pass with no renewals.</li>
+          <li><strong>vs Prism.fm:</strong> Prism.fm is designed for large venues at $300-$500/month. GigLizard gives DIY artists lightweight routing and soundboard rider tools for $0.</li>
+          <li><strong>vs Gigwell:</strong> Gigwell charges $1,200+/yr for booking agency workflows. GigLizard gives independent bands instant direct access to booking emails with zero commission fees.</li>
+        </ul>`;
   }
   if (cleanPath === "/faq") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Frequently Asked Questions</h2>
-          <dl>
-            <dt><strong>Is the 650+ venue directory really 100% free?</strong></dt>
-            <dd>Yes. Every single venue listing, capacity, soundboard spec, and booking email is completely free to view and search across all 48 continental states. No paywall, no credit card required.</dd>
-            <dt><strong>How does the $9.99 30-Day Band Pass work?</strong></dt>
-            <dd>It is a one-time charge of $9.99 (+$0.84 card fee = $10.83). It does NOT auto-renew. It unlocks direct booking contacts and social handles for 4,850+ active touring bands for a full 30 days.</dd>
-            <dt><strong>What is your refund policy?</strong></dt>
-            <dd>We provide a 7-day 100% money-back guarantee. If you are unsatisfied for any reason, request a refund and we process it immediately.</dd>
-            <dt><strong>How often is directory contact information audited?</strong></dt>
-            <dd>Our directory undergoes rolling freshness audits every 30 days. Community bounce reports are resolved within 24 hours.</dd>
-          </dl>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">FAQ</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Frequently Asked Questions</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard FAQ covers all essential questions regarding venue listings, pricing, 30-day passes, 7-day money-back refunds, and tour production tools.</p>
+        <dl>
+          <dt style="font-weight: bold; margin-top: 15px;">Is the 650+ venue directory really 100% free?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569;">Yes. Every single venue listing, capacity, soundboard spec, and booking email is completely free to view and search across all 48 continental states. No paywall, no credit card required.</dd>
+          <dt style="font-weight: bold; margin-top: 15px;">How does the $9.99 30-Day Band Pass work?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569;">It is a one-time charge of $9.99 (+$0.84 card fee = $10.83). It does NOT auto-renew. It unlocks direct booking contacts and social handles for 1,650+ active touring bands for a full 30 days.</dd>
+          <dt style="font-weight: bold; margin-top: 15px;">What is your refund policy?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569;">We provide a 7-day 100% money-back guarantee. If you are unsatisfied for any reason, request a refund and we process it immediately.</dd>
+          <dt style="font-weight: bold; margin-top: 15px;">How often is directory contact information audited?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569;">Our directory undergoes rolling freshness audits every 30 days. Community bounce reports are resolved within 24 hours.</dd>
+        </dl>`;
   }
   if (cleanPath === "/verification") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Directory Freshness & Verification Standards</h2>
-          <p>GigLizard rejects automated web scraper spam. Every venue and touring band record in our 650+ club and 4,850+ band directory is subjected to rolling 30-day freshness checks and rapid 24-hour community bounce ticket triage.</p>
-          <p>Bands can report changed contacts directly from any listing, triggering instant verification by our moderation team.</p>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Verification</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Directory Freshness &amp; Verification Standards</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Verification is our human moderation and verification system ensuring every venue and band listing is active, accurate, and scraper-free across all 48 continental states.</p>
+        <p style="line-height: 1.7; color: #475569;">GigLizard rejects automated web scraper spam. Every venue and touring band record in our 650+ club and 1,650+ band directory is subjected to rolling 30-day freshness checks and rapid 24-hour community bounce ticket triage.</p>
+        <p style="line-height: 1.7; color: #475569;">Bands can report changed contacts directly from any listing, triggering instant verification by our moderation team.</p>`;
   }
   if (cleanPath === "/touring-guide") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>The Independent Musician's DIY Touring Guide</h2>
-          <ol>
-            <li><strong>Route Logical Corridors:</strong> Keep driving times under 5 hours between stops to protect your voice and energy.</li>
-            <li><strong>Target Anchor Markets First:</strong> Secure Friday and Saturday shows in anchor cities 3 to 4 months in advance.</li>
-            <li><strong>Fill Middle Dates with Co-Bills:</strong> Reach out to local bands in intermediate cities using GigLizard's band directory.</li>
-            <li><strong>Send Clean Tech Riders:</strong> Use our 1-click stage plot and input patch builder so sound engineers are on your side.</li>
-          </ol>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Touring Guide</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">The Independent Musician's DIY Touring Guide</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">The GigLizard DIY Touring Guide is a practical step-by-step roadmap for independent bands routing regional and national live music tours across North America.</p>
+        <ol style="padding-left: 20px; line-height: 1.8;">
+          <li><strong>Route Logical Corridors:</strong> Keep driving times under 5 hours between stops to protect your voice and energy.</li>
+          <li><strong>Target Anchor Markets First:</strong> Secure Friday and Saturday shows in anchor cities 3 to 4 months in advance.</li>
+          <li><strong>Fill Middle Dates with Co-Bills:</strong> Reach out to local bands in intermediate cities using GigLizard's band directory.</li>
+          <li><strong>Send Clean Tech Riders:</strong> Use our 1-click stage plot and input patch builder so sound engineers are on your side.</li>
+        </ol>`;
   }
   if (cleanPath === "/about") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>About GigLizard • Built in Portland, OR</h2>
-          <p>GigLizard was founded by Little Rusty, a Pacific Northwest touring musician and live sound engineer (frontman of Dr Hadit, Knucklebone, 7AT). Frustrated by the lack of honest, affordable booking tools for independent artists, he built GigLizard to provide a free venue directory and essential tour tools without recurring subscription traps.</p>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">About</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">About GigLizard • Built in Portland, OR</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard is an independent live music directory and tour planning platform built in Portland, Oregon by Little Rusty, a Pacific Northwest touring musician and live sound engineer (frontman of Dr Hadit, Knucklebone, 7AT).</p>
+        <p style="line-height: 1.7; color: #475569;">Frustrated by the lack of honest, affordable booking tools for independent artists, Little Rusty built GigLizard to provide a free venue directory and essential tour tools without recurring subscription traps.</p>`;
+  }
+  if (cleanPath === "/contact" || cleanPath === "/contact-us") {
+    return `
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Contact</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Contact GigLizard &amp; Little Rusty</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Contact is a direct communication channel to Little Rusty and our human venue moderation team. Reach us via email or web message with guaranteed response in under 4 hours.</p>
+        <p style="line-height: 1.7; color: #475569;">Email us directly at <a href="mailto:hello@giglizard.us" style="color: #4f46e5; font-weight: 600; text-decoration: underline;">hello@giglizard.us</a> for venue updates, band listings, or support requests.</p>`;
   }
   if (cleanPath === "/customers") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Touring Band Case Studies</h2>
-          <p>Discover how independent acts use GigLizard to book 10-city Pacific Northwest runs, fill Midwest corridor dates, and swap co-bills with local acts across the country.</p>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Case Studies</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Touring Band Case Studies</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Case Studies are real-world stories of independent touring acts booking multi-city runs, filling middle dates, and routing tours across the Lower 48 without booking agencies.</p>
+        <p style="line-height: 1.7; color: #475569;">Discover how independent acts use GigLizard to book 10-city Pacific Northwest runs, fill Midwest corridor dates, and swap co-bills with local acts across the country.</p>`;
   }
   if (cleanPath === "/bands") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>4,850+ Active Touring Bands Across the Lower 48</h2>
-          <p>Connect with active independent touring acts looking for regional support, co-bills, and show swaps. Includes direct booking contacts, active tour dates, and genres with an affordable $9.99 30-day pass.</p>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Bands</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">1,650+ Active Touring Bands Co-Bill Directory (Lower 48)</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Band Directory is a nationwide database of 1,650+ active independent touring acts seeking co-bills, show swaps, and regional support across the Lower 48.</p>
+        <p style="line-height: 1.7; color: #475569;">Connect with active independent touring acts looking for regional support, co-bills, and show swaps. Includes direct booking contacts, active tour dates, and genres with an affordable $9.99 30-day pass with zero recurring billing.</p>`;
   }
   if (cleanPath === "/tour") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Smart Tour Route Planner & Van Fuel Expense Calculator</h2>
-          <p>Plot multi-city tour routing with real Google Maps drive times, gas budgets, and highway corridor recommendations between show dates.</p>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Tour Planner</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Smart Tour Route Planner &amp; Van Fuel Expense Calculator</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Tour Planner is a free multi-city tour routing tool and van gas expense calculator for independent bands traveling across the Lower 48.</p>
+        <p style="line-height: 1.7; color: #475569;">Plot multi-city tour routing with real Google Maps drive times, gas budgets, and highway corridor recommendations between show dates.</p>`;
   }
   if (cleanPath === "/plot" || cleanPath === "/tools/stage-plot" || cleanPath === "/stage-plot") {
     return `
-        <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
-          <h2>Free Stage Plot Maker &amp; Band Input List Template ($0 Free)</h2>
-          <p>GigLizard provides a 100% free drag-and-drop stage plot creator, drum and amp stage diagram canvas, and band input list template generator with high-resolution PDF and PNG export for front-of-house (FOH) sound technicians and venue production managers.</p>
-          
-          <h3>Essential Stage Plot Symbols &amp; Gear Layout</h3>
-          <ul>
-            <li><strong>Drum Kit:</strong> Placed Upstage Center. Symbols for kick drum, snare top, hi-hat, rack toms, floor tom, and overhead condenser mics.</li>
-            <li><strong>Bass Rig &amp; Direct Box (DI):</strong> Stage Left/Right backline with dedicated active 48V phantom-powered DI box.</li>
-            <li><strong>Guitar Amplifiers:</strong> Stage Right / Stage Left cabinets with microphone preferences (Shure SM57 / Sennheiser e906).</li>
-            <li><strong>Monitor Wedges:</strong> Triangular frontline stage symbols with aux mix numbering (Mix 1 Lead Vox, Mix 2 Guitar, Mix 3 Bass, Mix 4 Drums).</li>
-            <li><strong>Vocal Microphones:</strong> Tall boom stands positioned on frontline downstage with cardioid null angles aimed away from wedges.</li>
-          </ul>
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <a href="/features" style="color: #4f46e5; text-decoration: underline;">Free Tools</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Stage Plot Maker</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Free Stage Plot Maker &amp; Band Input List Template ($0 Free)</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Stage Plot Maker is a free interactive drag-and-drop stage plot designer and band input list generator for touring musicians, venue talent buyers, and front-of-house sound engineers.</p>
+        
+        <h2 style="font-size: 20px; color: #0f172a; margin-top: 25px;">Essential Stage Plot Symbols &amp; Gear Layout</h2>
+        <ul style="padding-left: 20px; line-height: 1.7;">
+          <li><strong>Drum Kit:</strong> Placed Upstage Center. Symbols for kick drum, snare top, hi-hat, rack toms, floor tom, and overhead condenser mics.</li>
+          <li><strong>Bass Rig &amp; Direct Box (DI):</strong> Stage Left/Right backline with dedicated active 48V phantom-powered DI box.</li>
+          <li><strong>Guitar Amplifiers:</strong> Stage Right / Stage Left cabinets with microphone preferences (Shure SM57 / Sennheiser e906).</li>
+          <li><strong>Monitor Wedges:</strong> Triangular frontline stage symbols with aux mix numbering (Mix 1 Lead Vox, Mix 2 Guitar, Mix 3 Bass, Mix 4 Drums).</li>
+          <li><strong>Vocal Microphones:</strong> Tall boom stands positioned on frontline downstage with cardioid null angles aimed away from wedges.</li>
+        </ul>
 
-          <h3>Standard Channel List Numbering Architecture</h3>
-          <p>Universal console order: Drums (Ch 1–6) &rarr; Bass DI (Ch 7) &rarr; Electric Guitars (Ch 8–9) &rarr; Keyboards/Synths (Ch 10–11) &rarr; Lead &amp; Backing Vocals (Ch 12–15).</p>
+        <h2 style="font-size: 20px; color: #0f172a; margin-top: 25px;">Standard Channel List Numbering Architecture</h2>
+        <p style="line-height: 1.7; color: #475569;">Universal console order: Drums (Ch 1–6) &rarr; Bass DI (Ch 7) &rarr; Electric Guitars (Ch 8–9) &rarr; Keyboards/Synths (Ch 10–11) &rarr; Lead &amp; Backing Vocals (Ch 12–15).</p>
 
-          <h3>Frequently Asked Questions</h3>
-          <dl>
-            <dt><strong>What is a stage plot and why does my band need one?</strong></dt>
-            <dd>A stage plot is a visual top-down graphic diagram illustrating where each band member stands on stage, where drum kits, guitar amplifiers, bass rigs, and keyboards are located, and where vocal microphones and monitor wedges need to be positioned. Sending a clear stage plot 2 to 4 weeks prior to a show allows the venue's front-of-house (FOH) and monitor sound technicians to patch lines, set mic stands, and route monitors before your band arrives, drastically shortening line check times and preventing audio feedback during your set.</dd>
-            <dt><strong>What should be included on a band input list?</strong></dt>
-            <dd>A professional band input list (or patch list) should include the channel number, instrument name, microphone or DI preference (e.g. Shure Beta 52 for kick, SM57 for guitar amp, active DI box for bass), microphone stand type (tall boom, short boom, straight stand), +48V phantom power requirement, and monitor mix notes. Following standard channel order—drums first, followed by bass, guitars, keyboards, acoustic instruments, and lead/backing vocals—ensures any venue sound engineer can patch your band quickly without confusion.</dd>
-            <dt><strong>How do I export and send my stage plot to a sound engineer?</strong></dt>
-            <dd>With GigLizard, you can export your completed stage plot and input list as a high-resolution, print-ready PDF or high-DPI PNG directly from your browser with a single click. You can also generate a shareable web link to include in your booking email or electronic press kit (EPK) when confirming advance show details with talent buyers and production managers.</dd>
-          </dl>
-        </div>`;
+        <h2 style="font-size: 20px; color: #0f172a; margin-top: 25px;">Frequently Asked Questions</h2>
+        <dl>
+          <dt style="font-weight: bold; margin-top: 15px;">What is a stage plot and why does my band need one?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569; line-height: 1.6;">A stage plot is a visual top-down graphic diagram illustrating where each band member stands on stage, where drum kits, guitar amplifiers, bass rigs, and keyboards are located, and where vocal microphones and monitor wedges need to be positioned. Sending a clear stage plot 2 to 4 weeks prior to a show allows the venue's front-of-house (FOH) and monitor sound technicians to patch lines, set mic stands, and route monitors before your band arrives, drastically shortening line check times and preventing audio feedback during your set.</dd>
+          <dt style="font-weight: bold; margin-top: 15px;">What should be included on a band input list?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569; line-height: 1.6;">A professional band input list (or patch list) should include the channel number, instrument name, microphone or DI preference (e.g. Shure Beta 52 for kick, SM57 for guitar amp, active DI box for bass), microphone stand type (tall boom, short boom, straight stand), +48V phantom power requirement, and monitor mix notes. Following standard channel order—drums first, followed by bass, guitars, keyboards, acoustic instruments, and lead/backing vocals—ensures any venue sound engineer can patch your band quickly without confusion.</dd>
+          <dt style="font-weight: bold; margin-top: 15px;">How do I export and send my stage plot to a sound engineer?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569; line-height: 1.6;">With GigLizard, you can export your completed stage plot and input list as a high-resolution, print-ready PDF or high-DPI PNG directly from your browser with a single click. You can also generate a shareable web link to include in your booking email or electronic press kit (EPK) when confirming advance show details with talent buyers and production managers.</dd>
+        </dl>`;
   }
   if (cleanPath === "/rider") {
     return `
-        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Live Audio Tech Rider &amp; Channel Patch List Builder ($0 Free)</h2>
-          <p>Generate formatted 16, 24, or 32-channel soundboard input lists, mic selections, DI requirements, and monitor mix requests for front-of-house engineers.</p>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <a href="/features" style="color: #4f46e5; text-decoration: underline;">Free Tools</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Tech Rider Builder</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Live Audio Tech Rider &amp; Channel Patch List Builder ($0 Free)</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Tech Rider Builder is a free soundboard channel patch list and technical rider generator for independent touring bands and venue audio engineers.</p>
+        <p style="line-height: 1.7; color: #475569;">Generate formatted 16, 24, or 32-channel soundboard input lists, mic selections, DI requirements, and monitor mix requests for front-of-house engineers.</p>`;
   }
   if (cleanPath === "/poster" || cleanPath === "/tools/poster-designer" || cleanPath === "/poster-designer") {
     return `
-        <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
-          <h2>Free Gig Poster Maker &amp; Concert Flyer Generator ($0 Free)</h2>
-          <p>Design custom gig posters, tour tour-date flyers, and social banners for your live shows. Print-ready 300 DPI exports, 11x17 tabloid format, and 9:16 Instagram story dimensions.</p>
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <a href="/features" style="color: #4f46e5; text-decoration: underline;">Free Tools</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Gig Poster Maker</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Free Gig Poster Maker &amp; Concert Flyer Generator ($0 Free)</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Gig Poster Maker is a free design studio for creating 300 DPI print-ready concert posters, 11x17 tour flyers, and 9:16 Instagram story promotional banners.</p>
 
-          <h3>Essential Concert Poster Elements</h3>
-          <ul>
-            <li><strong>Headlining Band Name:</strong> Occupies 40%+ of visual hierarchy with high-contrast typography.</li>
-            <li><strong>Direct Support &amp; Co-Bills:</strong> Clear secondary typography for touring and local openers.</li>
-            <li><strong>Day of Week &amp; Full Date:</strong> e.g., &ldquo;FRIDAY, NOVEMBER 14&rdquo; for instant fan recall.</li>
-            <li><strong>Venue Name &amp; Metro Area:</strong> Distinct venue branding and city/neighborhood location.</li>
-            <li><strong>Doors, Show Times &amp; Ticket Price:</strong> Essential logistical info with optional ticket QR code.</li>
-            <li><strong>Age Restrictions:</strong> Clear &ldquo;21+ with ID&rdquo; or &ldquo;All Ages&rdquo; callouts.</li>
-          </ul>
+        <h2 style="font-size: 20px; color: #0f172a; margin-top: 25px;">Essential Concert Poster Elements</h2>
+        <ul style="padding-left: 20px; line-height: 1.7;">
+          <li><strong>Headlining Band Name:</strong> Occupies 40%+ of visual hierarchy with high-contrast typography.</li>
+          <li><strong>Direct Support &amp; Co-Bills:</strong> Clear secondary typography for touring and local openers.</li>
+          <li><strong>Day of Week &amp; Full Date:</strong> e.g., &ldquo;FRIDAY, NOVEMBER 14&rdquo; for instant fan recall.</li>
+          <li><strong>Venue Name &amp; Metro Area:</strong> Distinct venue branding and city/neighborhood location.</li>
+          <li><strong>Doors, Show Times &amp; Ticket Price:</strong> Essential logistical info with optional ticket QR code.</li>
+          <li><strong>Age Restrictions:</strong> Clear &ldquo;21+ with ID&rdquo; or &ldquo;All Ages&rdquo; callouts.</li>
+        </ul>
 
-          <h3>Contrast Guidelines for Dim Club Lighting</h3>
-          <p>Adhere to strict WCAG AAA contrast ratios with bright text on dark surfaces (white, cadmium yellow, neon cyan on deep charcoal). Maintain 0.5-inch margins from edges to protect against staple guns and poster tape on venue walls.</p>
+        <h2 style="font-size: 20px; color: #0f172a; margin-top: 25px;">Contrast Guidelines for Dim Club Lighting</h2>
+        <p style="line-height: 1.7; color: #475569;">Adhere to strict WCAG AAA contrast ratios with bright text on dark surfaces (white, cadmium yellow, neon cyan on deep charcoal). Maintain 0.5-inch margins from edges to protect against staple guns and poster tape on venue walls.</p>
 
-          <h3>Frequently Asked Questions</h3>
-          <dl>
-            <dt><strong>What information must be included on a concert gig poster?</strong></dt>
-            <dd>An effective gig poster must clearly feature the headlining band name, direct supporting acts, day of the week, full date, venue name and city, door and show times, ticket price (or advance ticket QR code), age policy (21+, 18+, or All Ages), and presenting promoter or sponsor logo. Keeping this information legible from 5 feet away ensures club patrons and passersby instantly grasp show details.</dd>
-            <dt><strong>What are the standard dimensions for band flyers and gig posters?</strong></dt>
-            <dd>The most common print format for music venues, telephone poles, and record store windows is 11x17 inches (Tabloid) printed at 300 DPI. For social media marketing, 9:16 vertical (1080x1920 px) is standard for Instagram Stories and TikTok, while 4:5 vertical (1080x1350 px) and 1:1 square (1080x1080 px) are ideal for Instagram and Facebook feed posts.</dd>
-            <dt><strong>Can I export my flyer in both print (11x17) and social (9:16) aspect ratios?</strong></dt>
-            <dd>Yes. GigLizard's poster studio allows you to switch between 11x17 vertical print posters, 9:16 vertical social story flyers, and square social feed formats with instant vector typography rendering and 300 DPI export ready for commercial printers and digital screens.</dd>
-          </dl>
-        </div>`;
+        <h2 style="font-size: 20px; color: #0f172a; margin-top: 25px;">Frequently Asked Questions</h2>
+        <dl>
+          <dt style="font-weight: bold; margin-top: 15px;">What information must be included on a concert gig poster?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569; line-height: 1.6;">An effective gig poster must clearly feature the headlining band name, direct supporting acts, day of the week, full date, venue name and city, door and show times, ticket price (or advance ticket QR code), age policy (21+, 18+, or All Ages), and presenting promoter or sponsor logo. Keeping this information legible from 5 feet away ensures club patrons and passersby instantly grasp show details.</dd>
+          <dt style="font-weight: bold; margin-top: 15px;">What are the standard dimensions for band flyers and gig posters?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569; line-height: 1.6;">The most common print format for music venues, telephone poles, and record store windows is 11x17 inches (Tabloid) printed at 300 DPI. For social media marketing, 9:16 vertical (1080x1920 px) is standard for Instagram Stories and TikTok, while 4:5 vertical (1080x1350 px) and 1:1 square (1080x1080 px) are ideal for Instagram and Facebook feed posts.</dd>
+          <dt style="font-weight: bold; margin-top: 15px;">Can I export my flyer in both print (11x17) and social (9:16) aspect ratios?</dt>
+          <dd style="margin-left: 0; margin-top: 5px; color: #475569; line-height: 1.6;">Yes. GigLizard's poster studio allows you to switch between 11x17 vertical print posters, 9:16 vertical social story flyers, and square social feed formats with instant vector typography rendering and 300 DPI export ready for commercial printers and digital screens.</dd>
+        </dl>`;
   }
   if (cleanPath === "/articles" || cleanPath === "/tour-advice") {
     return `
-        <div style="margin-top: 25px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6;">
-          <h2>Tour Advice, Studio Recording &amp; Merch Strategy (${TOUR_ARTICLES.length} Master Guides)</h2>
-          <p>Believable, real-world touring, recording, and merchandise guides written by touring musicians and live sound engineers for independent bands.</p>
-          <ul style="padding-left: 20px; line-height: 1.8;">
-            ${TOUR_ARTICLES.map(art => `
-              <li style="margin-bottom: 12px;">
-                <strong><a href="/articles/${art.slug}">${art.title}</a></strong> (${art.category} • ${art.readTimeMinutes} min read) — ${art.excerpt}
-              </li>
-            `).join("\n            ")}
-          </ul>
-        </div>`;
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">Tour Advice</span>
+        </nav>
+        <h1 style="font-size: 30px; line-height: 1.25; color: #0f172a; margin-bottom: 12px;">Tour Advice, Studio Recording &amp; Merch Strategy (${TOUR_ARTICLES.length} Master Guides)</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 25px;">GigLizard Tour Advice is a free collection of 20 real-world touring, recording, and merchandise playbooks written by touring musicians and live sound engineers for independent bands.</p>
+        <ul style="padding-left: 20px; line-height: 1.8;">
+          ${TOUR_ARTICLES.map(art => `
+            <li style="margin-bottom: 12px;">
+              <strong><a href="/articles/${art.slug}" style="color: #4f46e5; text-decoration: underline;">${art.title}</a></strong> (${art.category} • ${art.readTimeMinutes} min read) — ${art.excerpt}
+            </li>
+          `).join("\n          ")}
+        </ul>`;
   }
   if (cleanPath.startsWith("/articles/")) {
     const slug = cleanPath.replace(/^\/articles\//, "");
     const article = getArticleBySlug(slug);
     if (article) {
+      const related = getRelatedArticles(article.id, 3);
       return `
-        <article style="margin-top: 25px; padding: 30px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.7; max-width: 900px; margin-left: auto; margin-right: auto;">
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <a href="/tour-advice" style="color: #4f46e5; text-decoration: underline;">Tour Advice</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">${article.title}</span>
+        </nav>
+        <article style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; line-height: 1.7; max-width: 900px;">
           <header style="margin-bottom: 25px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px;">
             <p style="font-size: 13px; text-transform: uppercase; font-weight: bold; color: #047857; margin-bottom: 8px;">${article.category} • ${article.readTimeMinutes} min read</p>
             <h1 style="font-size: 28px; line-height: 1.3; color: #0f172a; margin-bottom: 12px;">${article.title}</h1>
@@ -2131,6 +2217,21 @@ function getRouteNoscriptSnippet(cleanPath: string): string {
               </dl>
             </section>
           ` : ""}
+
+          <aside aria-label="Related" style="margin-top: 35px; padding: 25px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <h3 style="font-size: 18px; color: #0f172a; margin-top: 0; margin-bottom: 12px;">Related Tour Advice &amp; Road Playbooks</h3>
+            <ul style="padding-left: 20px; line-height: 1.8;">
+              ${related.map(rel => `
+                <li style="margin-bottom: 8px;">
+                  <a href="/articles/${rel.slug}" style="color: #4f46e5; font-weight: 600; text-decoration: underline;">${rel.title}</a> — ${rel.excerpt}
+                </li>
+              `).join("")}
+            </ul>
+          </aside>
+
+          <p style="margin-top: 30px; font-size: 14px; color: #475569; background: #f1f5f9; padding: 18px 20px; border-radius: 8px;">
+            Ready to tour? Browse <a href="/venues" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">650+ verified venues</a>, generate your <a href="/plot" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">free stage plot</a>, build your <a href="/rider" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">soundboard tech rider</a>, or design <a href="/poster" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">concert gig flyers</a>.
+          </p>
         </article>`;
     }
   }
@@ -2187,7 +2288,7 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
     html = html.replace(/<p>Find music venues for free.*?<\/p>/s, `<p>${meta.subhead}</p>`);
   }
 
-  // 2. For programmatic venue landing pages, inject dynamic ItemList structured data & semantic noscript stage list
+  // 2. For programmatic venue landing pages, inject dynamic ItemList structured data & replace noscript main
   if (prog) {
     const matchingVenues = MUSIC_VENUES.filter(v => {
       let match = true;
@@ -2239,18 +2340,33 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
       `    <script type="application/ld+json">\n    ${JSON.stringify(schemaItemList, null, 2)}\n    </script>\n  </head>`
     );
 
-    // Inject semantic venue list into noscript for search engine crawlers
-    const noscriptContent = `
-        <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>${prog.heading} (${displayVenues.length} Verified Stages)</h2>
-          <p>${prog.subhead}</p>
+    const progMain = `<main style="padding: 30px 20px; font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; color: #1e293b;">
+        <nav aria-label="Breadcrumb" style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+          <a href="/" style="color: #4f46e5; text-decoration: underline;">Home</a> &gt; 
+          <a href="/venues" style="color: #4f46e5; text-decoration: underline;">Venues</a> &gt; 
+          <span style="color: #1e293b; font-weight: 600;">${prog.heading}</span>
+        </nav>
+        <h1 style="font-size: 28px; line-height: 1.3; color: #0f172a; margin-bottom: 12px;">${prog.heading}</h1>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 20px;"><strong>${prog.heading}</strong> is GigLizard's verified regional live music venue directory featuring ${displayVenues.length} bookable stages and talent buyer contacts across ${prog.city ? `${prog.city}, ` : ""}${prog.stateName || "the USA"}.</p>
+        <p style="font-size: 15px; color: #475569; margin-bottom: 25px;">${prog.subhead}</p>
+        <div style="margin-top: 25px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="font-size: 20px; color: #0f172a; margin-top: 0;">Verified Stages &amp; Talent Buyer Inboxes (${displayVenues.length} Stages)</h2>
           <ul style="padding-left: 20px; line-height: 1.6;">
             ${displayVenues.map(v => `<li><strong>${v.name}</strong> (Capacity: ${v.capacity}) — ${v.address} | Genres: ${v.genres.join(", ")} | Booking Email: ${v.contactEmail}</li>`).join("\n            ")}
           </ul>
         </div>
+        <footer style="margin-top: 40px; padding: 25px 20px; background: #0f172a; color: #94a3b8; font-size: 13px; text-align: center; border-radius: 8px;">
+          <p>
+            <a href="https://www.giglizard.us/about" style="color: #cbd5e1; text-decoration: underline; margin-right: 15px;">About GigLizard</a> · 
+            <a href="https://www.giglizard.us/contact" style="color: #cbd5e1; text-decoration: underline; margin-right: 15px;">Contact</a> · 
+            <a href="mailto:hello@giglizard.us" style="color: #cbd5e1; text-decoration: underline;">Email</a>
+          </p>
+          <p style="margin-top: 10px; font-size: 11px; color: #64748b;">
+            © 2026 GigLizard • Built in Portland, Oregon by Little Rusty for independent touring musicians and venues across the Lower 48.
+          </p>
+        </footer>
       </main>`;
-    
-    html = html.replace("</main>", noscriptContent);
+    html = html.replace(/<main style="padding: 30px.*?<\/main>/s, progMain);
   } else {
     // Inject custom Schema.org structured data for articles, stage plot & poster tools
     if (article) {
@@ -2451,8 +2567,21 @@ function renderHtmlForRoute(rawTemplate: string, reqPath: string): string {
     }
 
     const routeSnippet = getRouteNoscriptSnippet(cleanPath);
-    if (routeSnippet) {
-      html = html.replace("</main>", `${routeSnippet}\n      </main>`);
+    if (routeSnippet && cleanPath !== "/" && cleanPath !== "") {
+      const subpageMain = `<main style="padding: 30px 20px; font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; color: #1e293b;">
+        ${routeSnippet}
+        <footer style="margin-top: 40px; padding: 25px 20px; background: #0f172a; color: #94a3b8; font-size: 13px; text-align: center; border-radius: 8px;">
+          <p>
+            <a href="https://www.giglizard.us/about" style="color: #cbd5e1; text-decoration: underline; margin-right: 15px;">About GigLizard</a> · 
+            <a href="https://www.giglizard.us/contact" style="color: #cbd5e1; text-decoration: underline; margin-right: 15px;">Contact</a> · 
+            <a href="mailto:hello@giglizard.us" style="color: #cbd5e1; text-decoration: underline;">Email</a>
+          </p>
+          <p style="margin-top: 10px; font-size: 11px; color: #64748b;">
+            © 2026 GigLizard • Built in Portland, Oregon by Little Rusty for independent touring musicians and venues across the Lower 48.
+          </p>
+        </footer>
+      </main>`;
+      html = html.replace(/<main style="padding: 30px.*?<\/main>/s, subpageMain);
     }
   }
 

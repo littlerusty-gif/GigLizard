@@ -15,12 +15,12 @@ export function roundToNearest50(count: number): number {
 
 // Actual database and directory baseline numbers rounded to the nearest 50
 export const BASELINE_VENUE_COUNT = roundToNearest50(MUSIC_VENUES.length);
-export const BASELINE_BAND_COUNT = 4850;
+export const BASELINE_BAND_COUNT = 1650;
 
 // 30 days in milliseconds (30 days * 24 hrs * 60 mins * 60 secs * 1000 ms)
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-const STORAGE_KEY = 'giglizard_directory_counts_30d_v2';
+const STORAGE_KEY = 'giglizard_directory_counts_30d_v3';
 
 export interface DirectoryCounts {
   venueCount: number;

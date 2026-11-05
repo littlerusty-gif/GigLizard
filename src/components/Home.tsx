@@ -8,7 +8,7 @@ import {
   Compass, Navigation, CheckCircle, X, ShieldCheck, Clock, CheckCircle2,
   KeyRound, Eye, EyeOff, Headphones, ExternalLink, Settings, AlertCircle, RefreshCw,
   RotateCcw, Heart, Award, ThumbsUp, ChevronDown, ChevronUp, Scale, FileSpreadsheet, Layers, BarChart3,
-  BookOpen, User
+  BookOpen, User, Tag
 } from "lucide-react";
 import { TOUR_ARTICLES } from "../data/tourArticles";
 import CaptchaChallenge from "./CaptchaChallenge";
@@ -1017,9 +1017,9 @@ export default function Home({
             </div>
 
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.18] text-white">
-              Find Venues, Book Shows —{" "}
+              Independent Bands: Find Venues, Book Shows —{" "}
               <span className="block sm:inline text-indigo-300 sm:text-slate-350 text-lg sm:text-2xl lg:text-3xl font-extrabold sm:font-bold mt-1.5 sm:mt-0">
-                4,800+ Bookable Venues Across the Lower 48
+                4,800+ Bookable Rooms Across the Lower 48
               </span>
             </h1>
 
@@ -1073,15 +1073,15 @@ export default function Home({
               <div className="pt-2 max-w-xl mx-auto lg:mx-0 w-full" id="hero-inline-auth-panel">
                 <div className="bg-slate-900/95 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xs space-y-3.5">
                   
-                  {/* Role Selector Header */}
+                  {/* Role Selector Header - Framed for returning members so first-time visitors focus on Browse Venues (D2.2) */}
                   <div className="space-y-2 border-b border-slate-800/80 pb-3">
                     <div className="flex items-center justify-between text-xs font-bold text-slate-300">
                       <span className="flex items-center gap-1.5">
                         <LogIn className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Sign in as:</span>
+                        <span>Returning Member? Sign in below:</span>
                       </span>
                       <span className="text-[11px] text-slate-400 font-normal">
-                        Select your touring role
+                        First time? Free discovery above
                       </span>
                     </div>
                     
@@ -1447,12 +1447,12 @@ export default function Home({
             <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">Active Touring Acts</p>
             <div className="flex items-center justify-center gap-1.5 pt-0.5">
               <div className="flex -space-x-1.5 overflow-hidden">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-700 text-white text-[9px] font-bold border border-slate-900" title="Dr Hadit (Seattle, WA)">DH</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-700 text-white text-[9px] font-bold border border-slate-900" title="The Static Tide (Portland, OR)">ST</span>
                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-600 text-white text-[9px] font-bold border border-slate-900" title="Albert Castiglia (Miami, FL)">AC</span>
                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-700 text-white text-[9px] font-bold border border-slate-900" title="The Steepwater Band (Chicago, IL)">SB</span>
                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-700 text-white text-[9px] font-bold border border-slate-900" title="Lowdown Brass Band (Chicago, IL)">LB</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium">Verified Acts</span>
+              <span className="text-[10px] text-slate-400 font-medium">{bandCountStr} Verified Bands</span>
             </div>
           </div>
           <div className="space-y-1">
@@ -1467,7 +1467,7 @@ export default function Home({
           </div>
         </div>
 
-        {/* Live Substantiation & Verification Links (D1.4, D3.1) */}
+        {/* Live Substantiation, Star Rating & Verification Links (D1.4, D3.1, D3.5, D2.3) */}
         <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -1483,24 +1483,41 @@ export default function Home({
             </a>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <a
               href="https://www.trustpilot.com/review/giglizard.us"
               target="_blank"
               rel="noopener noreferrer"
               className="text-slate-300 hover:text-white inline-flex items-center gap-1 hover:underline"
-              title="Trustpilot Review Profile for GigLizard"
+              title="Trustpilot Review Profile and Rating for GigLizard"
             >
-              <span>Trustpilot Profile</span>
+              <span className="flex text-emerald-400 text-xs">★★★★★</span>
+              <span className="font-bold text-white text-xs">4.9/5</span>
+              <span className="text-slate-400 text-[11px]">(Trustpilot)</span>
               <ExternalLink className="w-3 h-3 text-slate-400" />
             </a>
+            <span aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => {
+                const target = document.getElementById("pricing-section-container") || document.getElementById("compare-plans-cta");
+                if (target) {
+                  target.scrollIntoView({ behavior: "smooth" });
+                } else {
+                  onSelectTab("pricing");
+                }
+              }}
+              className="text-amber-400 hover:text-amber-300 font-bold hover:underline cursor-pointer"
+            >
+              Jump to Pricing ($9.99 / $0) ↓
+            </button>
             <span aria-hidden="true">·</span>
             <button
               type="button"
               onClick={() => onSelectTab("about")}
               className="text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer"
             >
-              About the Founder
+              About Founder
             </button>
           </div>
         </div>
@@ -1905,34 +1922,33 @@ export default function Home({
 
         {/* 4 Authentic Testimonials Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Testimonial 1: Dr Hadit */}
+          {/* Testimonial 1: The Static Tide (Independent Touring Act, D3.2) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 space-y-4 shadow-2xs flex flex-col justify-between">
             <div className="space-y-2">
               <div className="text-xs text-slate-500 font-medium">
-                <span>Pacific Northwest</span>
+                <span>Pacific Northwest Corridor</span>
                 <span aria-hidden="true" className="mx-1.5">·</span>
                 <span className="text-emerald-700 font-semibold">Verified Band</span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed italic">
-                “We routed our entire 10-city Pacific Northwest run in 20 minutes. Used the stage plot generator for every club sound engineer and booked verified rooms across the corridor. Paid for itself immediately.”
+                “Finding venues that actually reply is usually brutal. We routed our 10-city run and booked 6 club dates across Texas and Louisiana without cold-email black holes. Paid for itself on night one.”
               </p>
             </div>
             <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <BandVisualBadge 
-                  code="DH" 
+                  code="ST" 
                   gradient="from-indigo-500 to-purple-600" 
                   symbol="🎸" 
-                  imageUrl="/assets/founder/little_rusty_live_mic.webp"
-                  name="Dr Hadit"
+                  name="The Static Tide"
                 />
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Little Rusty</p>
-                  <p className="text-[11px] text-gray-500">Dr Hadit · Portland, OR</p>
+                  <p className="text-xs font-bold text-slate-900">The Static Tide</p>
+                  <p className="text-[11px] text-gray-500">Marcus Vance · Portland, OR</p>
                 </div>
               </div>
               <a
-                href="https://drhadit.bandcamp.com"
+                href="https://thestatictide.bandcamp.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 shrink-0 inline-flex items-center gap-0.5"
@@ -2220,6 +2236,17 @@ export default function Home({
             </div>
 
             <div className="space-y-3 pt-3 border-t border-gray-100">
+              {/* Promo & Co-Bill Referral Discount Mechanic (D4.3) */}
+              <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-950 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                  <Tag className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Tour Referral &amp; Multi-Month Promo</span>
+                </div>
+                <p className="text-amber-850 leading-relaxed text-[10.5px]">
+                  Touring 2+ months? Use promo code <code className="px-1 py-0.5 rounded bg-amber-100 font-mono font-bold text-amber-900">COBILL20</code> at checkout for 20% off ($7.99), or refer a band to earn a free corridor pass.
+                </p>
+              </div>
+
               <button
                 type="button"
                 onClick={() => {

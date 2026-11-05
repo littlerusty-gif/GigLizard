@@ -890,11 +890,11 @@ export default function StagePlotDesigner({
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <span>{effectiveBandName}</span>
-            <span className="text-slate-500 font-normal text-sm hidden sm:inline">• Stage Layout &amp; Channel Patch</span>
+            <span>{effectiveBandName || "Band Stage Plot"}</span>
+            <span className="text-slate-500 font-normal text-sm hidden sm:inline">• Free Stage Plot &amp; Input List Maker</span>
           </h1>
           <p className="text-xs text-slate-300 mt-0.5">
-            Clear, clean graphics with monitor mix sends (OUT 1-5), instruments, and patch list for venue sound engineers.
+            The GigLizard Stage Plot Maker is a free drag-and-drop gear layout canvas and input patch list builder that exports 300 DPI PDF sheets for venue sound engineers.
           </p>
         </div>
 

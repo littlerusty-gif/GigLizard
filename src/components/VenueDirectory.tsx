@@ -1031,6 +1031,22 @@ export default function VenueDirectory({
         </div>
       )}
 
+      {/* Main /venues Header Banner (c_h1_single, g_definition) */}
+      {!programmaticRoute && (
+        <div className="bg-slate-900 text-white rounded-2xl p-6 md:p-8 border border-slate-800 shadow-md space-y-3" id="main-venues-header-banner">
+          <div className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-semibold tracking-wide">
+            <Compass className="w-3.5 h-3.5" />
+            <span>Nationwide Music Venue Directory · Lower 48</span>
+          </div>
+          <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight">
+            650+ Live Music Clubs &amp; Verified Venue Booking Inboxes
+          </h1>
+          <p className="text-xs md:text-sm text-slate-300 max-w-2xl leading-relaxed">
+            GigLizard's Venue Directory is a free nationwide database of {venueCountStr} independent live music venues across the Lower 48, providing verified talent buyer emails, room capacities, age restrictions, and house audio specs.
+          </p>
+        </div>
+      )}
+
       {/* Search and Filters heading row */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-xs p-5 space-y-4" id="venue-filter-box">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2" id="dir-filter-title-row">

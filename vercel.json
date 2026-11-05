@@ -7,6 +7,17 @@
       "permanent": false
     }
   ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.google.com https://www.googletagmanager.com https://in.heycatch.ai; connect-src 'self' https: wss: https://in.heycatch.ai; img-src 'self' https: data: blob:; style-src 'self' https: 'unsafe-inline'; font-src 'self' https: data:;" }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",

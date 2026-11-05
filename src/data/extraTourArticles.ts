@@ -20,8 +20,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-08-24",
+    updatedDate: "2026-10-15",
     readTimeMinutes: 9,
     excerpt: "Booking paid studio time without rigorous pre-production is the fastest way to burn $1,500 on avoidable tracking mistakes. Follow this 10-step pre-flight checklist before stepping into the live room.",
     keyTakeaways: [
@@ -40,7 +40,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "click-track-prep",
-        heading: "1. Tempo Mapping & Click Track Rehearsal",
+        heading: "1. How do you prepare click tracks and tempo maps before entering the studio?",
         content: [
           "The single greatest money pit in commercial recording studios is a band arguing about song tempos at $85 per hour while the engineer watches the clock tick. Deciding whether the chorus should be 128 BPM or 132 BPM is a task for your rehearsal space, not the tracking room.",
           "Two weeks before your session, record rough smartphone voice memos of every song played to a metronome. Have your drummer practice locking in with the click through closed-back headphones until playing with a click feels instinctive rather than robotic.",
@@ -50,7 +50,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "drum-prep",
-        heading: "2. Drum Head Seating, Tuning & Hardware Maintenance",
+        heading: "2. When should a drummer replace and tune drum heads before tracking?",
         content: [
           "Old, pitted drum heads with dented centers sound dull and produce flabby low-end frequencies that no parametric EQ or SSL compression plugin can salvage. Replace batter heads on the snare and all toms 48 hours before tracking.",
           "Do not put brand-new drum heads on the morning of tracking. Heads require 24 to 48 hours of tensioning, re-tuning, and seating to eliminate microscopic stretching that causes drums to drift out of tune between takes.",
@@ -59,7 +59,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "stringed-instruments",
-        heading: "3. Guitar & Bass Intonation and String Aging",
+        heading: "3. How do you prepare electric guitars and basses for studio recording?",
         content: [
           "A guitar that sounds in tune when strumming open cowboy chords can be horribly sharp on the 12th fret if the bridge saddles are improperly intonated. Take your guitars and basses to a qualified luthier for a full setup and intonation check 7 days before your session.",
           "Restring electric guitars 24 hours before your session. Brand-new strings have excessive harmonic brightness that clashes with cymbal transients, and they stretch unpredictably under hard picking. Playing restrings for 45 minutes the day before stabilizes tension and leaves the attack crisp and balanced.",
@@ -73,7 +73,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "scratch-tracks",
-        heading: "4. The Scratch Track Strategy: Guiding the Foundation",
+        heading: "4. How should bands record scratch tracks to guide the drummer?",
         content: [
           "Tracking a full live band together without sound isolation causes massive cymbal bleed into vocal mics and amplifier bleed into drum room microphones. The standard studio workflow tracks drums and bass first, but drummers struggle to deliver energetic takes in a vacuum.",
           "The professional solution is laying down scratch guitar and scratch vocal guide tracks. Have the rhythm guitarist and singer perform alongside the drummer into isolated DI lines and dynamic microphones with zero bleed into the drum mics.",
@@ -111,8 +111,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-08-31",
+    updatedDate: "2026-10-18",
     readTimeMinutes: 10,
     excerpt: "Drums make or break a modern rock or indie mix. Learn the acoustic principles of phase polarity, dual-mic kick capture, overhead stereo width, and dampening tricks that professional studio engineers rely on.",
     keyTakeaways: [
@@ -131,7 +131,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "phase-polarity",
-        heading: "1. Phase Cancellation: The Silent Drum Tone Killer",
+        heading: "1. What causes phase cancellation when tracking drums in the studio?",
         content: [
           "Phase cancellation occurs when two microphones record the same acoustic sound wave arriving at slightly different fractions of a millisecond. When combined in the mix, opposing peaks and troughs cancel out fundamental frequencies, leaving your snare drum sounding thin, boxy, and hollow.",
           "Because the top snare microphone points downward at the batter head while the bottom snare mic points upward at the resonant head, the two diaphragms move in opposite directions when the stick strikes. Flipping the phase switch (Ø 180 degrees) on the bottom snare channel preamp is mandatory to align the transients.",
@@ -141,7 +141,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "kick-capture",
-        heading: "2. The Two-Mic Kick Drum Formula",
+        heading: "2. What is the two-mic kick drum placement formula for punchy low end?",
         content: [
           "Relying on a single kick drum microphone forces compromise between the clicky 'thwack' of the beater and the deep, chest-thumping sub-bass resonance. Modern tracking setups almost universally deploy two complementary microphones.",
           "Place a boundary condenser (like a Shure Beta 91A or Sennheiser e901) resting on a pillow inside the kick shell, aimed directly at the beater impact point. This captures the 3 kHz to 5 kHz click that cuts through dense wall-of-sound guitar mixes.",
@@ -151,7 +151,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "headphone-bleed",
-        heading: "3. Eliminating Click Bleed from Drummer Headphones",
+        heading: "3. How do you prevent metronome click bleed from leaking into drum overheads?",
         content: [
           "Nothing breaks an engineer's heart faster than capturing a breathtaking drum performance during a quiet acoustic intro, only to solo the overhead tracks and hear a loud 'BEEP-tick-tick-tick' bleeding through the drummer's headphones.",
           "Never allow drummers to track with semi-open or open-back hi-fi headphones. Use industrial-grade isolation headphones (such as Vic Firth SIH2 or Extreme Isolation EX-29) that attenuate external sound by 25 to 29 dB.",
@@ -189,8 +189,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-09-07",
+    updatedDate: "2026-10-22",
     readTimeMinutes: 8,
     excerpt: "Every band has lived through the nightmare of finishing a tour with two huge cardboard boxes of size Small shirts that nobody wants, while selling out of Large and XL on night three. Here is the exact mathematical sizing formula.",
     keyTakeaways: [
@@ -209,7 +209,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "bell-curve-math",
-        heading: "1. The Universal Merch Bell Curve Breakdown",
+        heading: "1. What is the universal t-shirt sizing ratio for independent band merchandise?",
         content: [
           "Screen printing shops generally require minimum orders of 36, 72, or 144 units to amortize screen burning and film setup fees. If you order 100 t-shirts distributed evenly (20 of each size), you are guaranteed financial disaster.",
           "In modern concert apparel retail, customer demand follows a distinct asymmetrical bell curve centered firmly on Large and Medium. Here is the gold-standard distribution for a 100-shirt run for an independent touring band:",
@@ -219,7 +219,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "tour-sales-forecasting",
-        heading: "2. How to Forecast Inventory for a Multi-City Run",
+        heading: "2. How do you forecast merchandise inventory for a multi-city tour run?",
         content: [
           "To determine how many total shirts to manufacture, calculate your projected aggregate audience across all tour stops. Average the room capacity and your historical ticket sales.",
           "Across 250-cap clubs, average touring bands achieve a 12% to 18% merch conversion rate per head. If your 12-date tour is expected to put 1,800 total bodies in the room, multiply 1,800 by 0.15 to forecast approximately 270 shirt sales.",
@@ -228,7 +228,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "screen-print-price-breaks",
-        heading: "3. Maximizing Margins with Screen Printing Price Breaks",
+        heading: "3. How do screen printing quantity price breaks impact band profit margins?",
         content: [
           "Screen print pricing is heavily front-loaded with fixed labor: creating vector color separations, burning mesh screens, and registering inks on the press. Because of this, ordering 36 shirts often costs $11.50 each, whereas ordering 72 shirts drops the unit price to $7.80, and 144 shirts drops it to $6.20.",
           "At a standard $30 retail selling price at the merch table, a $6.20 production cost yields a gross profit margin of 79% ($23.80 profit per shirt). On a 150-shirt tour run, that price break translates to over $700 in extra cash directly in the band's fuel fund.",
@@ -266,8 +266,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-09-14",
+    updatedDate: "2026-10-25",
     readTimeMinutes: 9,
     excerpt: "The days of printing on scratchy, cardboard-stiff Gildan 5000 blanks and expecting fans to pay $30 are dead. Discover which garment blanks feel luxurious, fit perfectly, and command $35 price tags at your merch booth.",
     keyTakeaways: [
@@ -286,7 +286,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "heavyweight-trend",
-        heading: "1. The Rise of Heavyweight Vintage Blanks: Comfort Colors 1717",
+        heading: "1. Why is Comfort Colors 1717 the industry favorite for band merchandise?",
         content: [
           "Musicians who tour regularly know that fan tactile psychology at the merch table has fundamentally shifted. When a fan approaches your booth and picks up a sample shirt, their fingers instantly register fabric density, collar ribbing, and softness.",
           "Comfort Colors 1717 (manufactured from 6.1 oz 100% ring-spun cotton) has become the gold standard across indie rock, folk, metal, and alternative scenes. The garment-dye wash process preshrinks the fabric, gives colors a soft vintage patina, and eliminates shrinkage surprises in the home dryer.",
@@ -295,7 +295,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "fitted-soft-blanks",
-        heading: "2. Fitted & Soft-Style Blanks: Bella+Canvas 3001 vs Next Level 3600",
+        heading: "2. How does Bella+Canvas 3001 compare against Next Level 3600 for band t-shirts?",
         content: [
           "If your band plays synth-pop, indie-pop, or contemporary emo, fans often prefer a sleeker, tailored silhouette over a boxy heavyweight workwear cut. Here, the two market leaders are Bella+Canvas 3001 and Next Level 3600.",
           "Both options feature 4.2 to 4.3 oz combed ring-spun cotton with shoulder-to-shoulder taping and side-seamed construction. Side seams are critical: cheap tubular shirts without side seams twist around the torso after two washes, whereas side-seamed garments hold their structural shape forever.",
@@ -304,12 +304,22 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "budget-reality",
-        heading: "3. Budget Workhorses: Gildan 5000 vs Gildan Hammer H000",
+        heading: "3. Which budget t-shirt blank offers the best durability and printing surface?",
         content: [
           "When bands are on a tight budget, the initial temptation is ordering the ubiquitous Gildan 5000 Heavy Cotton ($2.60 blank cost). We strongly advise against this for primary tour tees: the carded open-end cotton fibers are scratchy, the neck collar tends to bacon-curl, and the boxy cut fits awkwardly.",
           "If budget constraints require staying within the Gildan catalog, specify the Gildan Hammer H000 or Gildan Softstyle 64000. The Hammer is crafted from 6.0 oz combed ring-spun cotton, offering the substantial weight of a workwear tee with a smooth printing surface at a fraction of the boutique price.",
           "Always request a physical printed sample from your screen printer before approving a 100-piece run to evaluate collar snugness and torso length."
         ]
+      },
+      {
+        id: "discharge-vs-plastisol",
+        heading: "4. Should bands choose discharge ink or plastisol ink for screen printing?",
+        content: [
+          "For 100% cotton garments like Comfort Colors 1717, water-based discharge ink is vastly superior because it bleaches and dyes the fabric yarn directly rather than laying down a thick rubberized plastic film.",
+          "Plastisol ink sits on top of the garment fibers, creating a stiff, sweaty chest shield that cracks after ten laundry cycles and feels uncomfortable under hot club stage lights.",
+          "Discharge printing produces a breathable, ultra-soft vintage hand feel where you cannot feel the ink with your fingertips. When combined with garment-dyed ring-spun cotton, discharge printing converts hesitant booth browsers into paying fans willing to drop $35 without batting an eye."
+        ],
+        proTip: "Discharge ink only works on 100% natural cotton garments. If you choose 50/50 poly-cotton or heather tri-blends, instruct your screen printer to use a soft-hand plastisol additive with a 230-mesh count screen."
       }
     ],
     faq: [
@@ -342,8 +352,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-09-21",
+    updatedDate: "2026-10-28",
     readTimeMinutes: 9,
     excerpt: "Nothing stings worse than playing your heart out on stage only to have a venue house manager demand 20% of your gross t-shirt sales at midnight. Learn how to negotiate merch cuts in advance and run a bulletproof point-of-sale operation.",
     keyTakeaways: [
@@ -362,7 +372,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "understanding-cuts",
-        heading: "1. The Truth About Venue Merch Cuts: Soft vs Hard Goods",
+        heading: "1. How do venue merch cuts work and how can bands negotiate them down?",
         content: [
           "In mid-sized ballrooms and corporate-promoted rooms (Live Nation, AEG, or unionized theater houses), venues routinely demand an 80/20 or 85/15 split on merch sales. This means the house takes $6 out of every $30 t-shirt sold, even though they invested zero dollars in fabric, printing, or freight.",
           "Musicians must understand the legal distinction in booking contracts between 'soft goods' (apparel) and 'hard goods' (recorded media). In almost all independent music touring traditions, recorded physical music (vinyl records, CDs, audio cassettes) is completely exempt from house fees.",
@@ -372,7 +382,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "offline-pos",
-        heading: "2. Setting Up Square POS for Subterranean Dead Zones",
+        heading: "2. How do you process credit card merch transactions in basement venues without cell service?",
         content: [
           "More than 60% of historic indie rock clubs and punk basements are located in deep concrete cellars with zero LTE cellular reception and spotty guest Wi-Fi. If your card reader stops working right as 200 sweaty fans surge the merch table, you lose hundreds of dollars.",
           "Open your Square POS app settings on your mobile device or Square Terminal before tour begins and activate 'Offline Payments.' This allows the hardware to encrypt card swipes and tap-to-pay transactions locally, storing them securely until your phone connects to Wi-Fi at the hotel or diner the next morning.",
@@ -381,7 +391,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "merch-table-lighting",
-        heading: "3. Merch Table Psychology: Lights, Height & Clear Pricing",
+        heading: "3. What visual merchandising techniques maximize per-head sales at shows?",
         content: [
           "Venues routinely banish the merch table to the darkest, unlit corner of the room near the emergency exit. A dark merch table looks closed and makes it impossible for fans to read your album art or evaluate shirt fabric.",
           "Pack two rechargeable warm-white LED clamp lights in your merch luggage. Clamping these lights onto your display rack instantly draws human eyes across the room like a moth to a flame.",
@@ -420,8 +430,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-09-28",
+    updatedDate: "2026-10-30",
     readTimeMinutes: 11,
     excerpt: "Say goodbye to deafening stage volume, screeching feedback spikes, and relying on venue sound techs who can't hear your monitor mix. Build a tour-grade 16-channel in-ear rack that delivers the exact same custom mix in every city.",
     keyTakeaways: [
@@ -440,7 +450,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "splitter-importance",
-        heading: "1. Why the Analog Splitter Snake is Non-Negotiable",
+        heading: "1. Why is an analog splitter snake essential for an X32 rack in-ear monitor rig?",
         content: [
           "The greatest fear of venue sound engineers is a band wheeling in a digital rack and attempting to hijack front-of-house mixing authority. If you tell an engineer 'Plug your PA into our outputs,' you will face immediate hostility.",
           "The professional solution is an analog pass-through splitter snake (such as an ART S8 or a 16-channel Seismic Audio transformer rack splitter). Every microphone and instrument on stage plugs into the front of your rack.",
@@ -450,7 +460,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "wired-vs-wireless",
-        heading: "2. Wireless vs Wired In-Ear Transmitters: The Budget Hack",
+        heading: "2. Should touring musicians choose wireless transmitters or wired bodypacks for in-ears?",
         content: [
           "Tour-grade wireless IEM transmitters (like Shure PSM300 or Sennheiser EW G4) cost between $800 and $1,200 per channel. If a 5-piece band attempts to go fully wireless out of the gate, rack costs exceed $5,000.",
           "Adopt the hybrid touring setup: stationary musicians who do not run around the stage (drummers and keyboardists) perform vastly better on wired XLR beltpacks like the Behringer Powerplay P2 or Fischer Amps Mini HP. Wired connections cost only $45, have zero radio frequency dropout risk, and deliver cleaner low-end bass extension.",
@@ -459,7 +469,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "ambient-mics",
-        heading: "3. Overcoming the IEM 'Fishbowl Effect' with Ambient Mics",
+        heading: "3. How do you eliminate the isolated fishbowl feeling when using in-ear monitors?",
         content: [
           "When musicians pop in high-isolation custom in-ear molds for the first time, they frequently hate the experience. With 26 dB of acoustic isolation, the roar of the crowd, bandmate banter, and natural room reflections vanish, leaving the performer feeling trapped in a sterile fishbowl.",
           "To fix this, clamp two small-diaphragm condenser microphones (like Shure SM81s or Rode M5s) to the corners of your rack or downstage mic stands, pointing outward into the crowd.",
@@ -497,8 +507,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-10-05",
+    updatedDate: "2026-11-01",
     readTimeMinutes: 8,
     excerpt: "Showing up unannounced at 4:00 PM expecting parking for a 15-passenger van and trailer is how tours fall apart. Learn the exact 14-day production advance workflow that guarantees smooth load-ins and friendly sound techs.",
     keyTakeaways: [
@@ -517,7 +527,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "advance-timeline",
-        heading: "1. The 14-Day Advance Rule: Why Timing Matters",
+        heading: "1. When should a touring band advance show logistics with venue sound engineers?",
         content: [
           "Venues schedule house engineers, stage hands, security staff, and bar inventory two weeks in advance. If you email a talent buyer 48 hours before the show asking 'Hey, what time is load-in?', you create unnecessary stress for busy venue personnel.",
           "Initiate your production advance between 14 and 10 days out. This gives production managers sufficient lead time to review your channel input count, confirm whether you are bringing custom backline or an IEM splitter, and reserve street parking cones.",
@@ -526,7 +536,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "email-template",
-        heading: "2. The Copy-and-Paste Production Advance Email Template",
+        heading: "2. What email format should bands use to advance venue technical specifications?",
         content: [
           "Subject: SHOW ADVANCE: [Your Band Name] @ [Venue Name] - [Date of Show]\n\nHi [Production Manager / Sound Engineer Name],\n\nThis is [Your Name], tour manager and [instrument] for [Band Name]. We are excited to perform at [Venue Name] on [Date of Show] with [Support Acts / Headliner].\n\nBelow is our production advance for the evening:\n• Day-of-Show TM Contact: [Your Name] - [Cell Number]\n• Touring Vehicle: 15-passenger Ford van + 5x8 enclosed trailer (Total length: 32 ft)\n• Target Arrival / Load-In: 4:30 PM\n• Soundcheck Preference: 5:15 PM - 5:45 PM\n• Audio Requirements: 4 vocal mics, 2 guitar cabs, 1 bass DI, 5-piece drum kit (See attached PDF Stage Plot & Input List)\n• Backline Sharing: Happy to share our 8x10 bass cab with support acts if arranged in advance.\n• Hospitality Notes: 4 touring members (1 vegetarian, 3 omnivores)\n\nPlease confirm load-in alley location, load-in parking protocol, and any venue-specific noise curfews.\n\nBest regards,\n[Your Name] | [Band Name] | [Website / GigLizard Link]"
         ],
@@ -534,7 +544,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "parking-logistics",
-        heading: "3. Van & Trailer Parking: The Downtown Survival Plan",
+        heading: "3. How do touring acts secure safe van and trailer parking at downtown music clubs?",
         content: [
           "Downtown venues in cities like Chicago, New York, Philadelphia, or San Francisco have zero dedicated parking lots. If you arrive without a parking plan, you will face $150 municipal parking tickets or commercial towing impound lot nightmares.",
           "Explicitly ask in your advance: 'Does the venue provide street parking permits, or do you have a reserved loading zone behind the venue?'",
@@ -572,8 +582,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-10-12",
+    updatedDate: "2026-11-02",
     readTimeMinutes: 8,
     excerpt: "Nothing infuriates sound engineers, venue managers, and co-billing bands faster than an opening act that takes 25 minutes to get off the stage. Master the sacred rules of backline sharing and fast changeovers.",
     keyTakeaways: [
@@ -592,7 +602,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "golden-rule-clear-first",
-        heading: "1. Clear the Deck First, Pack Cases Later",
+        heading: "1. What is the fastest way to strike band gear during a 15-minute changeover?",
         content: [
           "The most common amateur mistake seen in clubs across America is a band finishing their final chord, stepping off the drum riser, and immediately popping open their hard flight cases on the center of the stage to meticulously wrap cables and polish guitars.",
           "Every second you spend packing gear on the stage eats into the next band's set time and pushes the venue closer to city curfew. Professional touring bands execute the 'Scoop and Run':",
@@ -602,7 +612,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "drum-breakables",
-        heading: "2. The Drum Kit Sharing Protocol: Shells vs Breakables",
+        heading: "2. What drum parts are shared versus brought by traveling drummers during co-bills?",
         content: [
           "On multi-band club bills, having three separate drummers tear down and set up three full drum kits takes over an hour of dead time, driving patrons out to the street. Standard club etiquette relies on a shared backline kit.",
           "The host or headlining band provides the 'Shells' (kick drum, rack toms, floor tom, and heavy tripod cymbal stands).",
@@ -611,12 +621,22 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "amp-impedance",
-        heading: "3. Bass & Guitar Backline Sharing: Impedance Safety",
+        heading: "3. How do you safely share guitar and bass amplifiers without blowing transformer tubes?",
         content: [
           "Sharing an Ampeg 8x10 or 4x10 bass cabinet is one of the easiest ways to accelerate changeovers. However, connecting an incompatible tube amplifier head can permanently destroy output transformers.",
           "Always inspect the jack plate on the back of the shared speaker cabinet. A standard Ampeg 8x10 cabinet is typically 4 ohms (or split mono 8 ohms). Ensure your bass head is switched to match the cabinet's exact impedance.",
           "Never power on an all-tube guitar or bass head without a heavy-duty speaker cable connected to a speaker load; operating a tube amp without a speaker load will destroy the transformer within seconds."
         ]
+      },
+      {
+        id: "stage-manager-communication",
+        heading: "4. How should touring bands communicate with stage managers during festivals?",
+        content: [
+          "During multi-band festival bills with tight 10-minute changeovers, direct verbal communication with the stage manager and A2 deck audio technician is the difference between a triumphant set and a cut set.",
+          "Designate one band member (usually the tour manager or drummer) to check in with the stage manager 30 minutes prior to your slot while your gear is pre-staged in the wings.",
+          "Provide the stage manager with an updated physical 1-page stage plot and input list clearly indicating any shared backline decisions, custom wireless IEM frequencies, and whether direct power drops are required downstage center."
+        ],
+        proTip: "Never tune guitar amplifiers at full volume during the changeover while the stage manager is shouting cue lines. Use a mute pedal or headstock tuner until the house sound tech gives you the line check nod."
       }
     ],
     faq: [
@@ -649,7 +669,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
+    publishDate: "2026-10-19",
     updatedDate: "2026-11-03",
     readTimeMinutes: 9,
     excerpt: "Losing your voice on day 4 of a 14-date tour is every lead singer's worst nightmare. Learn the science of vocal cord preservation, semi-occluded warmups, monitor wedge communication, and road remedies that actually work.",
@@ -669,7 +689,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "vocal-biomechanics",
-        heading: "1. The Anatomy of Vocal Fatigue on the Road",
+        heading: "1. What causes vocal fatigue and voice loss during multi-city tours?",
         content: [
           "Vocal folds (cords) are delicate multilayered tissue structures that collide against each other over 200 times per second during singing. When you perform high-energy rock, punk, or metal for 45 minutes four nights in a row, the friction causes edema (swelling) and microscopic tissue inflammation.",
           "Singers often mistake vocal fatigue for a common cold. If you struggle to hit higher head-voice notes or notice a rough, breathy rasp in your speaking voice the morning after a gig, your vocal folds are swollen and failing to close cleanly.",
@@ -678,7 +698,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "sovt-straw-warmups",
-        heading: "2. The SOVT Straw Phonation Warmup Method",
+        heading: "2. What vocal warmup exercises prevent strain and restore vocal cord flexibility?",
         content: [
           "Traditional open-mouth vocal scales can strain fatigued cords. Laryngologists and master vocal coaches recommend Semi-Occluded Vocal Tract (SOVT) straw phonation.",
           "Place a narrow drinking straw (or stainless steel vocal straw) between your lips and hum glissando pitch sweeps from low to high notes. The narrow straw opening creates back-pressure (inertance) in the vocal tract.",
@@ -688,12 +708,22 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "monitor-wedge-wars",
-        heading: "3. Beating the Stage Monitor Volume Trap",
+        heading: "3. How do touring vocalists hear themselves without blowing out their voices over stage monitors?",
         content: [
           "The #1 cause of blown vocal cords in independent clubs is stage monitor volume warfare. When guitar amps and cymbals are deafeningly loud, singers yell into the mic just to hear their own pitch.",
           "When asking the sound engineer for monitor adjustments, never just say: 'Turn my vocals up.' Increasing raw gain invites feedback squeals.",
           "Instead, ask the engineer: 'Could you high-pass my vocal wedge at 120 Hz and give me a slight 2.5 kHz presence boost?' Removing low-end mud (bass guitar and kick drum bleed) and boosting intelligibility allows your vocal to cut through without requiring ear-shattering decibels."
         ]
+      },
+      {
+        id: "hotel-air-and-hydration",
+        heading: "4. How do touring singers protect their vocal cords in dry hotel rooms?",
+        content: [
+          "Dry hotel air conditioning and winter highway heaters severely dehydrate vocal fold mucosa, dramatically increasing the risk of hemorrhages, nodules, and raspy voice loss by night four of a tour.",
+          "Travel with a personal handheld ultrasonic mesh nebulizer and sterile 0.9% isotonic saline solution vials. Inhaling cool saline mist directly hydrates the vocal fold surface within five minutes without relying exclusively on gastrointestinal absorption.",
+          "Avoid sleeping directly underneath forced-air heating vents in budget highway motels. Hang damp bath towels over room radiators or run the bathroom hot shower for ten minutes before sleeping to create a humid microclimate."
+        ],
+        proTip: "Drink room temperature water rather than iced water before going on stage. Ice water induces muscular constriction in laryngeal swallowing muscles, requiring five to ten minutes of extra warmups to relax."
       }
     ],
     faq: [
@@ -726,8 +756,8 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       role: "Touring Musician & Live Sound Engineer (Dr Hadit)",
       bio: "15+ years touring the Lower 48 in 15-passenger vans and box trucks; founder of GigLizard."
     },
-    publishDate: "2026-11-03",
-    updatedDate: "2026-11-03",
+    publishDate: "2026-10-26",
+    updatedDate: "2026-11-04",
     readTimeMinutes: 8,
     excerpt: "Talent buyers at respected music venues do not read 8-page PDF dossiers filled with flowery metaphors about your childhood influences. Here is what professional bookers actually look for in their 30-second scan.",
     keyTakeaways: [
@@ -746,7 +776,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
     sections: [
       {
         id: "thirty-second-scan",
-        heading: "1. The 30-Second Booking Evaluation",
+        heading: "1. What do talent buyers look for in the first 30 seconds of an EPK review?",
         content: [
           "Talent buyers at active 250-to-500 capacity rooms receive between 50 and 150 booking inquiry emails every day. When they click your EPK link, you have exactly thirty seconds to convince them that booking your band is financially viable and sonically cohesive.",
           "Bookers do not start by reading your life story. Their eyes follow a strict triage path:\n1. Live Video (10 seconds): Can this band actually play their instruments tight in front of real humans?\n2. Ticket Draw / Market History (10 seconds): How many paying tickets did they sell in their hometown and nearby cities?\n3. High-Res Visual Assets (10 seconds): Do they have high-quality promotional photos ready for posters and social media?",
@@ -755,7 +785,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "live-video-rule",
-        heading: "2. The Golden Live Video Rule: Raw Truth Beats Glossy Fiction",
+        heading: "2. What kind of live performance video actually convinces venue bookers?",
         content: [
           "The biggest mistake indie bands make with EPKs is embedding only polished cinematic music videos with studio lip-syncing. Talent buyers know that any band can sound flawless on a studio track tuned with Melodyne and quantizing.",
           "Venues want to see proof of live stage presence. The highest-converting asset in any EPK is a 3-minute, multi-camera live video recorded at a real show with clean soundboard audio mixed with room ambient mics.",
@@ -765,7 +795,7 @@ export const EXTRA_TOUR_ARTICLES: TourArticle[] = [
       },
       {
         id: "essential-assets",
-        heading: "3. The 5 Must-Have EPK Downloads",
+        heading: "3. What essential assets must be included in a downloadable electronic press kit?",
         content: [
           "Ensure your EPK page features five clean, direct links that do not require logins or permissions:",
           "• High-Res Press Photos: 300 DPI CMYK photo files for print flyers, plus 72 DPI RGB files for Instagram and Facebook event banners.\n• 3-Sentence Bio: Two sentences describing your musical sound, genre, and city, followed by one sentence detailing recent milestones (e.g. 'Featured on Spotify Fresh Finds, opened for [Headliner], selling out hometown album release').\n• Streamable Music: A clean Spotify or Bandcamp widget featuring your top 2 most popular tracks.\n• Technical Stage Plot & Input List: A direct link to your GigLizard stage diagram PDF for venue sound crew.\n• Direct Booking Contact: Cell phone and email for your dedicated tour manager or booking liaison."

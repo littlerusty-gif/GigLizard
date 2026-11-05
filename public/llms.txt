@@ -11,7 +11,7 @@ GigLizard is a self-serve live music touring platform founded by Portland-based 
 - **Stage Plot Designer**: Interactive drag-and-drop gear canvas to map drums, monitor wedges, pedalboards, and mic booms with instant PNG/PDF export ($0 Free).
 - **Tech Rider Builder**: Formatted soundboard patch list compiler with mic choices, +48V phantom power switches, and channel mapping ($0 Free).
 - **Concert Poster Designer**: Vintage halftone and modern neon flyer generator for social promo and print ($0 Free).
-- **1,300+ Verified Band Co-Bill Directory**: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
+- **1,650+ Verified Touring Band Co-Bill Directory**: Direct booking contacts for touring bands to coordinate shared bills in corridor cities ($9.99 flat 30-day pass, no auto-renewal).
 - **Public Directory Verification Log**: Real-time moderation queue and dated venue audits (<24h turnaround on reports).
 
 ## Pricing

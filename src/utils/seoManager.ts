@@ -38,7 +38,7 @@ export const SEO_CONFIG: Record<string, SeoMetadata> = {
     canonicalUrl: "https://www.giglizard.us/venues"
   },
   bands: {
-    title: "4,850+ Touring Band Directory & Co-Bill Partner Finder | GigLizard",
+    title: "1,650+ Touring Band Directory & Co-Bill Partner Finder | GigLizard",
     description: "Find active local support and co-bill bands in every US touring market. Connect with verified artists to split bills, share backline gear, and pack venues.",
     keywords: "touring band directory, find local support bands, band co-bills, indie bands looking for shows, musician networking, touring co-bill directory",
     canonicalUrl: "https://www.giglizard.us/bands"
