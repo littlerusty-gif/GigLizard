@@ -51,7 +51,7 @@ import {
   Settings, Sparkles, CheckCircle, Info, Calendar, Users,
   Compass, Navigation, ShieldCheck, BarChart3, Crown, LogIn, HelpCircle,
   RefreshCw, Download, CheckCircle2, AlertTriangle, X, Menu, DollarSign, Scale,
-  UserCheck, Building, Clock, BookOpen, Palette
+  UserCheck, Building, Clock, BookOpen, Palette, ChevronDown
 } from "lucide-react";
 
 // Default preset values for first-load
@@ -78,6 +78,21 @@ export default function GigLizardApp() {
 
   // Mobile navigation drawer toggle state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Desktop Free Tools dropdown state
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
+  const toolsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close Free Tools dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target as Node)) {
+        setIsToolsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Android back-swipe / double-tap exit state
   const [showExitToast, setShowExitToast] = useState(false);
   const lastBackPressTimeRef = useRef<number>(0);
@@ -502,6 +517,7 @@ export default function GigLizardApp() {
       return;
     }
     setActiveTabState(tab);
+    setIsToolsDropdownOpen(false);
     try {
       const targetPath = (tab === "articles" && selectedArticleSlug)
         ? `/articles/${selectedArticleSlug}`
@@ -1532,13 +1548,13 @@ export default function GigLizardApp() {
           </div>
 
           {/* Desktop Navigation Bar (md+): Clean 5-link primary bar with clear actions */}
-          <div className="hidden md:flex items-center gap-3 shrink-0">
+          <div className="hidden md:flex items-center gap-2.5 lg:gap-3 shrink-0">
             <nav className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/70 shrink-0" id="main-nav">
               <a
                 href="/venues"
                 onClick={(e) => { e.preventDefault(); setActiveTab("venues"); }}
                 id="tab-btn-venues"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === "venues"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -1552,7 +1568,7 @@ export default function GigLizardApp() {
                 href="/bands"
                 onClick={(e) => { e.preventDefault(); setActiveTab("bands"); }}
                 id="tab-btn-bands"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === "bands"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -1562,67 +1578,149 @@ export default function GigLizardApp() {
                 <span>Bands</span>
               </a>
 
-              <a
-                href="/plot"
-                onClick={(e) => { e.preventDefault(); setActiveTab("plot"); }}
-                id="tab-btn-plot"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                  activeTab === "plot"
-                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                }`}
+              {/* Free Tools ▾ Dropdown (Hover & Click for ADHD-Friendly Scanning) */}
+              <div 
+                ref={toolsDropdownRef}
+                className="relative group"
+                onMouseEnter={() => setIsToolsDropdownOpen(true)}
+                onMouseLeave={() => setIsToolsDropdownOpen(false)}
               >
-                <Sliders className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span>Stage Plot</span>
-              </a>
+                <button
+                  type="button"
+                  onClick={() => setIsToolsDropdownOpen(prev => !prev)}
+                  id="tab-btn-free-tools"
+                  aria-expanded={isToolsDropdownOpen}
+                  aria-haspopup="true"
+                  className={`flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+                    ["plot", "rider", "poster", "tour", "features", "compare"].includes(activeTab)
+                      ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                  <span>Free Tools</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-150 ${isToolsDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
 
-              <a
-                href="/rider"
-                onClick={(e) => { e.preventDefault(); setActiveTab("rider"); }}
-                id="tab-btn-rider"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                  activeTab === "rider"
-                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Rider</span>
-              </a>
+                {/* Dropdown Menu - rendered in DOM to preserve all internal link equity & audit scores */}
+                <div 
+                  className={`absolute left-0 top-full pt-1.5 z-50 transition-all duration-150 ${
+                    isToolsDropdownOpen 
+                      ? "opacity-100 visible translate-y-0" 
+                      : "opacity-0 invisible -translate-y-1 pointer-events-none group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto"
+                  }`}
+                >
+                  <div className="w-72 sm:w-80 rounded-2xl bg-white p-2 shadow-2xl border border-slate-200/90 text-left space-y-1">
+                    <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1 flex items-center justify-between">
+                      <span>Production &amp; Tour Tools</span>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">100% Free</span>
+                    </div>
 
-              <a
-                href="/poster"
-                onClick={(e) => { e.preventDefault(); setActiveTab("poster"); }}
-                id="tab-btn-poster"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                  activeTab === "poster"
-                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                }`}
-              >
-                <Palette className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                <span>Posters</span>
-              </a>
+                    <a
+                      href="/plot"
+                      onClick={(e) => { e.preventDefault(); setActiveTab("plot"); setIsToolsDropdownOpen(false); }}
+                      id="dropdown-link-plot"
+                      className={`flex items-start gap-2.5 p-2 rounded-xl text-xs transition-colors ${
+                        activeTab === "plot" ? "bg-indigo-50 text-indigo-950 font-bold" : "hover:bg-slate-50 text-slate-700 hover:text-slate-950"
+                      }`}
+                    >
+                      <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 shrink-0 mt-0.5">
+                        <Sliders className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5">
+                          <span>Stage Plot Maker</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-normal leading-snug">Drag-and-drop band layout &amp; channel input list</p>
+                      </div>
+                    </a>
 
-              <a
-                href="/tour"
-                onClick={(e) => { e.preventDefault(); setActiveTab("tour"); }}
-                id="tab-btn-tour"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                  activeTab === "tour"
-                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                }`}
-              >
-                <Compass className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span>Tour</span>
-              </a>
+                    <a
+                      href="/rider"
+                      onClick={(e) => { e.preventDefault(); setActiveTab("rider"); setIsToolsDropdownOpen(false); }}
+                      id="dropdown-link-rider"
+                      className={`flex items-start gap-2.5 p-2 rounded-xl text-xs transition-colors ${
+                        activeTab === "rider" ? "bg-emerald-50 text-emerald-950 font-bold" : "hover:bg-slate-50 text-slate-700 hover:text-slate-950"
+                      }`}
+                    >
+                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 shrink-0 mt-0.5">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5">
+                          <span>Tech Rider Builder</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-normal leading-snug">Sound engineer specs, monitoring &amp; hospitality</p>
+                      </div>
+                    </a>
+
+                    <a
+                      href="/poster"
+                      onClick={(e) => { e.preventDefault(); setActiveTab("poster"); setIsToolsDropdownOpen(false); }}
+                      id="dropdown-link-poster"
+                      className={`flex items-start gap-2.5 p-2 rounded-xl text-xs transition-colors ${
+                        activeTab === "poster" ? "bg-purple-50 text-purple-950 font-bold" : "hover:bg-slate-50 text-slate-700 hover:text-slate-950"
+                      }`}
+                    >
+                      <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600 shrink-0 mt-0.5">
+                        <Palette className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5">
+                          <span>Posters &amp; Flyers</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-normal leading-snug">Print-ready gig flyers &amp; promo artwork studio</p>
+                      </div>
+                    </a>
+
+                    <a
+                      href="/tour"
+                      onClick={(e) => { e.preventDefault(); setActiveTab("tour"); setIsToolsDropdownOpen(false); }}
+                      id="dropdown-link-tour"
+                      className={`flex items-start gap-2.5 p-2 rounded-xl text-xs transition-colors ${
+                        activeTab === "tour" ? "bg-indigo-50 text-indigo-950 font-bold" : "hover:bg-slate-50 text-slate-700 hover:text-slate-950"
+                      }`}
+                    >
+                      <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 shrink-0 mt-0.5">
+                        <Compass className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5">
+                          <span>Tour Planner</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-normal leading-snug">Van fuel calculator, drive times &amp; routing</p>
+                      </div>
+                    </a>
+
+                    <div className="pt-1.5 mt-1 border-t border-slate-100 grid grid-cols-2 gap-1 px-1">
+                      <a
+                        href="/features"
+                        onClick={(e) => { e.preventDefault(); setActiveTab("features"); setIsToolsDropdownOpen(false); }}
+                        id="dropdown-link-features"
+                        className="px-2 py-1.5 rounded-lg text-[11px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 flex items-center gap-1"
+                      >
+                        <Sparkles className="w-3 h-3 text-indigo-500" />
+                        <span>All Features</span>
+                      </a>
+                      <a
+                        href="/compare"
+                        onClick={(e) => { e.preventDefault(); setActiveTab("compare"); setIsToolsDropdownOpen(false); }}
+                        id="dropdown-link-compare"
+                        className="px-2 py-1.5 rounded-lg text-[11px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 flex items-center gap-1"
+                      >
+                        <Scale className="w-3 h-3 text-indigo-500" />
+                        <span>Compare Apps</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <a
                 href="/articles"
                 onClick={(e) => { e.preventDefault(); setSelectedArticleSlug(null); setActiveTab("articles"); }}
                 id="tab-btn-articles"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === "articles"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -1633,38 +1731,10 @@ export default function GigLizardApp() {
               </a>
 
               <a
-                href="/features"
-                onClick={(e) => { e.preventDefault(); setActiveTab("features"); }}
-                id="tab-btn-features"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                  activeTab === "features"
-                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span>Features</span>
-              </a>
-
-              <a
-                href="/compare"
-                onClick={(e) => { e.preventDefault(); setActiveTab("compare"); }}
-                id="tab-btn-compare"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                  activeTab === "compare"
-                    ? "bg-white text-slate-900 shadow-2xs font-extrabold"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                }`}
-              >
-                <Scale className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span>Compare</span>
-              </a>
-
-              <a
                 href="/pricing"
                 onClick={(e) => { e.preventDefault(); setActiveTab("pricing"); }}
                 id="tab-btn-pricing"
-                className={`flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                className={`flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === "pricing"
                     ? "bg-white text-slate-900 shadow-2xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -1674,6 +1744,18 @@ export default function GigLizardApp() {
                 <span>Pricing</span>
               </a>
             </nav>
+
+            {/* Primary Action: Browse Venues (Free) CTA */}
+            <a
+              href="/venues"
+              onClick={(e) => { e.preventDefault(); setActiveTab("venues"); }}
+              id="header-browse-venues-cta"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs transition-all whitespace-nowrap cursor-pointer active:scale-95"
+              title="Search 4,800+ music clubs & venues for free"
+            >
+              <MapPin className="w-3.5 h-3.5 text-indigo-200 shrink-0" />
+              <span>Browse Venues (Free)</span>
+            </a>
 
             {/* Claim Band Action */}
             <button
@@ -1738,6 +1820,17 @@ export default function GigLizardApp() {
         {/* Mobile Navigation Dropdown Menu (< md) */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200/80 bg-white/98 backdrop-blur-md px-4 py-3 space-y-2.5 animate-in slide-in-from-top-2 duration-150 shadow-xl" id="mobile-nav-dropdown">
+            {/* Direct High-Scan Mobile Browse Venues CTA */}
+            <a
+              href="/venues"
+              onClick={(e) => { e.preventDefault(); setActiveTab("venues"); setIsMobileMenuOpen(false); }}
+              id="mobile-browse-venues-cta"
+              className="flex items-center justify-center gap-2 p-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-xs transition-all active:scale-98"
+            >
+              <MapPin className="w-4 h-4 text-indigo-200 shrink-0" />
+              <span>Browse Venues (Free)</span>
+            </a>
+
             <div className="grid grid-cols-2 gap-2">
               <a
                 href="/venues"

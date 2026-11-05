@@ -818,15 +818,35 @@ export default function Home({
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
-              Find Venues, Book Shows
-              <span className="block text-slate-350 text-xl sm:text-2xl lg:text-3xl font-bold mt-2">
+              Find Venues, Book Shows —{" "}
+              <span className="block sm:inline text-slate-350 text-xl sm:text-2xl lg:text-3xl font-bold mt-2 sm:mt-0">
                 4,800+ Bookable Venues Across the Lower 48
               </span>
             </h1>
 
             <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0 font-normal">
-              GigLizard is a free nationwide independent music venue directory and DIY tour booking platform for touring bands, venues, and sound engineers across the Lower 48. Discover independent clubs and verified talent buyer contacts for free — stop watching wishy-washy middle dates stay open on your calendar, calculate realistic van gas budgets, swap shows with local acts, and export pro stage plots in minutes.
+              GigLizard is a free nationwide independent music venue directory and DIY tour booking platform for touring bands, venues, and sound engineers across the Lower 48.
             </p>
+
+            {/* 2x2 Bulleted Feature Chips Grid for ADHD-Friendly Scanning */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-xl mx-auto lg:mx-0 text-left pt-1">
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="font-semibold">Verified talent buyer inboxes</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="font-semibold">Van gas &amp; route calculations</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="font-semibold">1-click PDF stage plots</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="font-semibold">Direct show swaps with local acts</span>
+              </div>
+            </div>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
               <button
