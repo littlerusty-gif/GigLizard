@@ -1007,28 +1007,28 @@ export default function Home({
       )}
 
       {/* Hero Welcome Panel */}
-      <section className="relative overflow-hidden bg-slate-950 text-white rounded-3xl p-8 md:p-12 lg:p-14 border border-slate-900 shadow-2xl space-y-8" id="home-hero-panel">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+      <section className="relative overflow-hidden bg-slate-950 text-white rounded-3xl p-4 sm:p-7 md:p-12 lg:p-14 border border-slate-900 shadow-2xl space-y-6 sm:space-y-8" id="home-hero-panel">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-5 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider justify-center lg:justify-start">
               <span>Independent Touring Directory</span>
               <span aria-hidden="true">·</span>
               <span>{venueCountStr} Venues Across the USA</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.18] text-white">
               Find Venues, Book Shows —{" "}
-              <span className="block sm:inline text-slate-350 text-xl sm:text-2xl lg:text-3xl font-bold mt-2 sm:mt-0">
+              <span className="block sm:inline text-indigo-300 sm:text-slate-350 text-lg sm:text-2xl lg:text-3xl font-extrabold sm:font-bold mt-1.5 sm:mt-0">
                 4,800+ Bookable Venues Across the Lower 48
               </span>
             </h1>
 
-            <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0 font-normal">
+            <p className="text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0 font-normal">
               GigLizard is a free nationwide independent music venue directory and DIY tour booking platform for touring bands, venues, and sound engineers across the Lower 48.
             </p>
 
             {/* 2x2 Bulleted Feature Chips Grid for ADHD-Friendly Scanning */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-xl mx-auto lg:mx-0 text-left pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 max-w-xl mx-auto lg:mx-0 text-left pt-0.5">
               <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 shadow-xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="font-semibold">Verified talent buyer inboxes</span>
@@ -1047,11 +1047,12 @@ export default function Home({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+            {/* Responsive Hero Primary CTAs */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-2.5 sm:gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => onSelectTab("venues")}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black py-3.5 px-6 min-h-[44px] rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:shadow-indigo-500/25 active:scale-95"
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-black py-3.5 px-6 min-h-[48px] rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg hover:shadow-indigo-500/25 active:scale-95"
               >
                 <span>Browse Venues (Free)</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1059,7 +1060,7 @@ export default function Home({
               <button
                 type="button"
                 onClick={() => onSelectTab("bands")}
-                className="bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-bold py-3.5 px-5 min-h-[44px] rounded-xl transition-all border border-slate-800 cursor-pointer flex items-center gap-2 active:scale-95"
+                className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white text-xs sm:text-sm font-bold py-3.5 px-5 min-h-[48px] rounded-xl transition-all border border-slate-800 cursor-pointer flex items-center justify-center gap-2 active:scale-95"
                 id="hero-btn-browse-bands"
               >
                 <Users className="w-4 h-4 text-amber-400" />
@@ -1067,91 +1068,94 @@ export default function Home({
               </button>
             </div>
 
-            {/* Clean Inline Sign-In & Sign-Up Panel */}
+            {/* Mobile-Optimized Inline Sign-In & Sign-Up Panel */}
             {!currentAccount && (
               <div className="pt-2 max-w-xl mx-auto lg:mx-0 w-full" id="hero-inline-auth-panel">
                 <div className="bg-slate-900/95 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xs space-y-3.5">
                   
                   {/* Role Selector Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
-                    <div className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <LogIn className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Sign in as:</span>
+                  <div className="space-y-2 border-b border-slate-800/80 pb-3">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                      <span className="flex items-center gap-1.5">
+                        <LogIn className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Sign in as:</span>
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-normal">
+                        Select your touring role
+                      </span>
                     </div>
                     
-                    {/* 4 Role Selector Tabs */}
-                    <div className="grid grid-cols-4 gap-1 p-0.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                    {/* 4 Role Selector Tabs - Stacked icon + label on mobile for thumb friendliness */}
+                    <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-950/90 border border-slate-800">
                       <button
                         type="button"
                         onClick={() => { setHeroRole("Band"); setHeroLoginError(""); setHeroShowForgotLink(false); }}
-                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        className={`py-2 px-1 rounded-lg text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer min-h-[44px] sm:min-h-[38px] ${
                           heroRole === "Band"
                             ? "bg-indigo-600 text-white shadow-xs"
                             : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                         }`}
                       >
-                        <Users className="w-3 h-3 text-indigo-200" />
-                        <span>Band</span>
+                        <Users className="w-3.5 h-3.5 text-indigo-200 shrink-0" />
+                        <span className="text-[11px] sm:text-xs">Band</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => { setHeroRole("Venue"); setHeroLoginError(""); setHeroShowForgotLink(false); }}
-                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        className={`py-2 px-1 rounded-lg text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer min-h-[44px] sm:min-h-[38px] ${
                           heroRole === "Venue"
                             ? "bg-emerald-600 text-white shadow-xs"
                             : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                         }`}
                       >
-                        <Building className="w-3 h-3 text-emerald-200" />
-                        <span>Venue</span>
+                        <Building className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
+                        <span className="text-[11px] sm:text-xs">Venue</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => { setHeroRole("Sound Engineer"); setHeroLoginError(""); setHeroShowForgotLink(false); }}
-                        className={`py-1.5 px-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
+                        className={`py-2 px-1 rounded-lg text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer min-h-[44px] sm:min-h-[38px] ${
                           heroRole === "Sound Engineer"
                             ? "bg-amber-500 text-slate-950 font-black shadow-xs"
                             : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                         }`}
-                        title="Sound Engineer"
+                        title="Sound Engineer / Audio Tech"
                       >
-                        <Headphones className="w-3 h-3 text-amber-200" />
-                        <span className="truncate">Sound</span>
+                        <Headphones className="w-3.5 h-3.5 text-amber-200 shrink-0" />
+                        <span className="text-[11px] sm:text-xs">Sound</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => { setHeroRole("Guest"); setHeroLoginError(""); setHeroShowForgotLink(false); }}
-                        className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        className={`py-2 px-1 rounded-lg text-xs font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer min-h-[44px] sm:min-h-[38px] ${
                           heroRole === "Guest"
                             ? "bg-purple-600 text-white shadow-xs"
                             : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                         }`}
                       >
-                        <User className="w-3 h-3 text-purple-200" />
-                        <span>Guest</span>
+                        <User className="w-3.5 h-3.5 text-purple-200 shrink-0" />
+                        <span className="text-[11px] sm:text-xs">Guest</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Feedback / Error Message with Forgot Password Link */}
                   {heroLoginError && (
-                    <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 space-y-1.5 animate-in fade-in">
+                    <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 space-y-2 animate-in fade-in">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                         <span className="font-semibold">{heroLoginError}</span>
                       </div>
-                      {heroShowForgotLink && (
-                        <div className="pt-1 border-t border-rose-500/20 flex items-center justify-between text-[11.5px]">
-                          <span className="text-slate-400">Can't remember your password?</span>
-                          <button
-                            type="button"
-                            onClick={handleHeroForgotPassword}
-                            className="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer"
-                          >
-                            Forgot password? Reset here →
-                          </button>
-                        </div>
-                      )}
+                      <div className="pt-1.5 border-t border-rose-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11.5px]">
+                        <span className="text-slate-400">Can't remember your password?</span>
+                        <button
+                          type="button"
+                          onClick={handleHeroForgotPassword}
+                          className="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer text-left sm:text-right"
+                        >
+                          Forgot password? Reset here →
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1164,23 +1168,26 @@ export default function Home({
 
                   {/* Inputs & Actions */}
                   {heroRole === "Guest" ? (
-                    <div className="space-y-2 py-1">
-                      <p className="text-xs text-slate-400 leading-snug">
-                        Explore 4,800+ venues, create drag-and-drop stage plots, and calculate van fuel costs with zero password or signup friction.
+                    <div className="space-y-3 py-1">
+                      <p className="text-xs text-slate-300 leading-snug">
+                        Instant access to 4,800+ venues, drag-and-drop stage plots, and van fuel calculators with zero password or signup friction.
                       </p>
                       <button
                         type="button"
                         onClick={handleHeroGuestSignIn}
-                        className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                        className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98 min-h-[48px]"
                       >
                         <Sparkles className="w-4 h-4 text-purple-200" />
                         <span>Continue as Guest Explorer (Instant Access)</span>
                       </button>
                     </div>
                   ) : (
-                    <form onSubmit={handleHeroSignIn} className="space-y-2.5">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <form onSubmit={handleHeroSignIn} className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
+                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                            Email Address
+                          </label>
                           <input
                             type="email"
                             value={heroEmail}
@@ -1189,43 +1196,57 @@ export default function Home({
                               heroRole === "Band" ? "band@email.com" : heroRole === "Venue" ? "booking@venue.com" : "tech@domain.com"
                             }
                             autoComplete="email"
-                            className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 text-xs focus:outline-hidden focus:border-indigo-500 transition-colors"
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors min-h-[44px]"
                           />
                         </div>
-                        <div className="relative">
-                          <input
-                            type={heroShowPassword ? "text" : "password"}
-                            value={heroPassword}
-                            onChange={(e) => { setHeroPassword(e.target.value); setHeroLoginError(""); }}
-                            placeholder="Password"
-                            autoComplete="current-password"
-                            className="w-full pl-3 pr-9 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 text-xs focus:outline-hidden focus:border-indigo-500 transition-colors"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setHeroShowPassword(prev => !prev)}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer"
-                            aria-label="Toggle password visibility"
-                          >
-                            {heroShowPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[11px] font-semibold text-slate-300">
+                              Password
+                            </label>
+                            <button
+                              type="button"
+                              onClick={handleHeroForgotPassword}
+                              className="text-[10.5px] text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
+                            >
+                              Forgot password?
+                            </button>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type={heroShowPassword ? "text" : "password"}
+                              value={heroPassword}
+                              onChange={(e) => { setHeroPassword(e.target.value); setHeroLoginError(""); }}
+                              placeholder="Enter your password"
+                              autoComplete="current-password"
+                              className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors min-h-[44px]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setHeroShowPassword(prev => !prev)}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+                              aria-label="Toggle password visibility"
+                            >
+                              {heroShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 pt-0.5">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
                         <button
                           type="submit"
                           disabled={heroLoginLoading}
-                          className="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 disabled:opacity-60"
+                          className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-60 min-h-[46px]"
                         >
                           {heroLoginLoading ? (
                             <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <RefreshCw className="w-4 h-4 animate-spin" />
                               <span>Signing In...</span>
                             </>
                           ) : (
                             <>
-                              <LogIn className="w-3.5 h-3.5" />
+                              <LogIn className="w-4 h-4" />
                               <span>Sign In as {heroRole === "Sound Engineer" ? "Sound Tech" : heroRole}</span>
                             </>
                           )}
@@ -1234,10 +1255,10 @@ export default function Home({
                         <button
                           type="button"
                           onClick={handleHeroSignUp}
-                          className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1"
+                          className="w-full sm:w-auto py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[46px]"
                           title="Register a new account"
                         >
-                          <span>Sign Up</span>
+                          <span>Sign Up Free</span>
                         </button>
                       </div>
                     </form>
@@ -1245,6 +1266,96 @@ export default function Home({
                 </div>
               </div>
             )}
+
+            {/* Retention & Discovery Section: Popular Tour Hubs */}
+            <div className="pt-2 text-left space-y-2 border-t border-slate-900">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Popular Tour Hubs:</span>
+                </span>
+                <span className="text-[11px] text-slate-400 hidden sm:inline">Tap to inspect verified stages</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { name: "Austin, TX", slug: "austin-tx", count: "182" },
+                  { name: "Seattle, WA", slug: "seattle-wa", count: "114" },
+                  { name: "Chicago, IL", slug: "chicago-il", count: "168" },
+                  { name: "Nashville, TN", slug: "nashville-tn", count: "146" },
+                  { name: "Brooklyn, NY", slug: "brooklyn-ny", count: "195" },
+                  { name: "Denver, CO", slug: "denver-co", count: "108" },
+                  { name: "Los Angeles, CA", slug: "los-angeles-ca", count: "210" },
+                  { name: "Portland, OR", slug: "portland-or", count: "98" }
+                ].map((hub) => (
+                  <a
+                    key={hub.slug}
+                    href={`/venues/${hub.slug}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onSelectTab("venues");
+                      try {
+                        window.history.pushState(null, '', `/venues/${hub.slug}`);
+                      } catch (_) {}
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-[11.5px] text-slate-300 hover:text-white border border-slate-800 hover:border-indigo-500/50 transition-all cursor-pointer active:scale-95"
+                  >
+                    <span className="font-medium">{hub.name}</span>
+                    <span className="text-[10px] text-indigo-400 font-mono font-semibold">({hub.count})</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Micro Quick-Launch Free Tools Row for Mobile ADHD-Friendly Scanning */}
+            <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+              <a
+                href="/tools/stage-plot"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectTab("plot");
+                  try { window.history.pushState(null, '', '/tools/stage-plot'); } catch (_) {}
+                }}
+                className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 text-left transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200 group-hover:text-indigo-300">
+                  <Sliders className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="truncate">Stage Plot</span>
+                </div>
+                <p className="text-[10.5px] text-slate-400 truncate mt-0.5">Drag &amp; drop gear</p>
+              </a>
+
+              <a
+                href="/tools/tech-rider"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectTab("rider");
+                  try { window.history.pushState(null, '', '/tools/tech-rider'); } catch (_) {}
+                }}
+                className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 text-left transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200 group-hover:text-emerald-300">
+                  <FileText className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate">Tech Rider</span>
+                </div>
+                <p className="text-[10.5px] text-slate-400 truncate mt-0.5">1-click PDF builder</p>
+              </a>
+
+              <a
+                href="/tour"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectTab("tour");
+                  try { window.history.pushState(null, '', '/tour'); } catch (_) {}
+                }}
+                className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 text-left transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200 group-hover:text-amber-300">
+                  <Navigation className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="truncate">Van Mileage</span>
+                </div>
+                <p className="text-[10.5px] text-slate-400 truncate mt-0.5">Drive times &amp; gas</p>
+              </a>
+            </div>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-1 text-xs text-slate-400 pt-1">
               <span>100% free venue discovery forever</span>
